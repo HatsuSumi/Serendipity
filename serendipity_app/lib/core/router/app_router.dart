@@ -22,9 +22,24 @@ class AppRouter {
         path: '/record/create',
         name: 'createRecord',
         pageBuilder: (context, state) {
-          return MaterialPage(
+          return CustomTransitionPage(
             key: state.pageKey,
             child: const CreateRecordPage(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              // 从底部滑入动画
+              const begin = Offset(0.0, 1.0);
+              const end = Offset.zero;
+              const curve = Curves.easeInOut;
+              
+              var tween = Tween(begin: begin, end: end).chain(
+                CurveTween(curve: curve),
+              );
+              
+              return SlideTransition(
+                position: animation.drive(tween),
+                child: child,
+              );
+            },
           );
         },
       ),
