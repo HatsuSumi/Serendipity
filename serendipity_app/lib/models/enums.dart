@@ -186,3 +186,55 @@ enum AuthProvider {
   const AuthProvider(this.value, this.label);
 }
 
+/// 会员等级
+enum MembershipTier {
+  free(1, '免费版'),
+  premium(2, '会员版');
+
+  final int value;
+  final String label;
+  
+  const MembershipTier(this.value, this.label);
+}
+
+/// 会员状态
+enum MembershipStatus {
+  inactive(1, '未激活'),
+  active(2, '活跃'),
+  expired(3, '已过期'),
+  cancelled(4, '已取消');
+
+  final int value;
+  final String label;
+  
+  const MembershipStatus(this.value, this.label);
+}
+
+/// 支付方式
+enum PaymentMethod {
+  free('free', '免费解锁'),
+  applePay('apple_pay', 'Apple Pay'),
+  googlePay('google_pay', 'Google Pay'),
+  alipay('alipay', '支付宝'),
+  wechatPay('wechat_pay', '微信支付');
+
+  final String value;
+  final String label;
+  
+  const PaymentMethod(this.value, this.label);
+}
+
+/// 支付状态
+enum PaymentStatus {
+  pending(1, '待支付'),
+  processing(2, '处理中'),
+  success(3, '支付成功'),
+  failed(4, '支付失败'),
+  refunded(5, '已退款');
+
+  final int value;
+  final String label;
+  
+  const PaymentStatus(this.value, this.label);
+}
+
