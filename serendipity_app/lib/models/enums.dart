@@ -255,3 +255,16 @@ enum AppTheme {
   const AppTheme(this.value, this.label, this.isPremium);
 }
 
+/// 信用分变更原因
+enum CreditChangeReason {
+  gpsAnomalyDetected(1, 'GPS异常'),
+  behaviorAnomalyDetected(2, '异常行为模式'),
+  goodBehavior(3, '良好行为'),
+  verificationSuccess(4, '验证成功');
+
+  final int value;
+  final String label;
+  
+  const CreditChangeReason(this.value, this.label);
+}
+
