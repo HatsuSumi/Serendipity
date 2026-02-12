@@ -859,54 +859,54 @@ class PaymentStatusAdapter extends TypeAdapter<PaymentStatus> {
           typeId == other.typeId;
 }
 
-class AppThemeAdapter extends TypeAdapter<AppTheme> {
+class ThemeOptionAdapter extends TypeAdapter<ThemeOption> {
   @override
   final int typeId = 22;
 
   @override
-  AppTheme read(BinaryReader reader) {
+  ThemeOption read(BinaryReader reader) {
     switch (reader.readByte()) {
       case 0:
-        return AppTheme.light;
+        return ThemeOption.light;
       case 1:
-        return AppTheme.dark;
+        return ThemeOption.dark;
       case 2:
-        return AppTheme.system;
+        return ThemeOption.system;
       case 3:
-        return AppTheme.misty;
+        return ThemeOption.misty;
       case 4:
-        return AppTheme.midnight;
+        return ThemeOption.midnight;
       case 5:
-        return AppTheme.warm;
+        return ThemeOption.warm;
       case 6:
-        return AppTheme.autumn;
+        return ThemeOption.autumn;
       default:
-        return AppTheme.light;
+        return ThemeOption.light;
     }
   }
 
   @override
-  void write(BinaryWriter writer, AppTheme obj) {
+  void write(BinaryWriter writer, ThemeOption obj) {
     switch (obj) {
-      case AppTheme.light:
+      case ThemeOption.light:
         writer.writeByte(0);
         break;
-      case AppTheme.dark:
+      case ThemeOption.dark:
         writer.writeByte(1);
         break;
-      case AppTheme.system:
+      case ThemeOption.system:
         writer.writeByte(2);
         break;
-      case AppTheme.misty:
+      case ThemeOption.misty:
         writer.writeByte(3);
         break;
-      case AppTheme.midnight:
+      case ThemeOption.midnight:
         writer.writeByte(4);
         break;
-      case AppTheme.warm:
+      case ThemeOption.warm:
         writer.writeByte(5);
         break;
-      case AppTheme.autumn:
+      case ThemeOption.autumn:
         writer.writeByte(6);
         break;
     }
@@ -918,7 +918,7 @@ class AppThemeAdapter extends TypeAdapter<AppTheme> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is AppThemeAdapter &&
+      other is ThemeOptionAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

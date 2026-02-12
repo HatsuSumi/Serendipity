@@ -355,9 +355,9 @@ enum PaymentStatus {
   const PaymentStatus(this.value, this.label);
 }
 
-/// 应用主题
+/// 应用主题选项（用户偏好设置）
 @HiveType(typeId: 22)
-enum AppTheme {
+enum ThemeOption {
   @HiveField(0)
   light('light', '浅色', false),
   @HiveField(1)
@@ -377,7 +377,7 @@ enum AppTheme {
   final String label;
   final bool isPremium;
   
-  const AppTheme(this.value, this.label, this.isPremium);
+  const ThemeOption(this.value, this.label, this.isPremium);
 }
 
 /// 信用分变更原因

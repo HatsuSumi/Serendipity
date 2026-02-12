@@ -1,27 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/providers/records_provider.dart';
 import '../timeline/timeline_page.dart';
 
-class MainNavigationPage extends StatefulWidget {
+class MainNavigationPage extends ConsumerStatefulWidget {
   const MainNavigationPage({super.key});
 
   @override
-  State<MainNavigationPage> createState() => _MainNavigationPageState();
+  ConsumerState<MainNavigationPage> createState() => _MainNavigationPageState();
 }
 
-class _MainNavigationPageState extends State<MainNavigationPage> {
+class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   int _currentIndex = 0;
-
-  final List<Widget> _pages = [
-    const TimelinePage(), // TA（时间轴）
-    const Center(child: Text('地图')), // TODO: 地图页面
-    const Center(child: Text('树洞')), // TODO: 社区页面
-    const Center(child: Text('我的')), // TODO: 个人页面
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: const [
+          TimelinePage(), // TA（时间轴）
+          Center(child: Text('地图')), // TODO: 地图页面
+          Center(child: Text('树洞')), // TODO: 社区页面
+          Center(child: Text('我的')), // TODO: 个人页面
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
@@ -54,11 +58,14 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
       ),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton.extended(
-              onPressed: () {
-                // TODO: 跳转到创建记录页面
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('即将开发创建记录功能...')),
-                );
+              onPressed: () async {
+                // 跳转到创建记录页面，等待返回
+                final result = await context.push('/record/create');
+                
+                // 如果创建成功，刷新记录列表
+                if (result == true && mounted) {
+                  ref.read(recordsProvider.notifier).refresh();
+                }
               },
               icon: const Icon(Icons.add),
               label: const Text('记录错过'),

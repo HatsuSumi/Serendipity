@@ -1,16 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive/hive.dart';
 import 'package:serendipity_app/core/services/storage_service.dart';
 import 'package:serendipity_app/models/encounter_record.dart';
 import 'package:serendipity_app/models/enums.dart';
+import 'dart:io';
 
 void main() {
   group('StorageService Tests', () {
     late StorageService storageService;
+    late Directory testDir;
 
     setUpAll(() async {
-      // 初始化 Hive（测试环境）
-      await Hive.initFlutter();
+      // 创建临时测试目录
+      testDir = Directory.systemTemp.createTempSync('hive_test_');
+      
+      // 初始化 Hive（使用临时目录）
+      Hive.init(testDir.path);
       
       // 注册 TypeAdapter
       Hive.registerAdapter(EncounterStatusAdapter());
@@ -38,6 +43,12 @@ void main() {
     tearDownAll(() async {
       await storageService.clearAllRecords();
       await storageService.close();
+      await Hive.close();
+      
+      // 删除临时测试目录
+      if (testDir.existsSync()) {
+        testDir.deleteSync(recursive: true);
+      }
     });
 
     test('保存和读取记录', () async {

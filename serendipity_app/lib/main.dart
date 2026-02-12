@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'core/theme/app_theme.dart';
 import 'core/services/storage_service.dart';
-import 'features/home/main_navigation_page.dart';
+import 'core/router/app_router.dart';
+import 'core/providers/theme_provider.dart';
+import 'core/theme/app_theme.dart';
 import 'models/enums.dart';
 import 'models/encounter_record.dart';
 
@@ -28,7 +29,7 @@ void main() async {
   Hive.registerAdapter(MembershipStatusAdapter());
   Hive.registerAdapter(PaymentMethodAdapter());
   Hive.registerAdapter(PaymentStatusAdapter());
-  Hive.registerAdapter(AppThemeAdapter());
+  Hive.registerAdapter(ThemeOptionAdapter());
   Hive.registerAdapter(CreditChangeReasonAdapter());
   
   // 数据模型类型 (typeId: 0-2)
@@ -46,18 +47,53 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 监听主题选项变化
+    final themeOption = ref.watch(themeOptionProvider);
+    
+    // 根据主题选项生成对应的主题数据
+    final lightTheme = AppTheme.getTheme(themeOption, Brightness.light);
+    final darkTheme = AppTheme.getTheme(themeOption, Brightness.dark);
+    
+    // 确定主题模式
+    final themeMode = _getThemeMode(themeOption);
+    
+    return MaterialApp.router(
       title: 'Serendipity',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.light,
-      home: const MainNavigationPage(),
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: themeMode,
+      routerConfig: AppRouter.router,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        // 响应式设计：Web端限制最大宽度为600px
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: child,
+          ),
+        );
+      },
     );
+  }
+  
+  /// 根据主题选项确定主题模式
+  ThemeMode _getThemeMode(ThemeOption option) {
+    switch (option) {
+      case ThemeOption.light:
+      case ThemeOption.misty:
+      case ThemeOption.warm:
+      case ThemeOption.autumn:
+        return ThemeMode.light;
+      case ThemeOption.dark:
+      case ThemeOption.midnight:
+        return ThemeMode.dark;
+      case ThemeOption.system:
+        return ThemeMode.system;
+    }
   }
 }

@@ -4,7 +4,7 @@ import 'enums.dart';
 class UserSettings {
   final String id;
   final String userId;
-  final AppTheme theme;
+  final ThemeOption theme;
   final String? accentColor;
   final bool cloudSyncEnabled;
   final bool biometricLockEnabled;
@@ -49,7 +49,7 @@ class UserSettings {
     return UserSettings(
       id: json['id'] as String,
       userId: json['userId'] as String,
-      theme: AppTheme.values
+      theme: ThemeOption.values
           .firstWhere((e) => e.value == json['theme'] as String),
       accentColor: json['accentColor'] as String?,
       cloudSyncEnabled: json['cloudSyncEnabled'] as bool,
@@ -101,7 +101,7 @@ class UserSettings {
   UserSettings copyWith({
     String? id,
     String? userId,
-    AppTheme? theme,
+    ThemeOption? theme,
     String? accentColor,
     bool? cloudSyncEnabled,
     bool? biometricLockEnabled,
