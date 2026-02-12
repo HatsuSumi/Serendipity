@@ -35,8 +35,8 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.favorite_border),
-            selectedIcon: Icon(Icons.favorite),
+            icon: Icon(Icons.auto_awesome_outlined),
+            selectedIcon: Icon(Icons.auto_awesome),
             label: 'TA',
           ),
           NavigationDestination(

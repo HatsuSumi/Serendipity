@@ -78,13 +78,13 @@
 
 #### 5.1 底部导航
 - [ ] 4个标签页
-  - [ ] TA（时间轴）- 使用 `Icons.favorite` / `Icons.favorite_border`
+  - [ ] TA（时间轴）- 使用 `Icons.auto_awesome` / `Icons.auto_awesome_outlined`
   - [ ] 地图 - 使用 `Icons.map` / `Icons.map_outlined`
   - [ ] 树洞（社区）- 使用 `Icons.cloud` / `Icons.cloud_outlined`
   - [ ] 我的 - 使用 `Icons.person` / `Icons.person_outline`
 - [ ] 使用 Material Icons（清晰、专业、跨平台一致）
-- [ ] 选中状态：实心图标（如 `Icons.favorite`）
-- [ ] 未选中状态：空心图标（如 `Icons.favorite_border`）
+- [ ] 选中状态：实心图标（如 `Icons.auto_awesome`）
+- [ ] 未选中状态：空心图标（如 `Icons.auto_awesome_outlined`）
 
 #### 5.2 时间轴页面
 - [ ] AppBar 标题："TA"
@@ -469,7 +469,7 @@
 
 #### 12.1 底部导航图标
 - [ ] 使用 Material Icons（清晰、专业、跨平台一致）
-- [ ] TA - `Icons.favorite` / `Icons.favorite_border`
+- [ ] TA - `Icons.auto_awesome` / `Icons.auto_awesome_outlined`
 - [ ] 地图 - `Icons.map` / `Icons.map_outlined`
 - [ ] 树洞 - `Icons.cloud` / `Icons.cloud_outlined`
 - [ ] 我的 - `Icons.person` / `Icons.person_outline`
