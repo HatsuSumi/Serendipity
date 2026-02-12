@@ -238,3 +238,20 @@ enum PaymentStatus {
   const PaymentStatus(this.value, this.label);
 }
 
+/// 应用主题
+enum AppTheme {
+  light('light', '浅色', false),
+  dark('dark', '深色', false),
+  system('system', '跟随系统', false),
+  misty('misty', '朦胧', true),
+  midnight('midnight', '深夜', true),
+  warm('warm', '温暖', true),
+  autumn('autumn', '秋日', true);
+
+  final String value;
+  final String label;
+  final bool isPremium;
+  
+  const AppTheme(this.value, this.label, this.isPremium);
+}
+
