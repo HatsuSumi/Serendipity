@@ -28,30 +28,36 @@ class AppRouter {
       GoRoute(
         path: '/record/detail',
         name: 'recordDetail',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final record = state.extra as EncounterRecord?;
           if (record == null) {
             // 如果没有传递记录对象，返回错误页面
-            return Scaffold(
-              appBar: AppBar(title: const Text('错误')),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    const Text('记录数据丢失'),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () => context.go('/'),
-                      child: const Text('返回首页'),
-                    ),
-                  ],
+            return MaterialPage(
+              key: state.pageKey,
+              child: Scaffold(
+                appBar: AppBar(title: const Text('错误')),
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      const Text('记录数据丢失'),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => context.go('/'),
+                        child: const Text('返回首页'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
           }
-          return RecordDetailPage(record: record);
+          return MaterialPage(
+            key: state.pageKey,
+            child: RecordDetailPage(record: record),
+          );
         },
       ),
     ],

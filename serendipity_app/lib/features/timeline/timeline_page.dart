@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
-import '../record/record_detail_page.dart';
+
+// 用于传递记录对象的 Provider
+final selectedRecordProvider = StateProvider<EncounterRecord?>((ref) => null);
 
 /// 时间轴页面（记录列表）
 class TimelinePage extends ConsumerWidget {
@@ -103,12 +106,8 @@ class TimelinePage extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () {
-          // 使用 Navigator.push 代替 context.push，避免 go_router 的 extra 参数问题
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => RecordDetailPage(record: record),
-            ),
-          );
+          // 使用 go_router 的 extra 参数传递记录对象
+          context.push('/record/detail', extra: record);
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
