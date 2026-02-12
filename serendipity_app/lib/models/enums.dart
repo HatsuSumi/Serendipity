@@ -133,3 +133,42 @@ enum Weather {
   const Weather(this.value, this.label, this.icon);
 }
 
+/// 匹配状态
+enum MatchStatus {
+  pending(1, '等待冷静期'),
+  notified(2, '已通知'),
+  verifying(3, '验证中'),
+  verified(4, '验证成功'),
+  rejected(5, '验证失败'),
+  expired(6, '已过期');
+
+  final int value;
+  final String label;
+  
+  const MatchStatus(this.value, this.label);
+}
+
+/// 匹配置信度
+enum MatchConfidence {
+  high(1, '高置信度'),
+  medium(2, '中置信度'),
+  low(3, '低置信度');
+
+  final int value;
+  final String label;
+  
+  const MatchConfidence(this.value, this.label);
+}
+
+/// 验证选择
+enum VerificationChoice {
+  wantContact(1, '想要联系'),
+  keepInMemory(2, '留在记忆里'),
+  notMe(3, '不是我，认错人了');
+
+  final int value;
+  final String label;
+  
+  const VerificationChoice(this.value, this.label);
+}
+
