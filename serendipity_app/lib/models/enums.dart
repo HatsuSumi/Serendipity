@@ -172,3 +172,17 @@ enum VerificationChoice {
   const VerificationChoice(this.value, this.label);
 }
 
+/// 登录方式
+enum AuthProvider {
+  email('email', '邮箱'),
+  phone('phone', '手机号'),
+  apple('apple', 'Apple ID'),
+  google('google', 'Google'),
+  wechat('wechat', '微信');
+
+  final String value;
+  final String label;
+  
+  const AuthProvider(this.value, this.label);
+}
+
