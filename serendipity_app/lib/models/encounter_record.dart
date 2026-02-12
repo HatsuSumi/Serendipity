@@ -1,8 +1,14 @@
+import 'package:hive/hive.dart';
 import 'enums.dart';
 
+part 'encounter_record.g.dart';
+
 /// 标签 + 备注
+@HiveType(typeId: 0)
 class TagWithNote {
+  @HiveField(0)
   final String tag;
+  @HiveField(1)
   final String? note; // 可选，最多50字
 
   TagWithNote({
@@ -26,11 +32,17 @@ class TagWithNote {
 }
 
 /// 地点
+@HiveType(typeId: 1)
 class Location {
+  @HiveField(0)
   final double? latitude;
+  @HiveField(1)
   final double? longitude;
+  @HiveField(2)
   final String? address;
+  @HiveField(3)
   final String? placeName; // 用户手动输入，可选
+  @HiveField(4)
   final PlaceType? placeType; // 场所类型，可选
 
   Location({
@@ -65,20 +77,35 @@ class Location {
 }
 
 /// 记录
+@HiveType(typeId: 2)
 class EncounterRecord {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final DateTime timestamp;
+  @HiveField(2)
   final Location location;
+  @HiveField(3)
   final String? description; // 可选，最多500字
+  @HiveField(4)
   final List<TagWithNote> tags;
+  @HiveField(5)
   final EmotionIntensity? emotion; // 可选
+  @HiveField(6)
   final EncounterStatus status;
+  @HiveField(7)
   final String? storyLineId; // 所属故事线ID，可选
+  @HiveField(8)
   final String? ifReencounter; // "如果再遇"备忘，可选
+  @HiveField(9)
   final String? conversationStarter; // 对话契机（仅邂逅状态），可选，最多500字
+  @HiveField(10)
   final String? backgroundMusic; // 背景音乐，可选
+  @HiveField(11)
   final Weather? weather; // 天气信息，可选
+  @HiveField(12)
   final DateTime createdAt;
+  @HiveField(13)
   final DateTime updatedAt;
 
   EncounterRecord({
