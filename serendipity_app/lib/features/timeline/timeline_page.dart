@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../models/encounter_record.dart';
@@ -103,8 +104,7 @@ class TimelinePage extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () {
-          // TODO: 跳转到记录详情页
-          MessageHelper.showInfo(context, '记录详情页面待开发');
+          context.push('/record/detail', extra: record);
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(

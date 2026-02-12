@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/main_navigation_page.dart';
 import '../../features/record/create_record_page.dart';
+import '../../features/record/record_detail_page.dart';
+import '../../models/encounter_record.dart';
 
 /// 应用路由配置
 class AppRouter {
@@ -20,6 +22,16 @@ class AppRouter {
         path: '/record/create',
         name: 'createRecord',
         builder: (context, state) => const CreateRecordPage(),
+      ),
+      
+      // 记录详情页
+      GoRoute(
+        path: '/record/detail',
+        name: 'recordDetail',
+        builder: (context, state) {
+          final record = state.extra as EncounterRecord;
+          return RecordDetailPage(record: record);
+        },
       ),
     ],
     
