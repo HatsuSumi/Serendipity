@@ -21,7 +21,12 @@ class AppRouter {
       GoRoute(
         path: '/record/create',
         name: 'createRecord',
-        builder: (context, state) => const CreateRecordPage(),
+        pageBuilder: (context, state) {
+          return MaterialPage(
+            key: state.pageKey,
+            child: const CreateRecordPage(),
+          );
+        },
       ),
       
       // 记录详情页
