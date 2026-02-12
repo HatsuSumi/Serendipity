@@ -17,10 +17,20 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   // 表单控制器
   final _formKey = GlobalKey<FormState>();
   final _placeNameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _conversationStarterController = TextEditingController();
+  final _backgroundMusicController = TextEditingController();
+  final _ifReencounterController = TextEditingController();
   
   // 必填字段
   DateTime _selectedTime = DateTime.now();
   EncounterStatus _selectedStatus = EncounterStatus.missed;
+  
+  // 可选字段
+  PlaceType? _selectedPlaceType;
+  EmotionIntensity? _selectedEmotion;
+  Weather? _selectedWeather;
+  List<TagWithNote> _tags = [];
   
   // 存储服务
   final _storage = StorageService();
@@ -31,6 +41,10 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   @override
   void dispose() {
     _placeNameController.dispose();
+    _descriptionController.dispose();
+    _conversationStarterController.dispose();
+    _backgroundMusicController.dispose();
+    _ifReencounterController.dispose();
     super.dispose();
   }
 
@@ -45,15 +59,38 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
     });
 
     try {
+      // 获取描述（去除首尾空格）
+      final description = _descriptionController.text.trim();
+      
+      // 获取对话契机（仅邂逅状态）
+      final conversationStarter = _selectedStatus == EncounterStatus.met
+          ? _conversationStarterController.text.trim()
+          : null;
+      
+      // 获取背景音乐
+      final backgroundMusic = _backgroundMusicController.text.trim();
+      
+      // 获取"如果再遇"备忘
+      final ifReencounter = _ifReencounterController.text.trim();
+      
       // 创建记录
       final record = EncounterRecord(
         id: const Uuid().v4(),
         timestamp: _selectedTime,
         location: Location(
-          placeName: _placeNameController.text.trim(),
+          placeName: _placeNameController.text.trim().isEmpty 
+              ? null 
+              : _placeNameController.text.trim(),
+          placeType: _selectedPlaceType,
         ),
-        tags: [], // 基础版暂时为空
+        description: description.isEmpty ? null : description,
+        tags: _tags,
+        emotion: _selectedEmotion,
         status: _selectedStatus,
+        conversationStarter: conversationStarter?.isEmpty ?? true ? null : conversationStarter,
+        backgroundMusic: backgroundMusic.isEmpty ? null : backgroundMusic,
+        weather: _selectedWeather,
+        ifReencounter: ifReencounter.isEmpty ? null : ifReencounter,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -154,6 +191,36 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
 
             // 状态选择
             _buildStatusSection(),
+            const SizedBox(height: 24),
+
+            // 描述输入（可选）
+            _buildDescriptionSection(),
+            const SizedBox(height: 24),
+
+            // 特征标签（可选）
+            _buildTagsSection(),
+            const SizedBox(height: 24),
+
+            // 对话契机（仅邂逅状态显示）
+            if (_selectedStatus == EncounterStatus.met) ...[
+              _buildConversationStarterSection(),
+              const SizedBox(height: 24),
+            ],
+
+            // 情绪强度（可选）
+            _buildEmotionSection(),
+            const SizedBox(height: 24),
+
+            // 背景音乐（可选）
+            _buildBackgroundMusicSection(),
+            const SizedBox(height: 24),
+
+            // 天气（可选）
+            _buildWeatherSection(),
+            const SizedBox(height: 24),
+
+            // "如果再遇"备忘（可选）
+            _buildIfReencounterSection(),
             const SizedBox(height: 32),
 
             // 提示文字
@@ -218,6 +285,8 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
           ),
         ),
         const SizedBox(height: 8),
+        
+        // 地点名称输入
         TextFormField(
           controller: _placeNameController,
           decoration: InputDecoration(
@@ -227,15 +296,81 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             ),
             prefixIcon: const Icon(Icons.location_on),
           ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return '请输入地点';
-            }
-            return null;
-          },
         ),
+        const SizedBox(height: 12),
+        
+        // 场所类型选择
+        Text(
+          '场所类型（可选）',
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: PlaceType.values.take(10).map((type) {
+            final isSelected = _selectedPlaceType == type;
+            return FilterChip(
+              label: Text('${type.icon} ${type.label}'),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  _selectedPlaceType = selected ? type : null;
+                });
+              },
+            );
+          }).toList(),
+        ),
+        if (PlaceType.values.length > 10)
+          TextButton(
+            onPressed: () => _showPlaceTypeDialog(),
+            child: const Text('查看全部场所类型 →'),
+          ),
       ],
     );
+  }
+  
+  /// 显示场所类型选择对话框
+  Future<void> _showPlaceTypeDialog() async {
+    final selected = await showDialog<PlaceType>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('选择场所类型'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: PlaceType.values.map((type) {
+              return ListTile(
+                leading: Text(type.icon, style: const TextStyle(fontSize: 24)),
+                title: Text(type.label),
+                selected: _selectedPlaceType == type,
+                onTap: () => Navigator.of(context).pop(type),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('清除'),
+          ),
+        ],
+      ),
+    );
+    
+    if (selected != null || selected == null && _selectedPlaceType != null) {
+      setState(() {
+        _selectedPlaceType = selected;
+      });
+    }
   }
 
   /// 状态选择区域
@@ -328,6 +463,413 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
         '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+  
+  /// 描述输入区域
+  Widget _buildDescriptionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '📝 描述',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _descriptionController,
+          maxLines: 4,
+          maxLength: 500,
+          decoration: InputDecoration(
+            hintText: '记录当时的情景、感受...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// 特征标签区域
+  Widget _buildTagsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '🏷️ 特征标签',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // 已选择的标签
+        if (_tags.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _tags.map((tagWithNote) {
+              return Chip(
+                label: Text(tagWithNote.tag),
+                onDeleted: () {
+                  setState(() {
+                    _tags.remove(tagWithNote);
+                  });
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        // 添加标签按钮
+        OutlinedButton.icon(
+          onPressed: () => _showAddTagDialog(),
+          icon: const Icon(Icons.add),
+          label: const Text('添加标签'),
+        ),
+      ],
+    );
+  }
+  
+  /// 显示添加标签对话框
+  Future<void> _showAddTagDialog() async {
+    final tagController = TextEditingController();
+    final noteController = TextEditingController();
+    
+    final result = await showDialog<TagWithNote>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('添加标签'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: tagController,
+              decoration: const InputDecoration(
+                labelText: '标签名称',
+                hintText: '例如：长发、黑色外套...',
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: noteController,
+              maxLength: 50,
+              decoration: const InputDecoration(
+                labelText: '备注（可选）',
+                hintText: '添加更详细的描述...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final tag = tagController.text.trim();
+              if (tag.isNotEmpty) {
+                final note = noteController.text.trim();
+                Navigator.of(context).pop(
+                  TagWithNote(
+                    tag: tag,
+                    note: note.isEmpty ? null : note,
+                  ),
+                );
+              }
+            },
+            child: const Text('添加'),
+          ),
+        ],
+      ),
+    );
+    
+    if (result != null) {
+      setState(() {
+        _tags.add(result);
+      });
+    }
+  }
+  
+  /// 对话契机区域（仅邂逅状态）
+  Widget _buildConversationStarterSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '💬 对话契机',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _conversationStarterController,
+          maxLines: 4,
+          maxLength: 500,
+          decoration: InputDecoration(
+            hintText: '记录你们是如何开始对话的...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// 情绪强度区域
+  Widget _buildEmotionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '❤️ 情绪强度',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: EmotionIntensity.values.map((emotion) {
+            final isSelected = _selectedEmotion == emotion;
+            return ChoiceChip(
+              label: Text(emotion.label),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  _selectedEmotion = selected ? emotion : null;
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+  
+  /// 背景音乐区域
+  Widget _buildBackgroundMusicSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '🎵 背景音乐',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _backgroundMusicController,
+          decoration: InputDecoration(
+            hintText: '例如：七里香 - 周杰伦',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            prefixIcon: const Icon(Icons.music_note),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// 天气区域
+  Widget _buildWeatherSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '☀️ 天气',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // 显示已选择的天气
+        if (_selectedWeather != null)
+          Card(
+            child: ListTile(
+              leading: Text(_selectedWeather!.icon, style: const TextStyle(fontSize: 24)),
+              title: Text(_selectedWeather!.label),
+              trailing: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    _selectedWeather = null;
+                  });
+                },
+              ),
+            ),
+          )
+        else
+          OutlinedButton.icon(
+            onPressed: () => _showWeatherDialog(),
+            icon: const Icon(Icons.wb_sunny),
+            label: const Text('选择天气'),
+          ),
+      ],
+    );
+  }
+  
+  /// 显示天气选择对话框
+  Future<void> _showWeatherDialog() async {
+    final selected = await showDialog<Weather>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('选择天气'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: Weather.values.map((weather) {
+              return ListTile(
+                leading: Text(weather.icon, style: const TextStyle(fontSize: 24)),
+                title: Text(weather.label),
+                onTap: () => Navigator.of(context).pop(weather),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+    
+    if (selected != null) {
+      setState(() {
+        _selectedWeather = selected;
+      });
+    }
+  }
+  
+  /// "如果再遇"备忘区域
+  Widget _buildIfReencounterSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '💡 如果再遇',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _ifReencounterController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: '下次见面想做什么、想说什么...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
