@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/page_transition_provider.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
+import '../record/record_detail_page.dart';
 
 // 用于传递记录对象的 Provider
 final selectedRecordProvider = StateProvider<EncounterRecord?>((ref) => null);
@@ -84,14 +86,14 @@ class TimelinePage extends ConsumerWidget {
         itemCount: records.length,
         itemBuilder: (context, index) {
           final record = records[index];
-          return _buildRecordCard(context, record);
+          return _buildRecordCard(context, record, ref);
         },
       ),
     );
   }
 
   /// 记录卡片
-  Widget _buildRecordCard(BuildContext context, EncounterRecord record) {
+  Widget _buildRecordCard(BuildContext context, EncounterRecord record, WidgetRef ref) {
     final statusColor = _getStatusColor(record.status);
     
     return Card(
@@ -106,8 +108,24 @@ class TimelinePage extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () {
-          // 使用 go_router 的 extra 参数传递记录对象
-          context.push('/record/detail', extra: record);
+          // 读取用户设置的动画类型
+          final transitionType = ref.read(pageTransitionProvider);
+          
+          // 使用 Navigator.push 以便传递动画类型
+          Navigator.of(context).push(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) {
+                return RecordDetailPage(record: record);
+              },
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return _buildTransition(
+                  transitionType,
+                  animation,
+                  child,
+                );
+              },
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -241,5 +259,58 @@ class TimelinePage extends ConsumerWidget {
     } else {
       return '${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
     }
+  }
+  
+  /// 根据动画类型构建过渡动画
+  Widget _buildTransition(
+    PageTransitionType type,
+    Animation<double> animation,
+    Widget child,
+  ) {
+    switch (type) {
+      case PageTransitionType.slideFromRight:
+        return _slideTransition(animation, child, const Offset(1.0, 0.0));
+      case PageTransitionType.slideFromBottom:
+        return _slideTransition(animation, child, const Offset(0.0, 1.0));
+      case PageTransitionType.slideFromLeft:
+        return _slideTransition(animation, child, const Offset(-1.0, 0.0));
+      case PageTransitionType.slideFromTop:
+        return _slideTransition(animation, child, const Offset(0.0, -1.0));
+      case PageTransitionType.fade:
+        return FadeTransition(opacity: animation, child: child);
+      case PageTransitionType.scale:
+        return ScaleTransition(
+          scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          ),
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      case PageTransitionType.rotation:
+        return RotationTransition(
+          turns: Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          ),
+          child: FadeTransition(opacity: animation, child: child),
+        );
+    }
+  }
+  
+  /// 滑动过渡动画
+  Widget _slideTransition(
+    Animation<double> animation,
+    Widget child,
+    Offset begin,
+  ) {
+    const end = Offset.zero;
+    const curve = Curves.easeInOut;
+    
+    var tween = Tween(begin: begin, end: end).chain(
+      CurveTween(curve: curve),
+    );
+    
+    return SlideTransition(
+      position: animation.drive(tween),
+      child: child,
+    );
   }
 }

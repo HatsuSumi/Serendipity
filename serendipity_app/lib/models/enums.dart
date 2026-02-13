@@ -398,3 +398,28 @@ enum CreditChangeReason {
   const CreditChangeReason(this.value, this.label);
 }
 
+/// 页面切换动画类型
+@HiveType(typeId: 24)
+enum PageTransitionType {
+  @HiveField(0)
+  slideFromRight('slide_from_right', '从右滑入', '⬅️'),
+  @HiveField(1)
+  slideFromBottom('slide_from_bottom', '从底部滑入', '⬆️'),
+  @HiveField(2)
+  slideFromLeft('slide_from_left', '从左滑入', '➡️'),
+  @HiveField(3)
+  slideFromTop('slide_from_top', '从顶部滑入', '⬇️'),
+  @HiveField(4)
+  fade('fade', '淡入淡出', '✨'),
+  @HiveField(5)
+  scale('scale', '缩放', '🔍'),
+  @HiveField(6)
+  rotation('rotation', '旋转', '🔄');
+
+  final String value;
+  final String label;
+  final String icon;
+  
+  const PageTransitionType(this.value, this.label, this.icon);
+}
+

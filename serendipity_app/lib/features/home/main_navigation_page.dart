@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
 import '../timeline/timeline_page.dart';
+import '../settings/settings_page.dart';
 
 class MainNavigationPage extends ConsumerStatefulWidget {
   const MainNavigationPage({super.key});
@@ -23,7 +24,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
           TimelinePage(), // TA（时间轴）
           Center(child: Text('地图')), // TODO: 地图页面
           Center(child: Text('树洞')), // TODO: 社区页面
-          Center(child: Text('我的')), // TODO: 个人页面
+          SettingsPage(), // 设置页面（临时演示）
         ],
       ),
       bottomNavigationBar: NavigationBar(
