@@ -30,9 +30,18 @@ enum PlaceSortType {
   const PlaceSortType(this.label);
 }
 
-/// 创建记录页面（基础版）
+/// 创建/编辑记录页面
 class CreateRecordPage extends StatefulWidget {
-  const CreateRecordPage({super.key});
+  /// 要编辑的记录（如果为null则是创建模式）
+  final EncounterRecord? recordToEdit;
+  
+  const CreateRecordPage({
+    super.key,
+    this.recordToEdit,
+  });
+  
+  /// 是否为编辑模式
+  bool get isEditMode => recordToEdit != null;
 
   @override
   State<CreateRecordPage> createState() => _CreateRecordPageState();
@@ -82,6 +91,45 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   void initState() {
     super.initState();
     _loadPlaceHistory();
+    _initializeFormData();
+  }
+  
+  /// 初始化表单数据（编辑模式下预填充）
+  void _initializeFormData() {
+    if (widget.recordToEdit != null) {
+      final record = widget.recordToEdit!;
+      
+      // 预填充必填字段
+      _selectedTime = record.timestamp;
+      _selectedStatus = record.status;
+      
+      // 预填充地点信息
+      if (record.location.placeName != null) {
+        _placeNameController.text = record.location.placeName!;
+      }
+      _selectedPlaceType = record.location.placeType;
+      
+      // 预填充可选字段
+      if (record.description != null) {
+        _descriptionController.text = record.description!;
+      }
+      
+      if (record.conversationStarter != null) {
+        _conversationStarterController.text = record.conversationStarter!;
+      }
+      
+      if (record.backgroundMusic != null) {
+        _backgroundMusicController.text = record.backgroundMusic!;
+      }
+      
+      if (record.ifReencounter != null) {
+        _ifReencounterController.text = record.ifReencounter!;
+      }
+      
+      _tags = List.from(record.tags);
+      _selectedEmotion = record.emotion;
+      _selectedWeather = List.from(record.weather);
+    }
   }
 
   @override
@@ -119,11 +167,17 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
       // 获取"如果再遇"备忘
       final ifReencounter = _ifReencounterController.text.trim();
       
-      // 创建记录
+      final now = DateTime.now();
+      
+      // 创建或更新记录
       final record = EncounterRecord(
-        id: const Uuid().v4(),
+        id: widget.recordToEdit?.id ?? const Uuid().v4(),
         timestamp: _selectedTime,
         location: Location(
+          // 编辑模式下保留原有的GPS坐标
+          latitude: widget.recordToEdit?.location.latitude,
+          longitude: widget.recordToEdit?.location.longitude,
+          address: widget.recordToEdit?.location.address,
           placeName: _placeNameController.text.trim().isEmpty 
               ? null 
               : _placeNameController.text.trim(),
@@ -133,27 +187,38 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         tags: _tags,
         emotion: _selectedEmotion,
         status: _selectedStatus,
+        storyLineId: widget.recordToEdit?.storyLineId, // 保留故事线关联
         conversationStarter: conversationStarter?.isEmpty ?? true ? null : conversationStarter,
         backgroundMusic: backgroundMusic.isEmpty ? null : backgroundMusic,
         weather: _selectedWeather,
         ifReencounter: ifReencounter.isEmpty ? null : ifReencounter,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: widget.recordToEdit?.createdAt ?? now,
+        updatedAt: now,
       );
 
       // 保存到本地
-      await _storage.saveRecord(record);
+      if (widget.isEditMode) {
+        await _storage.updateRecord(record);
+      } else {
+        await _storage.saveRecord(record);
+      }
 
       if (mounted) {
         // 显示成功提示
-        MessageHelper.showSuccess(context, '记录已保存');
+        MessageHelper.showSuccess(
+          context, 
+          widget.isEditMode ? '记录已更新' : '记录已保存',
+        );
 
-        // 返回上一页
-        Navigator.of(context).pop(true);
+        // 返回上一页，并传递更新后的记录
+        Navigator.of(context).pop(record);
       }
     } catch (e) {
       if (mounted) {
-        MessageHelper.showError(context, '保存失败：$e');
+        MessageHelper.showError(
+          context, 
+          '${widget.isEditMode ? "更新" : "保存"}失败：$e',
+        );
       }
     } finally {
       if (mounted) {
@@ -233,7 +298,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('创建记录'),
+        title: Text(widget.isEditMode ? '编辑记录' : '创建记录'),
         actions: [
           if (_isSaving)
             const Center(

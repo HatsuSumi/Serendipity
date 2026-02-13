@@ -5,9 +5,11 @@ import '../../models/enums.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/theme/status_color_extension.dart';
+import '../../core/providers/records_provider.dart';
+import 'create_record_page.dart';
 
 /// 记录详情页面
-class RecordDetailPage extends ConsumerWidget {
+class RecordDetailPage extends ConsumerStatefulWidget {
   final EncounterRecord record;
 
   const RecordDetailPage({
@@ -16,9 +18,41 @@ class RecordDetailPage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecordDetailPage> createState() => _RecordDetailPageState();
+}
+
+class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
+  late EncounterRecord _currentRecord;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentRecord = widget.record;
+  }
+
+  /// 导航到编辑页面
+  Future<void> _navigateToEditPage(BuildContext context, WidgetRef ref) async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CreateRecordPage(recordToEdit: _currentRecord),
+      ),
+    );
+
+    // 如果返回了更新后的记录，刷新页面
+    if (result != null && result is EncounterRecord) {
+      setState(() {
+        _currentRecord = result;
+      });
+      
+      // 刷新记录列表
+      ref.read(recordsProvider.notifier).refresh();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // 使用主题自适应的状态颜色
-    final statusColor = record.status.getColor(context, ref);
+    final statusColor = _currentRecord.status.getColor(context, ref);
 
     return Scaffold(
       appBar: AppBar(
@@ -27,10 +61,7 @@ class RecordDetailPage extends ConsumerWidget {
           // 编辑按钮
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              // TODO: 跳转到编辑页面
-              MessageHelper.showInfo(context, '编辑功能待开发');
-            },
+            onPressed: () => _navigateToEditPage(context, ref),
             tooltip: '编辑',
           ),
           // 更多操作菜单
@@ -114,14 +145,14 @@ class RecordDetailPage extends ConsumerWidget {
         children: [
           // 状态图标
           Text(
-            record.status.icon,
+            _currentRecord.status.icon,
             style: const TextStyle(fontSize: 64),
           ),
           const SizedBox(height: 12),
           
           // 状态名称
           Text(
-            record.status.label,
+            _currentRecord.status.label,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -132,7 +163,7 @@ class RecordDetailPage extends ConsumerWidget {
           
           // 时间
           Text(
-            _formatDateTime(record.timestamp),
+            _formatDateTime(_currentRecord.timestamp),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -150,15 +181,15 @@ class RecordDetailPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 对话契机（仅邂逅状态且有内容）
-          if (record.status == EncounterStatus.met &&
-              record.conversationStarter != null &&
-              record.conversationStarter!.isNotEmpty)
+          if (_currentRecord.status == EncounterStatus.met &&
+              _currentRecord.conversationStarter != null &&
+              _currentRecord.conversationStarter!.isNotEmpty)
             _buildInfoCard(
               context,
               icon: Icons.chat_bubble_outline,
               title: '对话契机',
               child: Text(
-                record.conversationStarter!,
+                _currentRecord.conversationStarter!,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ),
@@ -172,19 +203,19 @@ class RecordDetailPage extends ConsumerWidget {
           ),
           
           // 描述（如果有）
-          if (record.description != null && record.description!.isNotEmpty)
+          if (_currentRecord.description != null && _currentRecord.description!.isNotEmpty)
             _buildInfoCard(
               context,
               icon: Icons.description_outlined,
               title: '描述',
               child: Text(
-                record.description!,
+                _currentRecord.description!,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ),
           
           // 标签（如果有）
-          if (record.tags.isNotEmpty)
+          if (_currentRecord.tags.isNotEmpty)
             _buildInfoCard(
               context,
               icon: Icons.label_outlined,
@@ -193,7 +224,7 @@ class RecordDetailPage extends ConsumerWidget {
             ),
           
           // 情绪强度（如果有）
-          if (record.emotion != null)
+          if (_currentRecord.emotion != null)
             _buildInfoCard(
               context,
               icon: Icons.favorite_outline,
@@ -202,7 +233,7 @@ class RecordDetailPage extends ConsumerWidget {
                 children: [
                   ...List.generate(5, (index) {
                     return Icon(
-                      index < record.emotion!.value
+                      index < _currentRecord.emotion!.value
                           ? Icons.favorite
                           : Icons.favorite_border,
                       color: Colors.red,
@@ -211,7 +242,7 @@ class RecordDetailPage extends ConsumerWidget {
                   }),
                   const SizedBox(width: 12),
                   Text(
-                    record.emotion!.label,
+                    _currentRecord.emotion!.label,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ],
@@ -219,19 +250,19 @@ class RecordDetailPage extends ConsumerWidget {
             ),
           
           // 背景音乐（如果有）
-          if (record.backgroundMusic != null && record.backgroundMusic!.isNotEmpty)
+          if (_currentRecord.backgroundMusic != null && _currentRecord.backgroundMusic!.isNotEmpty)
             _buildInfoCard(
               context,
               icon: Icons.music_note_outlined,
               title: '背景音乐',
               child: Text(
-                record.backgroundMusic!,
+                _currentRecord.backgroundMusic!,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ),
           
           // 天气（如果有）
-          if (record.weather.isNotEmpty)
+          if (_currentRecord.weather.isNotEmpty)
             _buildInfoCard(
               context,
               icon: Icons.wb_sunny_outlined,
@@ -239,7 +270,7 @@ class RecordDetailPage extends ConsumerWidget {
               child: Wrap(
                 spacing: 12,
                 runSpacing: 8,
-                children: record.weather.map((weather) {
+                children: _currentRecord.weather.map((weather) {
                   return Chip(
                     avatar: Text(weather.icon),
                     label: Text(weather.label),
@@ -249,19 +280,19 @@ class RecordDetailPage extends ConsumerWidget {
             ),
           
           // "如果再遇"备忘（如果有）
-          if (record.ifReencounter != null && record.ifReencounter!.isNotEmpty)
+          if (_currentRecord.ifReencounter != null && _currentRecord.ifReencounter!.isNotEmpty)
             _buildInfoCard(
               context,
               icon: Icons.lightbulb_outline,
               title: '如果再遇',
               child: Text(
-                record.ifReencounter!,
+                _currentRecord.ifReencounter!,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ),
           
           // 故事线信息（如果有）
-          if (record.storyLineId != null)
+          if (_currentRecord.storyLineId != null)
             _buildInfoCard(
               context,
               icon: Icons.auto_stories_outlined,
@@ -270,7 +301,7 @@ class RecordDetailPage extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      record.storyLineId!,
+                      _currentRecord.storyLineId!,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -336,19 +367,19 @@ class RecordDetailPage extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 地点名称 + 场所类型
-        if (record.location.placeName != null || record.location.placeType != null)
+        if (_currentRecord.location.placeName != null || _currentRecord.location.placeType != null)
           Row(
             children: [
-              if (record.location.placeType != null) ...[
+              if (_currentRecord.location.placeType != null) ...[
                 Text(
-                  record.location.placeType!.icon,
+                  _currentRecord.location.placeType!.icon,
                   style: const TextStyle(fontSize: 20),
                 ),
                 const SizedBox(width: 8),
               ],
               Expanded(
                 child: Text(
-                  record.location.placeName ?? record.location.placeType?.label ?? '',
+                  _currentRecord.location.placeName ?? _currentRecord.location.placeType?.label ?? '',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -358,11 +389,11 @@ class RecordDetailPage extends ConsumerWidget {
           ),
         
         // 地址
-        if (record.location.address != null) ...[
-          if (record.location.placeName != null || record.location.placeType != null)
+        if (_currentRecord.location.address != null) ...[
+          if (_currentRecord.location.placeName != null || _currentRecord.location.placeType != null)
             const SizedBox(height: 8),
           Text(
-            record.location.address!,
+            _currentRecord.location.address!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -370,10 +401,10 @@ class RecordDetailPage extends ConsumerWidget {
         ],
         
         // GPS 坐标
-        if (record.location.latitude != null && record.location.longitude != null) ...[
+        if (_currentRecord.location.latitude != null && _currentRecord.location.longitude != null) ...[
           const SizedBox(height: 8),
           Text(
-            '${record.location.latitude!.toStringAsFixed(6)}, ${record.location.longitude!.toStringAsFixed(6)}',
+            '${_currentRecord.location.latitude!.toStringAsFixed(6)}, ${_currentRecord.location.longitude!.toStringAsFixed(6)}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontFamily: 'monospace',
@@ -382,9 +413,9 @@ class RecordDetailPage extends ConsumerWidget {
         ],
         
         // 如果什么都没有
-        if (record.location.placeName == null &&
-            record.location.placeType == null &&
-            record.location.address == null)
+        if (_currentRecord.location.placeName == null &&
+            _currentRecord.location.placeType == null &&
+            _currentRecord.location.address == null)
           Text(
             '未知地点',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -399,7 +430,7 @@ class RecordDetailPage extends ConsumerWidget {
   Widget _buildTagsInfo(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: record.tags.map((tagWithNote) {
+      children: _currentRecord.tags.map((tagWithNote) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Column(
@@ -466,17 +497,17 @@ class RecordDetailPage extends ConsumerWidget {
             _buildMetadataRow(
               context,
               label: '记录ID',
-              value: record.id,
+              value: _currentRecord.id,
             ),
             _buildMetadataRow(
               context,
               label: '创建时间',
-              value: _formatDateTime(record.createdAt),
+              value: _formatDateTime(_currentRecord.createdAt),
             ),
             _buildMetadataRow(
               context,
               label: '更新时间',
-              value: _formatDateTime(record.updatedAt),
+              value: _formatDateTime(_currentRecord.updatedAt),
             ),
           ],
         ),

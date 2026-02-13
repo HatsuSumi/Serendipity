@@ -21,7 +21,10 @@ class AppRouter {
       GoRoute(
         path: '/record/create',
         name: 'createRecord',
-        builder: (context, state) => const CreateRecordPage(),
+        builder: (context, state) {
+          final recordToEdit = state.extra as EncounterRecord?;
+          return CreateRecordPage(recordToEdit: recordToEdit);
+        },
       ),
       
       // 记录详情页
