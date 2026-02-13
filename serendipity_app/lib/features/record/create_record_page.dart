@@ -155,6 +155,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     });
 
     try {
+      // 在异步操作前获取 notifier
+      final recordsNotifier = ref.read(recordsProvider.notifier);
+      
       // 获取描述（去除首尾空格）
       final description = _descriptionController.text.trim();
       
@@ -200,9 +203,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
 
       // 通过 provider 保存（会自动刷新列表）
       if (widget.isEditMode) {
-        await ref.read(recordsProvider.notifier).updateRecord(record);
+        await recordsNotifier.updateRecord(record);
       } else {
-        await ref.read(recordsProvider.notifier).addRecord(record);
+        await recordsNotifier.addRecord(record);
       }
 
       if (mounted) {
