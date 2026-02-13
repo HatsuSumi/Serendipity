@@ -32,6 +32,18 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   List<Weather> _selectedWeather = [];
   List<TagWithNote> _tags = [];
   
+  // 正在删除的标签（使用标签名而不是索引）
+  final Set<String> _removingTagNames = {};
+  
+  // 正在添加的标签（用于添加动画）
+  final Set<String> _addingTagNames = {};
+  
+  // 正在删除的天气（使用天气值而不是索引）
+  final Set<int> _removingWeatherValues = {};
+  
+  // 正在添加的天气（用于添加动画）
+  final Set<int> _addingWeatherValues = {};
+  
   // 存储服务
   final _storage = StorageService();
   
@@ -216,11 +228,40 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             _buildStatusSection(),
             const SizedBox(height: 24),
 
-            // 对话契机（仅邂逅状态显示）
-            if (_selectedStatus == EncounterStatus.met) ...[
-              _buildConversationStarterSection(),
-              const SizedBox(height: 24),
-            ],
+            // 对话契机（仅邂逅状态显示，带动画）
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, -0.1),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOut,
+                      )),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _selectedStatus == EncounterStatus.met
+                    ? Column(
+                        key: const ValueKey('conversation_starter'),
+                        children: [
+                          _buildConversationStarterSection(),
+                          const SizedBox(height: 24),
+                        ],
+                      )
+                    : const SizedBox.shrink(
+                        key: ValueKey('empty'),
+                      ),
+              ),
+            ),
 
             // 描述输入（可选）
             _buildDescriptionSection(),
@@ -566,13 +607,27 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             spacing: 8,
             runSpacing: 8,
             children: _tags.map((tagWithNote) {
-              return Chip(
-                label: Text(tagWithNote.tag),
-                onDeleted: () {
-                  setState(() {
-                    _tags.remove(tagWithNote);
-                  });
-                },
+              final isRemoving = _removingTagNames.contains(tagWithNote.tag);
+              final isAdding = _addingTagNames.contains(tagWithNote.tag);
+              
+              // 添加时从0到1，删除时从1到0，正常时保持1
+              final scale = (isAdding || isRemoving) ? 0.0 : 1.0;
+              final opacity = (isAdding || isRemoving) ? 0.0 : 1.0;
+              
+              return AnimatedScale(
+                key: ValueKey('scale_${tagWithNote.tag}'),
+                scale: scale,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: AnimatedOpacity(
+                  opacity: opacity,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: Chip(
+                    label: Text(tagWithNote.tag),
+                    onDeleted: () => _removeTagWithAnimation(tagWithNote),
+                  ),
+                ),
               );
             }).toList(),
           ),
@@ -587,6 +642,44 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         ),
       ],
     );
+  }
+  
+  /// 删除标签（带动画）
+  void _removeTagWithAnimation(TagWithNote tagWithNote) async {
+    // 标记为删除中，触发动画
+    setState(() {
+      _removingTagNames.add(tagWithNote.tag);
+    });
+    
+    // 等待动画完成
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // 从列表中移除
+    if (mounted) {
+      setState(() {
+        _tags.remove(tagWithNote);
+        _removingTagNames.remove(tagWithNote.tag); // 删除完成后清除标记
+      });
+    }
+  }
+  
+  /// 删除天气（带动画）
+  void _removeWeatherWithAnimation(Weather weather) async {
+    // 标记为删除中，触发动画
+    setState(() {
+      _removingWeatherValues.add(weather.value);
+    });
+    
+    // 等待动画完成
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // 从列表中移除
+    if (mounted) {
+      setState(() {
+        _selectedWeather.remove(weather);
+        _removingWeatherValues.remove(weather.value); // 删除完成后清除标记
+      });
+    }
   }
   
   /// 显示添加标签对话框
@@ -629,6 +722,13 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             onPressed: () {
               final tag = tagController.text.trim();
               if (tag.isNotEmpty) {
+                // 检查是否已存在同名标签
+                final isDuplicate = _tags.any((t) => t.tag == tag);
+                if (isDuplicate) {
+                  MessageHelper.showWarning(context, '该标签已存在');
+                  return;
+                }
+                
                 final note = noteController.text.trim();
                 Navigator.of(context).pop(
                   TagWithNote(
@@ -645,9 +745,19 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
     );
     
     if (result != null) {
+      // 先标记为添加中
       setState(() {
+        _addingTagNames.add(result.tag);
         _tags.add(result);
       });
+      
+      // 等待一帧后触发动画
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (mounted) {
+        setState(() {
+          _addingTagNames.remove(result.tag);
+        });
+      }
     }
   }
   
@@ -801,24 +911,40 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         ),
         const SizedBox(height: 8),
         
-        // 已选择的天气
+        // 已选择的天气（带添加/删除动画）
         if (_selectedWeather.isNotEmpty) ...[
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _selectedWeather.map((weather) {
-              return Chip(
-                avatar: Text(weather.icon),
-                label: Text(weather.label),
-                onDeleted: () {
-                  setState(() {
-                    _selectedWeather.remove(weather);
-                  });
-                },
-              );
-            }).toList(),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _selectedWeather.map((weather) {
+                final isRemoving = _removingWeatherValues.contains(weather.value);
+                final isAdding = _addingWeatherValues.contains(weather.value);
+                
+                // 添加时从0到1，删除时从1到0，正常时保持1
+                final scale = (isAdding || isRemoving) ? 0.0 : 1.0;
+                final opacity = (isAdding || isRemoving) ? 0.0 : 1.0;
+                
+                return AnimatedScale(
+                  key: ValueKey('scale_${weather.value}'),
+                  scale: scale,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: AnimatedOpacity(
+                    opacity: opacity,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: Chip(
+                      avatar: Text(weather.icon),
+                      label: Text(weather.label),
+                      onDeleted: () => _removeWeatherWithAnimation(weather),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-          const SizedBox(height: 12),
         ],
         
         // 按分类显示天气选项
@@ -879,9 +1005,11 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
                           ],
                         ),
                         selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected) {
+                        onSelected: (selected) async {
+                          if (selected) {
+                            // 标记为正在添加
+                            setState(() {
+                              _addingWeatherValues.add(weather.value);
                               // 天空状况只能选一个（互斥）
                               if (category == WeatherCategory.sky) {
                                 _selectedWeather.removeWhere(
@@ -895,10 +1023,18 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
                                 );
                               }
                               _selectedWeather.add(weather);
-                            } else {
-                              _selectedWeather.remove(weather);
+                            });
+                            
+                            // 等待一帧后触发动画
+                            await Future.delayed(const Duration(milliseconds: 50));
+                            if (mounted) {
+                              setState(() {
+                                _addingWeatherValues.remove(weather.value);
+                              });
                             }
-                          });
+                          } else {
+                            _removeWeatherWithAnimation(weather);
+                          }
                         },
                       );
                     }).toList(),

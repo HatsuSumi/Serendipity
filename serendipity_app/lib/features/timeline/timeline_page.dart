@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
+import '../../core/utils/message_helper.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
@@ -299,21 +300,11 @@ class TimelinePage extends ConsumerWidget {
                 ref.refresh(recordsProvider);
                 
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ 已清空所有记录'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  MessageHelper.showSuccess(context, '已清空所有记录');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('❌ 清空失败：$e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  MessageHelper.showError(context, '清空失败：$e');
                 }
               }
             },

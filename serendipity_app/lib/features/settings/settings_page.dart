@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/page_transition_provider.dart';
+import '../../core/utils/message_helper.dart';
 import '../../models/enums.dart';
 
 /// 设置页面（演示版）
@@ -41,12 +42,7 @@ class SettingsPage extends ConsumerWidget {
               selected: isSelected,
               onTap: () {
                 ref.read(pageTransitionProvider.notifier).state = type;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('已切换到：${type.label}'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
+                MessageHelper.showSuccess(context, '已切换到：${type.label}');
               },
             );
           }).toList(),
