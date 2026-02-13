@@ -74,9 +74,24 @@ class AppRouter {
               ),
             );
           }
-          return MaterialPage(
+          return CustomTransitionPage(
             key: state.pageKey,
             child: RecordDetailPage(record: record),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              // 从右向左滑入动画（类似 iOS 风格）
+              const begin = Offset(1.0, 0.0);
+              const end = Offset.zero;
+              const curve = Curves.easeInOut;
+              
+              var tween = Tween(begin: begin, end: end).chain(
+                CurveTween(curve: curve),
+              );
+              
+              return SlideTransition(
+                position: animation.drive(tween),
+                child: child,
+              );
+            },
           );
         },
       ),
