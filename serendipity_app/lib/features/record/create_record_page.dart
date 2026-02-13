@@ -29,7 +29,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   // 可选字段
   PlaceType? _selectedPlaceType;
   EmotionIntensity? _selectedEmotion;
-  Weather? _selectedWeather;
+  List<Weather> _selectedWeather = [];
   List<TagWithNote> _tags = [];
   
   // 存储服务
@@ -37,6 +37,15 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   
   // 是否正在保存
   bool _isSaving = false;
+  
+  // 地点历史记录
+  List<String> _placeHistory = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlaceHistory();
+  }
 
   @override
   void dispose() {
@@ -116,6 +125,20 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         });
       }
     }
+  }
+
+  /// 加载地点历史记录
+  void _loadPlaceHistory() {
+    final records = _storage.getAllRecords();
+    final places = records
+        .where((r) => r.location.placeName != null && r.location.placeName!.isNotEmpty)
+        .map((r) => r.location.placeName!)
+        .toSet() // 去重
+        .toList();
+    
+    setState(() {
+      _placeHistory = places;
+    });
   }
 
   /// 选择时间
@@ -221,10 +244,6 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
 
             // "如果再遇"备忘（可选）
             _buildIfReencounterSection(),
-            const SizedBox(height: 32),
-
-            // 提示文字
-            _buildHintText(),
           ],
         ),
       ),
@@ -246,6 +265,8 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         const SizedBox(height: 8),
         InkWell(
           onTap: _selectTime,
+          hoverDuration: const Duration(milliseconds: 300),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -286,16 +307,67 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         ),
         const SizedBox(height: 8),
         
-        // 地点名称输入
-        TextFormField(
-          controller: _placeNameController,
-          decoration: InputDecoration(
-            hintText: '例如：地铁10号线、星巴克...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            prefixIcon: const Icon(Icons.location_on),
-          ),
+        // 地点名称输入（带历史记录）
+        Autocomplete<String>(
+          optionsBuilder: (TextEditingValue textEditingValue) {
+            if (textEditingValue.text.isEmpty) {
+              return _placeHistory;
+            }
+            return _placeHistory.where((String option) {
+              return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+            });
+          },
+          onSelected: (String selection) {
+            _placeNameController.text = selection;
+          },
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            // 同步控制器
+            _placeNameController.text = controller.text;
+            controller.addListener(() {
+              _placeNameController.text = controller.text;
+            });
+            
+            return TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                hintText: '例如：地铁10号线、星巴克...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                prefixIcon: const Icon(Icons.location_on),
+                suffixIcon: _placeHistory.isNotEmpty
+                    ? const Icon(Icons.arrow_drop_down, size: 24)
+                    : null,
+              ),
+              onFieldSubmitted: (value) => onFieldSubmitted(),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return ListTile(
+                        leading: const Icon(Icons.history, size: 20),
+                        title: Text(option),
+                        onTap: () => onSelected(option),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 12),
         
@@ -413,49 +485,6 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
           ),
         ),
       ],
-    );
-  }
-
-  /// 提示文字
-  Widget _buildHintText() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark 
-            ? theme.colorScheme.surfaceContainerHighest
-            : theme.colorScheme.primaryContainer.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '💡 如何记录？',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '每次见面 = 一条新记录\n\n'
-            '例如：\n'
-            '• 今天在地铁看到 TA → 创建记录，选择"错过"\n'
-            '• 明天又看到 TA → 创建新记录，选择"再遇"\n'
-            '• 后天终于说话了 → 创建新记录，选择"邂逅"\n\n'
-            '然后通过"故事线"功能把这些记录关联起来',
-            style: TextStyle(
-              fontSize: 13,
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -735,7 +764,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         TextFormField(
           controller: _backgroundMusicController,
           decoration: InputDecoration(
-            hintText: '歌名 - 歌手',
+            hintText: '记录当时在听的歌曲，格式：歌名 - 歌手',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -762,7 +791,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             ),
             const SizedBox(width: 8),
             Text(
-              '（可选）',
+              '（可选，支持多选）',
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -772,65 +801,118 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         ),
         const SizedBox(height: 8),
         
-        // 显示已选择的天气
-        if (_selectedWeather != null)
-          Card(
-            child: ListTile(
-              leading: Text(_selectedWeather!.icon, style: const TextStyle(fontSize: 24)),
-              title: Text(_selectedWeather!.label),
-              trailing: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
+        // 已选择的天气
+        if (_selectedWeather.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _selectedWeather.map((weather) {
+              return Chip(
+                avatar: Text(weather.icon),
+                label: Text(weather.label),
+                onDeleted: () {
                   setState(() {
-                    _selectedWeather = null;
+                    _selectedWeather.remove(weather);
                   });
                 },
-              ),
-            ),
-          )
-        else
-          OutlinedButton.icon(
-            onPressed: () => _showWeatherDialog(),
-            icon: const Icon(Icons.wb_sunny),
-            label: const Text('选择天气'),
+              );
+            }).toList(),
           ),
-      ],
-    );
-  }
-  
-  /// 显示天气选择对话框
-  Future<void> _showWeatherDialog() async {
-    final selected = await showDialog<Weather>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择天气'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: Weather.values.map((weather) {
-              return ListTile(
-                leading: Text(weather.icon, style: const TextStyle(fontSize: 24)),
-                title: Text(weather.label),
-                onTap: () => Navigator.of(context).pop(weather),
+          const SizedBox(height: 12),
+        ],
+        
+        // 按分类显示天气选项
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: WeatherCategory.values.map((category) {
+              final weathersInCategory = Weather.values
+                  .where((w) => w.category == category)
+                  .toList();
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 分类标题
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8, top: 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          category.icon,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          category.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // 该分类下的天气选项
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: weathersInCategory.map((weather) {
+                      final isSelected = _selectedWeather.contains(weather);
+                      
+                      return FilterChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(weather.icon),
+                            const SizedBox(width: 4),
+                            Text(weather.label),
+                          ],
+                        ),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              // 天空状况只能选一个（互斥）
+                              if (category == WeatherCategory.sky) {
+                                _selectedWeather.removeWhere(
+                                  (w) => w.category == WeatherCategory.sky,
+                                );
+                              }
+                              // 风力只能选一个（互斥）
+                              if (category == WeatherCategory.wind) {
+                                _selectedWeather.removeWhere(
+                                  (w) => w.category == WeatherCategory.wind,
+                                );
+                              }
+                              _selectedWeather.add(weather);
+                            } else {
+                              _selectedWeather.remove(weather);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  
+                  if (category != WeatherCategory.values.last)
+                    const Divider(height: 16),
+                ],
               );
             }).toList(),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-        ],
-      ),
+      ],
     );
-    
-    if (selected != null) {
-      setState(() {
-        _selectedWeather = selected;
-      });
-    }
   }
   
   /// "如果再遇"备忘区域

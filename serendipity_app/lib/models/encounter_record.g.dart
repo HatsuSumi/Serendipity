@@ -111,7 +111,7 @@ class EncounterRecordAdapter extends TypeAdapter<EncounterRecord> {
       ifReencounter: fields[8] as String?,
       conversationStarter: fields[9] as String?,
       backgroundMusic: fields[10] as String?,
-      weather: fields[11] as Weather?,
+      weather: fields[11] != null ? (fields[11] as List).cast<Weather>() : [],
       createdAt: fields[12] as DateTime,
       updatedAt: fields[13] as DateTime,
     );

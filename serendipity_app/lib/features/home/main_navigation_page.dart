@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
 import '../timeline/timeline_page.dart';
 import '../settings/settings_page.dart';
+import '../record/create_record_page.dart';
 
 class MainNavigationPage extends ConsumerStatefulWidget {
   const MainNavigationPage({super.key});
@@ -60,8 +61,33 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton.extended(
               onPressed: () async {
-                // 跳转到创建记录页面，等待返回
-                final result = await context.push('/record/create');
+                // 使用 Navigator.push 以便自定义动画
+                final result = await Navigator.of(context).push<bool>(
+                  PageRouteBuilder(
+                    opaque: false, // 允许透过新页面看到底层
+                    barrierColor: Colors.black54, // 添加半透明遮罩
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      return const CreateRecordPage();
+                    },
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      // 从底部滑入动画
+                      const begin = Offset(0.0, 1.0);
+                      const end = Offset.zero;
+                      const curve = Curves.easeInOutCubic;
+                      
+                      var slideTween = Tween(begin: begin, end: end).chain(
+                        CurveTween(curve: curve),
+                      );
+                      
+                      return SlideTransition(
+                        position: animation.drive(slideTween),
+                        child: child,
+                      );
+                    },
+                    transitionDuration: const Duration(milliseconds: 400),
+                    reverseTransitionDuration: const Duration(milliseconds: 400),
+                  ),
+                );
                 
                 // 如果创建成功，刷新记录列表
                 if (result == true && mounted) {

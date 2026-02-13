@@ -71,10 +71,16 @@ class MyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         // 响应式设计：Web端限制最大宽度为600px
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: child,
+        // 使用 MediaQuery 包裹，避免干扰页面过渡动画
+        return MediaQuery(
+          data: MediaQuery.of(context),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: ClipRect(
+                child: child ?? const SizedBox.shrink(),
+              ),
+            ),
           ),
         );
       },

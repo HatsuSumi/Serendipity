@@ -140,73 +140,88 @@ enum PlaceType {
 enum Weather {
   // 天空状况
   @HiveField(0)
-  sunny(1, '晴天', '☀️'),
+  sunny(1, '晴天', '☀️', WeatherCategory.sky),
   @HiveField(1)
-  cloudy(2, '多云', '⛅'),
+  cloudy(2, '多云', '⛅', WeatherCategory.sky),
   @HiveField(2)
-  overcast(3, '阴天', '☁️'),
+  overcast(3, '阴天', '☁️', WeatherCategory.sky),
   
   // 降水类 - 雨
   @HiveField(3)
-  drizzle(4, '毛毛雨', '🌦️'),
+  drizzle(4, '毛毛雨', '🌦️', WeatherCategory.precipitation),
   @HiveField(4)
-  lightRain(5, '小雨', '🌦️'),
+  lightRain(5, '小雨', '🌦️', WeatherCategory.precipitation),
   @HiveField(5)
-  moderateRain(6, '中雨', '🌧️'),
+  moderateRain(6, '中雨', '🌧️', WeatherCategory.precipitation),
   @HiveField(6)
-  heavyRain(7, '大雨', '🌧️'),
+  heavyRain(7, '大雨', '🌧️', WeatherCategory.precipitation),
   @HiveField(7)
-  rainstorm(8, '暴雨', '⛈️'),
+  rainstorm(8, '暴雨', '⛈️', WeatherCategory.precipitation),
   @HiveField(8)
-  freezingRain(9, '冻雨', '🧊'),
+  freezingRain(9, '冻雨', '🧊', WeatherCategory.precipitation),
   
   // 降水类 - 雪
   @HiveField(9)
-  lightSnow(10, '小雪', '🌨️'),
+  lightSnow(10, '小雪', '🌨️', WeatherCategory.precipitation),
   @HiveField(10)
-  moderateSnow(11, '中雪', '❄️'),
+  moderateSnow(11, '中雪', '❄️', WeatherCategory.precipitation),
   @HiveField(11)
-  heavySnow(12, '大雪', '❄️'),
+  heavySnow(12, '大雪', '❄️', WeatherCategory.precipitation),
   @HiveField(12)
-  snowstorm(13, '暴雪', '❄️'),
+  snowstorm(13, '暴雪', '❄️', WeatherCategory.precipitation),
   
   // 降水类 - 其他
   @HiveField(13)
-  sleet(14, '雨夹雪', '🌨️'),
+  sleet(14, '雨夹雪', '🌨️', WeatherCategory.precipitation),
   @HiveField(14)
-  hail(15, '冰雹', '🧊'),
+  hail(15, '冰雹', '🧊', WeatherCategory.precipitation),
   
   // 能见度
   @HiveField(15)
-  mist(16, '轻雾', '🌫️'),
+  mist(16, '轻雾', '🌫️', WeatherCategory.visibility),
   @HiveField(16)
-  fog(17, '雾', '🌫️'),
+  fog(17, '雾', '🌫️', WeatherCategory.visibility),
   @HiveField(17)
-  haze(18, '霾', '😷'),
+  haze(18, '霾', '😷', WeatherCategory.visibility),
   @HiveField(18)
-  dust(19, '沙尘', '💨'),
+  dust(19, '沙尘', '💨', WeatherCategory.visibility),
   @HiveField(19)
-  sandstorm(20, '沙尘暴', '💨'),
+  sandstorm(20, '沙尘暴', '💨', WeatherCategory.visibility),
   
   // 风力
   @HiveField(20)
-  breeze(21, '微风', '🍃'),
+  breeze(21, '微风', '🍃', WeatherCategory.wind),
   @HiveField(21)
-  windy(22, '大风', '💨'),
+  windy(22, '大风', '💨', WeatherCategory.wind),
   
   // 极端天气
   @HiveField(22)
-  typhoon(23, '台风', '🌀'),
+  typhoon(23, '台风', '🌀', WeatherCategory.extreme),
   @HiveField(23)
-  hurricane(24, '飓风', '🌀'),
+  hurricane(24, '飓风', '🌀', WeatherCategory.extreme),
   @HiveField(24)
-  tornado(25, '龙卷风', '🌪️');
+  tornado(25, '龙卷风', '🌪️', WeatherCategory.extreme);
 
   final int value;
   final String label;
   final String icon;
+  final WeatherCategory category;
   
-  const Weather(this.value, this.label, this.icon);
+  const Weather(this.value, this.label, this.icon, this.category);
+}
+
+/// 天气分类
+enum WeatherCategory {
+  sky('天空状况', '☁️'),
+  precipitation('降水', '🌧️'),
+  visibility('能见度', '🌫️'),
+  wind('风力', '💨'),
+  extreme('极端天气', '⚠️');
+
+  final String label;
+  final String icon;
+  
+  const WeatherCategory(this.label, this.icon);
 }
 
 /// 匹配状态

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/theme/status_color_extension.dart';
 
 /// 记录详情页面
 class RecordDetailPage extends ConsumerWidget {
@@ -15,7 +16,8 @@ class RecordDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statusColor = _getStatusColor(record.status);
+    // 使用主题自适应的状态颜色
+    final statusColor = record.status.getColor(context, ref);
 
     return Scaffold(
       appBar: AppBar(
@@ -228,23 +230,20 @@ class RecordDetailPage extends ConsumerWidget {
             ),
           
           // 天气（如果有）
-          if (record.weather != null)
+          if (record.weather.isNotEmpty)
             _buildInfoCard(
               context,
               icon: Icons.wb_sunny_outlined,
               title: '天气',
-              child: Row(
-                children: [
-                  Text(
-                    record.weather!.icon,
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    record.weather!.label,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ],
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: record.weather.map((weather) {
+                  return Chip(
+                    avatar: Text(weather.icon),
+                    label: Text(weather.label),
+                  );
+                }).toList(),
               ),
             ),
           
@@ -557,24 +556,6 @@ class RecordDetailPage extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  /// 根据状态获取情感色调
-  Color _getStatusColor(EncounterStatus status) {
-    switch (status) {
-      case EncounterStatus.missed:
-        return const Color(0xFF7B9EB0); // 灰蓝色调
-      case EncounterStatus.reencounter:
-        return const Color(0xFFFFD700); // 金色
-      case EncounterStatus.met:
-        return const Color(0xFFFF9E80); // 粉橙色调
-      case EncounterStatus.reunion:
-        return const Color(0xFFE91E63); // 玫瑰金色调
-      case EncounterStatus.farewell:
-        return const Color(0xFFBCAAA4); // 玫瑰灰色调
-      case EncounterStatus.lost:
-        return const Color(0xFFD4A574); // 秋叶色调
-    }
   }
 
   /// 格式化日期时间

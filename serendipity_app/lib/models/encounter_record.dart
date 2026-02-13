@@ -102,7 +102,7 @@ class EncounterRecord {
   @HiveField(10)
   final String? backgroundMusic; // 背景音乐，可选
   @HiveField(11)
-  final Weather? weather; // 天气信息，可选
+  final List<Weather> weather; // 天气信息，可选（支持多选）
   @HiveField(12)
   final DateTime createdAt;
   @HiveField(13)
@@ -120,7 +120,7 @@ class EncounterRecord {
     this.ifReencounter,
     this.conversationStarter,
     this.backgroundMusic,
-    this.weather,
+    this.weather = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -138,7 +138,7 @@ class EncounterRecord {
       'ifReencounter': ifReencounter,
       'conversationStarter': conversationStarter,
       'backgroundMusic': backgroundMusic,
-      'weather': weather?.value,
+      'weather': weather.map((w) => w.value).toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -162,8 +162,10 @@ class EncounterRecord {
       conversationStarter: json['conversationStarter'] as String?,
       backgroundMusic: json['backgroundMusic'] as String?,
       weather: json['weather'] != null
-          ? Weather.values.firstWhere((e) => e.value == json['weather'])
-          : null,
+          ? (json['weather'] as List)
+              .map((w) => Weather.values.firstWhere((e) => e.value == w))
+              .toList()
+          : [],
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
