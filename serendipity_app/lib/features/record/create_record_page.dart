@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../models/encounter_record.dart';
@@ -31,7 +33,7 @@ enum PlaceSortType {
 }
 
 /// 创建/编辑记录页面
-class CreateRecordPage extends StatefulWidget {
+class CreateRecordPage extends ConsumerStatefulWidget {
   /// 要编辑的记录（如果为null则是创建模式）
   final EncounterRecord? recordToEdit;
   
@@ -44,10 +46,10 @@ class CreateRecordPage extends StatefulWidget {
   bool get isEditMode => recordToEdit != null;
 
   @override
-  State<CreateRecordPage> createState() => _CreateRecordPageState();
+  ConsumerState<CreateRecordPage> createState() => _CreateRecordPageState();
 }
 
-class _CreateRecordPageState extends State<CreateRecordPage> {
+class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   // 表单控制器
   final _formKey = GlobalKey<FormState>();
   final _placeNameController = TextEditingController();
@@ -196,11 +198,11 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         updatedAt: now,
       );
 
-      // 保存到本地
+      // 通过 provider 保存（会自动刷新列表）
       if (widget.isEditMode) {
-        await _storage.updateRecord(record);
+        await ref.read(recordsProvider.notifier).updateRecord(record);
       } else {
-        await _storage.saveRecord(record);
+        await ref.read(recordsProvider.notifier).addRecord(record);
       }
 
       if (mounted) {

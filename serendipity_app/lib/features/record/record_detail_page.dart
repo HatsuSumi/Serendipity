@@ -42,9 +42,6 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       transitionType = PageTransitionBuilder.getRandomType();
     }
     
-    // 获取 notifier（在异步前获取）
-    final recordsNotifier = ref.read(recordsProvider.notifier);
-    
     // 异步导航
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -70,9 +67,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         setState(() {
           _currentRecord = result;
         });
-        
-        // 刷新记录列表（使用之前获取的 notifier）
-        recordsNotifier.refresh();
+        // 注意：不在这里刷新列表，让时间轴页面通过 provider 自动监听变化
       }
     });
   }
