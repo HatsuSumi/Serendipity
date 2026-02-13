@@ -1,16 +1,19 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/enums.dart';
+import '../providers/dialog_animation_provider.dart';
 
-/// 对话框动画类型
-enum DialogAnimationType {
-  fade,        // 淡入
-  scale,       // 缩放
-  slideUp,     // 从下往上滑入
-  slideDown,   // 从上往下滑入
-  slideLeft,   // 从右往左滑入
-  slideRight,  // 从左往右滑入
-  fadeScale,   // 淡入+缩放
-  fadeSlide,   // 淡入+滑动
+/// 内部动画类型（用于实际动画实现）
+enum _InternalAnimationType {
+  fade,
+  scale,
+  slideUp,
+  slideDown,
+  slideLeft,
+  slideRight,
+  fadeScale,
+  fadeSlide,
 }
 
 /// 对话框辅助工具类
@@ -24,10 +27,13 @@ class DialogHelper {
     bool barrierDismissible = true,
     Color? barrierColor,
     String? barrierLabel,
-    DialogAnimationType? animationType,
   }) {
-    // 如果没有指定动画类型，随机选择一个
-    final selectedAnimation = animationType ?? _getRandomAnimationType();
+    // 从 Provider 读取用户设置的动画类型
+    final container = ProviderScope.containerOf(context);
+    final userPreference = container.read(dialogAnimationProvider);
+    
+    // 根据用户设置选择动画
+    final selectedAnimation = _selectAnimation(userPreference);
     
     return showGeneralDialog<T>(
       context: context,
@@ -48,10 +54,45 @@ class DialogHelper {
     );
   }
 
+  /// 根据用户设置选择动画类型
+  static _InternalAnimationType _selectAnimation(DialogAnimationType userPreference) {
+    if (userPreference == DialogAnimationType.random) {
+      // 随机选择（排除 random 本身）
+      return _getRandomAnimationType();
+    } else {
+      // 映射用户选择到内部动画类型
+      return _mapToInternalType(userPreference);
+    }
+  }
+
+  /// 映射用户选择到内部动画类型
+  static _InternalAnimationType _mapToInternalType(DialogAnimationType type) {
+    switch (type) {
+      case DialogAnimationType.random:
+        return _getRandomAnimationType(); // 不应该到这里
+      case DialogAnimationType.fade:
+        return _InternalAnimationType.fade;
+      case DialogAnimationType.scale:
+        return _InternalAnimationType.scale;
+      case DialogAnimationType.slideUp:
+        return _InternalAnimationType.slideUp;
+      case DialogAnimationType.slideDown:
+        return _InternalAnimationType.slideDown;
+      case DialogAnimationType.slideLeft:
+        return _InternalAnimationType.slideLeft;
+      case DialogAnimationType.slideRight:
+        return _InternalAnimationType.slideRight;
+      case DialogAnimationType.fadeScale:
+        return _InternalAnimationType.fadeScale;
+      case DialogAnimationType.fadeSlide:
+        return _InternalAnimationType.fadeSlide;
+    }
+  }
+
   /// 获取随机动画类型
-  static DialogAnimationType _getRandomAnimationType() {
+  static _InternalAnimationType _getRandomAnimationType() {
     final random = Random();
-    final values = DialogAnimationType.values;
+    final values = _InternalAnimationType.values;
     return values[random.nextInt(values.length)];
   }
 
@@ -59,7 +100,7 @@ class DialogHelper {
   static Widget _buildTransition({
     required Animation<double> animation,
     required Widget child,
-    required DialogAnimationType type,
+    required _InternalAnimationType type,
   }) {
     final curvedAnimation = CurvedAnimation(
       parent: animation,
@@ -67,19 +108,19 @@ class DialogHelper {
     );
 
     switch (type) {
-      case DialogAnimationType.fade:
+      case _InternalAnimationType.fade:
         return FadeTransition(
           opacity: curvedAnimation,
           child: child,
         );
 
-      case DialogAnimationType.scale:
+      case _InternalAnimationType.scale:
         return ScaleTransition(
           scale: Tween<double>(begin: 0.8, end: 1.0).animate(curvedAnimation),
           child: child,
         );
 
-      case DialogAnimationType.slideUp:
+      case _InternalAnimationType.slideUp:
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(0, 0.3),
@@ -88,7 +129,7 @@ class DialogHelper {
           child: child,
         );
 
-      case DialogAnimationType.slideDown:
+      case _InternalAnimationType.slideDown:
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(0, -0.3),
@@ -97,7 +138,7 @@ class DialogHelper {
           child: child,
         );
 
-      case DialogAnimationType.slideLeft:
+      case _InternalAnimationType.slideLeft:
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(0.3, 0),
@@ -106,7 +147,7 @@ class DialogHelper {
           child: child,
         );
 
-      case DialogAnimationType.slideRight:
+      case _InternalAnimationType.slideRight:
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(-0.3, 0),
@@ -115,7 +156,7 @@ class DialogHelper {
           child: child,
         );
 
-      case DialogAnimationType.fadeScale:
+      case _InternalAnimationType.fadeScale:
         return FadeTransition(
           opacity: curvedAnimation,
           child: ScaleTransition(
@@ -124,7 +165,7 @@ class DialogHelper {
           ),
         );
 
-      case DialogAnimationType.fadeSlide:
+      case _InternalAnimationType.fadeSlide:
         return FadeTransition(
           opacity: curvedAnimation,
           child: SlideTransition(

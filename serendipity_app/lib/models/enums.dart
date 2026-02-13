@@ -438,3 +438,32 @@ enum PageTransitionType {
   const PageTransitionType(this.value, this.label, this.icon);
 }
 
+/// 对话框动画类型
+@HiveType(typeId: 25)
+enum DialogAnimationType {
+  @HiveField(0)
+  random('random', '随机动画', '🎲'),
+  @HiveField(1)
+  fade('fade', '淡入', '✨'),
+  @HiveField(2)
+  scale('scale', '缩放', '🔍'),
+  @HiveField(3)
+  slideUp('slide_up', '从下滑入', '⬆️'),
+  @HiveField(4)
+  slideDown('slide_down', '从上滑入', '⬇️'),
+  @HiveField(5)
+  slideLeft('slide_left', '从右滑入', '⬅️'),
+  @HiveField(6)
+  slideRight('slide_right', '从左滑入', '➡️'),
+  @HiveField(7)
+  fadeScale('fade_scale', '淡入+缩放', '💫'),
+  @HiveField(8)
+  fadeSlide('fade_slide', '淡入+滑动', '🌟');
+
+  final String value;
+  final String label;
+  final String icon;
+  
+  const DialogAnimationType(this.value, this.label, this.icon);
+}
+
