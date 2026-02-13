@@ -212,8 +212,12 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           widget.isEditMode ? '记录已更新' : '记录已保存',
         );
 
-        // 返回上一页，并传递更新后的记录（包含是否需要刷新的标记）
-        Navigator.of(context).pop({'record': record, 'needsRefresh': true});
+        // 返回上一页，编辑模式返回记录对象，创建模式返回 true
+        if (widget.isEditMode) {
+          Navigator.of(context).pop(record);
+        } else {
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       if (mounted) {

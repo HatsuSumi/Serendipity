@@ -65,21 +65,14 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             : const Duration(milliseconds: 300),
       ),
     ).then((result) {
-      // 如果返回了结果
-      if (mounted && result != null && result is Map) {
-        final record = result['record'] as EncounterRecord?;
-        final needsRefresh = result['needsRefresh'] as bool? ?? false;
+      // 如果返回了更新后的记录
+      if (mounted && result != null && result is EncounterRecord) {
+        setState(() {
+          _currentRecord = result;
+        });
         
-        if (record != null) {
-          setState(() {
-            _currentRecord = record;
-          });
-          
-          // 如果需要刷新列表
-          if (needsRefresh) {
-            recordsNotifier.refresh();
-          }
-        }
+        // 刷新列表
+        recordsNotifier.refresh();
       }
     });
   }
