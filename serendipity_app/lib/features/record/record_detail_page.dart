@@ -34,16 +34,13 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
   /// 导航到编辑页面
   void _navigateToEditPage(BuildContext context, WidgetRef ref) {
-    // 获取用户设置的页面切换动画类型（在异步操作前读取）
+    // 获取用户设置的页面切换动画类型
     var transitionType = ref.read(pageTransitionProvider);
     
     // 如果是随机动画，获取一个具体的动画类型
     if (transitionType == PageTransitionType.random) {
       transitionType = PageTransitionBuilder.getRandomType();
     }
-    
-    // 获取 notifier（在异步前获取）
-    final recordsNotifier = ref.read(recordsProvider.notifier);
     
     // 异步导航
     Navigator.of(context).push(
@@ -67,12 +64,13 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     ).then((result) {
       // 如果返回了更新后的记录
       if (mounted && result != null && result is EncounterRecord) {
+        // 更新当前显示的记录
         setState(() {
           _currentRecord = result;
         });
         
-        // 刷新列表
-        recordsNotifier.refresh();
+        // 让 Provider 失效，触发自动重新加载
+        ref.invalidate(recordsProvider);
       }
     });
   }

@@ -89,9 +89,9 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
                   ),
                 );
                 
-                // 如果创建成功，刷新记录列表
+                // 如果创建成功，让 Provider 失效并自动重新加载
                 if (result == true && mounted) {
-                  ref.read(recordsProvider.notifier).refresh();
+                  ref.invalidate(recordsProvider);
                 }
               },
               icon: const Icon(Icons.add),
