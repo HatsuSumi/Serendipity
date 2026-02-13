@@ -155,9 +155,6 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     });
 
     try {
-      // 在异步操作前获取 notifier
-      final recordsNotifier = ref.read(recordsProvider.notifier);
-      
       // 获取描述（去除首尾空格）
       final description = _descriptionController.text.trim();
       
@@ -201,11 +198,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         updatedAt: now,
       );
 
-      // 通过 provider 保存（会自动刷新列表）
+      // 直接保存到 Storage，不通过 Provider
       if (widget.isEditMode) {
-        await recordsNotifier.updateRecord(record);
+        await _storage.updateRecord(record);
       } else {
-        await recordsNotifier.addRecord(record);
+        await _storage.saveRecord(record);
       }
 
       if (mounted) {
@@ -215,8 +212,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           widget.isEditMode ? '记录已更新' : '记录已保存',
         );
 
-        // 返回上一页，并传递更新后的记录
-        Navigator.of(context).pop(record);
+        // 返回上一页，并传递更新后的记录（包含是否需要刷新的标记）
+        Navigator.of(context).pop({'record': record, 'needsRefresh': true});
       }
     } catch (e) {
       if (mounted) {

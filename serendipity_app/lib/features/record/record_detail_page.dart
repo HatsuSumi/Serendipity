@@ -42,6 +42,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       transitionType = PageTransitionBuilder.getRandomType();
     }
     
+    // 获取 notifier（在异步前获取）
+    final recordsNotifier = ref.read(recordsProvider.notifier);
+    
     // 异步导航
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -62,12 +65,21 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             : const Duration(milliseconds: 300),
       ),
     ).then((result) {
-      // 如果返回了更新后的记录，刷新页面
-      if (mounted && result != null && result is EncounterRecord) {
-        setState(() {
-          _currentRecord = result;
-        });
-        // 注意：不在这里刷新列表，让时间轴页面通过 provider 自动监听变化
+      // 如果返回了结果
+      if (mounted && result != null && result is Map) {
+        final record = result['record'] as EncounterRecord?;
+        final needsRefresh = result['needsRefresh'] as bool? ?? false;
+        
+        if (record != null) {
+          setState(() {
+            _currentRecord = record;
+          });
+          
+          // 如果需要刷新列表
+          if (needsRefresh) {
+            recordsNotifier.refresh();
+          }
+        }
       }
     });
   }
