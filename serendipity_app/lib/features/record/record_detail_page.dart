@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/dialog_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 
 /// 记录详情页面
@@ -532,7 +533,7 @@ class RecordDetailPage extends ConsumerWidget {
 
   /// 显示删除确认对话框
   void _showDeleteConfirmDialog(BuildContext context) {
-    showDialog(
+    DialogHelper.show(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除记录'),

@@ -4,6 +4,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/dialog_helper.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
@@ -273,7 +274,7 @@ class TimelinePage extends ConsumerWidget {
 
   /// 显示清空所有记录的确认对话框（开发调试用）
   void _showClearAllDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
+    DialogHelper.show(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('⚠️ 开发调试'),

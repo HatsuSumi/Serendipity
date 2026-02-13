@@ -2,8 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/dialog_helper.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
+
+/// 地点历史记录项
+class PlaceHistoryItem {
+  final String placeName;
+  final int usageCount;
+  final DateTime lastUsedTime;
+
+  PlaceHistoryItem({
+    required this.placeName,
+    required this.usageCount,
+    required this.lastUsedTime,
+  });
+}
+
+/// 排序方式
+enum PlaceSortType {
+  usageDesc('使用频率 ↓'),
+  usageAsc('使用频率 ↑'),
+  timeDesc('最近使用 ↓'),
+  timeAsc('最近使用 ↑');
+
+  final String label;
+  const PlaceSortType(this.label);
+}
 
 /// 创建记录页面（基础版）
 class CreateRecordPage extends StatefulWidget {
@@ -50,8 +75,8 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   // 是否正在保存
   bool _isSaving = false;
   
-  // 地点历史记录
-  List<String> _placeHistory = [];
+  // 地点历史记录（包含统计信息）
+  List<PlaceHistoryItem> _placeHistory = [];
 
   @override
   void initState() {
@@ -142,14 +167,34 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   /// 加载地点历史记录
   void _loadPlaceHistory() {
     final records = _storage.getAllRecords();
-    final places = records
-        .where((r) => r.location.placeName != null && r.location.placeName!.isNotEmpty)
-        .map((r) => r.location.placeName!)
-        .toSet() // 去重
-        .toList();
+    
+    // 统计每个地点的使用次数和最后使用时间
+    final Map<String, PlaceHistoryItem> placeMap = {};
+    
+    for (final record in records) {
+      final placeName = record.location.placeName;
+      if (placeName != null && placeName.isNotEmpty) {
+        if (placeMap.containsKey(placeName)) {
+          final existing = placeMap[placeName]!;
+          placeMap[placeName] = PlaceHistoryItem(
+            placeName: placeName,
+            usageCount: existing.usageCount + 1,
+            lastUsedTime: record.timestamp.isAfter(existing.lastUsedTime)
+                ? record.timestamp
+                : existing.lastUsedTime,
+          );
+        } else {
+          placeMap[placeName] = PlaceHistoryItem(
+            placeName: placeName,
+            usageCount: 1,
+            lastUsedTime: record.timestamp,
+          );
+        }
+      }
+    }
     
     setState(() {
-      _placeHistory = places;
+      _placeHistory = placeMap.values.toList();
     });
   }
 
@@ -348,67 +393,28 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         ),
         const SizedBox(height: 8),
         
-        // 地点名称输入（带历史记录）
-        Autocomplete<String>(
-          optionsBuilder: (TextEditingValue textEditingValue) {
-            if (textEditingValue.text.isEmpty) {
-              return _placeHistory;
-            }
-            return _placeHistory.where((String option) {
-              return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
-            });
-          },
-          onSelected: (String selection) {
-            _placeNameController.text = selection;
-          },
-          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-            // 同步控制器
-            _placeNameController.text = controller.text;
-            controller.addListener(() {
-              _placeNameController.text = controller.text;
-            });
-            
-            return TextFormField(
-              controller: controller,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                hintText: '例如：地铁10号线、星巴克...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                prefixIcon: const Icon(Icons.location_on),
-                suffixIcon: _placeHistory.isNotEmpty
-                    ? const Icon(Icons.arrow_drop_down, size: 24)
-                    : null,
-              ),
-              onFieldSubmitted: (value) => onFieldSubmitted(),
-            );
-          },
-          optionsViewBuilder: (context, onSelected, options) {
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(8),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: options.length,
-                    itemBuilder: (context, index) {
-                      final option = options.elementAt(index);
-                      return ListTile(
-                        leading: const Icon(Icons.history, size: 20),
-                        title: Text(option),
-                        onTap: () => onSelected(option),
-                      );
-                    },
+        // 地点名称输入
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _placeNameController,
+                decoration: InputDecoration(
+                  hintText: '例如：地铁10号线、星巴克...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  prefixIcon: const Icon(Icons.location_on),
                 ),
               ),
-            );
-          },
+            ),
+            const SizedBox(width: 8),
+            IconButton.outlined(
+              onPressed: _showPlaceHistoryDialog,
+              icon: const Icon(Icons.history),
+              tooltip: '历史地点',
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         
@@ -446,9 +452,157 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
     );
   }
   
+  /// 显示历史地点选择对话框
+  Future<void> _showPlaceHistoryDialog() async {
+    PlaceSortType currentSort = PlaceSortType.timeDesc;
+    
+    final selected = await DialogHelper.show<String>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // 根据当前排序方式排序
+          List<PlaceHistoryItem> sortedPlaces = List.from(_placeHistory);
+          switch (currentSort) {
+            case PlaceSortType.usageDesc:
+              sortedPlaces.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+              break;
+            case PlaceSortType.usageAsc:
+              sortedPlaces.sort((a, b) => a.usageCount.compareTo(b.usageCount));
+              break;
+            case PlaceSortType.timeDesc:
+              sortedPlaces.sort((a, b) => b.lastUsedTime.compareTo(a.lastUsedTime));
+              break;
+            case PlaceSortType.timeAsc:
+              sortedPlaces.sort((a, b) => a.lastUsedTime.compareTo(b.lastUsedTime));
+              break;
+          }
+          
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Text('选择历史地点'),
+                const Spacer(),
+                PopupMenuButton<PlaceSortType>(
+                  icon: const Icon(Icons.sort),
+                  tooltip: '排序方式',
+                  onSelected: (PlaceSortType type) {
+                    setDialogState(() {
+                      currentSort = type;
+                    });
+                  },
+                  itemBuilder: (context) => PlaceSortType.values.map((type) {
+                    return PopupMenuItem(
+                      value: type,
+                      child: Row(
+                        children: [
+                          if (currentSort == type)
+                            const Icon(Icons.check, size: 20)
+                          else
+                            const SizedBox(width: 20),
+                          const SizedBox(width: 8),
+                          Text(type.label),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: sortedPlaces.isEmpty
+                  ? const Center(
+                      child: Text('暂无历史地点'),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: sortedPlaces.length,
+                      itemBuilder: (context, index) {
+                        final item = sortedPlaces[index];
+                        return ListTile(
+                          leading: const Icon(Icons.location_on),
+                          title: Text(item.placeName),
+                          subtitle: Text(
+                            '使用 ${item.usageCount} 次 · ${_formatDate(item.lastUsedTime)}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            onPressed: () async {
+                              final confirm = await DialogHelper.show<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('确认删除'),
+                                  content: Text('确定要删除地点"${item.placeName}"的历史记录吗？\n\n这不会删除相关的记录，只是从历史列表中移除。'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: const Text('取消'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      child: const Text('删除'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              
+                              if (confirm == true) {
+                                setDialogState(() {
+                                  _placeHistory.removeWhere((p) => p.placeName == item.placeName);
+                                });
+                                setState(() {
+                                  // 同步外部状态
+                                });
+                              }
+                            },
+                          ),
+                          onTap: () => Navigator.of(context).pop(item.placeName),
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    
+    if (selected != null) {
+      setState(() {
+        _placeNameController.text = selected;
+      });
+    }
+  }
+  
+  /// 格式化日期（相对时间）
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    
+    if (diff.inDays == 0) {
+      return '今天';
+    } else if (diff.inDays == 1) {
+      return '昨天';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays} 天前';
+    } else if (diff.inDays < 30) {
+      return '${(diff.inDays / 7).floor()} 周前';
+    } else if (diff.inDays < 365) {
+      return '${(diff.inDays / 30).floor()} 月前';
+    } else {
+      return '${(diff.inDays / 365).floor()} 年前';
+    }
+  }
+  
   /// 显示场所类型选择对话框
   Future<void> _showPlaceTypeDialog() async {
-    final selected = await showDialog<PlaceType>(
+    final selected = await DialogHelper.show<PlaceType>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('选择场所类型'),
@@ -687,7 +841,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
     final tagController = TextEditingController();
     final noteController = TextEditingController();
     
-    final result = await showDialog<TagWithNote>(
+    final result = await DialogHelper.show<TagWithNote>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('添加标签'),
