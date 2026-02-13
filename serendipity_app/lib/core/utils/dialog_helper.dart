@@ -40,8 +40,14 @@ class DialogHelper {
       barrierDismissible: barrierDismissible,
       barrierColor: barrierColor ?? Colors.black54,
       barrierLabel: barrierLabel ?? MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      transitionDuration: const Duration(milliseconds: 250),
+      transitionDuration: selectedAnimation == null 
+          ? Duration.zero 
+          : const Duration(milliseconds: 250),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
+        if (selectedAnimation == null) {
+          // 无动画，直接返回
+          return child;
+        }
         return _buildTransition(
           animation: animation,
           child: child,
@@ -55,9 +61,12 @@ class DialogHelper {
   }
 
   /// 根据用户设置选择动画类型
-  static _InternalAnimationType _selectAnimation(DialogAnimationType userPreference) {
-    if (userPreference == DialogAnimationType.random) {
-      // 随机选择（排除 random 本身）
+  static _InternalAnimationType? _selectAnimation(DialogAnimationType userPreference) {
+    if (userPreference == DialogAnimationType.none) {
+      // 无动画
+      return null;
+    } else if (userPreference == DialogAnimationType.random) {
+      // 随机选择（排除 none 和 random 本身）
       return _getRandomAnimationType();
     } else {
       // 映射用户选择到内部动画类型
@@ -68,6 +77,7 @@ class DialogHelper {
   /// 映射用户选择到内部动画类型
   static _InternalAnimationType _mapToInternalType(DialogAnimationType type) {
     switch (type) {
+      case DialogAnimationType.none:
       case DialogAnimationType.random:
         return _getRandomAnimationType(); // 不应该到这里
       case DialogAnimationType.fade:

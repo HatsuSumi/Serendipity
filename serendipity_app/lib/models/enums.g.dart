@@ -971,3 +971,141 @@ class CreditChangeReasonAdapter extends TypeAdapter<CreditChangeReason> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class PageTransitionTypeAdapter extends TypeAdapter<PageTransitionType> {
+  @override
+  final int typeId = 24;
+
+  @override
+  PageTransitionType read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return PageTransitionType.slideFromRight;
+      case 1:
+        return PageTransitionType.slideFromBottom;
+      case 2:
+        return PageTransitionType.slideFromLeft;
+      case 3:
+        return PageTransitionType.slideFromTop;
+      case 4:
+        return PageTransitionType.fade;
+      case 5:
+        return PageTransitionType.scale;
+      case 6:
+        return PageTransitionType.rotation;
+      default:
+        return PageTransitionType.slideFromRight;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, PageTransitionType obj) {
+    switch (obj) {
+      case PageTransitionType.slideFromRight:
+        writer.writeByte(0);
+        break;
+      case PageTransitionType.slideFromBottom:
+        writer.writeByte(1);
+        break;
+      case PageTransitionType.slideFromLeft:
+        writer.writeByte(2);
+        break;
+      case PageTransitionType.slideFromTop:
+        writer.writeByte(3);
+        break;
+      case PageTransitionType.fade:
+        writer.writeByte(4);
+        break;
+      case PageTransitionType.scale:
+        writer.writeByte(5);
+        break;
+      case PageTransitionType.rotation:
+        writer.writeByte(6);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PageTransitionTypeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class DialogAnimationTypeAdapter extends TypeAdapter<DialogAnimationType> {
+  @override
+  final int typeId = 25;
+
+  @override
+  DialogAnimationType read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return DialogAnimationType.random;
+      case 1:
+        return DialogAnimationType.fade;
+      case 2:
+        return DialogAnimationType.scale;
+      case 3:
+        return DialogAnimationType.slideUp;
+      case 4:
+        return DialogAnimationType.slideDown;
+      case 5:
+        return DialogAnimationType.slideLeft;
+      case 6:
+        return DialogAnimationType.slideRight;
+      case 7:
+        return DialogAnimationType.fadeScale;
+      case 8:
+        return DialogAnimationType.fadeSlide;
+      default:
+        return DialogAnimationType.random;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, DialogAnimationType obj) {
+    switch (obj) {
+      case DialogAnimationType.random:
+        writer.writeByte(0);
+        break;
+      case DialogAnimationType.fade:
+        writer.writeByte(1);
+        break;
+      case DialogAnimationType.scale:
+        writer.writeByte(2);
+        break;
+      case DialogAnimationType.slideUp:
+        writer.writeByte(3);
+        break;
+      case DialogAnimationType.slideDown:
+        writer.writeByte(4);
+        break;
+      case DialogAnimationType.slideLeft:
+        writer.writeByte(5);
+        break;
+      case DialogAnimationType.slideRight:
+        writer.writeByte(6);
+        break;
+      case DialogAnimationType.fadeScale:
+        writer.writeByte(7);
+        break;
+      case DialogAnimationType.fadeSlide:
+        writer.writeByte(8);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DialogAnimationTypeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

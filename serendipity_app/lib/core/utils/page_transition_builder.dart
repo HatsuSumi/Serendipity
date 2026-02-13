@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../models/enums.dart';
 
@@ -11,7 +12,20 @@ class PageTransitionBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
+    // 处理特殊类型
+    if (type == PageTransitionType.none) {
+      // 无动画，直接返回
+      return child;
+    } else if (type == PageTransitionType.random) {
+      // 随机选择一个动画（排除 none 和 random）
+      type = _getRandomType();
+    }
+    
     switch (type) {
+      case PageTransitionType.none:
+      case PageTransitionType.random:
+        return child; // 不应该到这里
+        
       case PageTransitionType.slideFromRight:
         return _slideTransition(
           animation,
@@ -74,6 +88,15 @@ class PageTransitionBuilder {
           ),
         );
     }
+  }
+  
+  /// 获取随机动画类型（排除 none 和 random）
+  static PageTransitionType _getRandomType() {
+    final random = Random();
+    final validTypes = PageTransitionType.values
+        .where((type) => type != PageTransitionType.none && type != PageTransitionType.random)
+        .toList();
+    return validTypes[random.nextInt(validTypes.length)];
   }
   
   /// 滑动过渡动画

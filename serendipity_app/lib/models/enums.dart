@@ -417,18 +417,22 @@ enum CreditChangeReason {
 @HiveType(typeId: 24)
 enum PageTransitionType {
   @HiveField(0)
-  slideFromRight('slide_from_right', '从右滑入', '⬅️'),
+  none('none', '无动画', '🚫'),
   @HiveField(1)
-  slideFromBottom('slide_from_bottom', '从底部滑入', '⬆️'),
+  random('random', '随机动画', '🎲'),
   @HiveField(2)
-  slideFromLeft('slide_from_left', '从左滑入', '➡️'),
+  slideFromRight('slide_from_right', '从右滑入', '⬅️'),
   @HiveField(3)
-  slideFromTop('slide_from_top', '从顶部滑入', '⬇️'),
+  slideFromBottom('slide_from_bottom', '从底部滑入', '⬆️'),
   @HiveField(4)
-  fade('fade', '淡入淡出', '✨'),
+  slideFromLeft('slide_from_left', '从左滑入', '➡️'),
   @HiveField(5)
-  scale('scale', '缩放', '🔍'),
+  slideFromTop('slide_from_top', '从顶部滑入', '⬇️'),
   @HiveField(6)
+  fade('fade', '淡入淡出', '✨'),
+  @HiveField(7)
+  scale('scale', '缩放', '🔍'),
+  @HiveField(8)
   rotation('rotation', '旋转', '🔄');
 
   final String value;
@@ -442,22 +446,24 @@ enum PageTransitionType {
 @HiveType(typeId: 25)
 enum DialogAnimationType {
   @HiveField(0)
-  random('random', '随机动画', '🎲'),
+  none('none', '无动画', '🚫'),
   @HiveField(1)
-  fade('fade', '淡入', '✨'),
+  random('random', '随机动画', '🎲'),
   @HiveField(2)
-  scale('scale', '缩放', '🔍'),
+  fade('fade', '淡入', '✨'),
   @HiveField(3)
-  slideUp('slide_up', '从下滑入', '⬆️'),
+  scale('scale', '缩放', '🔍'),
   @HiveField(4)
-  slideDown('slide_down', '从上滑入', '⬇️'),
+  slideUp('slide_up', '从下滑入', '⬆️'),
   @HiveField(5)
-  slideLeft('slide_left', '从右滑入', '⬅️'),
+  slideDown('slide_down', '从上滑入', '⬇️'),
   @HiveField(6)
-  slideRight('slide_right', '从左滑入', '➡️'),
+  slideLeft('slide_left', '从右滑入', '⬅️'),
   @HiveField(7)
-  fadeScale('fade_scale', '淡入+缩放', '💫'),
+  slideRight('slide_right', '从左滑入', '➡️'),
   @HiveField(8)
+  fadeScale('fade_scale', '淡入+缩放', '💫'),
+  @HiveField(9)
   fadeSlide('fade_slide', '淡入+滑动', '🌟');
 
   final String value;
