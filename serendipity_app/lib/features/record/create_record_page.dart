@@ -153,7 +153,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('记录错过'),
+        title: const Text('创建记录'),
         actions: [
           if (_isSaving)
             const Center(
@@ -193,6 +193,12 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             _buildStatusSection(),
             const SizedBox(height: 24),
 
+            // 对话契机（仅邂逅状态显示）
+            if (_selectedStatus == EncounterStatus.met) ...[
+              _buildConversationStarterSection(),
+              const SizedBox(height: 24),
+            ],
+
             // 描述输入（可选）
             _buildDescriptionSection(),
             const SizedBox(height: 24),
@@ -200,12 +206,6 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             // 特征标签（可选）
             _buildTagsSection(),
             const SizedBox(height: 24),
-
-            // 对话契机（仅邂逅状态显示）
-            if (_selectedStatus == EncounterStatus.met) ...[
-              _buildConversationStarterSection(),
-              const SizedBox(height: 24),
-            ],
 
             // 情绪强度（可选）
             _buildEmotionSection(),
@@ -406,7 +406,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          '提示：每次见面创建一条新记录，然后通过"故事线"关联',
+          '提示：每次见面创建一条新记录，然后通过"故事线"关联\n详细说明请查看"关于"页面',
           style: TextStyle(
             fontSize: 12,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -586,7 +586,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
               maxLength: 50,
               decoration: const InputDecoration(
                 labelText: '备注（可选）',
-                hintText: '添加更详细的描述...',
+                hintText: '例如：光线不好，可能是深棕色',
               ),
             ),
           ],
@@ -735,7 +735,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         TextFormField(
           controller: _backgroundMusicController,
           decoration: InputDecoration(
-            hintText: '例如：七里香 - 周杰伦',
+            hintText: '歌名 - 歌手',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
             ),

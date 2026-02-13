@@ -69,7 +69,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
                 }
               },
               icon: const Icon(Icons.add),
-              label: const Text('记录错过'),
+              label: const Text('创建记录'),
             )
           : null,
     );

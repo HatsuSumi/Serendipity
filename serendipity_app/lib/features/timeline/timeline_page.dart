@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
+import '../../core/utils/page_transition_builder.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
@@ -65,7 +66,7 @@ class TimelinePage extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '点击下方按钮记录第一次错过',
+            '点击下方按钮开始记录',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -118,9 +119,11 @@ class TimelinePage extends ConsumerWidget {
                 return RecordDetailPage(record: record);
               },
               transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return _buildTransition(
+                return PageTransitionBuilder.buildTransition(
                   transitionType,
+                  context,
                   animation,
+                  secondaryAnimation,
                   child,
                 );
               },
@@ -259,58 +262,5 @@ class TimelinePage extends ConsumerWidget {
     } else {
       return '${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
     }
-  }
-  
-  /// 根据动画类型构建过渡动画
-  Widget _buildTransition(
-    PageTransitionType type,
-    Animation<double> animation,
-    Widget child,
-  ) {
-    switch (type) {
-      case PageTransitionType.slideFromRight:
-        return _slideTransition(animation, child, const Offset(1.0, 0.0));
-      case PageTransitionType.slideFromBottom:
-        return _slideTransition(animation, child, const Offset(0.0, 1.0));
-      case PageTransitionType.slideFromLeft:
-        return _slideTransition(animation, child, const Offset(-1.0, 0.0));
-      case PageTransitionType.slideFromTop:
-        return _slideTransition(animation, child, const Offset(0.0, -1.0));
-      case PageTransitionType.fade:
-        return FadeTransition(opacity: animation, child: child);
-      case PageTransitionType.scale:
-        return ScaleTransition(
-          scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-          ),
-          child: FadeTransition(opacity: animation, child: child),
-        );
-      case PageTransitionType.rotation:
-        return RotationTransition(
-          turns: Tween<double>(begin: 0.0, end: 1.0).animate(
-            CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-          ),
-          child: FadeTransition(opacity: animation, child: child),
-        );
-    }
-  }
-  
-  /// 滑动过渡动画
-  Widget _slideTransition(
-    Animation<double> animation,
-    Widget child,
-    Offset begin,
-  ) {
-    const end = Offset.zero;
-    const curve = Curves.easeInOut;
-    
-    var tween = Tween(begin: begin, end: end).chain(
-      CurveTween(curve: curve),
-    );
-    
-    return SlideTransition(
-      position: animation.drive(tween),
-      child: child,
-    );
   }
 }

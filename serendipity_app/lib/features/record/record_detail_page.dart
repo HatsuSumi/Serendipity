@@ -146,6 +146,20 @@ class RecordDetailPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 对话契机（仅邂逅状态且有内容）
+          if (record.status == EncounterStatus.met &&
+              record.conversationStarter != null &&
+              record.conversationStarter!.isNotEmpty)
+            _buildInfoCard(
+              context,
+              icon: Icons.chat_bubble_outline,
+              title: '对话契机',
+              child: Text(
+                record.conversationStarter!,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          
           // 地点信息
           _buildInfoCard(
             context,
@@ -173,20 +187,6 @@ class RecordDetailPage extends ConsumerWidget {
               icon: Icons.label_outlined,
               title: '特征标签',
               child: _buildTagsInfo(context),
-            ),
-          
-          // 对话契机（仅邂逅状态且有内容）
-          if (record.status == EncounterStatus.met &&
-              record.conversationStarter != null &&
-              record.conversationStarter!.isNotEmpty)
-            _buildInfoCard(
-              context,
-              icon: Icons.chat_bubble_outline,
-              title: '对话契机',
-              child: Text(
-                record.conversationStarter!,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
             ),
           
           // 情绪强度（如果有）

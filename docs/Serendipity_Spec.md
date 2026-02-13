@@ -427,14 +427,14 @@ String getDisplayLocation(Location location) {
 | **错过** | Missed | 🌫️ | 初次看到但未交流 | 创建记录 |
 | **再遇** | Re-encounter | 🌟 | 再次看到同一个人 | 手动标记 |
 | **邂逅** | Met | 💫 | 终于有了交流 | 手动标记 |
-| **重逢** | Reunion | 💝 | 交流后再次见面 | 手动标记 |
+| **重逢** | Reunion | 💝 | 分开后再次相遇（需先别离） | 手动标记 |
 | **别离** | Farewell | 🥀 | 主动结束关系（需先邂逅） | 手动标记 |
 | **失联** | Lost | 🍂 | 被动消失，再也没见过 | 手动标记 |
 
 #### 2.2 状态流转规则
 
 ```
-[错过] → [再遇] → [再遇] → ... → [邂逅] ⇄ [重逢] ⇄ [别离]
+[错过] → [再遇] → [再遇] → ... → [邂逅] → [别离] ⇄ [重逢]
   ↓        ↓        ↓               ↓         ↓         ↓
 [失联]   [失联]   [失联]          [失联]    [失联]    [失联]
 ```
@@ -444,12 +444,14 @@ String getDisplayLocation(Location location) {
   - 例如：每天地铁上看到同一个人，看了10次、20次
   - 每次"再遇"都可以记录新的细节和心情
   - 直到某天终于"邂逅"（说话了）
-- **邂逅 ⇄ 重逢 ⇄ 别离**：可以循环（交流后的人生）
-  - 邂逅 → 重逢 ✅（又见面了）
+- **邂逅 → 别离 ⇄ 重逢**：可以循环（分分合合的人生）
   - 邂逅 → 别离 ✅（交流后分开）
-  - 重逢 → 别离 ✅（见面后分开）
-  - 别离 → 重逢 ✅（分手后复合）
-  - 别离 → 邂逅 ✅（分开后重新开始）
+  - 别离 → 重逢 ✅（分开后再次相遇）
+  - 重逢 → 别离 ✅（又分开了）
+  - 别离 → 重逢 → 别离 → ...（可以无限循环）
+- **重逢的前置条件**：必须先经历"别离"或"失联"后又找到
+  - ⚠️ 邂逅后如果继续在一起，不需要记录（因为已经不是"错过"）
+  - ⚠️ 只有分开后再次相遇，才是真正的"重逢"
 - **失联**：唯一的终点，任何状态都可以标记为"失联"
 - 每次状态变更都会记录时间和备注
 
@@ -461,6 +463,13 @@ String getDisplayLocation(Location location) {
 - 因为现实人生就是循环的
 - 在一起 → 分手 → 复合 → 再分手...
 - 这才是真实的人生
+
+**邂逅之后为什么不记录了？**
+- 因为项目叫"错过了么"，不是"邂逅了么"
+- 核心是记录错过、遗憾、擦肩而过
+- 邂逅后如果继续交往，就不再是"错过"，而是"拥有"
+- 只有分开了（别离/失联），才又回到"错过"的状态
+- 这时如果再次相遇，就是"重逢"
 
 #### 2.3 更改状态
 
@@ -3205,6 +3214,7 @@ class UserSettings {
   // 主题设置
   AppTheme theme;               // 主题选择：light / dark / system / misty / midnight / warm / autumn
   String? accentColor;          // 强调色（会员专属）
+  PageTransitionType pageTransition; // 页面切换动画类型
   
   // 隐私设置
   bool cloudSyncEnabled;        // 是否启用云同步（会员功能）
@@ -3247,6 +3257,24 @@ enum AppTheme {
   final String label;
   final bool isPremium;              // 是否为会员专属
   const AppTheme(this.value, this.label, this.isPremium);
+}
+```
+
+### PageTransitionType（页面切换动画类型枚举）
+```dart
+enum PageTransitionType {
+  slideFromRight(1, '从右滑入', '类似 iOS'),
+  slideFromBottom(2, '从底部滑入', '类似 Android'),
+  slideFromLeft(3, '从左滑入', ''),
+  slideFromTop(4, '从顶部滑入', ''),
+  fade(5, '淡入淡出', ''),
+  scale(6, '缩放', ''),
+  rotation(7, '旋转', '');
+
+  final int value;
+  final String label;
+  final String description;
+  const PageTransitionType(this.value, this.label, this.description);
 }
 ```
 
@@ -3434,9 +3462,12 @@ enum AuthProvider {
 
 ---
 
-**最后更新**：2026-02-11  
-**文档版本**：v1.5  
+**最后更新**：2026-02-13  
+**文档版本**：v1.6  
 **更新内容**：
+- ✅ 修正"重逢"的定义：分开后再次相遇（需先经历"别离"）
+- ✅ 修正状态流转规则：邂逅 → 别离 ⇄ 重逢（可循环）
+- ✅ 明确产品定位：记录"错过"，邂逅后继续交往则不再记录
 - ✅ 明确 Firebase Storage 暂不使用（后期如需头像上传功能再添加）
 - ✅ 明确最低支持版本：Android 5.0+ / iOS 12.0+
 - ✅ 明确标签备注字数限制：最多50字（可选）
