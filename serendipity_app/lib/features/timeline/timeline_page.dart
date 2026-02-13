@@ -134,7 +134,12 @@ class TimelinePage extends ConsumerWidget {
       child: InkWell(
         onTap: () {
           // 读取用户设置的动画类型
-          final transitionType = ref.read(pageTransitionProvider);
+          var transitionType = ref.read(pageTransitionProvider);
+          
+          // 如果是随机动画，在这里就决定使用哪个具体动画
+          if (transitionType == PageTransitionType.random) {
+            transitionType = PageTransitionBuilder.getRandomType();
+          }
           
           // 使用 Navigator.push 以便传递动画类型
           Navigator.of(context).push(

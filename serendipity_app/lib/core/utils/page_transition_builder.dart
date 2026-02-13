@@ -4,6 +4,15 @@ import '../../models/enums.dart';
 
 /// 页面切换动画工具类
 class PageTransitionBuilder {
+  /// 获取随机动画类型（排除 none 和 random）
+  static PageTransitionType getRandomType() {
+    final random = Random();
+    final validTypes = PageTransitionType.values
+        .where((type) => type != PageTransitionType.none && type != PageTransitionType.random)
+        .toList();
+    return validTypes[random.nextInt(validTypes.length)];
+  }
+  
   /// 根据动画类型构建过渡动画
   static Widget buildTransition(
     PageTransitionType type,
@@ -12,14 +21,14 @@ class PageTransitionBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    // 处理特殊类型
+    // 处理无动画
     if (type == PageTransitionType.none) {
-      // 无动画，直接返回
       return child;
-    } else if (type == PageTransitionType.random) {
-      // 随机选择一个动画（排除 none 和 random）
-      type = _getRandomType();
     }
+    
+    // random 类型应该在调用前就被转换为具体类型
+    assert(type != PageTransitionType.random, 
+        'Random type should be resolved before calling buildTransition');
     
     switch (type) {
       case PageTransitionType.none:
@@ -88,15 +97,6 @@ class PageTransitionBuilder {
           ),
         );
     }
-  }
-  
-  /// 获取随机动画类型（排除 none 和 random）
-  static PageTransitionType _getRandomType() {
-    final random = Random();
-    final validTypes = PageTransitionType.values
-        .where((type) => type != PageTransitionType.none && type != PageTransitionType.random)
-        .toList();
-    return validTypes[random.nextInt(validTypes.length)];
   }
   
   /// 滑动过渡动画

@@ -980,47 +980,57 @@ class PageTransitionTypeAdapter extends TypeAdapter<PageTransitionType> {
   PageTransitionType read(BinaryReader reader) {
     switch (reader.readByte()) {
       case 0:
-        return PageTransitionType.slideFromRight;
+        return PageTransitionType.none;
       case 1:
-        return PageTransitionType.slideFromBottom;
+        return PageTransitionType.random;
       case 2:
-        return PageTransitionType.slideFromLeft;
+        return PageTransitionType.slideFromRight;
       case 3:
-        return PageTransitionType.slideFromTop;
+        return PageTransitionType.slideFromBottom;
       case 4:
-        return PageTransitionType.fade;
+        return PageTransitionType.slideFromLeft;
       case 5:
-        return PageTransitionType.scale;
+        return PageTransitionType.slideFromTop;
       case 6:
+        return PageTransitionType.fade;
+      case 7:
+        return PageTransitionType.scale;
+      case 8:
         return PageTransitionType.rotation;
       default:
-        return PageTransitionType.slideFromRight;
+        return PageTransitionType.none;
     }
   }
 
   @override
   void write(BinaryWriter writer, PageTransitionType obj) {
     switch (obj) {
-      case PageTransitionType.slideFromRight:
+      case PageTransitionType.none:
         writer.writeByte(0);
         break;
-      case PageTransitionType.slideFromBottom:
+      case PageTransitionType.random:
         writer.writeByte(1);
         break;
-      case PageTransitionType.slideFromLeft:
+      case PageTransitionType.slideFromRight:
         writer.writeByte(2);
         break;
-      case PageTransitionType.slideFromTop:
+      case PageTransitionType.slideFromBottom:
         writer.writeByte(3);
         break;
-      case PageTransitionType.fade:
+      case PageTransitionType.slideFromLeft:
         writer.writeByte(4);
         break;
-      case PageTransitionType.scale:
+      case PageTransitionType.slideFromTop:
         writer.writeByte(5);
         break;
-      case PageTransitionType.rotation:
+      case PageTransitionType.fade:
         writer.writeByte(6);
+        break;
+      case PageTransitionType.scale:
+        writer.writeByte(7);
+        break;
+      case PageTransitionType.rotation:
+        writer.writeByte(8);
         break;
     }
   }
@@ -1044,57 +1054,62 @@ class DialogAnimationTypeAdapter extends TypeAdapter<DialogAnimationType> {
   DialogAnimationType read(BinaryReader reader) {
     switch (reader.readByte()) {
       case 0:
-        return DialogAnimationType.random;
+        return DialogAnimationType.none;
       case 1:
-        return DialogAnimationType.fade;
+        return DialogAnimationType.random;
       case 2:
-        return DialogAnimationType.scale;
+        return DialogAnimationType.fade;
       case 3:
-        return DialogAnimationType.slideUp;
+        return DialogAnimationType.scale;
       case 4:
-        return DialogAnimationType.slideDown;
+        return DialogAnimationType.slideUp;
       case 5:
-        return DialogAnimationType.slideLeft;
+        return DialogAnimationType.slideDown;
       case 6:
-        return DialogAnimationType.slideRight;
+        return DialogAnimationType.slideLeft;
       case 7:
-        return DialogAnimationType.fadeScale;
+        return DialogAnimationType.slideRight;
       case 8:
+        return DialogAnimationType.fadeScale;
+      case 9:
         return DialogAnimationType.fadeSlide;
       default:
-        return DialogAnimationType.random;
+        return DialogAnimationType.none;
     }
   }
 
   @override
   void write(BinaryWriter writer, DialogAnimationType obj) {
     switch (obj) {
-      case DialogAnimationType.random:
+      case DialogAnimationType.none:
         writer.writeByte(0);
         break;
-      case DialogAnimationType.fade:
+      case DialogAnimationType.random:
         writer.writeByte(1);
         break;
-      case DialogAnimationType.scale:
+      case DialogAnimationType.fade:
         writer.writeByte(2);
         break;
-      case DialogAnimationType.slideUp:
+      case DialogAnimationType.scale:
         writer.writeByte(3);
         break;
-      case DialogAnimationType.slideDown:
+      case DialogAnimationType.slideUp:
         writer.writeByte(4);
         break;
-      case DialogAnimationType.slideLeft:
+      case DialogAnimationType.slideDown:
         writer.writeByte(5);
         break;
-      case DialogAnimationType.slideRight:
+      case DialogAnimationType.slideLeft:
         writer.writeByte(6);
         break;
-      case DialogAnimationType.fadeScale:
+      case DialogAnimationType.slideRight:
         writer.writeByte(7);
         break;
-      case DialogAnimationType.fadeSlide:
+      case DialogAnimationType.fadeScale:
         writer.writeByte(8);
+        break;
+      case DialogAnimationType.fadeSlide:
+        writer.writeByte(9);
         break;
     }
   }
