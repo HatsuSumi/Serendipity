@@ -33,8 +33,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   }
 
   /// 导航到编辑页面
-  Future<void> _navigateToEditPage(BuildContext context, WidgetRef ref) async {
-    // 获取用户设置的页面切换动画类型
+  void _navigateToEditPage(BuildContext context, WidgetRef ref) {
+    // 获取用户设置的页面切换动画类型（在异步操作前读取）
     var transitionType = ref.read(pageTransitionProvider);
     
     // 如果是随机动画，获取一个具体的动画类型
@@ -42,7 +42,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       transitionType = PageTransitionBuilder.getRandomType();
     }
     
-    final result = await Navigator.of(context).push(
+    // 异步导航
+    Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
           return CreateRecordPage(recordToEdit: _currentRecord);
@@ -60,17 +61,17 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             ? Duration.zero
             : const Duration(milliseconds: 300),
       ),
-    );
-
-    // 如果返回了更新后的记录，刷新页面
-    if (result != null && result is EncounterRecord) {
-      setState(() {
-        _currentRecord = result;
-      });
-      
-      // 刷新记录列表
-      ref.read(recordsProvider.notifier).refresh();
-    }
+    ).then((result) {
+      // 如果返回了更新后的记录，刷新页面
+      if (mounted && result != null && result is EncounterRecord) {
+        setState(() {
+          _currentRecord = result;
+        });
+        
+        // 刷新记录列表
+        ref.read(recordsProvider.notifier).refresh();
+      }
+    });
   }
 
   @override
