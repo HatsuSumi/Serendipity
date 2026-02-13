@@ -6,6 +6,8 @@ import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/page_transition_provider.dart';
+import '../../core/utils/page_transition_builder.dart';
 import 'create_record_page.dart';
 
 /// 记录详情页面
@@ -32,9 +34,31 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
   /// 导航到编辑页面
   Future<void> _navigateToEditPage(BuildContext context, WidgetRef ref) async {
+    // 获取用户设置的页面切换动画类型
+    var transitionType = ref.read(pageTransitionProvider);
+    
+    // 如果是随机动画，获取一个具体的动画类型
+    if (transitionType == PageTransitionType.random) {
+      transitionType = PageTransitionBuilder.getRandomType();
+    }
+    
     final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CreateRecordPage(recordToEdit: _currentRecord),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return CreateRecordPage(recordToEdit: _currentRecord);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return PageTransitionBuilder.buildTransition(
+            transitionType,
+            context,
+            animation,
+            secondaryAnimation,
+            child,
+          );
+        },
+        transitionDuration: transitionType == PageTransitionType.none
+            ? Duration.zero
+            : const Duration(milliseconds: 300),
       ),
     );
 
