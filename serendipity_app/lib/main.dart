@@ -16,21 +16,17 @@ void main() async {
   await Hive.initFlutter();
   
   // 注册所有 TypeAdapter
-  // 枚举类型 (typeId: 10-23)
+  // 枚举类型 (typeId: 10-22)
   Hive.registerAdapter(EncounterStatusAdapter());
   Hive.registerAdapter(EmotionIntensityAdapter());
   Hive.registerAdapter(PlaceTypeAdapter());
   Hive.registerAdapter(WeatherAdapter());
-  Hive.registerAdapter(MatchStatusAdapter());
-  Hive.registerAdapter(MatchConfidenceAdapter());
-  Hive.registerAdapter(VerificationChoiceAdapter());
   Hive.registerAdapter(AuthProviderAdapter());
   Hive.registerAdapter(MembershipTierAdapter());
   Hive.registerAdapter(MembershipStatusAdapter());
   Hive.registerAdapter(PaymentMethodAdapter());
   Hive.registerAdapter(PaymentStatusAdapter());
   Hive.registerAdapter(ThemeOptionAdapter());
-  Hive.registerAdapter(CreditChangeReasonAdapter());
   
   // 数据模型类型 (typeId: 0-2)
   Hive.registerAdapter(TagWithNoteAdapter());
