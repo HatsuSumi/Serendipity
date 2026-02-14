@@ -239,13 +239,47 @@ class StoryLinesPage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('创建故事线'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            hintText: '输入故事线名称...',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 提示
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '将同一个人的多次记录关联到一个故事线，形成完整的时间线故事。',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // 输入框
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                hintText: '输入故事线名称...',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+          ],
         ),
         actions: [
           TextButton(
