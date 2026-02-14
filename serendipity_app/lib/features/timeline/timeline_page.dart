@@ -7,6 +7,7 @@ import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
+import '../story_line/link_to_story_line_dialog.dart';
 
 // 用于传递记录对象的 Provider
 final selectedRecordProvider = StateProvider<EncounterRecord?>((ref) => null);
@@ -429,10 +430,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 显示关联到故事线对话框
   void _showLinkToStoryLineDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
-    // TODO: 实现关联到故事线对话框
-    // 这里需要导入 LinkToStoryLineDialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('功能开发中...')),
+    showDialog(
+      context: context,
+      builder: (context) => LinkToStoryLineDialog(recordId: record.id),
     );
   }
 
