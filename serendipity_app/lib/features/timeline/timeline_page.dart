@@ -233,20 +233,58 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                     style: const TextStyle(fontSize: 24),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    record.status.label,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: statusColor,
+                  Expanded(
+                    child: Text(
+                      record.status.label,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
                     ),
                   ),
-                  const Spacer(),
                   Text(
                     '创建：${_formatTime(record.createdAt)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
+                  ),
+                  // 更多菜单
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) => _handleMenuAction(context, ref, record, value),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined),
+                            SizedBox(width: 8),
+                            Text('编辑'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'link',
+                        child: Row(
+                          children: [
+                            Icon(Icons.auto_stories_outlined),
+                            SizedBox(width: 8),
+                            Text('关联到故事线'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('删除', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -345,6 +383,96 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 处理菜单操作
+  void _handleMenuAction(BuildContext context, WidgetRef ref, EncounterRecord record, String action) {
+    switch (action) {
+      case 'edit':
+        _navigateToEditRecord(context, ref, record);
+        break;
+      case 'link':
+        _showLinkToStoryLineDialog(context, ref, record);
+        break;
+      case 'delete':
+        _showDeleteConfirmDialog(context, ref, record);
+        break;
+    }
+  }
+
+  /// 导航到编辑记录页面
+  void _navigateToEditRecord(BuildContext context, WidgetRef ref, EncounterRecord record) {
+    var transitionType = ref.read(pageTransitionProvider);
+    if (transitionType == PageTransitionType.random) {
+      transitionType = PageTransitionBuilder.getRandomType();
+    }
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return RecordDetailPage(record: record);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return PageTransitionBuilder.buildTransition(
+            transitionType,
+            context,
+            animation,
+            secondaryAnimation,
+            child,
+          );
+        },
+      ),
+    );
+  }
+
+  /// 显示关联到故事线对话框
+  void _showLinkToStoryLineDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
+    // TODO: 实现关联到故事线对话框
+    // 这里需要导入 LinkToStoryLineDialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('功能开发中...')),
+    );
+  }
+
+  /// 显示删除确认对话框
+  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除记录'),
+        content: const Text('确定要删除这条记录吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await ref.read(recordsProvider.notifier).deleteRecord(record.id);
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('记录已删除')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('删除失败：$e')),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('删除'),
+          ),
+        ],
       ),
     );
   }
