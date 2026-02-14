@@ -580,8 +580,13 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             content: SizedBox(
               width: double.maxFinite,
               child: sortedPlaces.isEmpty
-                  ? const Center(
-                      child: Text('暂无历史地点'),
+                  ? Center(
+                      child: Text(
+                        '暂无历史地点',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
                     )
                   : ListView.builder(
                       shrinkWrap: true,
@@ -602,7 +607,12 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: const Text('确认删除'),
-                                  content: Text('确定要删除地点"${item.placeName}"的历史记录吗？\n\n这不会删除相关的记录，只是从历史列表中移除。'),
+                                  content: Text(
+                                    '确定要删除地点"${item.placeName}"的历史记录吗？\n\n这不会删除相关的记录，只是从历史列表中移除。',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                  ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.of(context).pop(false),
