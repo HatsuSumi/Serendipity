@@ -25,15 +25,6 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
   bool _isCreatingNew = false;
 
   @override
-  void initState() {
-    super.initState();
-    // 监听文本变化，更新按钮状态
-    _nameController.addListener(() {
-      setState(() {});
-    });
-  }
-
-  @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
@@ -217,9 +208,14 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                     child: const Text('取消'),
                   ),
                   const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _canConfirm() ? _handleConfirm : null,
-                    child: const Text('确认'),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _nameController,
+                    builder: (context, value, child) {
+                      return FilledButton(
+                        onPressed: _canConfirm() ? _handleConfirm : null,
+                        child: const Text('确认'),
+                      );
+                    },
                   ),
                 ],
               ),
