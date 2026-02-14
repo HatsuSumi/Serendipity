@@ -25,6 +25,15 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
   bool _isCreatingNew = false;
 
   @override
+  void initState() {
+    super.initState();
+    // 监听文本变化，更新按钮状态
+    _nameController.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
