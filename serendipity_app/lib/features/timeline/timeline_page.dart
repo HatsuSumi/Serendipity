@@ -243,7 +243,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   ),
                   const Spacer(),
                   Text(
-                    _formatTime(record.timestamp),
+                    _formatTime(record.createdAt),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
