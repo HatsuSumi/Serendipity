@@ -322,14 +322,18 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   /// 格式化时间
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    
+    // 比较日期（忽略时间）
+    final today = DateTime(now.year, now.month, now.day);
+    final recordDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    final daysDifference = today.difference(recordDate).inDays;
 
-    if (difference.inDays == 0) {
+    if (daysDifference == 0) {
       return '今天 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays == 1) {
+    } else if (daysDifference == 1) {
       return '昨天 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}天前';
+    } else if (daysDifference < 7) {
+      return '$daysDifference天前';
     } else {
       return '${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
     }
