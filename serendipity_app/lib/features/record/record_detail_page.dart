@@ -8,6 +8,7 @@ import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
+import '../../core/services/storage_service.dart';
 import 'create_record_page.dart';
 
 /// 记录详情页面
@@ -603,8 +604,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: 删除记录
-              MessageHelper.showInfo(context, '删除功能待开发');
+              _deleteRecord(context);
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
@@ -614,6 +614,31 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         ],
       ),
     );
+  }
+
+  /// 删除记录
+  Future<void> _deleteRecord(BuildContext context) async {
+    try {
+      // 从存储中删除记录
+      final storageService = StorageService();
+      await storageService.deleteRecord(_currentRecord.id);
+      
+      // 让 Provider 失效，触发自动重新加载
+      if (mounted) {
+        ref.invalidate(recordsProvider);
+        
+        // 返回上一页
+        Navigator.of(context).pop();
+        
+        // 显示成功提示
+        MessageHelper.showSuccess(context, '记录已删除');
+      }
+    } catch (e) {
+      // 显示错误提示
+      if (mounted) {
+        MessageHelper.showError(context, '删除失败：$e');
+      }
+    }
   }
 
   /// 格式化日期时间
