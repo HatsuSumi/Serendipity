@@ -9,6 +9,7 @@ import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
+import 'add_existing_records_dialog.dart';
 
 /// 故事线详情页面
 class StoryLineDetailPage extends ConsumerStatefulWidget {
@@ -83,6 +84,24 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_currentStoryLine.name),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) => _handleMenuAction(context, value),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'add_existing',
+                child: Row(
+                  children: [
+                    Icon(Icons.playlist_add),
+                    SizedBox(width: 8),
+                    Text('添加现有记录'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -298,6 +317,28 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
         ),
       ),
     );
+  }
+
+  /// 处理菜单操作
+  void _handleMenuAction(BuildContext context, String action) {
+    switch (action) {
+      case 'add_existing':
+        _showAddExistingRecordsDialog(context);
+        break;
+    }
+  }
+
+  /// 显示添加现有记录对话框
+  void _showAddExistingRecordsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AddExistingRecordsDialog(storyLine: _currentStoryLine),
+    ).then((result) {
+      if (result == true) {
+        // 添加成功后刷新
+        _refresh();
+      }
+    });
   }
 
   /// 导航到记录详情
