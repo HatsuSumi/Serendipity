@@ -90,8 +90,9 @@
 ### 5. 页面设计
 
 #### 5.1 底部导航
-- [x] 4个标签页
+- [x] 5个标签页
   - [x] TA（时间轴）- 使用 `Icons.auto_awesome` / `Icons.auto_awesome_outlined`
+  - [x] 故事线 - 使用 `Icons.auto_stories` / `Icons.auto_stories_outlined`
   - [x] 地图 - 使用 `Icons.map` / `Icons.map_outlined`
   - [x] 树洞（社区）- 使用 `Icons.cloud` / `Icons.cloud_outlined`
   - [x] 我的 - 使用 `Icons.person` / `Icons.person_outline`
@@ -153,18 +154,31 @@
 - [ ] 关联到故事线按钮
 - [ ] 发布到社区按钮
 
-#### 5.5 故事线页面
-- [ ] 故事线列表
-  - [ ] 显示故事线名称
-  - [ ] 显示记录数量
-  - [ ] 点击进入详情
-- [ ] 创建故事线按钮
+#### 5.5 故事线列表页面
+- [x] 底部导航入口（第2个标签）
+- [x] AppBar 标题："我的故事线"
+- [x] 空状态
+  - [x] 图标：📖
+  - [x] 文案："还没有故事线"
+  - [x] 提示："点击下方按钮创建第一条故事线"
+- [x] 故事线列表
+  - [x] 卡片式设计
+  - [x] 显示故事线名称
+  - [x] 显示记录数量
+  - [x] 点击进入详情
+  - [x] 更多菜单（重命名、删除）
+- [x] 浮动按钮："创建故事线"
+- [x] 下拉刷新
 
 #### 5.6 故事线详情页面
-- [ ] 显示故事线名称
-- [ ] 按时间顺序显示所有记录
-- [ ] 记录之间显示箭头连接
-- [ ] 添加新的进展按钮
+- [x] 显示故事线名称
+- [x] 按时间顺序显示所有记录
+- [x] 记录之间显示箭头连接（↓）
+- [x] 每条记录显示：时间、状态、地点、描述、标签
+- [x] 点击记录进入详情
+- [x] 底部"添加新的进展"按钮
+- [x] 浮动按钮："添加新的进展"
+- [x] 下拉刷新
 - [ ] 标签词云图（💎 会员功能）
 
 #### 5.7 地图页面
@@ -200,10 +214,11 @@
   - [ ] 重逢：X 人
   - [ ] 成功率：X%
 - [ ] 功能入口
-  - [ ] 我的故事线
   - [ ] 我的成就
   - [ ] 设置
   - [ ] 升级会员（如果是免费用户）
+
+**说明**：故事线入口已移至底部导航第2个标签，不再放在"我的"页面
 
 #### 5.10 成就页面
 - [ ] 已解锁/总数
@@ -409,11 +424,12 @@
 ### 12. 图标设计
 
 #### 12.1 底部导航图标
-- [ ] 使用 Material Icons（清晰、专业、跨平台一致）
-- [ ] TA - `Icons.auto_awesome` / `Icons.auto_awesome_outlined`
-- [ ] 地图 - `Icons.map` / `Icons.map_outlined`
-- [ ] 树洞 - `Icons.cloud` / `Icons.cloud_outlined`
-- [ ] 我的 - `Icons.person` / `Icons.person_outline`
+- [x] 使用 Material Icons（清晰、专业、跨平台一致）
+- [x] TA - `Icons.auto_awesome` / `Icons.auto_awesome_outlined`
+- [x] 故事线 - `Icons.auto_stories` / `Icons.auto_stories_outlined`
+- [x] 地图 - `Icons.map` / `Icons.map_outlined`
+- [x] 树洞 - `Icons.cloud` / `Icons.cloud_outlined`
+- [x] 我的 - `Icons.person` / `Icons.person_outline`
 
 #### 12.2 状态图标
 - [ ] 错过：🌫️

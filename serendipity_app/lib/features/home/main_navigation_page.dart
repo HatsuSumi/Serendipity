@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
 import '../timeline/timeline_page.dart';
+import '../story_line/story_lines_page.dart';
 import '../settings/settings_page.dart';
 import '../record/create_record_page.dart';
 
@@ -22,10 +23,11 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
       body: IndexedStack(
         index: _currentIndex,
         children: const [
-          TimelinePage(), // TA（时间轴）
+          TimelinePage(), // 时间轴
+          StoryLinesPage(), // 故事线
           Center(child: Text('地图')), // TODO: 地图页面
           Center(child: Text('树洞')), // TODO: 社区页面
-          SettingsPage(), // 设置页面（临时演示）
+          SettingsPage(), // 我的
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -40,6 +42,11 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
             icon: Icon(Icons.auto_awesome_outlined),
             selectedIcon: Icon(Icons.auto_awesome),
             label: 'TA',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.auto_stories_outlined),
+            selectedIcon: Icon(Icons.auto_stories),
+            label: '故事线',
           ),
           NavigationDestination(
             icon: Icon(Icons.map_outlined),
