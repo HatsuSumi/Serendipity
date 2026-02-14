@@ -4,13 +4,15 @@ import '../../models/enums.dart';
 
 /// 页面切换动画工具类
 class PageTransitionBuilder {
+  // 使用全局 Random 实例，避免短时间内生成相同随机数
+  static final Random _random = Random();
+  
   /// 获取随机动画类型（排除 none 和 random）
   static PageTransitionType getRandomType() {
-    final random = Random();
     final validTypes = PageTransitionType.values
         .where((type) => type != PageTransitionType.none && type != PageTransitionType.random)
         .toList();
-    return validTypes[random.nextInt(validTypes.length)];
+    return validTypes[_random.nextInt(validTypes.length)];
   }
   
   /// 根据动画类型构建过渡动画
