@@ -39,15 +39,11 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 - [ ] `story_line.dart` (typeId: 3)
 - [ ] `achievement.dart` (typeId: 4)
-- [ ] `match.dart` (typeId: 5)
-- [ ] `conversation.dart` (typeId: 6)
-- [ ] `community_post.dart` (typeId: 7)
-- [ ] `user.dart` (typeId: 8)
-- [ ] `membership.dart` (typeId: 9)
-- [ ] `user_settings.dart` (typeId: 24)
-- [ ] `user_credit_score.dart` (typeId: 25)
-- [ ] `keep_in_memory_list.dart` (typeId: 26)
-- [ ] `payment_record.dart` (typeId: 27)
+- [ ] `community_post.dart` (typeId: 5)
+- [ ] `user.dart` (typeId: 6)
+- [ ] `membership.dart` (typeId: 7)
+- [ ] `user_settings.dart` (typeId: 8)
+- [ ] `payment_record.dart` (typeId: 9)
 
 **注意**：typeId 必须唯一，已使用的 typeId：
 - 0-2: TagWithNote, Location, EncounterRecord
@@ -70,30 +66,23 @@ flutter pub run build_runner build --delete-conflicting-outputs
 | 2 | EncounterRecord | encounter_record.dart |
 | 3 | StoryLine | story_line.dart |
 | 4 | Achievement | achievement.dart |
-| 5 | Match | match.dart |
-| 6 | Conversation | conversation.dart |
-| 7 | CommunityPost | community_post.dart |
-| 8 | User | user.dart |
-| 9 | Membership | membership.dart |
+| 5 | CommunityPost | community_post.dart |
+| 6 | User | user.dart |
+| 7 | Membership | membership.dart |
+| 8 | UserSettings | user_settings.dart |
+| 9 | PaymentRecord | payment_record.dart |
 | 10 | EncounterStatus | enums.dart |
 | 11 | EmotionIntensity | enums.dart |
 | 12 | PlaceType | enums.dart |
 | 13 | Weather | enums.dart |
-| 14 | MatchStatus | enums.dart |
-| 15 | MatchConfidence | enums.dart |
-| 16 | VerificationChoice | enums.dart |
+| 14-16 | 预留给其他枚举 | - |
 | 17 | AuthProvider | enums.dart |
 | 18 | MembershipTier | enums.dart |
 | 19 | MembershipStatus | enums.dart |
 | 20 | PaymentMethod | enums.dart |
 | 21 | PaymentStatus | enums.dart |
 | 22 | AppTheme | enums.dart |
-| 23 | CreditChangeReason | enums.dart |
-| 24 | UserSettings | user_settings.dart |
-| 25 | UserCreditScore | user_credit_score.dart |
-| 26 | KeepInMemoryList | keep_in_memory_list.dart |
-| 27 | PaymentRecord | payment_record.dart |
-| 28+ | 预留给其他嵌套类 | - |
+| 23+ | 预留给其他枚举 | - |
 
 ## 注意事项
 

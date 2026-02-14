@@ -9,11 +9,10 @@
 - ✅ 添加 `build_runner: ^2.4.13` (dev)
 
 ### 2. 数据模型注解
-- ✅ 为 13 个枚举添加 Hive 注解 (typeId: 10-23)
+- ✅ 为 9 个枚举添加 Hive 注解 (typeId: 10-18)
   - EncounterStatus, EmotionIntensity, PlaceType, Weather
-  - MatchStatus, MatchConfidence, VerificationChoice
   - AuthProvider, MembershipTier, MembershipStatus
-  - PaymentMethod, PaymentStatus, AppTheme, CreditChangeReason
+  - PaymentMethod, PaymentStatus, AppTheme
   
 - ✅ 为 3 个核心类添加 Hive 注解 (typeId: 0-2)
   - TagWithNote (typeId: 0)
@@ -73,17 +72,14 @@
 | 11 | EmotionIntensity | enums.dart | ✅ |
 | 12 | PlaceType | enums.dart | ✅ |
 | 13 | Weather | enums.dart | ✅ |
-| 14 | MatchStatus | enums.dart | ✅ |
-| 15 | MatchConfidence | enums.dart | ✅ |
-| 16 | VerificationChoice | enums.dart | ✅ |
+| 14-16 | 预留给其他枚举 | - | ⏳ |
 | 17 | AuthProvider | enums.dart | ✅ |
 | 18 | MembershipTier | enums.dart | ✅ |
 | 19 | MembershipStatus | enums.dart | ✅ |
 | 20 | PaymentMethod | enums.dart | ✅ |
 | 21 | PaymentStatus | enums.dart | ✅ |
 | 22 | AppTheme | enums.dart | ✅ |
-| 23 | CreditChangeReason | enums.dart | ✅ |
-| 24+ | 预留给其他枚举 | - | ⏳ |
+| 23+ | 预留给其他枚举 | - | ⏳ |
 
 ## 🎯 如何使用
 
@@ -189,15 +185,11 @@ flutter test test/services/storage_service_test.dart
 
 - [ ] `story_line.dart` (typeId: 3)
 - [ ] `achievement.dart` (typeId: 4)
-- [ ] `match.dart` (typeId: 5)
-- [ ] `conversation.dart` (typeId: 6)
-- [ ] `community_post.dart` (typeId: 7)
-- [ ] `user.dart` (typeId: 8)
-- [ ] `membership.dart` (typeId: 9)
-- [ ] `user_settings.dart` (typeId: 24)
-- [ ] `user_credit_score.dart` (typeId: 25)
-- [ ] `keep_in_memory_list.dart` (typeId: 26)
-- [ ] `payment_record.dart` (typeId: 27)
+- [ ] `community_post.dart` (typeId: 5)
+- [ ] `user.dart` (typeId: 6)
+- [ ] `membership.dart` (typeId: 7)
+- [ ] `user_settings.dart` (typeId: 8)
+- [ ] `payment_record.dart` (typeId: 9)
 
 ### 其他待完成功能
 
