@@ -408,8 +408,8 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
             _buildIfReencounterSection(),
             const SizedBox(height: 24),
 
-            // 高级选项
-            _buildAdvancedOptionsSection(),
+            // 其他设置
+            _buildOtherSettingsSection(),
           ],
         ),
       ),
@@ -1334,13 +1334,13 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
     );
   }
   
-  /// 高级选项区域
-  Widget _buildAdvancedOptionsSection() {
+  /// 其他设置区域
+  Widget _buildOtherSettingsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '⚙️ 高级选项',
+          '📌 其他设置',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
