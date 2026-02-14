@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/page_transition_provider.dart';
+import '../../core/utils/page_transition_builder.dart';
+import '../../core/utils/tab_transition_builder.dart';
+import '../../models/enums.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';
 import '../settings/settings_page.dart';
@@ -17,18 +21,42 @@ class MainNavigationPage extends ConsumerStatefulWidget {
 class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   int _currentIndex = 0;
 
+  // 页面列表
+  final List<Widget> _pages = const [
+    TimelinePage(), // 时间轴
+    StoryLinesPage(), // 故事线
+    Center(child: Text('地图')), // TODO: 地图页面
+    Center(child: Text('树洞')), // TODO: 社区页面
+    SettingsPage(), // 我的
+  ];
+
   @override
   Widget build(BuildContext context) {
+    // 读取用户设置的动画类型
+    var transitionType = ref.watch(pageTransitionProvider);
+    
+    // 如果是随机动画，获取具体类型
+    if (transitionType == PageTransitionType.random) {
+      transitionType = PageTransitionBuilder.getRandomType();
+    }
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          TimelinePage(), // 时间轴
-          StoryLinesPage(), // 故事线
-          Center(child: Text('地图')), // TODO: 地图页面
-          Center(child: Text('树洞')), // TODO: 社区页面
-          SettingsPage(), // 我的
-        ],
+      body: AnimatedSwitcher(
+        duration: transitionType == PageTransitionType.none
+            ? Duration.zero
+            : const Duration(milliseconds: 300),
+        transitionBuilder: (child, animation) {
+          return TabTransitionBuilder.buildTransition(
+            transitionType,
+            context,
+            animation,
+            child,
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey(_currentIndex),
+          child: _pages[_currentIndex],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
