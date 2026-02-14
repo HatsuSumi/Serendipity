@@ -6,7 +6,10 @@ import '../../models/enums.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/page_transition_provider.dart';
+import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
+import '../../core/utils/message_helper.dart';
+import '../../core/utils/dialog_helper.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import 'add_existing_records_dialog.dart';
@@ -96,6 +99,26 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
                     Icon(Icons.playlist_add),
                     SizedBox(width: 8),
                     Text('添加现有记录'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'rename',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined),
+                    SizedBox(width: 8),
+                    Text('重命名'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('删除', style: TextStyle(color: Colors.red)),
                   ],
                 ),
               ),
@@ -325,6 +348,12 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
       case 'add_existing':
         _showAddExistingRecordsDialog(context);
         break;
+      case 'rename':
+        _showRenameDialog(context);
+        break;
+      case 'delete':
+        _showDeleteConfirmDialog(context);
+        break;
     }
   }
 
@@ -339,6 +368,99 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
         _refresh();
       }
     });
+  }
+
+  /// 显示重命名对话框
+  void _showRenameDialog(BuildContext context) {
+    final nameController = TextEditingController(text: _currentStoryLine.name);
+
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重命名故事线'),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            hintText: '输入新名称...',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final name = nameController.text.trim();
+              if (name.isEmpty) {
+                MessageHelper.showWarning(context, '请输入故事线名称');
+                return;
+              }
+
+              final updatedStoryLine = _currentStoryLine.copyWith(
+                name: name,
+                updatedAt: DateTime.now(),
+              );
+
+              try {
+                await ref.read(storyLinesProvider.notifier).updateStoryLine(updatedStoryLine);
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _currentStoryLine = updatedStoryLine;
+                  });
+                  MessageHelper.showSuccess(context, '已重命名');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  MessageHelper.showError(context, '重命名失败：$e');
+                }
+              }
+            },
+            child: const Text('确认'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示删除确认对话框
+  void _showDeleteConfirmDialog(BuildContext context) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除故事线'),
+        content: Text('确定要删除"${_currentStoryLine.name}"吗？\n\n记录不会被删除，只是取消关联。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await ref.read(storyLinesProvider.notifier).deleteStoryLine(_currentStoryLine.id);
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // 关闭对话框
+                  Navigator.of(context).pop(); // 返回列表页
+                  MessageHelper.showSuccess(context, '故事线已删除');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  MessageHelper.showError(context, '删除失败：$e');
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 导航到记录详情
