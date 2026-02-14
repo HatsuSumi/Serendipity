@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
+import '../../core/utils/message_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
@@ -454,16 +455,11 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                 await ref.read(recordsProvider.notifier).deleteRecord(record.id);
                 if (context.mounted) {
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('记录已删除')),
-                  );
+                  MessageHelper.showSuccess(context, '记录已删除');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('删除失败：$e')),
-                  );
+                  MessageHelper.showError(context, '删除失败：$e');
                 }
               }
             },
