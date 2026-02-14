@@ -35,9 +35,13 @@ class CreateRecordPage extends StatefulWidget {
   /// 要编辑的记录（如果为null则是创建模式）
   final EncounterRecord? recordToEdit;
   
+  /// 初始故事线ID（创建记录时自动关联）
+  final String? initialStoryLineId;
+  
   const CreateRecordPage({
     super.key,
     this.recordToEdit,
+    this.initialStoryLineId,
   });
   
   /// 是否为编辑模式
@@ -136,6 +140,9 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
       
       // 预填充高级选项
       _selectedStoryLineId = record.storyLineId;
+    } else if (widget.initialStoryLineId != null) {
+      // 创建模式下，如果提供了初始故事线ID，则自动关联
+      _selectedStoryLineId = widget.initialStoryLineId;
     }
   }
 

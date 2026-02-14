@@ -9,6 +9,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/services/storage_service.dart';
+import '../story_line/link_to_story_line_dialog.dart';
 import 'create_record_page.dart';
 
 /// 记录详情页面
@@ -576,8 +577,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
       case 'storyline':
-        // TODO: 关联到故事线
-        MessageHelper.showInfo(context, '关联到故事线功能待开发');
+        _showLinkToStoryLineDialog(context);
         break;
       case 'community':
         // TODO: 发布到社区
@@ -587,6 +587,26 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         _showDeleteConfirmDialog(context);
         break;
     }
+  }
+
+  /// 显示关联到故事线对话框
+  void _showLinkToStoryLineDialog(BuildContext context) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => LinkToStoryLineDialog(
+        recordId: _currentRecord.id,
+      ),
+    ).then((result) {
+      // 如果关联成功，刷新当前记录
+      if (result == true && mounted) {
+        final updatedRecord = StorageService().getRecord(_currentRecord.id);
+        if (updatedRecord != null) {
+          setState(() {
+            _currentRecord = updatedRecord;
+          });
+        }
+      }
+    });
   }
 
   /// 显示删除确认对话框

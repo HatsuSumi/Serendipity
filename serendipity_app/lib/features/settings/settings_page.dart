@@ -4,6 +4,7 @@ import '../../core/providers/page_transition_provider.dart';
 import '../../core/providers/dialog_animation_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../models/enums.dart';
+import '../story_line/story_lines_page.dart';
 
 /// 设置页面（演示版）
 class SettingsPage extends ConsumerWidget {
@@ -16,10 +17,43 @@ class SettingsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('设置'),
+        title: const Text('我的'),
       ),
       body: ListView(
         children: [
+          // 故事线入口
+          Card(
+            margin: const EdgeInsets.all(16),
+            child: ListTile(
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Center(
+                  child: Text('📖', style: TextStyle(fontSize: 24)),
+                ),
+              ),
+              title: const Text(
+                '我的故事线',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text('查看和管理你的故事线'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const StoryLinesPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          const Divider(),
+          
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
