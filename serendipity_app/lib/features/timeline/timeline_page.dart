@@ -11,22 +11,72 @@ import '../record/record_detail_page.dart';
 // 用于传递记录对象的 Provider
 final selectedRecordProvider = StateProvider<EncounterRecord?>((ref) => null);
 
+/// 排序方式
+enum RecordSortType {
+  createdDesc('创建时间 ↓'),
+  createdAsc('创建时间 ↑'),
+  updatedDesc('更新时间 ↓'),
+  updatedAsc('更新时间 ↑');
+
+  final String label;
+  const RecordSortType(this.label);
+}
+
 /// 时间轴页面（记录列表）
-class TimelinePage extends ConsumerWidget {
+class TimelinePage extends ConsumerStatefulWidget {
   const TimelinePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimelinePage> createState() => _TimelinePageState();
+}
+
+class _TimelinePageState extends ConsumerState<TimelinePage> {
+  // 当前排序方式（默认创建时间降序）
+  RecordSortType _currentSort = RecordSortType.createdDesc;
+
+  @override
+  Widget build(BuildContext context) {
     final recordsAsync = ref.watch(recordsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('TA'),
+        actions: [
+          PopupMenuButton<RecordSortType>(
+            icon: const Icon(Icons.sort),
+            tooltip: '排序方式',
+            onSelected: (RecordSortType type) {
+              setState(() {
+                _currentSort = type;
+              });
+            },
+            itemBuilder: (context) => RecordSortType.values.map((type) {
+              return PopupMenuItem(
+                value: type,
+                child: Row(
+                  children: [
+                    if (_currentSort == type)
+                      const Icon(Icons.check, size: 20)
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    Text(type.label),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
       body: recordsAsync.when(
-        data: (records) => records.isEmpty
-            ? _buildEmptyState(context)
-            : _buildRecordList(context, records, ref),
+        data: (records) {
+          // 根据当前排序方式排序
+          final sortedRecords = _sortRecords(records);
+          
+          return sortedRecords.isEmpty
+              ? _buildEmptyState(context)
+              : _buildRecordList(context, sortedRecords, ref);
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
@@ -54,6 +104,28 @@ class TimelinePage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// 根据排序方式排序记录
+  List<EncounterRecord> _sortRecords(List<EncounterRecord> records) {
+    final sorted = List<EncounterRecord>.from(records);
+    
+    switch (_currentSort) {
+      case RecordSortType.createdDesc:
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+      case RecordSortType.createdAsc:
+        sorted.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        break;
+      case RecordSortType.updatedDesc:
+        sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        break;
+      case RecordSortType.updatedAsc:
+        sorted.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
+        break;
+    }
+    
+    return sorted;
   }
 
   /// 空状态
