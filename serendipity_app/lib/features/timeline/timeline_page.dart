@@ -277,6 +277,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                         ),
                       ),
                       const PopupMenuItem(
+                        value: 'publish',
+                        child: Row(
+                          children: [
+                            Icon(Icons.cloud_outlined),
+                            SizedBox(width: 8),
+                            Text('发布到社区'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
@@ -398,6 +408,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       case 'link':
         _showLinkToStoryLineDialog(context, ref, record);
         break;
+      case 'publish':
+        _showPublishToCommunityDialog(context, ref, record);
+        break;
       case 'delete':
         _showDeleteConfirmDialog(context, ref, record);
         break;
@@ -435,6 +448,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       context: context,
       builder: (context) => LinkToStoryLineDialog(recordId: record.id),
     );
+  }
+
+  /// 显示发布到社区对话框
+  void _showPublishToCommunityDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
+    // TODO: 实现发布到社区功能
+    MessageHelper.showWarning(context, '社区功能开发中，敬请期待');
   }
 
   /// 显示删除确认对话框
