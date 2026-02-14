@@ -170,5 +170,40 @@ class EncounterRecord {
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
   }
+
+  /// 复制并修改部分字段
+  EncounterRecord copyWith({
+    String? id,
+    DateTime? timestamp,
+    Location? location,
+    String? description,
+    List<TagWithNote>? tags,
+    EmotionIntensity? emotion,
+    EncounterStatus? status,
+    String? storyLineId,
+    String? ifReencounter,
+    String? conversationStarter,
+    String? backgroundMusic,
+    List<Weather>? weather,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return EncounterRecord(
+      id: id ?? this.id,
+      timestamp: timestamp ?? this.timestamp,
+      location: location ?? this.location,
+      description: description ?? this.description,
+      tags: tags ?? this.tags,
+      emotion: emotion ?? this.emotion,
+      status: status ?? this.status,
+      storyLineId: storyLineId ?? this.storyLineId,
+      ifReencounter: ifReencounter ?? this.ifReencounter,
+      conversationStarter: conversationStarter ?? this.conversationStarter,
+      backgroundMusic: backgroundMusic ?? this.backgroundMusic,
+      weather: weather ?? this.weather,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 

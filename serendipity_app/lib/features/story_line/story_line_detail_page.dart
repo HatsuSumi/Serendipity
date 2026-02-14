@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/story_line.dart';
 import '../../models/encounter_record.dart';
+import '../../models/enums.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/page_transition_provider.dart';
