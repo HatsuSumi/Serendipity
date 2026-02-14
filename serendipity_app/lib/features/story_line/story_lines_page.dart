@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/story_lines_provider.dart';
+import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
+import '../../core/utils/page_transition_builder.dart';
+import '../../models/enums.dart';
 import 'story_line_detail_page.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/story_line.dart';
@@ -111,9 +114,28 @@ class StoryLinesPage extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
+          var transitionType = ref.read(pageTransitionProvider);
+          if (transitionType == PageTransitionType.random) {
+            transitionType = PageTransitionBuilder.getRandomType();
+          }
+
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => StoryLineDetailPage(storyLine: storyLine),
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) {
+                return StoryLineDetailPage(storyLine: storyLine);
+              },
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return PageTransitionBuilder.buildTransition(
+                  transitionType,
+                  context,
+                  animation,
+                  secondaryAnimation,
+                  child,
+                );
+              },
+              transitionDuration: transitionType == PageTransitionType.none
+                  ? Duration.zero
+                  : const Duration(milliseconds: 300),
             ),
           );
         },
