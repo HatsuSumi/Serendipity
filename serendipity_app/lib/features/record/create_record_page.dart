@@ -1382,7 +1382,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
                   ),
                 )
               : Text(
-                  '将此记录加入故事线，参与匹配功能',
+                  '将多个相关记录串联成完整故事',
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
