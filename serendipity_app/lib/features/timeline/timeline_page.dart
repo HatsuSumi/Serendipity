@@ -225,7 +225,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 状态和时间
+              // 状态和创建时间
               Row(
                 children: [
                   Text(
@@ -243,7 +243,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   ),
                   const Spacer(),
                   Text(
-                    _formatTime(record.createdAt),
+                    '创建：${_formatTime(record.createdAt)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -312,6 +312,36 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   }).toList(),
                 ),
               ],
+              
+              // 底部时间信息
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Text(
+                    '发生：${_formatTime(record.timestamp)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  if (record.createdAt != record.updatedAt) ...[
+                    Text(
+                      ' | ',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    Text(
+                      '更新：${_formatTime(record.updatedAt)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ),
