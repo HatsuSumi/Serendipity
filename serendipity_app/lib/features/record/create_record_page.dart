@@ -66,6 +66,10 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   List<Weather> _selectedWeather = [];
   List<TagWithNote> _tags = [];
   
+  // 高级选项
+  bool _publishToCommunity = false;
+  String? _selectedStoryLineId;
+  
   // 正在删除的标签（使用标签名而不是索引）
   final Set<String> _removingTagNames = {};
   
@@ -129,6 +133,9 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
       _tags = List.from(record.tags);
       _selectedEmotion = record.emotion;
       _selectedWeather = List.from(record.weather);
+      
+      // 预填充高级选项
+      _selectedStoryLineId = record.storyLineId;
     }
   }
 
@@ -187,7 +194,7 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         tags: _tags,
         emotion: _selectedEmotion,
         status: _selectedStatus,
-        storyLineId: widget.recordToEdit?.storyLineId, // 保留故事线关联
+        storyLineId: _selectedStoryLineId, // 使用用户选择的故事线
         conversationStarter: conversationStarter?.isEmpty ?? true ? null : conversationStarter,
         backgroundMusic: backgroundMusic.isEmpty ? null : backgroundMusic,
         weather: _selectedWeather,
@@ -399,6 +406,10 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
 
             // "如果再遇"备忘（可选）
             _buildIfReencounterSection(),
+            const SizedBox(height: 24),
+
+            // 高级选项
+            _buildAdvancedOptionsSection(),
           ],
         ),
       ),
@@ -1321,6 +1332,91 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         ),
       ],
     );
+  }
+  
+  /// 高级选项区域
+  Widget _buildAdvancedOptionsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '⚙️ 高级选项',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // 发布到树洞
+        CheckboxListTile(
+          value: _publishToCommunity,
+          onChanged: (value) {
+            setState(() {
+              _publishToCommunity = value ?? false;
+            });
+          },
+          title: const Text('发布到树洞'),
+          subtitle: Text(
+            '匿名分享到社区，其他用户可以看到',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          contentPadding: EdgeInsets.zero,
+        ),
+        
+        const SizedBox(height: 8),
+        
+        // 关联到故事线
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('关联到故事线'),
+          subtitle: _selectedStoryLineId != null
+              ? Text(
+                  _selectedStoryLineId!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                )
+              : Text(
+                  '将此记录加入故事线，参与匹配功能',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_selectedStoryLineId != null)
+                IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    setState(() {
+                      _selectedStoryLineId = null;
+                    });
+                  },
+                  tooltip: '清除',
+                ),
+              TextButton(
+                onPressed: _showStoryLineSelectionDialog,
+                child: Text(_selectedStoryLineId != null ? '更改' : '选择'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// 显示故事线选择对话框
+  Future<void> _showStoryLineSelectionDialog() async {
+    // TODO: 实现故事线选择对话框
+    // 目前故事线功能未实现，先显示提示
+    MessageHelper.showInfo(context, '故事线功能待开发');
   }
 }
 
