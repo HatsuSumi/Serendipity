@@ -38,7 +38,12 @@ class TimelinePage extends ConsumerWidget {
                 color: Theme.of(context).colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text('加载失败：$error'),
+              Text(
+                '加载失败：$error',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref.refresh(recordsProvider),
