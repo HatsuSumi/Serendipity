@@ -224,60 +224,6 @@ enum WeatherCategory {
   const WeatherCategory(this.label, this.icon);
 }
 
-/// 匹配状态
-@HiveType(typeId: 14)
-enum MatchStatus {
-  @HiveField(0)
-  pending(1, '等待冷静期'),
-  @HiveField(1)
-  notified(2, '已通知'),
-  @HiveField(2)
-  verifying(3, '验证中'),
-  @HiveField(3)
-  verified(4, '验证成功'),
-  @HiveField(4)
-  rejected(5, '验证失败'),
-  @HiveField(5)
-  expired(6, '已过期');
-
-  final int value;
-  final String label;
-  
-  const MatchStatus(this.value, this.label);
-}
-
-/// 匹配置信度
-@HiveType(typeId: 15)
-enum MatchConfidence {
-  @HiveField(0)
-  high(1, '高置信度'),
-  @HiveField(1)
-  medium(2, '中置信度'),
-  @HiveField(2)
-  low(3, '低置信度');
-
-  final int value;
-  final String label;
-  
-  const MatchConfidence(this.value, this.label);
-}
-
-/// 验证选择
-@HiveType(typeId: 16)
-enum VerificationChoice {
-  @HiveField(0)
-  wantContact(1, '想要联系'),
-  @HiveField(1)
-  keepInMemory(2, '留在记忆里'),
-  @HiveField(2)
-  notMe(3, '不是我，认错人了');
-
-  final int value;
-  final String label;
-  
-  const VerificationChoice(this.value, this.label);
-}
-
 /// 登录方式
 @HiveType(typeId: 17)
 enum AuthProvider {
@@ -393,24 +339,6 @@ enum ThemeOption {
   final bool isPremium;
   
   const ThemeOption(this.value, this.label, this.isPremium);
-}
-
-/// 信用分变更原因
-@HiveType(typeId: 23)
-enum CreditChangeReason {
-  @HiveField(0)
-  gpsAnomalyDetected(1, 'GPS异常'),
-  @HiveField(1)
-  behaviorAnomalyDetected(2, '异常行为模式'),
-  @HiveField(2)
-  goodBehavior(3, '良好行为'),
-  @HiveField(3)
-  verificationSuccess(4, '验证成功');
-
-  final int value;
-  final String label;
-  
-  const CreditChangeReason(this.value, this.label);
 }
 
 /// 页面切换动画类型
