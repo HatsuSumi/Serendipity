@@ -3,9 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
-import '../../core/utils/message_helper.dart';
-import '../../core/utils/dialog_helper.dart';
-import '../../core/services/storage_service.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
@@ -25,22 +22,6 @@ class TimelinePage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('TA'),
-        actions: [
-          // 开发者调试按钮：双击清空所有记录
-          GestureDetector(
-            onDoubleTap: () => _showClearAllDialog(context, ref),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Tooltip(
-                message: '双击清空所有记录（开发调试）',
-                child: Icon(
-                  Icons.delete_sweep,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       body: recordsAsync.when(
         data: (records) => records.isEmpty
@@ -275,52 +256,5 @@ class TimelinePage extends ConsumerWidget {
     } else {
       return '${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
     }
-  }
-
-  /// 显示清空所有记录的确认对话框（开发调试用）
-  void _showClearAllDialog(BuildContext context, WidgetRef ref) {
-    DialogHelper.show(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('⚠️ 开发调试'),
-        content: const Text(
-          '确定要清空所有记录吗？\n\n'
-          '此操作无法撤销！\n'
-          '（此功能仅用于开发调试）',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              
-              try {
-                // 清空所有记录
-                final storage = StorageService();
-                await storage.clearAllRecords();
-                
-                // 刷新列表
-                ref.refresh(recordsProvider);
-                
-                if (context.mounted) {
-                  MessageHelper.showSuccess(context, '已清空所有记录');
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  MessageHelper.showError(context, '清空失败：$e');
-                }
-              }
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('确定清空'),
-          ),
-        ],
-      ),
-    );
   }
 }
