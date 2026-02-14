@@ -32,9 +32,15 @@ class AppTheme {
         seedColor: Colors.pink,
         brightness: Brightness.light,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: ColorScheme.fromSeed(
+          seedColor: Colors.pink,
+          brightness: Brightness.light,
+        ).surface,
       ),
       cardTheme: CardThemeData(
         elevation: 2,
@@ -56,9 +62,15 @@ class AppTheme {
         seedColor: Colors.pink,
         brightness: Brightness.dark,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: ColorScheme.fromSeed(
+          seedColor: Colors.pink,
+          brightness: Brightness.dark,
+        ).surface,
       ),
       cardTheme: CardThemeData(
         elevation: 2,
@@ -84,6 +96,8 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: Color(0xFFF0F4F7),
       ),
       cardTheme: CardThemeData(
@@ -110,6 +124,8 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: Color(0xFF0D1117),
       ),
       cardTheme: CardThemeData(
@@ -136,6 +152,8 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: Color(0xFFFFF9E6),
       ),
       cardTheme: CardThemeData(
@@ -162,6 +180,8 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         backgroundColor: Color(0xFFFBE9E7),
       ),
       cardTheme: CardThemeData(
