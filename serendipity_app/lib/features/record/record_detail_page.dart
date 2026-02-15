@@ -10,6 +10,7 @@ import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/services/storage_service.dart';
 import '../story_line/link_to_story_line_dialog.dart';
+import '../story_line/story_line_detail_page.dart';
 import 'create_record_page.dart';
 
 /// 记录详情页面
@@ -75,6 +76,46 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         ref.invalidate(recordsProvider);
       }
     });
+  }
+
+  /// 导航到故事线详情页面
+  void _navigateToStoryLineDetail(BuildContext context) {
+    if (_currentRecord.storyLineId == null) return;
+    
+    final storyLine = StorageService().getStoryLine(_currentRecord.storyLineId!);
+    if (storyLine == null) {
+      MessageHelper.showError(context, '故事线不存在');
+      return;
+    }
+    
+    // 获取用户设置的页面切换动画类型
+    var transitionType = ref.read(pageTransitionProvider);
+    
+    // 如果是随机动画，获取一个具体的动画类型
+    if (transitionType == PageTransitionType.random) {
+      transitionType = PageTransitionBuilder.getRandomType();
+    }
+    
+    // 导航到故事线详情页
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return StoryLineDetailPage(storyLine: storyLine);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return PageTransitionBuilder.buildTransition(
+            transitionType,
+            context,
+            animation,
+            secondaryAnimation,
+            child,
+          );
+        },
+        transitionDuration: transitionType == PageTransitionType.none
+            ? Duration.zero
+            : const Duration(milliseconds: 300),
+      ),
+    );
   }
 
   @override
@@ -325,23 +366,30 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               context,
               icon: Icons.auto_stories_outlined,
               title: '所属故事线',
-              child: Row(
-                children: [
-                  const Text('📖 '),
-                  Expanded(
-                    child: Text(
-                      StorageService().getStoryLine(_currentRecord.storyLineId!)?.name ?? 
-                          '未知故事线',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
+              child: InkWell(
+                onTap: () => _navigateToStoryLineDetail(context),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      const Text('📖 '),
+                      Expanded(
+                        child: Text(
+                          StorageService().getStoryLine(_currentRecord.storyLineId!)?.name ?? 
+                              '未知故事线',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
                   ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ],
+                ),
               ),
             ),
           
