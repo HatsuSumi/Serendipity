@@ -165,16 +165,6 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       return;
     }
 
-    // 如果是创建"再遇"状态的记录，且关联了故事线，检查是否需要显示"如果再遇"提醒
-    if (!widget.isEditMode && 
-        _selectedStatus == EncounterStatus.reencounter && 
-        _selectedStoryLineId != null) {
-      final shouldContinue = await _checkAndShowIfReencounterReminder();
-      if (!shouldContinue) {
-        return; // 用户取消了保存
-      }
-    }
-
     setState(() {
       _isSaving = true;
     });
@@ -237,6 +227,13 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           widget.isEditMode ? '记录已更新' : '记录已保存',
         );
 
+        // 如果是创建"再遇"状态的记录，且关联了故事线，显示"如果再遇"提醒
+        if (!widget.isEditMode && 
+            _selectedStatus == EncounterStatus.reencounter && 
+            _selectedStoryLineId != null) {
+          await _showIfReencounterReminderIfNeeded();
+        }
+
         // 返回上一页，编辑模式返回记录对象，创建模式返回 true
         if (widget.isEditMode) {
           Navigator.of(context).pop(record);
@@ -260,9 +257,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     }
   }
 
-  /// 检查并显示"如果再遇"提醒
-  /// 返回 true 表示继续保存，false 表示取消保存
-  Future<bool> _checkAndShowIfReencounterReminder() async {
+  /// 显示"如果再遇"提醒（如果需要）
+  Future<void> _showIfReencounterReminderIfNeeded() async {
     try {
       // 获取故事线中的所有记录
       final records = _storage.getRecordsByStoryLine(_selectedStoryLineId!);
@@ -274,9 +270,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         record.ifReencounter!.isNotEmpty
       ).toList();
       
-      // 如果没有找到，直接继续保存
+      // 如果没有找到，直接返回
       if (missedRecordsWithMemo.isEmpty) {
-        return true;
+        return;
       }
       
       // 按时间倒序排序，显示最近的一条
@@ -284,16 +280,12 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       final latestRecord = missedRecordsWithMemo.first;
       
       // 显示提醒对话框
-      final result = await DialogHelper.show<bool>(
+      await DialogHelper.show(
         context: context,
         builder: (context) => _buildIfReencounterReminderDialog(latestRecord),
       );
-      
-      // 如果用户点击了"继续保存"或关闭对话框，返回 true
-      return result ?? true;
     } catch (e) {
-      // 出错时不影响保存流程
-      return true;
+      // 出错时不影响流程，静默失败
     }
   }
 
@@ -365,13 +357,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('取消保存'),
-        ),
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('继续保存'),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('知道了'),
         ),
       ],
     );
