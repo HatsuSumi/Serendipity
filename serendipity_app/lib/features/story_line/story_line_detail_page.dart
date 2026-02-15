@@ -134,12 +134,8 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
                   onRefresh: _refresh,
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _records.length + 1, // +1 for the add button
+                    itemCount: _records.length,
                     itemBuilder: (context, index) {
-                      if (index == _records.length) {
-                        return _buildAddButton(context);
-                      }
-
                       final record = _records[index];
                       final isLast = index == _records.length - 1;
 
@@ -317,26 +313,6 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
           Icons.arrow_downward,
           color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
           size: 24,
-        ),
-      ),
-    );
-  }
-
-  /// 添加按钮
-  Widget _buildAddButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: OutlinedButton.icon(
-        onPressed: () => _navigateToCreateRecord(context),
-        icon: const Icon(Icons.add),
-        label: const Text('添加新的进展'),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.all(16),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-            width: 2,
-            style: BorderStyle.solid,
-          ),
         ),
       ),
     );
