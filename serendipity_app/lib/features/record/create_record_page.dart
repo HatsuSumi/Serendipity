@@ -263,21 +263,20 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       // 获取故事线中的所有记录
       final records = _storage.getRecordsByStoryLine(_selectedStoryLineId!);
       
-      // 查找"错过"状态且有"如果再遇"备忘的记录
-      final missedRecordsWithMemo = records.where((record) =>
-        record.status == EncounterStatus.missed &&
+      // 查找所有有"如果再遇"备忘的记录（不限制状态）
+      final recordsWithMemo = records.where((record) =>
         record.ifReencounter != null &&
         record.ifReencounter!.isNotEmpty
       ).toList();
       
       // 如果没有找到，直接返回
-      if (missedRecordsWithMemo.isEmpty) {
+      if (recordsWithMemo.isEmpty) {
         return;
       }
       
       // 按时间倒序排序，显示最近的一条
-      missedRecordsWithMemo.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      final latestRecord = missedRecordsWithMemo.first;
+      recordsWithMemo.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      final latestRecord = recordsWithMemo.first;
       
       // 显示提醒对话框
       await DialogHelper.show(
@@ -313,7 +312,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         children: [
           // 提示文字
           Text(
-            '在 ${_formatReminderDate(record.timestamp)} 的记录中，你写下了：',
+            '在 ${_formatReminderDate(record.timestamp)} ${record.status.label}时，你写下了：',
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
