@@ -327,9 +327,11 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               title: '所属故事线',
               child: Row(
                 children: [
+                  const Text('📖 '),
                   Expanded(
                     child: Text(
-                      _currentRecord.storyLineId!,
+                      StorageService().getStoryLine(_currentRecord.storyLineId!)?.name ?? 
+                          '未知故事线',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: Theme.of(context).colorScheme.primary,
                           ),
