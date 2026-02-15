@@ -165,6 +165,16 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       return;
     }
 
+    // 如果是创建"再遇"状态的记录，且关联了故事线，检查是否需要显示"如果再遇"提醒
+    if (!widget.isEditMode && 
+        _selectedStatus == EncounterStatus.reencounter && 
+        _selectedStoryLineId != null) {
+      final shouldContinue = await _checkAndShowIfReencounterReminder();
+      if (!shouldContinue) {
+        return; // 用户取消了保存
+      }
+    }
+
     setState(() {
       _isSaving = true;
     });
@@ -247,6 +257,143 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           _isSaving = false;
         });
       }
+    }
+  }
+
+  /// 检查并显示"如果再遇"提醒
+  /// 返回 true 表示继续保存，false 表示取消保存
+  Future<bool> _checkAndShowIfReencounterReminder() async {
+    try {
+      // 获取故事线中的所有记录
+      final records = _storage.getRecordsByStoryLine(_selectedStoryLineId!);
+      
+      // 查找"错过"状态且有"如果再遇"备忘的记录
+      final missedRecordsWithMemo = records.where((record) =>
+        record.status == EncounterStatus.missed &&
+        record.ifReencounter != null &&
+        record.ifReencounter!.isNotEmpty
+      ).toList();
+      
+      // 如果没有找到，直接继续保存
+      if (missedRecordsWithMemo.isEmpty) {
+        return true;
+      }
+      
+      // 按时间倒序排序，显示最近的一条
+      missedRecordsWithMemo.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      final latestRecord = missedRecordsWithMemo.first;
+      
+      // 显示提醒对话框
+      final result = await DialogHelper.show<bool>(
+        context: context,
+        builder: (context) => _buildIfReencounterReminderDialog(latestRecord),
+      );
+      
+      // 如果用户点击了"继续保存"或关闭对话框，返回 true
+      return result ?? true;
+    } catch (e) {
+      // 出错时不影响保存流程
+      return true;
+    }
+  }
+
+  /// 构建"如果再遇"提醒对话框
+  Widget _buildIfReencounterReminderDialog(EncounterRecord record) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Text('💭 '),
+          Expanded(
+            child: Text(
+              '还记得你说过的话吗？',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 提示文字
+          Text(
+            '在 ${_formatReminderDate(record.timestamp)} 的记录中，你写下了：',
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // "如果再遇"备忘内容
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: Text(
+              '"${record.ifReencounter}"',
+              style: TextStyle(
+                fontSize: 16,
+                fontStyle: FontStyle.italic,
+                color: Theme.of(context).colorScheme.onSurface,
+                height: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // 鼓励文字
+          Text(
+            '现在，你们再次相遇了！✨',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('取消保存'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('继续保存'),
+        ),
+      ],
+    );
+  }
+
+  /// 格式化提醒日期
+  String _formatReminderDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      return '今天';
+    } else if (difference.inDays == 1) {
+      return '昨天';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}天前';
+    } else if (difference.inDays < 30) {
+      return '${(difference.inDays / 7).floor()}周前';
+    } else if (difference.inDays < 365) {
+      return '${(difference.inDays / 30).floor()}个月前';
+    } else {
+      return '${date.year}年${date.month}月${date.day}日';
     }
   }
 
