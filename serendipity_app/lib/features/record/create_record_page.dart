@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../models/encounter_record.dart';
+import '../../models/story_line.dart';
 import '../../models/enums.dart';
 
 /// 地点历史记录项
@@ -31,7 +34,7 @@ enum PlaceSortType {
 }
 
 /// 创建/编辑记录页面
-class CreateRecordPage extends StatefulWidget {
+class CreateRecordPage extends ConsumerStatefulWidget {
   /// 要编辑的记录（如果为null则是创建模式）
   final EncounterRecord? recordToEdit;
   
@@ -48,10 +51,10 @@ class CreateRecordPage extends StatefulWidget {
   bool get isEditMode => recordToEdit != null;
 
   @override
-  State<CreateRecordPage> createState() => _CreateRecordPageState();
+  ConsumerState<CreateRecordPage> createState() => _CreateRecordPageState();
 }
 
-class _CreateRecordPageState extends State<CreateRecordPage> {
+class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   // 表单控制器
   final _formKey = GlobalKey<FormState>();
   final _placeNameController = TextEditingController();
@@ -1343,6 +1346,11 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   
   /// 其他设置区域
   Widget _buildOtherSettingsSection() {
+    // 获取故事线名称（如果已关联）
+    final storyLineName = _selectedStoryLineId != null
+        ? _storage.getStoryLine(_selectedStoryLineId!)?.name
+        : null;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1380,13 +1388,21 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
         ListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('关联到故事线'),
-          subtitle: _selectedStoryLineId != null
-              ? Text(
-                  _selectedStoryLineId!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+          subtitle: storyLineName != null
+              ? Row(
+                  children: [
+                    const Text('📖 '),
+                    Expanded(
+                      child: Text(
+                        storyLineName,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 )
               : Text(
                   '将多个相关记录串联成完整故事',
@@ -1421,9 +1437,275 @@ class _CreateRecordPageState extends State<CreateRecordPage> {
   
   /// 显示故事线选择对话框
   Future<void> _showStoryLineSelectionDialog() async {
-    // TODO: 实现故事线选择对话框
-    // 目前故事线功能未实现，先显示提示
-    MessageHelper.showInfo(context, '故事线功能待开发');
+    final storyLinesAsync = ref.read(storyLinesProvider);
+    
+    // 等待故事线数据加载
+    final storyLines = await storyLinesAsync.when(
+      data: (data) => data,
+      loading: () => <StoryLine>[],
+      error: (_, __) => <StoryLine>[],
+    );
+    
+    if (!mounted) return;
+    
+    final result = await DialogHelper.show<String>(
+      context: context,
+      builder: (context) => _StoryLineSelectionDialog(
+        storyLines: storyLines,
+        currentStoryLineId: _selectedStoryLineId,
+      ),
+    );
+    
+    if (result != null && mounted) {
+      setState(() {
+        _selectedStoryLineId = result;
+      });
+    }
+  }
+}
+
+/// 故事线选择对话框（用于创建/编辑记录页面）
+class _StoryLineSelectionDialog extends StatefulWidget {
+  final List<StoryLine> storyLines;
+  final String? currentStoryLineId;
+  
+  const _StoryLineSelectionDialog({
+    required this.storyLines,
+    this.currentStoryLineId,
+  });
+
+  @override
+  State<_StoryLineSelectionDialog> createState() => _StoryLineSelectionDialogState();
+}
+
+class _StoryLineSelectionDialogState extends State<_StoryLineSelectionDialog> {
+  final _nameController = TextEditingController();
+  String? _selectedStoryLineId;
+  bool _isCreatingNew = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStoryLineId = widget.currentStoryLineId;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 标题
+              Text(
+                '选择故事线',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+
+              // 提示
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '将同一个人的多次记录关联到一个故事线，形成完整的时间线故事。',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // 创建新故事线选项
+              RadioListTile<bool>(
+                value: true,
+                groupValue: _isCreatingNew,
+                onChanged: (value) {
+                  setState(() {
+                    _isCreatingNew = value ?? false;
+                    _selectedStoryLineId = null;
+                  });
+                },
+                title: const Text('创建新故事线'),
+                contentPadding: EdgeInsets.zero,
+              ),
+
+              // 新故事线名称输入
+              if (_isCreatingNew) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    hintText: '输入故事线名称...',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  autofocus: true,
+                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              // 已有故事线列表
+              if (widget.storyLines.isNotEmpty) ...[
+                RadioListTile<bool>(
+                  value: false,
+                  groupValue: _isCreatingNew,
+                  onChanged: (value) {
+                    setState(() {
+                      _isCreatingNew = value ?? true;
+                    });
+                  },
+                  title: const Text('选择现有故事线'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (!_isCreatingNew) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: widget.storyLines.length,
+                      itemBuilder: (context, index) {
+                        final storyLine = widget.storyLines[index];
+                        return RadioListTile<String>(
+                          value: storyLine.id,
+                          groupValue: _selectedStoryLineId,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedStoryLineId = value;
+                            });
+                          },
+                          title: Row(
+                            children: [
+                              const Text('📖 '),
+                              Expanded(
+                                child: Text(
+                                  storyLine.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                '（${storyLine.recordIds.length}条）',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
+
+              const SizedBox(height: 24),
+
+              // 按钮
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('取消'),
+                  ),
+                  const SizedBox(width: 8),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _nameController,
+                    builder: (context, value, child) {
+                      return FilledButton(
+                        onPressed: _canConfirm() ? _handleConfirm : null,
+                        child: const Text('确认'),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 是否可以确认
+  bool _canConfirm() {
+    if (_isCreatingNew) {
+      return _nameController.text.trim().isNotEmpty;
+    } else {
+      return _selectedStoryLineId != null;
+    }
+  }
+
+  /// 处理确认
+  Future<void> _handleConfirm() async {
+    try {
+      if (_isCreatingNew) {
+        // 创建新故事线并返回ID
+        final name = _nameController.text.trim();
+        final now = DateTime.now();
+        final newStoryLineId = const Uuid().v4();
+        final newStoryLine = StoryLine(
+          id: newStoryLineId,
+          name: name,
+          recordIds: [],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        await StorageService().saveStoryLine(newStoryLine);
+        
+        if (mounted) {
+          Navigator.of(context).pop(newStoryLineId);
+        }
+      } else {
+        // 返回选中的故事线ID
+        if (_selectedStoryLineId != null && mounted) {
+          Navigator.of(context).pop(_selectedStoryLineId);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        MessageHelper.showError(context, '操作失败：$e');
+      }
+    }
   }
 }
 
