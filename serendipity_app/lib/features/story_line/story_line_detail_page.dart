@@ -225,13 +225,52 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
                     style: const TextStyle(fontSize: 20),
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    record.status.label,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: statusColor,
+                  Expanded(
+                    child: Text(
+                      record.status.label,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: statusColor,
+                      ),
                     ),
+                  ),
+                  // 菜单按钮
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) => _handleRecordMenuAction(context, record, value),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'remove',
+                        child: Row(
+                          children: [
+                            Icon(Icons.link_off),
+                            SizedBox(width: 8),
+                            Text('从故事线移除'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined),
+                            SizedBox(width: 8),
+                            Text('编辑记录'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('删除记录', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -331,6 +370,130 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
         _showDeleteConfirmDialog(context);
         break;
     }
+  }
+
+  /// 处理记录卡片菜单操作
+  void _handleRecordMenuAction(BuildContext context, EncounterRecord record, String action) {
+    switch (action) {
+      case 'remove':
+        _showRemoveRecordConfirmDialog(context, record);
+        break;
+      case 'edit':
+        _navigateToEditRecord(context, record);
+        break;
+      case 'delete':
+        _showDeleteRecordConfirmDialog(context, record);
+        break;
+    }
+  }
+
+  /// 显示从故事线移除记录确认对话框
+  void _showRemoveRecordConfirmDialog(BuildContext context, EncounterRecord record) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('从故事线移除'),
+        content: const Text('确定要将这条记录从故事线中移除吗？\n\n记录本身不会被删除，只是取消关联。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              try {
+                await ref.read(storyLinesProvider.notifier).unlinkRecord(
+                  record.id,
+                  _currentStoryLine.id,
+                );
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  MessageHelper.showSuccess(context, '已从故事线移除');
+                  _refresh();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  MessageHelper.showError(context, '移除失败：$e');
+                }
+              }
+            },
+            child: const Text('移除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 导航到编辑记录页面
+  void _navigateToEditRecord(BuildContext context, EncounterRecord record) {
+    var transitionType = ref.read(pageTransitionProvider);
+    if (transitionType == PageTransitionType.random) {
+      transitionType = PageTransitionBuilder.getRandomType();
+    }
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return CreateRecordPage(recordToEdit: record);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return PageTransitionBuilder.buildTransition(
+            transitionType,
+            context,
+            animation,
+            secondaryAnimation,
+            child,
+          );
+        },
+        transitionDuration: transitionType == PageTransitionType.none
+            ? Duration.zero
+            : const Duration(milliseconds: 300),
+      ),
+    ).then((result) {
+      // 编辑后刷新
+      if (result != null) {
+        _refresh();
+      }
+    });
+  }
+
+  /// 显示删除记录确认对话框
+  void _showDeleteRecordConfirmDialog(BuildContext context, EncounterRecord record) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除记录'),
+        content: const Text('确定要删除这条记录吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                final storage = StorageService();
+                await storage.deleteRecord(record.id);
+                
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  MessageHelper.showSuccess(context, '记录已删除');
+                  _refresh();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  MessageHelper.showError(context, '删除失败：$e');
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 显示添加现有记录对话框
