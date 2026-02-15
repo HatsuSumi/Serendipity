@@ -1600,7 +1600,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
 }
 
 /// 故事线选择对话框（用于创建/编辑记录页面）
-class _StoryLineSelectionDialog extends StatefulWidget {
+class _StoryLineSelectionDialog extends ConsumerStatefulWidget {
   final List<StoryLine> storyLines;
   final String? currentStoryLineId;
   
@@ -1610,10 +1610,10 @@ class _StoryLineSelectionDialog extends StatefulWidget {
   });
 
   @override
-  State<_StoryLineSelectionDialog> createState() => _StoryLineSelectionDialogState();
+  ConsumerState<_StoryLineSelectionDialog> createState() => _StoryLineSelectionDialogState();
 }
 
-class _StoryLineSelectionDialogState extends State<_StoryLineSelectionDialog> {
+class _StoryLineSelectionDialogState extends ConsumerState<_StoryLineSelectionDialog> {
   final _nameController = TextEditingController();
   String? _selectedStoryLineId;
   bool _isCreatingNew = false;
@@ -1825,7 +1825,8 @@ class _StoryLineSelectionDialogState extends State<_StoryLineSelectionDialog> {
           updatedAt: now,
         );
 
-        await StorageService().saveStoryLine(newStoryLine);
+        // 通过 Provider 创建故事线（会自动刷新列表）
+        await ref.read(storyLinesProvider.notifier).createStoryLine(newStoryLine);
         
         if (mounted) {
           Navigator.of(context).pop(newStoryLineId);
