@@ -209,8 +209,8 @@
   - 报告：[查看详细报告](./code_review_reports/3.5_message_helper.dart_review.md)
 
 - [x] **4.2** `lib/core/utils/dialog_helper.dart`
-  - 状态：⚠️ 已完成（有改进建议）
-  - 问题数：2个（待修复）
+  - 状态：✅ 已完成（已修复）
+  - 问题数：2个（已全部修复）
   - 优先级：⚡ 中
   - 报告：[查看详细报告](./code_review_reports/3.6_dialog_helper.dart_review.md)
 
@@ -359,8 +359,8 @@
 5. ✅ status_colors.dart：缺少Fail Fast验证（已修复）
 6. ✅ message_helper.dart：使用了deprecated的withOpacity方法（已修复）
 7. ✅ message_helper.dart：存在3个死方法（已修复）
-8. ⏳ dialog_helper.dart：_mapToInternalType 方法缺少 Fail Fast 验证（待修复）
-9. ⏳ dialog_helper.dart：项目中有3处绕过 DialogHelper 直接使用 showDialog（待修复）
+8. ✅ dialog_helper.dart：_mapToInternalType 方法缺少 Fail Fast 验证（已修复）
+9. ✅ dialog_helper.dart：项目中有3处绕过 DialogHelper 直接使用 showDialog（已修复）
 
 ### 低优先级问题 💡
 1. ✅ story_line.dart：使用 Flutter 内置 `listEquals` 方法（已修复）
@@ -374,18 +374,18 @@
 | 类别 | 数量 |
 |------|------|
 | 架构问题 | 4（已修复） |
-| 代码质量问题 | 16（14已修复，2待修复） |
+| 代码质量问题 | 16（已全部修复） |
 | Flutter特定问题 | 0 |
 | 状态管理问题 | 0 |
 | 性能问题 | 2（已修复） |
-| **总计** | **22（20已修复，2待修复）** |
+| **总计** | **22（已全部修复）** |
 
 ### 文件质量分布
 
 | 评分 | 文件数 | 百分比 |
 |------|--------|--------|
-| ⭐⭐⭐⭐⭐ (5/5) | 10 | 91% |
-| ⭐⭐⭐⭐ (4/5) | 1 | 9% |
+| ⭐⭐⭐⭐⭐ (5/5) | 11 | 100% |
+| ⭐⭐⭐⭐ (4/5) | 0 | 0% |
 | ⭐⭐⭐ (3/5) | 0 | 0% |
 | ⭐⭐ (2/5) | 0 | 0% |
 | ⭐ (1/5) | 0 | 0% |
@@ -402,11 +402,11 @@
 
 ## 🎯 下一步
 
-**当前检查**：4.2 dialog_helper.dart（已完成）  
+**当前检查**：4.2 dialog_helper.dart（已完成并修复）  
 **下一个检查**：4.3 page_transition_builder.dart  
 **预计完成时间**：2026-02-16
 
 ---
 
-**最后更新时间**：2026-02-16 14:05
+**最后更新时间**：2026-02-16 14:15
 

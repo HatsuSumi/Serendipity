@@ -4,6 +4,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/dialog_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
@@ -444,7 +445,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 显示关联到故事线对话框
   void _showLinkToStoryLineDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
-    showDialog(
+    DialogHelper.show(
       context: context,
       builder: (context) => LinkToStoryLineDialog(recordId: record.id),
     );
@@ -458,7 +459,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 显示删除确认对话框
   void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
-    showDialog(
+    DialogHelper.show(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除记录'),

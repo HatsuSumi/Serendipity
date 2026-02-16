@@ -489,7 +489,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
 
   /// 显示添加现有记录对话框
   void _showAddExistingRecordsDialog(BuildContext context) {
-    showDialog(
+    DialogHelper.show(
       context: context,
       builder: (context) => AddExistingRecordsDialog(storyLine: _currentStoryLine),
     ).then((result) {

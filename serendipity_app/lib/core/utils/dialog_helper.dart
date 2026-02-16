@@ -79,7 +79,11 @@ class DialogHelper {
     switch (type) {
       case DialogAnimationType.none:
       case DialogAnimationType.random:
-        return _getRandomAnimationType(); // 不应该到这里
+        // Fail Fast: 这两个值应该在 _selectAnimation 中处理
+        throw AssertionError(
+          'DialogAnimationType.none and DialogAnimationType.random '
+          'should be handled in _selectAnimation, not here.'
+        );
       case DialogAnimationType.fade:
         return _InternalAnimationType.fade;
       case DialogAnimationType.scale:
