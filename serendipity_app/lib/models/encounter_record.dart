@@ -14,7 +14,9 @@ class TagWithNote {
   TagWithNote({
     required this.tag,
     this.note,
-  });
+  }) : assert(tag.isNotEmpty, 'Tag cannot be empty'),
+       assert(note == null || note.length <= 50, 
+         'Note must be at most 50 characters, got ${note?.length}');
 
   Map<String, dynamic> toJson() {
     return {
@@ -70,8 +72,33 @@ class Location {
       address: json['address'] as String?,
       placeName: json['placeName'] as String?,
       placeType: json['placeType'] != null
-          ? PlaceType.values.firstWhere((e) => e.value == json['placeType'])
+          ? PlaceType.values.firstWhere(
+              (e) => e.value == json['placeType'],
+              orElse: () => throw StateError(
+                'Invalid placeType value: ${json['placeType']}. '
+                'Expected one of: ${PlaceType.values.map((e) => e.value).join(", ")}'
+              ),
+            )
           : null,
+    );
+  }
+
+  /// 复制并修改部分字段
+  /// 
+  /// 对于可空字段，使用函数包装来区分"未传递"和"传递 null"
+  Location copyWith({
+    double? Function()? latitude,
+    double? Function()? longitude,
+    String? Function()? address,
+    String? Function()? placeName,
+    PlaceType? Function()? placeType,
+  }) {
+    return Location(
+      latitude: latitude != null ? latitude() : this.latitude,
+      longitude: longitude != null ? longitude() : this.longitude,
+      address: address != null ? address() : this.address,
+      placeName: placeName != null ? placeName() : this.placeName,
+      placeType: placeType != null ? placeType() : this.placeType,
     );
   }
 }
@@ -123,7 +150,11 @@ class EncounterRecord {
     this.weather = const [],
     required this.createdAt,
     required this.updatedAt,
-  });
+  }) : assert(id.isNotEmpty, 'ID cannot be empty'),
+       assert(description == null || description.length <= 500, 
+         'Description must be at most 500 characters, got ${description?.length}'),
+       assert(conversationStarter == null || conversationStarter.length <= 500, 
+         'ConversationStarter must be at most 500 characters, got ${conversationStarter?.length}');
 
   Map<String, dynamic> toJson() {
     return {
@@ -154,16 +185,34 @@ class EncounterRecord {
           .map((t) => TagWithNote.fromJson(t as Map<String, dynamic>))
           .toList(),
       emotion: json['emotion'] != null
-          ? EmotionIntensity.values.firstWhere((e) => e.value == json['emotion'])
+          ? EmotionIntensity.values.firstWhere(
+              (e) => e.value == json['emotion'],
+              orElse: () => throw StateError(
+                'Invalid emotion value: ${json['emotion']}. '
+                'Expected one of: ${EmotionIntensity.values.map((e) => e.value).join(", ")}'
+              ),
+            )
           : null,
-      status: EncounterStatus.values.firstWhere((e) => e.value == json['status']),
+      status: EncounterStatus.values.firstWhere(
+        (e) => e.value == json['status'],
+        orElse: () => throw StateError(
+          'Invalid status value: ${json['status']}. '
+          'Expected one of: ${EncounterStatus.values.map((e) => e.value).join(", ")}'
+        ),
+      ),
       storyLineId: json['storyLineId'] as String?,
       ifReencounter: json['ifReencounter'] as String?,
       conversationStarter: json['conversationStarter'] as String?,
       backgroundMusic: json['backgroundMusic'] as String?,
       weather: json['weather'] != null
           ? (json['weather'] as List)
-              .map((w) => Weather.values.firstWhere((e) => e.value == w))
+              .map((w) => Weather.values.firstWhere(
+                (e) => e.value == w,
+                orElse: () => throw StateError(
+                  'Invalid weather value: $w. '
+                  'Expected one of: ${Weather.values.map((e) => e.value).join(", ")}'
+                ),
+              ))
               .toList()
           : [],
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -172,18 +221,35 @@ class EncounterRecord {
   }
 
   /// 复制并修改部分字段
+  /// 
+  /// 对于可空字段，使用函数包装来区分"未传递"和"传递 null"：
+  /// - 不传参数：保持原值
+  /// - 传递函数返回 null：清空字段
+  /// - 传递函数返回新值：更新字段
+  /// 
+  /// 示例：
+  /// ```dart
+  /// // 清空描述
+  /// record.copyWith(description: () => null)
+  /// 
+  /// // 修改描述
+  /// record.copyWith(description: () => '新描述')
+  /// 
+  /// // 保持描述不变
+  /// record.copyWith(status: EncounterStatus.met)
+  /// ```
   EncounterRecord copyWith({
     String? id,
     DateTime? timestamp,
     Location? location,
-    String? description,
+    String? Function()? description,
     List<TagWithNote>? tags,
-    EmotionIntensity? emotion,
+    EmotionIntensity? Function()? emotion,
     EncounterStatus? status,
-    String? storyLineId,
-    String? ifReencounter,
-    String? conversationStarter,
-    String? backgroundMusic,
+    String? Function()? storyLineId,
+    String? Function()? ifReencounter,
+    String? Function()? conversationStarter,
+    String? Function()? backgroundMusic,
     List<Weather>? weather,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -192,14 +258,14 @@ class EncounterRecord {
       id: id ?? this.id,
       timestamp: timestamp ?? this.timestamp,
       location: location ?? this.location,
-      description: description ?? this.description,
+      description: description != null ? description() : this.description,
       tags: tags ?? this.tags,
-      emotion: emotion ?? this.emotion,
+      emotion: emotion != null ? emotion() : this.emotion,
       status: status ?? this.status,
-      storyLineId: storyLineId ?? this.storyLineId,
-      ifReencounter: ifReencounter ?? this.ifReencounter,
-      conversationStarter: conversationStarter ?? this.conversationStarter,
-      backgroundMusic: backgroundMusic ?? this.backgroundMusic,
+      storyLineId: storyLineId != null ? storyLineId() : this.storyLineId,
+      ifReencounter: ifReencounter != null ? ifReencounter() : this.ifReencounter,
+      conversationStarter: conversationStarter != null ? conversationStarter() : this.conversationStarter,
+      backgroundMusic: backgroundMusic != null ? backgroundMusic() : this.backgroundMusic,
       weather: weather ?? this.weather,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

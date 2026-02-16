@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/story_line.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
-import '../../core/services/storage_service.dart';
+import '../../core/providers/records_provider.dart';
+import '../../core/providers/story_lines_provider.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/page_transition_provider.dart';
-import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
@@ -46,18 +46,8 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
     });
 
     try {
-      final storage = StorageService();
-      final records = <EncounterRecord>[];
-
-      for (final recordId in _currentStoryLine.recordIds) {
-        final record = storage.getRecord(recordId);
-        if (record != null) {
-          records.add(record);
-        }
-      }
-
-      // 按时间排序
-      records.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final repository = ref.read(storyLineRepositoryProvider);
+      final records = repository.getRecordsInStoryLine(_currentStoryLine.id);
 
       setState(() {
         _records = records;
@@ -67,12 +57,13 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
       setState(() {
         _isLoading = false;
       });
+      rethrow;  // Fail Fast: 不隐藏错误
     }
   }
 
   /// 刷新故事线数据
   Future<void> _refresh() async {
-    final storage = StorageService();
+    final storage = ref.read(storageServiceProvider);
     final updatedStoryLine = storage.getStoryLine(_currentStoryLine.id);
     if (updatedStoryLine != null) {
       setState(() {
@@ -472,7 +463,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
           TextButton(
             onPressed: () async {
               try {
-                final storage = StorageService();
+                final storage = ref.read(storageServiceProvider);
                 await storage.deleteRecord(record.id);
                 
                 if (context.mounted) {

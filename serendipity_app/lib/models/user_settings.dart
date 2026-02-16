@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'enums.dart';
 
 /// 用户设置
@@ -42,15 +43,25 @@ class UserSettings {
     required this.autoPublishToCommunity,
     required this.createdAt,
     required this.updatedAt,
-  });
+  }) : assert(id.isNotEmpty, 'ID cannot be empty'),
+       assert(userId.isNotEmpty, 'User ID cannot be empty'),
+       assert(accentColor == null || accentColor.startsWith('#'), 
+         'Accent color must be a valid hex color starting with #'),
+       assert(!passwordLockEnabled || passwordHash != null,
+         'Password hash is required when password lock is enabled');
 
   /// 从 JSON 创建 UserSettings
   factory UserSettings.fromJson(Map<String, dynamic> json) {
     return UserSettings(
       id: json['id'] as String,
       userId: json['userId'] as String,
-      theme: ThemeOption.values
-          .firstWhere((e) => e.value == json['theme'] as String),
+      theme: ThemeOption.values.firstWhere(
+        (e) => e.value == json['theme'] as String,
+        orElse: () => throw StateError(
+          'Invalid theme value: ${json['theme']}. '
+          'Expected one of: ${ThemeOption.values.map((e) => e.value).join(", ")}'
+        ),
+      ),
       accentColor: json['accentColor'] as String?,
       cloudSyncEnabled: json['cloudSyncEnabled'] as bool,
       biometricLockEnabled: json['biometricLockEnabled'] as bool,
@@ -98,15 +109,32 @@ class UserSettings {
   }
 
   /// 复制并修改部分字段
+  /// 
+  /// 对于可空字段（accentColor, passwordHash），使用函数包装来区分"未传递"和"传递 null"：
+  /// - 不传参数：保持原值
+  /// - 传递函数返回 null：清空字段
+  /// - 传递函数返回新值：更新字段
+  /// 
+  /// 示例：
+  /// ```dart
+  /// // 清空强调色
+  /// settings.copyWith(accentColor: () => null)
+  /// 
+  /// // 修改强调色
+  /// settings.copyWith(accentColor: () => '#FF5722')
+  /// 
+  /// // 保持强调色不变
+  /// settings.copyWith(theme: ThemeOption.dark)
+  /// ```
   UserSettings copyWith({
     String? id,
     String? userId,
     ThemeOption? theme,
-    String? accentColor,
+    String? Function()? accentColor,
     bool? cloudSyncEnabled,
     bool? biometricLockEnabled,
     bool? passwordLockEnabled,
-    String? passwordHash,
+    String? Function()? passwordHash,
     List<String>? hiddenRecordIds,
     bool? achievementNotification,
     bool? anniversaryReminder,
@@ -123,11 +151,11 @@ class UserSettings {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       theme: theme ?? this.theme,
-      accentColor: accentColor ?? this.accentColor,
+      accentColor: accentColor != null ? accentColor() : this.accentColor,
       cloudSyncEnabled: cloudSyncEnabled ?? this.cloudSyncEnabled,
       biometricLockEnabled: biometricLockEnabled ?? this.biometricLockEnabled,
       passwordLockEnabled: passwordLockEnabled ?? this.passwordLockEnabled,
-      passwordHash: passwordHash ?? this.passwordHash,
+      passwordHash: passwordHash != null ? passwordHash() : this.passwordHash,
       hiddenRecordIds: hiddenRecordIds ?? this.hiddenRecordIds,
       achievementNotification: achievementNotification ?? this.achievementNotification,
       anniversaryReminder: anniversaryReminder ?? this.anniversaryReminder,
@@ -160,7 +188,7 @@ class UserSettings {
         other.biometricLockEnabled == biometricLockEnabled &&
         other.passwordLockEnabled == passwordLockEnabled &&
         other.passwordHash == passwordHash &&
-        other.hiddenRecordIds.length == hiddenRecordIds.length &&
+        listEquals(other.hiddenRecordIds, hiddenRecordIds) &&
         other.achievementNotification == achievementNotification &&
         other.anniversaryReminder == anniversaryReminder &&
         other.locationReminder == locationReminder &&
@@ -183,7 +211,7 @@ class UserSettings {
         biometricLockEnabled.hashCode ^
         passwordLockEnabled.hashCode ^
         passwordHash.hashCode ^
-        hiddenRecordIds.length.hashCode ^
+        hiddenRecordIds.hashCode ^
         achievementNotification.hashCode ^
         anniversaryReminder.hashCode ^
         locationReminder.hashCode ^

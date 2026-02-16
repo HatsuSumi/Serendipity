@@ -137,7 +137,10 @@ class StoryLinesPage extends ConsumerWidget {
                   ? Duration.zero
                   : const Duration(milliseconds: 300),
             ),
-          );
+          ).then((_) {
+            // 从详情页返回后刷新列表
+            ref.read(storyLinesProvider.notifier).refresh();
+          });
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(

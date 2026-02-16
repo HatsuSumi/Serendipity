@@ -7,6 +7,7 @@ import 'core/providers/theme_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'models/enums.dart';
 import 'models/encounter_record.dart';
+import 'models/story_line.dart';
 
 void main() async {
   // 确保 Flutter 绑定初始化
@@ -32,6 +33,9 @@ void main() async {
   Hive.registerAdapter(TagWithNoteAdapter());
   Hive.registerAdapter(LocationAdapter());
   Hive.registerAdapter(EncounterRecordAdapter());
+  
+  // 故事线类型 (typeId: 3)
+  Hive.registerAdapter(StoryLineAdapter());
   
   // 初始化存储服务
   await StorageService().init();

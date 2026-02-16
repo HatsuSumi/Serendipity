@@ -1,22 +1,33 @@
+import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
+
+part 'story_line.g.dart';
+
 /// StoryLine（故事线）数据模型
 ///
 /// 用于将多条记录组合成一个完整的故事线
 /// 一个故事线 = 同一个人的多次记录
+@HiveType(typeId: 3)
 class StoryLine {
   /// 故事线ID（唯一标识）
+  @HiveField(0)
   final String id;
 
   /// 故事线名称（用户自定义）
   /// 例如："地铁上的她"、"咖啡馆的他"
+  @HiveField(1)
   final String name;
 
   /// 包含的记录ID列表（按时间排序）
+  @HiveField(2)
   final List<String> recordIds;
 
   /// 创建时间
+  @HiveField(3)
   final DateTime createdAt;
 
   /// 最后更新时间
+  @HiveField(4)
   final DateTime updatedAt;
 
   const StoryLine({
@@ -25,7 +36,8 @@ class StoryLine {
     required this.recordIds,
     required this.createdAt,
     required this.updatedAt,
-  });
+  }) : assert(id != '', 'ID cannot be empty'),
+       assert(name != '', 'Name cannot be empty');
 
   /// 从 JSON 创建 StoryLine 对象
   factory StoryLine.fromJson(Map<String, dynamic> json) {
@@ -81,7 +93,7 @@ class StoryLine {
     return other is StoryLine &&
         other.id == id &&
         other.name == name &&
-        _listEquals(other.recordIds, recordIds) &&
+        listEquals(other.recordIds, recordIds) &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -93,15 +105,6 @@ class StoryLine {
         recordIds.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
-  }
-
-  /// 辅助方法：比较两个列表是否相等
-  bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
   }
 }
 

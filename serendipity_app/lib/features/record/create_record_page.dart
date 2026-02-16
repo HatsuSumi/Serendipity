@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/providers/story_lines_provider.dart';
+import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../models/encounter_record.dart';
@@ -190,16 +191,19 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       final record = EncounterRecord(
         id: widget.recordToEdit?.id ?? const Uuid().v4(),
         timestamp: _selectedTime,
-        location: Location(
-          // 编辑模式下保留原有的GPS坐标
-          latitude: widget.recordToEdit?.location.latitude,
-          longitude: widget.recordToEdit?.location.longitude,
-          address: widget.recordToEdit?.location.address,
-          placeName: _placeNameController.text.trim().isEmpty 
-              ? null 
-              : _placeNameController.text.trim(),
-          placeType: _selectedPlaceType,
-        ),
+        location: widget.isEditMode
+            ? widget.recordToEdit!.location.copyWith(
+                placeName: () => _placeNameController.text.trim().isEmpty 
+                    ? null 
+                    : _placeNameController.text.trim(),
+                placeType: () => _selectedPlaceType,
+              )
+            : Location(
+                placeName: _placeNameController.text.trim().isEmpty 
+                    ? null 
+                    : _placeNameController.text.trim(),
+                placeType: _selectedPlaceType,
+              ),
         description: description.isEmpty ? null : description,
         tags: _tags,
         emotion: _selectedEmotion,
@@ -213,11 +217,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         updatedAt: now,
       );
 
-      // 直接保存到 Storage，不通过 Provider
+      // 通过 Provider 保存，自动处理故事线关联
       if (widget.isEditMode) {
-        await _storage.updateRecord(record);
+        await ref.read(recordsProvider.notifier).updateRecord(record);
       } else {
-        await _storage.saveRecord(record);
+        await ref.read(recordsProvider.notifier).saveRecord(record);
       }
 
       if (mounted) {

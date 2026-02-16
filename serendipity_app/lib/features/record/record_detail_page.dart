@@ -8,7 +8,6 @@ import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
-import '../../core/services/storage_service.dart';
 import '../story_line/link_to_story_line_dialog.dart';
 import '../story_line/story_line_detail_page.dart';
 import 'create_record_page.dart';
@@ -82,7 +81,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   void _navigateToStoryLineDetail(BuildContext context) {
     if (_currentRecord.storyLineId == null) return;
     
-    final storyLine = StorageService().getStoryLine(_currentRecord.storyLineId!);
+    final storageService = ref.read(storageServiceProvider);
+    final storyLine = storageService.getStoryLine(_currentRecord.storyLineId!);
     if (storyLine == null) {
       MessageHelper.showError(context, '故事线不存在');
       return;
@@ -376,7 +376,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                       const Text('📖 '),
                       Expanded(
                         child: Text(
-                          StorageService().getStoryLine(_currentRecord.storyLineId!)?.name ?? 
+                          ref.read(storageServiceProvider).getStoryLine(_currentRecord.storyLineId!)?.name ?? 
                               '未知故事线',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
@@ -649,7 +649,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     ).then((result) {
       // 如果关联成功，刷新当前记录
       if (result == true && mounted) {
-        final updatedRecord = StorageService().getRecord(_currentRecord.id);
+        final storageService = ref.read(storageServiceProvider);
+        final updatedRecord = storageService.getRecord(_currentRecord.id);
         if (updatedRecord != null) {
           setState(() {
             _currentRecord = updatedRecord;
@@ -690,7 +691,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   Future<void> _deleteRecord(BuildContext context) async {
     try {
       // 从存储中删除记录
-      final storageService = StorageService();
+      final storageService = ref.read(storageServiceProvider);
       await storageService.deleteRecord(_currentRecord.id);
       
       // 让 Provider 失效，触发自动重新加载

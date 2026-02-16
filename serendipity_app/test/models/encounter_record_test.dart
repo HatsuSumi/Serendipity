@@ -134,7 +134,7 @@ void main() {
         storyLineId: 'story_1',
         ifReencounter: '如果再遇到，我想搭话',
         backgroundMusic: '《遇见》',
-        weather: Weather.sunny,
+        weather: [Weather.sunny],
         createdAt: now,
         updatedAt: now,
       );
@@ -220,7 +220,7 @@ void main() {
         'ifReencounter': null,
         'conversationStarter': null,
         'backgroundMusic': null,
-        'weather': 1,
+        'weather': [1],
         'createdAt': '2026-02-11T18:30:00.000',
         'updatedAt': '2026-02-11T18:30:00.000',
       };
@@ -236,7 +236,7 @@ void main() {
       expect(record.emotion, EmotionIntensity.thoughtOnWayHome);
       expect(record.status, EncounterStatus.missed);
       expect(record.storyLineId, 'story_1');
-      expect(record.weather, Weather.sunny);
+      expect(record.weather, [Weather.sunny]);
     });
 
     test('toJson 和 fromJson 往返转换', () {
@@ -259,7 +259,7 @@ void main() {
         emotion: EmotionIntensity.thoughtOnWayHome,
         status: EncounterStatus.missed,
         storyLineId: 'story_1',
-        weather: Weather.sunny,
+        weather: [Weather.sunny],
         createdAt: now,
         updatedAt: now,
       );
