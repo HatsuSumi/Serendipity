@@ -192,11 +192,5 @@ class AppTheme {
       ),
     );
   }
-
-  /// 快捷访问：默认浅色主题
-  static ThemeData get lightTheme => _lightTheme;
-
-  /// 快捷访问：默认深色主题
-  static ThemeData get darkTheme => _darkTheme;
 }
 
