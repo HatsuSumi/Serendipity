@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/providers/records_provider.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';

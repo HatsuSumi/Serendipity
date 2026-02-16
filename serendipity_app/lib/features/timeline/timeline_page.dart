@@ -11,9 +11,6 @@ import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../story_line/link_to_story_line_dialog.dart';
 
-// 用于传递记录对象的 Provider
-final selectedRecordProvider = StateProvider<EncounterRecord?>((ref) => null);
-
 /// 排序方式
 enum RecordSortType {
   createdDesc('创建时间 ↓'),
@@ -188,38 +185,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: statusColor.withOpacity(0.3),
+          color: statusColor.withValues(alpha: 0.3),
           width: 2,
         ),
       ),
       child: InkWell(
-        onTap: () {
-          // 读取用户设置的动画类型
-          var transitionType = ref.read(pageTransitionProvider);
-          
-          // 如果是随机动画，在这里就决定使用哪个具体动画
-          if (transitionType == PageTransitionType.random) {
-            transitionType = PageTransitionBuilder.getRandomType();
-          }
-          
-          // 使用 Navigator.push 以便传递动画类型
-          Navigator.of(context).push(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) {
-                return RecordDetailPage(record: record);
-              },
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return PageTransitionBuilder.buildTransition(
-                  transitionType,
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                );
-              },
-            ),
-          );
-        },
+        onTap: () => _navigateToRecordDetail(context, ref, record),
         // 自定义悬停动画时长（更柔和）
         hoverDuration: const Duration(milliseconds: 300),
         borderRadius: BorderRadius.circular(16),
@@ -349,7 +320,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -404,7 +375,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   void _handleMenuAction(BuildContext context, WidgetRef ref, EncounterRecord record, String action) {
     switch (action) {
       case 'edit':
-        _navigateToEditRecord(context, ref, record);
+        _navigateToRecordDetail(context, ref, record);
         break;
       case 'link':
         _showLinkToStoryLineDialog(context, ref, record);
@@ -418,8 +389,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     }
   }
 
-  /// 导航到编辑记录页面
-  void _navigateToEditRecord(BuildContext context, WidgetRef ref, EncounterRecord record) {
+  /// 导航到记录详情页面（统一方法）
+  void _navigateToRecordDetail(BuildContext context, WidgetRef ref, EncounterRecord record) {
     var transitionType = ref.read(pageTransitionProvider);
     if (transitionType == PageTransitionType.random) {
       transitionType = PageTransitionBuilder.getRandomType();

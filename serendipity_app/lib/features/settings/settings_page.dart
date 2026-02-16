@@ -23,7 +23,7 @@ class SettingsPage extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
-              '页面切换动画',
+              '页面跳转动画',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -51,7 +51,7 @@ class SettingsPage extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
-              '💡 提示：返回时间轴页面，点击记录卡片查看效果',
+              '💡 提示：点击记录卡片、编辑按钮等跳转到新页面时生效\n（底部导航栏切换不触发动画）',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey,

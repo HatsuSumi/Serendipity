@@ -9,9 +9,9 @@
 ## 📊 总体进度
 
 - **总文件数**：27个
-- **已检查**：17个
-- **待检查**：10个
-- **完成度**：63.0%
+- **已检查**：21个
+- **待检查**：6个
+- **完成度**：77.8%
 
 ---
 
@@ -262,15 +262,17 @@
 
 #### 6. 路由系统
 
-- [ ] **6.1** `lib/core/router/app_router.dart`
-  - 状态：⏳ 待检查
-  - 问题数：-
-  - 优先级：-
+- [x] **6.1** `lib/core/router/app_router.dart`
+  - 状态：✅ 已完成（已修复）
+  - 问题数：3个（已全部修复）
+  - 优先级：🔥 高
+  - 报告：[查看详细报告](./code_review_reports/5.1_app_router.dart_review.md)
 
-- [ ] **6.2** `lib/features/home/main_navigation_page.dart`
-  - 状态：⏳ 待检查
-  - 问题数：-
+- [x] **6.2** `lib/features/home/main_navigation_page.dart`
+  - 状态：✅ 已完成（无问题）
+  - 问题数：0
   - 优先级：-
+  - 报告：[查看详细报告](./code_review_reports/5.2_main_navigation_page.dart_review.md)
 
 ---
 
@@ -278,15 +280,17 @@
 
 #### 7. 记录功能
 
-- [ ] **7.1** `lib/features/timeline/timeline_page.dart`
-  - 状态：⏳ 待检查
-  - 问题数：-
-  - 优先级：-
+- [x] **7.1** `lib/features/timeline/timeline_page.dart`
+  - 状态：✅ 已完成（已修复）
+  - 问题数：3个（已全部修复）
+  - 优先级：⚡ 中
+  - 报告：[查看详细报告](./code_review_reports/5.3_timeline_page.dart_review.md)
 
-- [ ] **7.2** `lib/features/record/record_detail_page.dart`
-  - 状态：⏳ 待检查
-  - 问题数：-
-  - 优先级：-
+- [x] **7.2** `lib/features/record/record_detail_page.dart`
+  - 状态：✅ 已完成（已修复）
+  - 问题数：4个（已全部修复）
+  - 优先级：🔥 高
+  - 报告：[查看详细报告](./code_review_reports/5.4_record_detail_page.dart_review.md)
 
 - [ ] **7.3** `lib/features/record/create_record_page.dart` ⭐ 最复杂
   - 状态：⏳ 待检查
@@ -356,6 +360,8 @@
 1. ✅ storage_service.dart：linkRecordToStoryLine 方法存在架构问题（已修复）
 2. ✅ status_colors.dart：严重违反DRY原则，42个重复switch case（已修复）
 3. ✅ theme.dart：整个文件未被使用，死文件（已修复）
+4. ✅ app_router.dart：路由未被充分使用，11处绕过路由系统（已修复 - 移除GoRouter）
+5. ✅ record_detail_page.dart：违反分层约束，UI层直接访问storageService（已修复）
 
 ### 中优先级问题 ⚡
 1. ✅ user_settings.dart：hiddenRecordIds 的 == 和 hashCode 实现不正确（已修复）
@@ -367,6 +373,13 @@
 7. ✅ message_helper.dart：存在3个死方法（已修复）
 8. ✅ dialog_helper.dart：_mapToInternalType 方法缺少 Fail Fast 验证（已修复）
 9. ✅ dialog_helper.dart：项目中有3处绕过 DialogHelper 直接使用 showDialog（已修复）
+10. ✅ app_router.dart：路由配置不完整，只配置了3个路由（已修复 - 移除GoRouter）
+11. ✅ app_router.dart：路由动画与 PageTransitionBuilder 冲突（已修复 - 移除GoRouter）
+12. ✅ timeline_page.dart：selectedRecordProvider 未使用（已修复）
+13. ✅ timeline_page.dart：使用 deprecated API withOpacity（已修复）
+14. ✅ timeline_page.dart：导航代码重复（已修复）
+15. ✅ record_detail_page.dart：使用 deprecated API（5处，已修复）
+16. ✅ record_detail_page.dart：mounted 检查不完整（3处，已修复）
 
 ### 低优先级问题 💡
 1. ✅ story_line.dart：使用 Flutter 内置 `listEquals` 方法（已修复）
@@ -379,18 +392,18 @@
 
 | 类别 | 数量 |
 |------|------|
-| 架构问题 | 4（已修复） |
-| 代码质量问题 | 16（已全部修复） |
+| 架构问题 | 6（已全部修复） |
+| 代码质量问题 | 23（已全部修复） |
 | Flutter特定问题 | 0 |
 | 状态管理问题 | 0 |
 | 性能问题 | 2（已修复） |
-| **总计** | **22（已全部修复）** |
+| **总计** | **31（已全部修复）** |
 
 ### 文件质量分布
 
 | 评分 | 文件数 | 百分比 |
 |------|--------|--------|
-| ⭐⭐⭐⭐⭐ (5/5) | 17 | 100% |
+| ⭐⭐⭐⭐⭐ (5/5) | 21 | 100% |
 | ⭐⭐⭐⭐ (4/5) | 0 | 0% |
 | ⭐⭐⭐ (3/5) | 0 | 0% |
 | ⭐⭐ (2/5) | 0 | 0% |
@@ -408,11 +421,11 @@
 
 ## 🎯 下一步
 
-**当前检查**：5.5 story_lines_provider.dart（已完成）  
-**下一个检查**：6.1 app_router.dart  
+**当前检查**：7.2 record_detail_page.dart（已完成并修复）  
+**下一个检查**：7.3 create_record_page.dart  
 **预计完成时间**：2026-02-16
 
 ---
 
-**最后更新时间**：2026-02-16 16:01
+**最后更新时间**：2026-02-16 18:25
 

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/services/storage_service.dart';
-import 'core/router/app_router.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/theme/app_theme.dart';
+import 'features/home/main_navigation_page.dart';
 import 'models/enums.dart';
 import 'models/encounter_record.dart';
 import 'models/story_line.dart';
@@ -62,12 +62,12 @@ class MyApp extends ConsumerWidget {
     // 确定主题模式
     final themeMode = _getThemeMode(themeOption);
     
-    return MaterialApp.router(
+    return MaterialApp(
       title: 'Serendipity',
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: themeMode,
-      routerConfig: AppRouter.router,
+      home: const MainNavigationPage(),
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         // 响应式设计：Web端限制最大宽度为600px

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
+import '../../models/story_line.dart';
 import '../../models/enums.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../story_line/link_to_story_line_dialog.dart';
@@ -32,6 +34,24 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   void initState() {
     super.initState();
     _currentRecord = widget.record;
+  }
+
+  /// 获取故事线名称（通过 Provider）
+  String _getStoryLineName() {
+    if (_currentRecord.storyLineId == null) return '未知故事线';
+    
+    final storyLinesAsync = ref.read(storyLinesProvider);
+    final storyLines = storyLinesAsync.value;
+    if (storyLines == null) return '未知故事线';
+    
+    try {
+      final storyLine = storyLines.firstWhere(
+        (sl) => sl.id == _currentRecord.storyLineId,
+      );
+      return storyLine.name;
+    } catch (e) {
+      return '未知故事线';
+    }
   }
 
   /// 导航到编辑页面
@@ -81,9 +101,20 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   void _navigateToStoryLineDetail(BuildContext context) {
     if (_currentRecord.storyLineId == null) return;
     
-    final storageService = ref.read(storageServiceProvider);
-    final storyLine = storageService.getStoryLine(_currentRecord.storyLineId!);
-    if (storyLine == null) {
+    // 通过 Provider 获取故事线
+    final storyLinesAsync = ref.read(storyLinesProvider);
+    final storyLines = storyLinesAsync.value;
+    if (storyLines == null) {
+      MessageHelper.showError(context, '故事线数据未加载');
+      return;
+    }
+    
+    StoryLine? storyLine;
+    try {
+      storyLine = storyLines.firstWhere(
+        (sl) => sl.id == _currentRecord.storyLineId,
+      );
+    } catch (e) {
       MessageHelper.showError(context, '故事线不存在');
       return;
     }
@@ -100,7 +131,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
-          return StoryLineDetailPage(storyLine: storyLine);
+          return StoryLineDetailPage(storyLine: storyLine!);
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return PageTransitionBuilder.buildTransition(
@@ -199,13 +230,13 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            statusColor.withOpacity(0.2),
-            statusColor.withOpacity(0.1),
+            statusColor.withValues(alpha: 0.2),
+            statusColor.withValues(alpha: 0.1),
           ],
         ),
         border: Border(
           bottom: BorderSide(
-            color: statusColor.withOpacity(0.3),
+            color: statusColor.withValues(alpha: 0.3),
             width: 2,
           ),
         ),
@@ -376,8 +407,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                       const Text('📖 '),
                       Expanded(
                         child: Text(
-                          ref.read(storageServiceProvider).getStoryLine(_currentRecord.storyLineId!)?.name ?? 
-                              '未知故事线',
+                          _getStoryLineName(),
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -558,7 +588,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   Widget _buildMetadataCard(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(top: 12),
-      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -649,12 +679,20 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     ).then((result) {
       // 如果关联成功，刷新当前记录
       if (result == true && mounted) {
-        final storageService = ref.read(storageServiceProvider);
-        final updatedRecord = storageService.getRecord(_currentRecord.id);
-        if (updatedRecord != null) {
-          setState(() {
-            _currentRecord = updatedRecord;
-          });
+        // 通过 Provider 获取更新后的记录
+        final recordsAsync = ref.read(recordsProvider);
+        final records = recordsAsync.value;
+        if (records != null) {
+          try {
+            final updatedRecord = records.firstWhere(
+              (r) => r.id == _currentRecord.id,
+            );
+            setState(() {
+              _currentRecord = updatedRecord;
+            });
+          } catch (e) {
+            // 记录未找到，忽略
+          }
         }
       }
     });
@@ -690,25 +728,27 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   /// 删除记录
   Future<void> _deleteRecord(BuildContext context) async {
     try {
-      // 从存储中删除记录
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.deleteRecord(_currentRecord.id);
+      // 通过 Provider 删除记录
+      await ref.read(recordsProvider.notifier).deleteRecord(_currentRecord.id);
+      
+      if (!mounted) return;
       
       // 让 Provider 失效，触发自动重新加载
-      if (mounted) {
-        ref.invalidate(recordsProvider);
-        
-        // 返回上一页
-        Navigator.of(context).pop();
-        
-        // 显示成功提示
-        MessageHelper.showSuccess(context, '记录已删除');
-      }
+      ref.invalidate(recordsProvider);
+      
+      if (!context.mounted) return;
+      
+      // 返回上一页
+      Navigator.of(context).pop();
+      
+      // 显示成功提示
+      MessageHelper.showSuccess(context, '记录已删除');
     } catch (e) {
+      if (!mounted) return;
+      if (!context.mounted) return;
+      
       // 显示错误提示
-      if (mounted) {
-        MessageHelper.showError(context, '删除失败：$e');
-      }
+      MessageHelper.showError(context, '删除失败：$e');
     }
   }
 
