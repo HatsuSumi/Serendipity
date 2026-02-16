@@ -123,7 +123,7 @@ class MessageHelper {
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -168,82 +168,5 @@ class MessageHelper {
       overlayEntry.remove();
       animationController.dispose();
     });
-  }
-
-  /// 显示底部消息（传统样式）
-  static void showBottomMessage(
-    BuildContext context,
-    String message, {
-    Duration duration = const Duration(seconds: 2),
-    Color? backgroundColor,
-    SnackBarAction? action,
-  }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: duration,
-        backgroundColor: backgroundColor,
-        action: action,
-      ),
-    );
-  }
-
-  /// 显示加载中消息（不自动消失）
-  static OverlayEntry? showLoading(BuildContext context, String message) {
-    final overlay = Overlay.of(context);
-    
-    final overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: 80,
-        right: 20,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 300),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    overlay.insert(overlayEntry);
-    return overlayEntry;
-  }
-
-  /// 隐藏加载中消息
-  static void hideLoading(OverlayEntry? entry) {
-    entry?.remove();
   }
 }
