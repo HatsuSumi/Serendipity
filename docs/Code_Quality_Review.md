@@ -9,9 +9,9 @@
 ## 📊 总体进度
 
 - **总文件数**：27个
-- **已检查**：5个
-- **待检查**：22个
-- **完成度**：18.5%
+- **已检查**：6个
+- **待检查**：21个
+- **完成度**：22.2%
 
 ---
 
@@ -176,10 +176,11 @@
 
 #### 3. 主题系统
 
-- [ ] **3.1** `lib/core/theme/status_colors.dart`
-  - 状态：⏳ 待检查
-  - 问题数：-
-  - 优先级：-
+- [x] **3.1** `lib/core/theme/status_colors.dart`
+  - 状态：✅ 已完成（已修复）
+  - 问题数：3个（已全部修复）
+  - 优先级：🔥 高
+  - 报告：[查看详细报告](./code_review_reports/3.1_status_colors.dart_review.md)
 
 - [ ] **3.2** `lib/core/theme/status_color_extension.dart`
   - 状态：⏳ 待检查
@@ -342,15 +343,18 @@
 
 ### 高优先级问题 🔥
 1. ✅ storage_service.dart：linkRecordToStoryLine 方法存在架构问题（已修复）
+2. ✅ status_colors.dart：严重违反DRY原则，42个重复switch case（已修复）
 
 ### 中优先级问题 ⚡
 1. ✅ user_settings.dart：hiddenRecordIds 的 == 和 hashCode 实现不正确（已修复）
 2. ✅ user_settings.dart：构造函数缺少业务规则验证（已修复）
 3. ✅ storage_service.dart：缺少 Fail Fast 验证（已修复）
 4. ✅ storage_service.dart：Box 未初始化时静默失败（已修复）
+5. ✅ status_colors.dart：缺少Fail Fast验证（已修复）
 
 ### 低优先级问题 💡
 1. ✅ story_line.dart：使用 Flutter 内置 `listEquals` 方法（已修复）
+2. ✅ status_colors.dart：性能可优化（已修复）
 
 ---
 
@@ -358,18 +362,18 @@
 
 | 类别 | 数量 |
 |------|------|
-| 架构问题 | 3（已修复） |
-| 代码质量问题 | 7（已修复） |
+| 架构问题 | 4（已修复） |
+| 代码质量问题 | 8（已修复） |
 | Flutter特定问题 | 0 |
 | 状态管理问题 | 0 |
-| 性能问题 | 1（已修复） |
-| **总计** | **11（已全部修复）** |
+| 性能问题 | 2（已修复） |
+| **总计** | **14（已全部修复）** |
 
 ### 文件质量分布
 
 | 评分 | 文件数 | 百分比 |
 |------|--------|--------|
-| ⭐⭐⭐⭐⭐ (5/5) | 5 | 100% |
+| ⭐⭐⭐⭐⭐ (5/5) | 6 | 100% |
 | ⭐⭐⭐⭐ (4/5) | 0 | 0% |
 | ⭐⭐⭐ (3/5) | 0 | 0% |
 | ⭐⭐ (2/5) | 0 | 0% |
@@ -387,10 +391,10 @@
 
 ## 🎯 下一步
 
-**当前检查**：3.1 status_colors.dart  
+**当前检查**：3.2 status_color_extension.dart  
 **预计完成时间**：2026-02-16
 
 ---
 
-**最后更新时间**：2026-02-15 22:30
+**最后更新时间**：2026-02-16 12:52
 

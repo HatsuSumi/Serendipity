@@ -34,9 +34,6 @@ abstract class IStorageService {
   /// 更新记录
   Future<void> updateRecord(EncounterRecord record);
   
-  /// 清空所有记录
-  Future<void> clearAllRecords();
-  
   /// 根据故事线ID获取记录
   List<EncounterRecord> getRecordsByStoryLine(String storyLineId);
   

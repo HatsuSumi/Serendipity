@@ -1,251 +1,267 @@
 import 'package:flutter/material.dart';
 import '../../models/enums.dart';
 
+/// 颜色对：浅色模式颜色 / 深色模式颜色
+typedef _ColorPair = ({Color light, Color dark});
+
 /// 状态颜色系统
 /// 
 /// 负责根据当前主题和记录状态，提供对应的情感色调。
 /// 
 /// 设计原则：
+/// - 数据驱动设计（Data-Driven Design）
 /// - 状态色调是情感氛围，不是整体主题
 /// - 在不同主题下调整亮度/饱和度，保持情感基调
 /// - 确保在浅色和深色主题下都有足够对比度
 class StatusColors {
+  // 私有构造函数，防止实例化
+  StatusColors._();
+
+  /// 状态颜色映射表
+  /// 
+  /// 结构：状态 -> 主题 -> (浅色颜色, 深色颜色)
+  /// 
+  /// 情感基调说明：
+  /// - 错过 🌫️：朦胧、柔和、灰蓝色调
+  /// - 再遇 🌟：明亮、惊喜、金色点缀
+  /// - 邂逅 💫：温暖、激动、粉橙色调
+  /// - 重逢 💝：圆满、幸福、玫瑰金色调
+  /// - 别离 🥀：淡然、接受、玫瑰灰色调
+  /// - 失联 🍂：平静、释怀、秋叶色调
+  static const Map<EncounterStatus, Map<ThemeOption, _ColorPair>> _colorMap = {
+    // ==================== 错过 🌫️ ====================
+    EncounterStatus.missed: {
+      ThemeOption.light: (
+        light: Color(0xFF7B9EB0),
+        dark: Color(0xFF9DB8C7),
+      ),
+      ThemeOption.dark: (
+        light: Color(0xFF9DB8C7),
+        dark: Color(0xFF9DB8C7),
+      ),
+      ThemeOption.misty: (
+        light: Color(0xFF6B8E9F),
+        dark: Color(0xFF6B8E9F),
+      ),
+      ThemeOption.midnight: (
+        light: Color(0xFFB0C4D0),
+        dark: Color(0xFFB0C4D0),
+      ),
+      ThemeOption.warm: (
+        light: Color(0xFF8FAAB8),
+        dark: Color(0xFF8FAAB8),
+      ),
+      ThemeOption.autumn: (
+        light: Color(0xFF8B9FA8),
+        dark: Color(0xFF8B9FA8),
+      ),
+      ThemeOption.system: (
+        light: Color(0xFF7B9EB0),
+        dark: Color(0xFF9DB8C7),
+      ),
+    },
+
+    // ==================== 再遇 🌟 ====================
+    EncounterStatus.reencounter: {
+      ThemeOption.light: (
+        light: Color(0xFFFFD700),
+        dark: Color(0xFFFFE066),
+      ),
+      ThemeOption.dark: (
+        light: Color(0xFFFFE066),
+        dark: Color(0xFFFFE066),
+      ),
+      ThemeOption.misty: (
+        light: Color(0xFFE8C547),
+        dark: Color(0xFFE8C547),
+      ),
+      ThemeOption.midnight: (
+        light: Color(0xFFFFF176),
+        dark: Color(0xFFFFF176),
+      ),
+      ThemeOption.warm: (
+        light: Color(0xFFFFCA28),
+        dark: Color(0xFFFFCA28),
+      ),
+      ThemeOption.autumn: (
+        light: Color(0xFFFFB300),
+        dark: Color(0xFFFFB300),
+      ),
+      ThemeOption.system: (
+        light: Color(0xFFFFD700),
+        dark: Color(0xFFFFE066),
+      ),
+    },
+
+    // ==================== 邂逅 💫 ====================
+    EncounterStatus.met: {
+      ThemeOption.light: (
+        light: Color(0xFFFF9E80),
+        dark: Color(0xFFFFAB91),
+      ),
+      ThemeOption.dark: (
+        light: Color(0xFFFFAB91),
+        dark: Color(0xFFFFAB91),
+      ),
+      ThemeOption.misty: (
+        light: Color(0xFFFF8A65),
+        dark: Color(0xFFFF8A65),
+      ),
+      ThemeOption.midnight: (
+        light: Color(0xFFFFB74D),
+        dark: Color(0xFFFFB74D),
+      ),
+      ThemeOption.warm: (
+        light: Color(0xFFFF9E80),
+        dark: Color(0xFFFF9E80),
+      ),
+      ThemeOption.autumn: (
+        light: Color(0xFFFF7043),
+        dark: Color(0xFFFF7043),
+      ),
+      ThemeOption.system: (
+        light: Color(0xFFFF9E80),
+        dark: Color(0xFFFFAB91),
+      ),
+    },
+
+    // ==================== 重逢 💝 ====================
+    EncounterStatus.reunion: {
+      ThemeOption.light: (
+        light: Color(0xFFE91E63),
+        dark: Color(0xFFF06292),
+      ),
+      ThemeOption.dark: (
+        light: Color(0xFFF06292),
+        dark: Color(0xFFF06292),
+      ),
+      ThemeOption.misty: (
+        light: Color(0xFFEC407A),
+        dark: Color(0xFFEC407A),
+      ),
+      ThemeOption.midnight: (
+        light: Color(0xFFF48FB1),
+        dark: Color(0xFFF48FB1),
+      ),
+      ThemeOption.warm: (
+        light: Color(0xFFE91E63),
+        dark: Color(0xFFE91E63),
+      ),
+      ThemeOption.autumn: (
+        light: Color(0xFFC2185B),
+        dark: Color(0xFFC2185B),
+      ),
+      ThemeOption.system: (
+        light: Color(0xFFE91E63),
+        dark: Color(0xFFF06292),
+      ),
+    },
+
+    // ==================== 别离 🥀 ====================
+    EncounterStatus.farewell: {
+      ThemeOption.light: (
+        light: Color(0xFFBCAAA4),
+        dark: Color(0xFFD7CCC8),
+      ),
+      ThemeOption.dark: (
+        light: Color(0xFFD7CCC8),
+        dark: Color(0xFFD7CCC8),
+      ),
+      ThemeOption.misty: (
+        light: Color(0xFFB0A199),
+        dark: Color(0xFFB0A199),
+      ),
+      ThemeOption.midnight: (
+        light: Color(0xFFE0D5D0),
+        dark: Color(0xFFE0D5D0),
+      ),
+      ThemeOption.warm: (
+        light: Color(0xFFC9B8B0),
+        dark: Color(0xFFC9B8B0),
+      ),
+      ThemeOption.autumn: (
+        light: Color(0xFFA1887F),
+        dark: Color(0xFFA1887F),
+      ),
+      ThemeOption.system: (
+        light: Color(0xFFBCAAA4),
+        dark: Color(0xFFD7CCC8),
+      ),
+    },
+
+    // ==================== 失联 🍂 ====================
+    EncounterStatus.lost: {
+      ThemeOption.light: (
+        light: Color(0xFFD4A574),
+        dark: Color(0xFFE0B589),
+      ),
+      ThemeOption.dark: (
+        light: Color(0xFFE0B589),
+        dark: Color(0xFFE0B589),
+      ),
+      ThemeOption.misty: (
+        light: Color(0xFFC89F6F),
+        dark: Color(0xFFC89F6F),
+      ),
+      ThemeOption.midnight: (
+        light: Color(0xFFECC89E),
+        dark: Color(0xFFECC89E),
+      ),
+      ThemeOption.warm: (
+        light: Color(0xFFDDB87A),
+        dark: Color(0xFFDDB87A),
+      ),
+      ThemeOption.autumn: (
+        light: Color(0xFFBF8F5F),
+        dark: Color(0xFFBF8F5F),
+      ),
+      ThemeOption.system: (
+        light: Color(0xFFD4A574),
+        dark: Color(0xFFE0B589),
+      ),
+    },
+  };
+
   /// 根据状态和主题获取对应的颜色
   /// 
   /// [status] 记录状态
   /// [themeOption] 当前主题选项
   /// [brightness] 系统亮度（用于 system 主题）
+  /// 
+  /// 注意：此方法依赖编译时常量Map，查找时间复杂度为O(1)
   static Color getColor(
     EncounterStatus status,
     ThemeOption themeOption,
     Brightness brightness,
   ) {
-    // 确定当前是浅色还是深色模式
-    final isDark = _isDarkMode(themeOption, brightness);
-
-    // 根据状态返回对应的颜色
-    switch (status) {
-      case EncounterStatus.missed:
-        return _getMissedColor(themeOption, isDark);
-      case EncounterStatus.reencounter:
-        return _getReencounterColor(themeOption, isDark);
-      case EncounterStatus.met:
-        return _getMetColor(themeOption, isDark);
-      case EncounterStatus.reunion:
-        return _getReunionColor(themeOption, isDark);
-      case EncounterStatus.farewell:
-        return _getFarewellColor(themeOption, isDark);
-      case EncounterStatus.lost:
-        return _getLostColor(themeOption, isDark);
+    // 获取颜色对
+    final colorPair = _colorMap[status]?[themeOption];
+    
+    // Fail Fast：如果找不到颜色配置，立即报错
+    assert(
+      colorPair != null,
+      'Color configuration not found for status=$status, theme=$themeOption. '
+      'This is a programming error - all combinations must be defined in _colorMap.',
+    );
+    
+    if (colorPair == null) {
+      // 生产环境降级：返回灰色
+      return const Color(0xFF9E9E9E);
     }
+
+    // 判断是否使用深色模式颜色
+    final isDark = _isDarkMode(themeOption, brightness);
+    return isDark ? colorPair.dark : colorPair.light;
   }
 
   /// 判断当前是否为深色模式
+  /// 
+  /// 使用Dart 3.0的switch表达式，更简洁
   static bool _isDarkMode(ThemeOption themeOption, Brightness brightness) {
-    switch (themeOption) {
-      case ThemeOption.light:
-      case ThemeOption.misty:
-      case ThemeOption.warm:
-      case ThemeOption.autumn:
-        return false;
-      case ThemeOption.dark:
-      case ThemeOption.midnight:
-        return true;
-      case ThemeOption.system:
-        return brightness == Brightness.dark;
-    }
-  }
-
-  // ==================== 错过 🌫️ ====================
-  // 情感基调：朦胧、柔和、灰蓝色调
-
-  static Color _getMissedColor(ThemeOption themeOption, bool isDark) {
-    switch (themeOption) {
-      case ThemeOption.light:
-      case ThemeOption.system:
-        return isDark
-            ? const Color(0xFF9DB8C7) // 深色模式：提高亮度
-            : const Color(0xFF7B9EB0); // 浅色模式：原始灰蓝
-
-      case ThemeOption.dark:
-        return const Color(0xFF9DB8C7); // 深色模式：提高亮度
-
-      case ThemeOption.misty:
-        // 朦胧主题：强化灰蓝色调
-        return const Color(0xFF6B8E9F);
-
-      case ThemeOption.midnight:
-        // 深夜主题：冷色调，更深邃
-        return const Color(0xFFB0C4D0);
-
-      case ThemeOption.warm:
-        // 温暖主题：加入暖色，柔和灰蓝
-        return const Color(0xFF8FAAB8);
-
-      case ThemeOption.autumn:
-        // 秋日主题：加入棕色，复古灰蓝
-        return const Color(0xFF8B9FA8);
-    }
-  }
-
-  // ==================== 再遇 🌟 ====================
-  // 情感基调：明亮、惊喜、金色点缀
-
-  static Color _getReencounterColor(ThemeOption themeOption, bool isDark) {
-    switch (themeOption) {
-      case ThemeOption.light:
-      case ThemeOption.system:
-        return isDark
-            ? const Color(0xFFFFE066) // 深色模式：降低饱和度
-            : const Color(0xFFFFD700); // 浅色模式：纯金色
-
-      case ThemeOption.dark:
-        return const Color(0xFFFFE066);
-
-      case ThemeOption.misty:
-        // 朦胧主题：柔和金色
-        return const Color(0xFFE8C547);
-
-      case ThemeOption.midnight:
-        // 深夜主题：冷金色
-        return const Color(0xFFFFF176);
-
-      case ThemeOption.warm:
-        // 温暖主题：暖金色
-        return const Color(0xFFFFCA28);
-
-      case ThemeOption.autumn:
-        // 秋日主题：琥珀金
-        return const Color(0xFFFFB300);
-    }
-  }
-
-  // ==================== 邂逅 💫 ====================
-  // 情感基调：温暖、激动、粉橙色调
-
-  static Color _getMetColor(ThemeOption themeOption, bool isDark) {
-    switch (themeOption) {
-      case ThemeOption.light:
-      case ThemeOption.system:
-        return isDark
-            ? const Color(0xFFFFAB91) // 深色模式：提高亮度
-            : const Color(0xFFFF9E80); // 浅色模式：粉橙
-
-      case ThemeOption.dark:
-        return const Color(0xFFFFAB91);
-
-      case ThemeOption.misty:
-        // 朦胧主题：柔和粉橙
-        return const Color(0xFFFF8A65);
-
-      case ThemeOption.midnight:
-        // 深夜主题：明亮粉橙
-        return const Color(0xFFFFB74D);
-
-      case ThemeOption.warm:
-        // 温暖主题：暖橙色
-        return const Color(0xFFFF9E80);
-
-      case ThemeOption.autumn:
-        // 秋日主题：深橙色
-        return const Color(0xFFFF7043);
-    }
-  }
-
-  // ==================== 重逢 💝 ====================
-  // 情感基调：圆满、幸福、玫瑰金色调
-
-  static Color _getReunionColor(ThemeOption themeOption, bool isDark) {
-    switch (themeOption) {
-      case ThemeOption.light:
-      case ThemeOption.system:
-        return isDark
-            ? const Color(0xFFF06292) // 深色模式：提高亮度
-            : const Color(0xFFE91E63); // 浅色模式：玫瑰金
-
-      case ThemeOption.dark:
-        return const Color(0xFFF06292);
-
-      case ThemeOption.misty:
-        // 朦胧主题：柔和玫瑰
-        return const Color(0xFFEC407A);
-
-      case ThemeOption.midnight:
-        // 深夜主题：明亮玫瑰
-        return const Color(0xFFF48FB1);
-
-      case ThemeOption.warm:
-        // 温暖主题：暖玫瑰
-        return const Color(0xFFE91E63);
-
-      case ThemeOption.autumn:
-        // 秋日主题：深玫瑰
-        return const Color(0xFFC2185B);
-    }
-  }
-
-  // ==================== 别离 🥀 ====================
-  // 情感基调：淡然、接受、玫瑰灰色调
-
-  static Color _getFarewellColor(ThemeOption themeOption, bool isDark) {
-    switch (themeOption) {
-      case ThemeOption.light:
-      case ThemeOption.system:
-        return isDark
-            ? const Color(0xFFD7CCC8) // 深色模式：提高亮度
-            : const Color(0xFFBCAAA4); // 浅色模式：玫瑰灰
-
-      case ThemeOption.dark:
-        return const Color(0xFFD7CCC8);
-
-      case ThemeOption.misty:
-        // 朦胧主题：冷灰色
-        return const Color(0xFFB0A199);
-
-      case ThemeOption.midnight:
-        // 深夜主题：明亮灰
-        return const Color(0xFFE0D5D0);
-
-      case ThemeOption.warm:
-        // 温暖主题：暖灰色
-        return const Color(0xFFC9B8B0);
-
-      case ThemeOption.autumn:
-        // 秋日主题：棕灰色
-        return const Color(0xFFA1887F);
-    }
-  }
-
-  // ==================== 失联 🍂 ====================
-  // 情感基调：平静、释怀、秋叶色调
-
-  static Color _getLostColor(ThemeOption themeOption, bool isDark) {
-    switch (themeOption) {
-      case ThemeOption.light:
-      case ThemeOption.system:
-        return isDark
-            ? const Color(0xFFE0B589) // 深色模式：提高亮度
-            : const Color(0xFFD4A574); // 浅色模式：秋叶色
-
-      case ThemeOption.dark:
-        return const Color(0xFFE0B589);
-
-      case ThemeOption.misty:
-        // 朦胧主题：冷秋色
-        return const Color(0xFFC89F6F);
-
-      case ThemeOption.midnight:
-        // 深夜主题：明亮秋色
-        return const Color(0xFFECC89E);
-
-      case ThemeOption.warm:
-        // 温暖主题：暖秋色
-        return const Color(0xFFDDB87A);
-
-      case ThemeOption.autumn:
-        // 秋日主题：深秋色
-        return const Color(0xFFBF8F5F);
-    }
+    return switch (themeOption) {
+      ThemeOption.dark || ThemeOption.midnight => true,
+      ThemeOption.system => brightness == Brightness.dark,
+      _ => false,
+    };
   }
 }
-
