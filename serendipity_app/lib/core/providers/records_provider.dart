@@ -50,11 +50,6 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     await _repository.deleteRecord(id);
     await refresh();
   }
-
-  /// 验证数据一致性
-  void validateDataConsistency() {
-    _repository.validateDataConsistency();
-  }
 }
 
 /// 记录列表 Provider
