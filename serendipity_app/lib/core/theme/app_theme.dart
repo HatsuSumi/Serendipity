@@ -78,6 +78,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 4,
+      ),
     );
   }
 
@@ -107,6 +110,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 4,
+      ),
     );
   }
 
@@ -133,6 +139,9 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 4,
       ),
     );
   }
@@ -162,6 +171,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 4,
+      ),
     );
   }
 
@@ -189,6 +201,9 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        elevation: 4,
       ),
     );
   }
