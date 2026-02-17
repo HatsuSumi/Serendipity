@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
-import '../../core/services/storage_service.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
@@ -39,8 +38,9 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
     });
 
     try {
-      final storage = StorageService();
-      final allRecords = storage.getAllRecords();
+      // 通过 Provider 访问数据
+      final recordsAsync = ref.read(recordsProvider);
+      final allRecords = recordsAsync.value ?? [];
       
       // 筛选出未关联到该故事线的记录
       final available = allRecords.where((record) {
@@ -139,7 +139,7 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
           Icon(
             Icons.check_circle_outline,
             size: 64,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -192,7 +192,7 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
               : null,
         ),
         child: Row(

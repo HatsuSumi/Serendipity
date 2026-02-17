@@ -9,6 +9,7 @@ import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
+import '../record/create_record_page.dart';
 import '../story_line/link_to_story_line_dialog.dart';
 
 /// 排序方式
@@ -375,7 +376,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   void _handleMenuAction(BuildContext context, WidgetRef ref, EncounterRecord record, String action) {
     switch (action) {
       case 'edit':
-        _navigateToRecordDetail(context, ref, record);
+        _navigateToEditRecord(context, ref, record);
         break;
       case 'link':
         _showLinkToStoryLineDialog(context, ref, record);
@@ -386,6 +387,36 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       case 'delete':
         _showDeleteConfirmDialog(context, ref, record);
         break;
+    }
+  }
+
+  /// 导航到编辑记录页面
+  void _navigateToEditRecord(BuildContext context, WidgetRef ref, EncounterRecord record) async {
+    var transitionType = ref.read(pageTransitionProvider);
+    if (transitionType == PageTransitionType.random) {
+      transitionType = PageTransitionBuilder.getRandomType();
+    }
+
+    final result = await Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return CreateRecordPage(recordToEdit: record);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return PageTransitionBuilder.buildTransition(
+            transitionType,
+            context,
+            animation,
+            secondaryAnimation,
+            child,
+          );
+        },
+      ),
+    );
+
+    // 如果编辑成功，刷新列表
+    if (result != null && mounted) {
+      ref.invalidate(recordsProvider);
     }
   }
 

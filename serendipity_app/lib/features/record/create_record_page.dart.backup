@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/services/storage_service.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
@@ -8,11 +9,30 @@ import '../../core/utils/dialog_helper.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/enums.dart';
-import 'models/place_history_item.dart';
-import 'widgets/story_line_selection_dialog.dart';
-import 'widgets/place_history_dialog.dart';
-import 'widgets/tags_section.dart';
-import 'widgets/weather_selection_section.dart';
+
+/// 地点历史记录项
+class PlaceHistoryItem {
+  final String placeName;
+  final int usageCount;
+  final DateTime lastUsedTime;
+
+  PlaceHistoryItem({
+    required this.placeName,
+    required this.usageCount,
+    required this.lastUsedTime,
+  });
+}
+
+/// 排序方式
+enum PlaceSortType {
+  usageDesc('使用频率 ↓'),
+  usageAsc('使用频率 ↑'),
+  timeDesc('最近使用 ↓'),
+  timeAsc('最近使用 ↑');
+
+  final String label;
+  const PlaceSortType(this.label);
+}
 
 /// 创建/编辑记录页面
 class CreateRecordPage extends ConsumerStatefulWidget {
@@ -57,6 +77,21 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   // 高级选项
   bool _publishToCommunity = false;
   String? _selectedStoryLineId;
+  
+  // 正在删除的标签（使用标签名而不是索引）
+  final Set<String> _removingTagNames = {};
+  
+  // 正在添加的标签（用于添加动画）
+  final Set<String> _addingTagNames = {};
+  
+  // 正在删除的天气（使用天气值而不是索引）
+  final Set<int> _removingWeatherValues = {};
+  
+  // 正在添加的天气（用于添加动画）
+  final Set<int> _addingWeatherValues = {};
+  
+  // 存储服务
+  final _storage = StorageService();
   
   // 是否正在保存
   bool _isSaving = false;
@@ -203,9 +238,6 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           await _showIfReencounterReminderIfNeeded();
         }
 
-        // 异步操作后再次检查 mounted
-        if (!mounted) return;
-
         // 返回上一页，编辑模式返回记录对象，创建模式返回 true
         if (widget.isEditMode) {
           Navigator.of(context).pop(record);
@@ -232,19 +264,13 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   /// 显示"如果再遇"提醒（如果需要）
   Future<void> _showIfReencounterReminderIfNeeded() async {
     try {
-      // 通过 Provider 获取故事线中的所有记录
-      final recordsAsync = ref.read(recordsProvider);
-      final allRecords = recordsAsync.value ?? [];
-      final records = allRecords.where((r) => r.storyLineId == _selectedStoryLineId).toList();
+      // 获取故事线中的所有记录
+      final records = _storage.getRecordsByStoryLine(_selectedStoryLineId!);
       
       // 查找所有有"如果再遇"备忘的记录（不限制状态）
-      // 重要：排除当前正在创建的记录（通过时间戳判断，因为刚创建的记录时间最新）
-      final now = DateTime.now();
       final recordsWithMemo = records.where((record) =>
         record.ifReencounter != null &&
-        record.ifReencounter!.isNotEmpty &&
-        // 排除刚刚创建的记录（时间差小于1秒的记录）
-        now.difference(record.createdAt).inSeconds > 1
+        record.ifReencounter!.isNotEmpty
       ).toList();
       
       // 如果没有找到，直接返回
@@ -303,10 +329,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                 width: 2,
               ),
             ),
@@ -364,8 +390,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
 
   /// 加载地点历史记录
   void _loadPlaceHistory() {
-    final recordsAsync = ref.read(recordsProvider);
-    final records = recordsAsync.value ?? [];
+    final records = _storage.getAllRecords();
     
     // 统计每个地点的使用次数和最后使用时间
     final Map<String, PlaceHistoryItem> placeMap = {};
@@ -657,15 +682,131 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   
   /// 显示历史地点选择对话框
   Future<void> _showPlaceHistoryDialog() async {
+    PlaceSortType currentSort = PlaceSortType.timeDesc;
+    
     final selected = await DialogHelper.show<String>(
       context: context,
-      builder: (context) => PlaceHistoryDialog(
-        placeHistory: _placeHistory,
-        onHistoryChanged: () {
-          setState(() {
-            // 触发重新加载
-            _loadPlaceHistory();
-          });
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // 根据当前排序方式排序
+          List<PlaceHistoryItem> sortedPlaces = List.from(_placeHistory);
+          switch (currentSort) {
+            case PlaceSortType.usageDesc:
+              sortedPlaces.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+              break;
+            case PlaceSortType.usageAsc:
+              sortedPlaces.sort((a, b) => a.usageCount.compareTo(b.usageCount));
+              break;
+            case PlaceSortType.timeDesc:
+              sortedPlaces.sort((a, b) => b.lastUsedTime.compareTo(a.lastUsedTime));
+              break;
+            case PlaceSortType.timeAsc:
+              sortedPlaces.sort((a, b) => a.lastUsedTime.compareTo(b.lastUsedTime));
+              break;
+          }
+          
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Text('选择历史地点'),
+                const Spacer(),
+                PopupMenuButton<PlaceSortType>(
+                  icon: const Icon(Icons.sort),
+                  tooltip: '排序方式',
+                  onSelected: (PlaceSortType type) {
+                    setDialogState(() {
+                      currentSort = type;
+                    });
+                  },
+                  itemBuilder: (context) => PlaceSortType.values.map((type) {
+                    return PopupMenuItem(
+                      value: type,
+                      child: Row(
+                        children: [
+                          if (currentSort == type)
+                            const Icon(Icons.check, size: 20)
+                          else
+                            const SizedBox(width: 20),
+                          const SizedBox(width: 8),
+                          Text(type.label),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: sortedPlaces.isEmpty
+                  ? Center(
+                      child: Text(
+                        '暂无历史地点',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: sortedPlaces.length,
+                      itemBuilder: (context, index) {
+                        final item = sortedPlaces[index];
+                        return ListTile(
+                          leading: const Icon(Icons.location_on),
+                          title: Text(item.placeName),
+                          subtitle: Text(
+                            '使用 ${item.usageCount} 次 · ${_formatDate(item.lastUsedTime)}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            onPressed: () async {
+                              final confirm = await DialogHelper.show<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('确认删除'),
+                                  content: Text(
+                                    '确定要删除地点"${item.placeName}"的历史记录吗？\n\n这不会删除相关的记录，只是从历史列表中移除。',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: const Text('取消'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      child: const Text('删除'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              
+                              if (confirm == true) {
+                                setDialogState(() {
+                                  _placeHistory.removeWhere((p) => p.placeName == item.placeName);
+                                });
+                                setState(() {
+                                  // 同步外部状态
+                                });
+                              }
+                            },
+                          ),
+                          onTap: () => Navigator.of(context).pop(item.placeName),
+                        );
+                      },
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消'),
+              ),
+            ],
+          );
         },
       ),
     );
@@ -674,6 +815,26 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       setState(() {
         _placeNameController.text = selected;
       });
+    }
+  }
+  
+  /// 格式化日期（相对时间）
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    
+    if (diff.inDays == 0) {
+      return '今天';
+    } else if (diff.inDays == 1) {
+      return '昨天';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays} 天前';
+    } else if (diff.inDays < 30) {
+      return '${(diff.inDays / 7).floor()} 周前';
+    } else if (diff.inDays < 365) {
+      return '${(diff.inDays / 30).floor()} 月前';
+    } else {
+      return '${(diff.inDays / 365).floor()} 年前';
     }
   } 
   
@@ -808,14 +969,188 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   
   /// 特征标签区域
   Widget _buildTagsSection() {
-    return TagsSection(
-      tags: _tags,
-      onTagsChanged: (updatedTags) {
-        setState(() {
-          _tags = updatedTags;
-        });
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '🏷️ 特征标签',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // 已选择的标签
+        if (_tags.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _tags.map((tagWithNote) {
+              final isRemoving = _removingTagNames.contains(tagWithNote.tag);
+              final isAdding = _addingTagNames.contains(tagWithNote.tag);
+              
+              // 添加时从0到1，删除时从1到0，正常时保持1
+              final scale = (isAdding || isRemoving) ? 0.0 : 1.0;
+              final opacity = (isAdding || isRemoving) ? 0.0 : 1.0;
+              
+              return AnimatedScale(
+                key: ValueKey('scale_${tagWithNote.tag}'),
+                scale: scale,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: AnimatedOpacity(
+                  opacity: opacity,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: Chip(
+                    label: Text(tagWithNote.tag),
+                    onDeleted: () => _removeTagWithAnimation(tagWithNote),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        // 添加标签按钮
+        OutlinedButton.icon(
+          onPressed: () => _showAddTagDialog(),
+          icon: const Icon(Icons.add),
+          label: const Text('添加标签'),
+        ),
+      ],
     );
+  }
+  
+  /// 删除标签（带动画）
+  void _removeTagWithAnimation(TagWithNote tagWithNote) async {
+    // 标记为删除中，触发动画
+    setState(() {
+      _removingTagNames.add(tagWithNote.tag);
+    });
+    
+    // 等待动画完成
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // 从列表中移除
+    if (mounted) {
+      setState(() {
+        _tags.remove(tagWithNote);
+        _removingTagNames.remove(tagWithNote.tag); // 删除完成后清除标记
+      });
+    }
+  }
+  
+  /// 删除天气（带动画）
+  void _removeWeatherWithAnimation(Weather weather) async {
+    // 标记为删除中，触发动画
+    setState(() {
+      _removingWeatherValues.add(weather.value);
+    });
+    
+    // 等待动画完成
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // 从列表中移除
+    if (mounted) {
+      setState(() {
+        _selectedWeather.remove(weather);
+        _removingWeatherValues.remove(weather.value); // 删除完成后清除标记
+      });
+    }
+  }
+  
+  /// 显示添加标签对话框
+  Future<void> _showAddTagDialog() async {
+    final tagController = TextEditingController();
+    final noteController = TextEditingController();
+    
+    final result = await DialogHelper.show<TagWithNote>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('添加标签'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: tagController,
+              decoration: const InputDecoration(
+                labelText: '标签名称',
+                hintText: '例如：长发、黑色外套...',
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: noteController,
+              maxLength: 50,
+              decoration: const InputDecoration(
+                labelText: '备注（可选）',
+                hintText: '例如：光线不好，可能是深棕色',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final tag = tagController.text.trim();
+              if (tag.isNotEmpty) {
+                // 检查是否已存在同名标签
+                final isDuplicate = _tags.any((t) => t.tag == tag);
+                if (isDuplicate) {
+                  MessageHelper.showWarning(context, '该标签已存在');
+                  return;
+                }
+                
+                final note = noteController.text.trim();
+                Navigator.of(context).pop(
+                  TagWithNote(
+                    tag: tag,
+                    note: note.isEmpty ? null : note,
+                  ),
+                );
+              }
+            },
+            child: const Text('添加'),
+          ),
+        ],
+      ),
+    );
+    
+    if (result != null) {
+      // 先标记为添加中
+      setState(() {
+        _addingTagNames.add(result.tag);
+        _tags.add(result);
+      });
+      
+      // 等待一帧后触发动画
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (mounted) {
+        setState(() {
+          _addingTagNames.remove(result.tag);
+        });
+      }
+    }
   }
   
   /// 对话契机区域（仅邂逅状态）
@@ -944,13 +1279,167 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   
   /// 天气区域
   Widget _buildWeatherSection() {
-    return WeatherSelectionSection(
-      selectedWeather: _selectedWeather,
-      onWeatherChanged: (updatedWeather) {
-        setState(() {
-          _selectedWeather = updatedWeather;
-        });
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '☀️ 天气',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '（可选，支持多选）',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        // 已选择的天气（带添加/删除动画）
+        if (_selectedWeather.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _selectedWeather.map((weather) {
+                final isRemoving = _removingWeatherValues.contains(weather.value);
+                final isAdding = _addingWeatherValues.contains(weather.value);
+                
+                // 添加时从0到1，删除时从1到0，正常时保持1
+                final scale = (isAdding || isRemoving) ? 0.0 : 1.0;
+                final opacity = (isAdding || isRemoving) ? 0.0 : 1.0;
+                
+                return AnimatedScale(
+                  key: ValueKey('scale_${weather.value}'),
+                  scale: scale,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: AnimatedOpacity(
+                    opacity: opacity,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: Chip(
+                      avatar: Text(weather.icon),
+                      label: Text(weather.label),
+                      onDeleted: () => _removeWeatherWithAnimation(weather),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+        
+        // 按分类显示天气选项
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: WeatherCategory.values.map((category) {
+              final weathersInCategory = Weather.values
+                  .where((w) => w.category == category)
+                  .toList();
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 分类标题
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8, top: 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          category.icon,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          category.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // 该分类下的天气选项
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: weathersInCategory.map((weather) {
+                      final isSelected = _selectedWeather.contains(weather);
+                      
+                      return FilterChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(weather.icon),
+                            const SizedBox(width: 4),
+                            Text(weather.label),
+                          ],
+                        ),
+                        selected: isSelected,
+                        onSelected: (selected) async {
+                          if (selected) {
+                            // 标记为正在添加
+                            setState(() {
+                              _addingWeatherValues.add(weather.value);
+                              // 天空状况只能选一个（互斥）
+                              if (category == WeatherCategory.sky) {
+                                _selectedWeather.removeWhere(
+                                  (w) => w.category == WeatherCategory.sky,
+                                );
+                              }
+                              // 风力只能选一个（互斥）
+                              if (category == WeatherCategory.wind) {
+                                _selectedWeather.removeWhere(
+                                  (w) => w.category == WeatherCategory.wind,
+                                );
+                              }
+                              _selectedWeather.add(weather);
+                            });
+                            
+                            // 等待一帧后触发动画
+                            await Future.delayed(const Duration(milliseconds: 50));
+                            if (mounted) {
+                              setState(() {
+                                _addingWeatherValues.remove(weather.value);
+                              });
+                            }
+                          } else {
+                            _removeWeatherWithAnimation(weather);
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  
+                  if (category != WeatherCategory.values.last)
+                    const Divider(height: 16),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
   
@@ -995,19 +1484,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   
   /// 其他设置区域
   Widget _buildOtherSettingsSection() {
-    // 通过 Provider 获取故事线名称（如果已关联）
-    String? storyLineName;
-    if (_selectedStoryLineId != null) {
-      final storyLinesAsync = ref.read(storyLinesProvider);
-      final storyLines = storyLinesAsync.value ?? [];
-      try {
-        final storyLine = storyLines.firstWhere((sl) => sl.id == _selectedStoryLineId);
-        storyLineName = storyLine.name;
-      } catch (e) {
-        // 未找到故事线
-        storyLineName = null;
-      }
-    }
+    // 获取故事线名称（如果已关联）
+    final storyLineName = _selectedStoryLineId != null
+        ? _storage.getStoryLine(_selectedStoryLineId!)?.name
+        : null;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1097,18 +1577,18 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   Future<void> _showStoryLineSelectionDialog() async {
     final storyLinesAsync = ref.read(storyLinesProvider);
     
-    // 直接获取数据，不使用 await
-    final storyLines = storyLinesAsync.when(
+    // 等待故事线数据加载
+    final storyLines = await storyLinesAsync.when(
       data: (data) => data,
       loading: () => <StoryLine>[],
-      error: (_, _) => <StoryLine>[],
+      error: (_, __) => <StoryLine>[],
     );
     
     if (!mounted) return;
     
     final result = await DialogHelper.show<String>(
       context: context,
-      builder: (context) => StoryLineSelectionDialog(
+      builder: (context) => _StoryLineSelectionDialog(
         storyLines: storyLines,
         currentStoryLineId: _selectedStoryLineId,
       ),
@@ -1118,6 +1598,252 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       setState(() {
         _selectedStoryLineId = result;
       });
+    }
+  }
+}
+
+/// 故事线选择对话框（用于创建/编辑记录页面）
+class _StoryLineSelectionDialog extends ConsumerStatefulWidget {
+  final List<StoryLine> storyLines;
+  final String? currentStoryLineId;
+  
+  const _StoryLineSelectionDialog({
+    required this.storyLines,
+    this.currentStoryLineId,
+  });
+
+  @override
+  ConsumerState<_StoryLineSelectionDialog> createState() => _StoryLineSelectionDialogState();
+}
+
+class _StoryLineSelectionDialogState extends ConsumerState<_StoryLineSelectionDialog> {
+  final _nameController = TextEditingController();
+  String? _selectedStoryLineId;
+  bool _isCreatingNew = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedStoryLineId = widget.currentStoryLineId;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 标题
+              Text(
+                '选择故事线',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+
+              // 提示
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '将同一个人的多次记录关联到一个故事线，形成完整的时间线故事。',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // 创建新故事线选项
+              RadioListTile<bool>(
+                value: true,
+                groupValue: _isCreatingNew,
+                onChanged: (value) {
+                  setState(() {
+                    _isCreatingNew = value ?? false;
+                    _selectedStoryLineId = null;
+                  });
+                },
+                title: const Text('创建新故事线'),
+                contentPadding: EdgeInsets.zero,
+              ),
+
+              // 新故事线名称输入
+              if (_isCreatingNew) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    hintText: '输入故事线名称...',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  autofocus: true,
+                ),
+              ],
+
+              const SizedBox(height: 16),
+
+              // 已有故事线列表
+              if (widget.storyLines.isNotEmpty) ...[
+                RadioListTile<bool>(
+                  value: false,
+                  groupValue: _isCreatingNew,
+                  onChanged: (value) {
+                    setState(() {
+                      _isCreatingNew = value ?? true;
+                    });
+                  },
+                  title: const Text('选择现有故事线'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (!_isCreatingNew) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: widget.storyLines.length,
+                      itemBuilder: (context, index) {
+                        final storyLine = widget.storyLines[index];
+                        return RadioListTile<String>(
+                          value: storyLine.id,
+                          groupValue: _selectedStoryLineId,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedStoryLineId = value;
+                            });
+                          },
+                          title: Row(
+                            children: [
+                              const Text('📖 '),
+                              Expanded(
+                                child: Text(
+                                  storyLine.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                '（${storyLine.recordIds.length}条）',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
+
+              const SizedBox(height: 24),
+
+              // 按钮
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('取消'),
+                  ),
+                  const SizedBox(width: 8),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _nameController,
+                    builder: (context, value, child) {
+                      return FilledButton(
+                        onPressed: _canConfirm() ? _handleConfirm : null,
+                        child: const Text('确认'),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 是否可以确认
+  bool _canConfirm() {
+    if (_isCreatingNew) {
+      return _nameController.text.trim().isNotEmpty;
+    } else {
+      return _selectedStoryLineId != null;
+    }
+  }
+
+  /// 处理确认
+  Future<void> _handleConfirm() async {
+    try {
+      if (_isCreatingNew) {
+        // 创建新故事线并返回ID
+        final name = _nameController.text.trim();
+        final now = DateTime.now();
+        final newStoryLineId = const Uuid().v4();
+        final newStoryLine = StoryLine(
+          id: newStoryLineId,
+          name: name,
+          recordIds: [],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        // 通过 Provider 创建故事线（会自动刷新列表）
+        await ref.read(storyLinesProvider.notifier).createStoryLine(newStoryLine);
+        
+        if (mounted) {
+          Navigator.of(context).pop(newStoryLineId);
+        }
+      } else {
+        // 返回选中的故事线ID
+        if (_selectedStoryLineId != null && mounted) {
+          Navigator.of(context).pop(_selectedStoryLineId);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        MessageHelper.showError(context, '操作失败：$e');
+      }
     }
   }
 }

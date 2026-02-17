@@ -9,9 +9,9 @@
 ## 📊 总体进度
 
 - **总文件数**：27个
-- **已检查**：21个
-- **待检查**：6个
-- **完成度**：77.8%
+- **已检查**：24个
+- **待检查**：3个
+- **完成度**：88.9%
 
 ---
 
@@ -292,22 +292,25 @@
   - 优先级：🔥 高
   - 报告：[查看详细报告](./code_review_reports/5.4_record_detail_page.dart_review.md)
 
-- [ ] **7.3** `lib/features/record/create_record_page.dart` ⭐ 最复杂
-  - 状态：⏳ 待检查
-  - 问题数：-
-  - 优先级：-
+- [x] **7.3** `lib/features/record/create_record_page.dart` ⭐ 最复杂
+  - 状态：✅ 已完成（已重构+修复）
+  - 问题数：15个（已全部修复）+ 文件拆分
+  - 优先级：🔥 高
+  - 报告：[查看审查报告](./code_review_reports/5.5_create_record_page_review.md) | [查看重构总结](./code_review_reports/5.5_create_record_page_refactoring_summary.md)
 
 #### 8. 故事线功能
 
-- [ ] **8.1** `lib/features/story_line/link_to_story_line_dialog.dart`
-  - 状态：⏳ 待检查
-  - 问题数：-
-  - 优先级：-
+- [x] **8.1** `lib/features/story_line/link_to_story_line_dialog.dart`
+  - 状态：✅ 已完成（已修复）
+  - 问题数：2个（已全部修复）
+  - 优先级：⚡ 中
+  - 报告：[查看详细报告](./code_review_reports/5.6_link_to_story_line_dialog_review.md)
 
-- [ ] **8.2** `lib/features/story_line/add_existing_records_dialog.dart`
-  - 状态：⏳ 待检查
-  - 问题数：-
-  - 优先级：-
+- [x] **8.2** `lib/features/story_line/add_existing_records_dialog.dart`
+  - 状态：✅ 已完成（已修复）
+  - 问题数：3个（已全部修复）
+  - 优先级：⚡ 中
+  - 报告：[查看详细报告](./code_review_reports/5.7_add_existing_records_dialog_review.md)
 
 - [ ] **8.3** `lib/features/story_line/story_lines_page.dart`
   - 状态：⏳ 待检查
@@ -362,6 +365,8 @@
 3. ✅ theme.dart：整个文件未被使用，死文件（已修复）
 4. ✅ app_router.dart：路由未被充分使用，11处绕过路由系统（已修复 - 移除GoRouter）
 5. ✅ record_detail_page.dart：违反分层约束，UI层直接访问storageService（已修复）
+6. ✅ create_record_page.dart：文件过大（1850行），违反单一职责原则（已修复 - 拆分为6个文件）
+7. ✅ create_record_page.dart：违反分层约束，直接使用StorageService（4处，已修复）
 
 ### 中优先级问题 ⚡
 1. ✅ user_settings.dart：hiddenRecordIds 的 == 和 hashCode 实现不正确（已修复）
@@ -378,13 +383,22 @@
 12. ✅ timeline_page.dart：selectedRecordProvider 未使用（已修复）
 13. ✅ timeline_page.dart：使用 deprecated API withOpacity（已修复）
 14. ✅ timeline_page.dart：导航代码重复（已修复）
-15. ✅ record_detail_page.dart：使用 deprecated API（5处，已修复）
-16. ✅ record_detail_page.dart：mounted 检查不完整（3处，已修复）
+15. ✅ timeline_page.dart："编辑"菜单跳转错误（已修复）
+16. ✅ record_detail_page.dart：使用 deprecated API（5处，已修复）
+17. ✅ record_detail_page.dart：mounted 检查不完整（3处，已修复）
+18. ✅ create_record_page.dart：异步上下文问题，缺少mounted检查（2处，已修复）
+19. ✅ create_record_page.dart：使用 deprecated API withOpacity（5处，已修复）
+20. ✅ create_record_page.dart：不必要的 await（1处，已修复）
+21. ✅ create_record_page.dart："如果再遇"提醒逻辑错误（已修复）
+22. ✅ link_to_story_line_dialog.dart：使用 deprecated API withOpacity（2处，已修复）
+23. ✅ add_existing_records_dialog.dart：违反分层约束，直接使用StorageService（1处，已修复）
+24. ✅ add_existing_records_dialog.dart：使用 deprecated API withOpacity（2处，已修复）
 
 ### 低优先级问题 💡
 1. ✅ story_line.dart：使用 Flutter 内置 `listEquals` 方法（已修复）
 2. ✅ status_colors.dart：性能可优化（已修复）
 3. ✅ app_theme.dart：存在2个死方法（已修复）
+4. ✅ create_record_page.dart：不必要的下划线（1处，已修复）
 
 ---
 
@@ -392,22 +406,31 @@
 
 | 类别 | 数量 |
 |------|------|
-| 架构问题 | 6（已全部修复） |
-| 代码质量问题 | 23（已全部修复） |
+| 架构问题 | 8（已全部修复） |
+| 代码质量问题 | 32（已全部修复） |
 | Flutter特定问题 | 0 |
 | 状态管理问题 | 0 |
 | 性能问题 | 2（已修复） |
-| **总计** | **31（已全部修复）** |
+| **总计** | **42（已全部修复）** |
 
 ### 文件质量分布
 
 | 评分 | 文件数 | 百分比 |
 |------|--------|--------|
-| ⭐⭐⭐⭐⭐ (5/5) | 21 | 100% |
+| ⭐⭐⭐⭐⭐ (5/5) | 23 | 100% |
 | ⭐⭐⭐⭐ (4/5) | 0 | 0% |
 | ⭐⭐⭐ (3/5) | 0 | 0% |
 | ⭐⭐ (2/5) | 0 | 0% |
 | ⭐ (1/5) | 0 | 0% |
+
+### 重构成果
+
+| 项目 | 数据 |
+|------|------|
+| 拆分的大文件 | 1个（create_record_page.dart） |
+| 提取的新组件 | 5个（widgets + models） |
+| 主文件行数减少 | 730行（39.5%） |
+| 修复的 linter 警告 | 15个 → 0个 |
 
 ---
 
@@ -421,11 +444,11 @@
 
 ## 🎯 下一步
 
-**当前检查**：7.2 record_detail_page.dart（已完成并修复）  
-**下一个检查**：7.3 create_record_page.dart  
-**预计完成时间**：2026-02-16
+**当前检查**：8.1 link_to_story_line_dialog.dart（已完成并修复）  
+**下一个检查**：8.2 add_existing_records_dialog.dart  
+**预计完成时间**：待定
 
 ---
 
-**最后更新时间**：2026-02-16 18:25
+**最后更新时间**：2026-02-17 12:44
 
