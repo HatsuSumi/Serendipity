@@ -28,15 +28,18 @@ class StoryLinesPage extends ConsumerWidget {
             return _buildEmptyState(context);
           }
 
+          // 排序：置顶的在前面
+          final sortedStoryLines = _sortStoryLines(storyLines);
+
           return RefreshIndicator(
             onRefresh: () async {
               await ref.read(storyLinesProvider.notifier).refresh();
             },
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: storyLines.length,
+              itemCount: sortedStoryLines.length,
               itemBuilder: (context, index) {
-                final storyLine = storyLines[index];
+                final storyLine = sortedStoryLines[index];
                 return _buildStoryLineCard(context, ref, storyLine);
               },
             ),
@@ -76,6 +79,23 @@ class StoryLinesPage extends ConsumerWidget {
         label: const Text('创建故事线'),
       ),
     );
+  }
+
+  /// 排序故事线：置顶的在前面，然后按更新时间倒序
+  List<StoryLine> _sortStoryLines(List<StoryLine> storyLines) {
+    final sorted = List<StoryLine>.from(storyLines);
+    
+    // 先按更新时间倒序排序
+    sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    
+    // 置顶的排在最前面（稳定排序）
+    sorted.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
+    
+    return sorted;
   }
 
   /// 空状态
@@ -169,13 +189,27 @@ class StoryLinesPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      storyLine.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            storyLine.name,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                        ),
+                        if (storyLine.isPinned) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.push_pin,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -193,6 +227,16 @@ class StoryLinesPage extends ConsumerWidget {
                 icon: const Icon(Icons.more_vert),
                 onSelected: (value) => _handleMenuAction(context, ref, storyLine, value),
                 itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'pin',
+                    child: Row(
+                      children: [
+                        Icon(storyLine.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                        const SizedBox(width: 8),
+                        Text(storyLine.isPinned ? '取消置顶' : '置顶'),
+                      ],
+                    ),
+                  ),
                   const PopupMenuItem(
                     value: 'rename',
                     child: Row(
@@ -225,12 +269,32 @@ class StoryLinesPage extends ConsumerWidget {
   /// 处理菜单操作
   void _handleMenuAction(BuildContext context, WidgetRef ref, StoryLine storyLine, String action) {
     switch (action) {
+      case 'pin':
+        _togglePinStoryLine(context, ref, storyLine);
+        break;
       case 'rename':
         _showRenameDialog(context, ref, storyLine);
         break;
       case 'delete':
         _showDeleteConfirmDialog(context, ref, storyLine);
         break;
+    }
+  }
+
+  /// 切换置顶状态
+  void _togglePinStoryLine(BuildContext context, WidgetRef ref, StoryLine storyLine) async {
+    try {
+      await ref.read(storyLinesProvider.notifier).togglePin(storyLine.id);
+      if (context.mounted) {
+        MessageHelper.showSuccess(
+          context,
+          storyLine.isPinned ? '已取消置顶' : '已置顶',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        MessageHelper.showError(context, '操作失败：$e');
+      }
     }
   }
 

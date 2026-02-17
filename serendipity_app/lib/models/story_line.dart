@@ -30,12 +30,17 @@ class StoryLine {
   @HiveField(4)
   final DateTime updatedAt;
 
+  /// 是否置顶
+  @HiveField(5)
+  final bool isPinned;
+
   const StoryLine({
     required this.id,
     required this.name,
     required this.recordIds,
     required this.createdAt,
     required this.updatedAt,
+    this.isPinned = false,
   }) : assert(id != '', 'ID cannot be empty'),
        assert(name != '', 'Name cannot be empty');
 
@@ -49,6 +54,7 @@ class StoryLine {
           .toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      isPinned: json['isPinned'] as bool? ?? false,
     );
   }
 
@@ -60,6 +66,7 @@ class StoryLine {
       'recordIds': recordIds,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'isPinned': isPinned,
     };
   }
 
@@ -70,6 +77,7 @@ class StoryLine {
     List<String>? recordIds,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isPinned,
   }) {
     return StoryLine(
       id: id ?? this.id,
@@ -77,6 +85,7 @@ class StoryLine {
       recordIds: recordIds ?? this.recordIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 
@@ -95,7 +104,8 @@ class StoryLine {
         other.name == name &&
         listEquals(other.recordIds, recordIds) &&
         other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        other.isPinned == isPinned;
   }
 
   @override
@@ -104,7 +114,8 @@ class StoryLine {
         name.hashCode ^
         recordIds.hashCode ^
         createdAt.hashCode ^
-        updatedAt.hashCode;
+        updatedAt.hashCode ^
+        isPinned.hashCode;
   }
 }
 

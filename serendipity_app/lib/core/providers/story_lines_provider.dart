@@ -62,6 +62,52 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   List<EncounterRecord> getRecordsInStoryLine(String storyLineId) {
     return _repository.getRecordsInStoryLine(storyLineId);
   }
+
+  /// 置顶故事线
+  Future<void> pinStoryLine(String id) async {
+    final storyLine = _repository.getStoryLine(id);
+    if (storyLine == null) {
+      throw StateError('StoryLine $id does not exist');
+    }
+    
+    final updatedStoryLine = storyLine.copyWith(
+      isPinned: true,
+      updatedAt: DateTime.now(),
+    );
+    
+    await _repository.updateStoryLine(updatedStoryLine);
+    await refresh();
+  }
+
+  /// 取消置顶故事线
+  Future<void> unpinStoryLine(String id) async {
+    final storyLine = _repository.getStoryLine(id);
+    if (storyLine == null) {
+      throw StateError('StoryLine $id does not exist');
+    }
+    
+    final updatedStoryLine = storyLine.copyWith(
+      isPinned: false,
+      updatedAt: DateTime.now(),
+    );
+    
+    await _repository.updateStoryLine(updatedStoryLine);
+    await refresh();
+  }
+
+  /// 切换置顶状态
+  Future<void> togglePin(String id) async {
+    final storyLine = _repository.getStoryLine(id);
+    if (storyLine == null) {
+      throw StateError('StoryLine $id does not exist');
+    }
+    
+    if (storyLine.isPinned) {
+      await unpinStoryLine(id);
+    } else {
+      await pinStoryLine(id);
+    }
+  }
 }
 
 /// 故事线列表 Provider
