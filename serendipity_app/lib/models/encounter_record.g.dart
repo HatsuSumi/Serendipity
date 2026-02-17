@@ -114,13 +114,14 @@ class EncounterRecordAdapter extends TypeAdapter<EncounterRecord> {
       weather: (fields[11] as List).cast<Weather>(),
       createdAt: fields[12] as DateTime,
       updatedAt: fields[13] as DateTime,
+      isPinned: fields[14] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, EncounterRecord obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -148,7 +149,9 @@ class EncounterRecordAdapter extends TypeAdapter<EncounterRecord> {
       ..writeByte(12)
       ..write(obj.createdAt)
       ..writeByte(13)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(14)
+      ..write(obj.isPinned);
   }
 
   @override

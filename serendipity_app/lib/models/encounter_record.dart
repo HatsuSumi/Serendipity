@@ -134,6 +134,8 @@ class EncounterRecord {
   final DateTime createdAt;
   @HiveField(13)
   final DateTime updatedAt;
+  @HiveField(14)
+  final bool isPinned; // 是否置顶
 
   EncounterRecord({
     required this.id,
@@ -150,6 +152,7 @@ class EncounterRecord {
     this.weather = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.isPinned = false,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
        assert(description == null || description.length <= 500, 
          'Description must be at most 500 characters, got ${description?.length}'),
@@ -172,6 +175,7 @@ class EncounterRecord {
       'weather': weather.map((w) => w.value).toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'isPinned': isPinned,
     };
   }
 
@@ -217,6 +221,7 @@ class EncounterRecord {
           : [],
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      isPinned: json['isPinned'] as bool? ?? false,
     );
   }
 
@@ -253,6 +258,7 @@ class EncounterRecord {
     List<Weather>? weather,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isPinned,
   }) {
     return EncounterRecord(
       id: id ?? this.id,
@@ -269,6 +275,7 @@ class EncounterRecord {
       weather: weather ?? this.weather,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 }

@@ -108,9 +108,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   }
 
   /// 根据排序方式排序记录
+  /// 
+  /// 置顶记录始终在最前面，然后按照选择的排序方式排序
   List<EncounterRecord> _sortRecords(List<EncounterRecord> records) {
     final sorted = List<EncounterRecord>.from(records);
     
+    // 先按照选择的排序方式排序
     switch (_currentSort) {
       case RecordSortType.createdDesc:
         sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -125,6 +128,13 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         sorted.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
         break;
     }
+    
+    // 置顶记录排在最前面（稳定排序）
+    sorted.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
     
     return sorted;
   }
@@ -209,13 +219,25 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      record.status.label,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
+                    child: Row(
+                      children: [
+                        Text(
+                          record.status.label,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
+                        ),
+                        if (record.isPinned) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.push_pin,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   Text(
@@ -236,6 +258,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                             Icon(Icons.edit_outlined),
                             SizedBox(width: 8),
                             Text('编辑'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'pin',
+                        child: Row(
+                          children: [
+                            Icon(record.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                            const SizedBox(width: 8),
+                            Text(record.isPinned ? '取消置顶' : '置顶'),
                           ],
                         ),
                       ),
@@ -378,6 +410,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       case 'edit':
         _navigateToEditRecord(context, ref, record);
         break;
+      case 'pin':
+        _togglePinRecord(context, ref, record);
+        break;
       case 'link':
         _showLinkToStoryLineDialog(context, ref, record);
         break;
@@ -387,6 +422,23 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       case 'delete':
         _showDeleteConfirmDialog(context, ref, record);
         break;
+    }
+  }
+
+  /// 切换置顶状态
+  void _togglePinRecord(BuildContext context, WidgetRef ref, EncounterRecord record) async {
+    try {
+      await ref.read(recordsProvider.notifier).togglePin(record.id);
+      if (context.mounted) {
+        MessageHelper.showSuccess(
+          context,
+          record.isPinned ? '已取消置顶' : '已置顶',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        MessageHelper.showError(context, '操作失败：$e');
+      }
     }
   }
 
