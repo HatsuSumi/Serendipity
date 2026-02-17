@@ -9,9 +9,9 @@
 ## 📊 总体进度
 
 - **总文件数**：27个
-- **已检查**：24个
-- **待检查**：3个
-- **完成度**：88.9%
+- **已检查**：25个
+- **待检查**：2个
+- **完成度**：92.6%
 
 ---
 
@@ -312,10 +312,11 @@
   - 优先级：⚡ 中
   - 报告：[查看详细报告](./code_review_reports/5.7_add_existing_records_dialog_review.md)
 
-- [ ] **8.3** `lib/features/story_line/story_lines_page.dart`
-  - 状态：⏳ 待检查
-  - 问题数：-
-  - 优先级：-
+- [x] **8.3** `lib/features/story_line/story_lines_page.dart`
+  - 状态：✅ 已完成（已修复）
+  - 问题数：2个（已全部修复）
+  - 优先级：⚡ 中
+  - 报告：[查看详细报告](./code_review_reports/5.8_story_lines_page_review.md)
 
 - [ ] **8.4** `lib/features/story_line/story_line_detail_page.dart`
   - 状态：⏳ 待检查
@@ -393,6 +394,7 @@
 22. ✅ link_to_story_line_dialog.dart：使用 deprecated API withOpacity（2处，已修复）
 23. ✅ add_existing_records_dialog.dart：违反分层约束，直接使用StorageService（1处，已修复）
 24. ✅ add_existing_records_dialog.dart：使用 deprecated API withOpacity（2处，已修复）
+25. ✅ story_lines_page.dart：使用 deprecated API withOpacity（2处，已修复）
 
 ### 低优先级问题 💡
 1. ✅ story_line.dart：使用 Flutter 内置 `listEquals` 方法（已修复）
