@@ -46,8 +46,17 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
     });
 
     try {
-      final repository = ref.read(storyLineRepositoryProvider);
-      final records = repository.getRecordsInStoryLine(_currentStoryLine.id);
+      // 通过 Provider 访问数据
+      final recordsAsync = ref.read(recordsProvider);
+      final allRecords = recordsAsync.value ?? [];
+      
+      // 筛选出属于该故事线的记录
+      final records = allRecords.where((record) {
+        return _currentStoryLine.recordIds.contains(record.id);
+      }).toList();
+      
+      // 按时间排序
+      records.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       setState(() {
         _records = records;
@@ -63,13 +72,18 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
 
   /// 刷新故事线数据
   Future<void> _refresh() async {
-    final storage = ref.read(storageServiceProvider);
-    final updatedStoryLine = storage.getStoryLine(_currentStoryLine.id);
-    if (updatedStoryLine != null) {
-      setState(() {
-        _currentStoryLine = updatedStoryLine;
-      });
-    }
+    // 通过 Provider 访问数据
+    final storyLinesAsync = ref.read(storyLinesProvider);
+    final allStoryLines = storyLinesAsync.value ?? [];
+    final updatedStoryLine = allStoryLines.firstWhere(
+      (sl) => sl.id == _currentStoryLine.id,
+      orElse: () => _currentStoryLine,
+    );
+    
+    setState(() {
+      _currentStoryLine = updatedStoryLine;
+    });
+    
     await _loadRecords();
   }
 
@@ -156,7 +170,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
           Icon(
             Icons.auto_stories_outlined,
             size: 80,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 24),
           Text(
@@ -193,8 +207,8 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                statusColor.withOpacity(0.1),
-                statusColor.withOpacity(0.05),
+                statusColor.withValues(alpha: 0.1),
+                statusColor.withValues(alpha: 0.05),
               ],
             ),
           ),
@@ -341,7 +355,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
       child: Center(
         child: Icon(
           Icons.arrow_downward,
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
           size: 24,
         ),
       ),
@@ -463,8 +477,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
           TextButton(
             onPressed: () async {
               try {
-                final storage = ref.read(storageServiceProvider);
-                await storage.deleteRecord(record.id);
+                await ref.read(recordsProvider.notifier).deleteRecord(record.id);
                 
                 if (context.mounted) {
                   Navigator.of(context).pop();
