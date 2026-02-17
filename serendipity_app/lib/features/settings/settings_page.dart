@@ -47,7 +47,7 @@ class SettingsPage extends ConsumerWidget {
                 MessageHelper.showSuccess(context, '已切换到：${type.label}');
               },
             );
-          }).toList(),
+          }),
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
@@ -86,7 +86,7 @@ class SettingsPage extends ConsumerWidget {
                 MessageHelper.showSuccess(context, '已切换到：${type.label}');
               },
             );
-          }).toList(),
+          }),
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
