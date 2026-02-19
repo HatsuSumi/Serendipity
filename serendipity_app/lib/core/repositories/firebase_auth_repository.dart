@@ -111,25 +111,21 @@ class FirebaseAuthRepository implements IAuthRepository {
         timeout: const Duration(seconds: 60),
         verificationCompleted: (firebase_auth.PhoneAuthCredential credential) async {
           // 自动验证完成（Android 上可能发生）
-          debugPrint('[FirebaseAuth] 自动验证完成');
         },
         verificationFailed: (firebase_auth.FirebaseAuthException e) {
           // Fail Fast：验证失败立即抛出异常
-          debugPrint('[FirebaseAuth] 验证失败: ${e.code} - ${e.message}');
           if (!completer.isCompleted) {
             completer.completeError(_handleFirebaseAuthException(e));
           }
         },
         codeSent: (String verificationId, int? resendToken) {
           // 返回验证 ID
-          debugPrint('[FirebaseAuth] 验证码已发送，verificationId: $verificationId');
           if (!completer.isCompleted) {
             completer.complete(verificationId);
           }
         },
         codeAutoRetrievalTimeout: (String verificationId) {
           // 自动检索超时，返回验证 ID
-          debugPrint('[FirebaseAuth] 自动检索超时，verificationId: $verificationId');
           if (!completer.isCompleted) {
             completer.complete(verificationId);
           }
