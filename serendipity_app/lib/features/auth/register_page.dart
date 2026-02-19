@@ -312,8 +312,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       // 调用 AuthProvider 发送验证码，并保存返回的 verificationId
       _verificationId = await ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhoneNumber);
       
-      debugPrint('✅ [DEBUG] 验证码发送成功，verificationId: $_verificationId');
-      
       if (mounted) {
         setState(() {
           _isCodeSent = true;
