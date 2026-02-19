@@ -37,7 +37,7 @@ void main() {
 
       final user = User(
         id: 'user123',
-        authProvider: AuthProvider.apple,
+        authProvider: AuthProvider.email,
         isEmailVerified: false,
         isPhoneVerified: false,
         createdAt: now,
@@ -49,7 +49,7 @@ void main() {
       expect(user.displayName, isNull);
       expect(user.avatarUrl, isNull);
       expect(user.lastLoginAt, isNull);
-      expect(user.authProvider, AuthProvider.apple);
+      expect(user.authProvider, AuthProvider.email);
     });
 
     test('toJson 转换（完整信息）', () {
@@ -87,7 +87,7 @@ void main() {
 
       final user = User(
         id: 'user123',
-        authProvider: AuthProvider.apple,
+        authProvider: AuthProvider.phone,
         isEmailVerified: false,
         isPhoneVerified: false,
         createdAt: now,
@@ -139,7 +139,7 @@ void main() {
         'phoneNumber': null,
         'displayName': null,
         'avatarUrl': null,
-        'authProvider': 'apple',
+        'authProvider': 'email',
         'isEmailVerified': false,
         'isPhoneVerified': false,
         'lastLoginAt': null,
@@ -154,7 +154,7 @@ void main() {
       expect(user.displayName, isNull);
       expect(user.avatarUrl, isNull);
       expect(user.lastLoginAt, isNull);
-      expect(user.authProvider, AuthProvider.apple);
+      expect(user.authProvider, AuthProvider.email);
     });
 
     test('toJson 和 fromJson 往返转换', () {
@@ -271,9 +271,6 @@ void main() {
       final providers = [
         AuthProvider.email,
         AuthProvider.phone,
-        AuthProvider.apple,
-        AuthProvider.google,
-        AuthProvider.wechat,
       ];
 
       for (final provider in providers) {

@@ -722,12 +722,30 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '💫 状态',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          children: [
+            const Text(
+              '💫 状态',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // 帮助图标
+            IconButton(
+              icon: Icon(
+                Icons.help_outline,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: () => _showRecordGuideDialog(context),
+              tooltip: '如何记录？',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -748,12 +766,153 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             );
           }).toList(),
         ),
-        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  /// 显示记录引导对话框
+  void _showRecordGuideDialog(BuildContext context) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Text('💡 '),
+            Expanded(
+              child: Text(
+                '如何记录？',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '每次见面 = 一条新记录',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '例如：',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildGuideItem(
+                context,
+                '• 今天在地铁看到 TA',
+                '→ 创建记录，选择"错过"',
+              ),
+              const SizedBox(height: 8),
+              _buildGuideItem(
+                context,
+                '• 明天又看到 TA（还是没说话）',
+                '→ 创建新记录，选择"再遇"',
+              ),
+              const SizedBox(height: 8),
+              _buildGuideItem(
+                context,
+                '• 后天又看到 TA（还是没说话）',
+                '→ 创建新记录，还是选择"再遇"',
+              ),
+              const SizedBox(height: 8),
+              _buildGuideItem(
+                context,
+                '• 第 N 天终于说话了',
+                '→ 创建新记录，选择"邂逅"',
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '然后通过"故事线"功能把这些记录关联起来',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Divider(
+                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '💡 什么时候停止记录？',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '• 邂逅后如果继续在一起，就不用再记录了\n'
+                      '• 但如果经历了"别离"或"失联"，之后又"重逢"，可以继续记录，即邂逅→别离/失联→重逢',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('我知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建引导项
+  Widget _buildGuideItem(BuildContext context, String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Text(
-          '提示：每次见面创建一条新记录，然后通过"故事线"关联\n详细说明请查看"关于"页面',
+          title,
           style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
       ],

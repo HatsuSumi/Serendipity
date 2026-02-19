@@ -26,7 +26,17 @@ class User {
     this.lastLoginAt,
     required this.createdAt,
     required this.updatedAt,
-  });
+  }) {
+    // Fail Fast：参数验证
+    if (id.trim().isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    // 至少要有邮箱或手机号之一
+    if (email == null && phoneNumber == null) {
+      throw ArgumentError('邮箱和手机号至少需要提供一个');
+    }
+  }
 
   /// 从 JSON 创建 User
   factory User.fromJson(Map<String, dynamic> json) {

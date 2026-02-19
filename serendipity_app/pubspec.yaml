@@ -46,7 +46,16 @@ dependencies:
   uuid: ^4.5.1
   
   # 国际化
-  intl: ^0.20.1 
+  intl: ^0.20.1
+  
+  # Firebase 核心
+  firebase_core: ^3.8.1
+  
+  # Firebase 认证
+  firebase_auth: ^5.3.3
+  
+  # Firestore 数据库
+  cloud_firestore: ^5.5.2
 
 dev_dependencies:
   flutter_test:

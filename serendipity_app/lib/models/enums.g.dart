@@ -473,12 +473,6 @@ class AuthProviderAdapter extends TypeAdapter<AuthProvider> {
         return AuthProvider.email;
       case 1:
         return AuthProvider.phone;
-      case 2:
-        return AuthProvider.apple;
-      case 3:
-        return AuthProvider.google;
-      case 4:
-        return AuthProvider.wechat;
       default:
         return AuthProvider.email;
     }
@@ -492,15 +486,6 @@ class AuthProviderAdapter extends TypeAdapter<AuthProvider> {
         break;
       case AuthProvider.phone:
         writer.writeByte(1);
-        break;
-      case AuthProvider.apple:
-        writer.writeByte(2);
-        break;
-      case AuthProvider.google:
-        writer.writeByte(3);
-        break;
-      case AuthProvider.wechat:
-        writer.writeByte(4);
         break;
     }
   }

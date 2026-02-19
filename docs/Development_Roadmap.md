@@ -66,7 +66,7 @@
   - 下载 `GoogleService-Info.plist`
   - 配置 Xcode 项目
 - [ ] 启用 Firebase 服务
-  - Authentication（邮箱、手机号、Apple、Google）
+  - Authentication（邮箱、手机号）~~、Apple、Google~~ ❌ 已移除第三方登录
   - Firestore Database
   - Cloud Functions
   - Cloud Messaging
@@ -114,7 +114,7 @@ lib/
   - 欢迎页
   - 邮箱登录
   - 手机号登录
-  - 第三方登录（Apple、Google）
+  - ~~第三方登录（Apple、Google）~~ ❌ 已移除
 - [ ] 注册流程
   - 邮箱注册 + 验证
   - 手机号注册 + 验证码

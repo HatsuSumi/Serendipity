@@ -5,6 +5,7 @@ import '../../models/story_line.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/dialog_helper.dart';
 
 /// 关联到故事线对话框
 class LinkToStoryLineDialog extends ConsumerStatefulWidget {
@@ -241,6 +242,74 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
       final storyLinesNotifier = ref.read(storyLinesProvider.notifier);
       final recordsNotifier = ref.read(recordsProvider.notifier);
 
+      // 检查记录是否已关联到其他故事线
+      final recordsAsync = ref.read(recordsProvider);
+      final records = recordsAsync.value ?? [];
+      final currentRecord = records.firstWhere(
+        (r) => r.id == widget.recordId,
+        orElse: () => throw StateError('Record not found'),
+      );
+
+      String? targetStoryLineId;
+      String? targetStoryLineName;
+
+      if (_isCreatingNew) {
+        // 创建新故事线
+        targetStoryLineName = _nameController.text.trim();
+      } else {
+        // 添加到现有故事线
+        targetStoryLineId = _selectedStoryLineId;
+        if (targetStoryLineId != null) {
+          final storyLinesAsync = ref.read(storyLinesProvider);
+          final storyLines = storyLinesAsync.value ?? [];
+          final targetStoryLine = storyLines.firstWhere(
+            (sl) => sl.id == targetStoryLineId,
+            orElse: () => throw StateError('Story line not found'),
+          );
+          targetStoryLineName = targetStoryLine.name;
+        }
+      }
+
+      // 如果记录已关联到其他故事线，弹出确认对话框
+      if (currentRecord.storyLineId != null && 
+          currentRecord.storyLineId != targetStoryLineId) {
+        // 获取当前故事线名称
+        final storyLinesAsync = ref.read(storyLinesProvider);
+        final storyLines = storyLinesAsync.value ?? [];
+        final currentStoryLine = storyLines.firstWhere(
+          (sl) => sl.id == currentRecord.storyLineId,
+          orElse: () => throw StateError('Current story line not found'),
+        );
+
+        // 弹出确认对话框
+        final confirmed = await DialogHelper.show<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('移动记录'),
+            content: Text(
+              '该记录已关联到故事线"${currentStoryLine.name}"，\n'
+              '是否移动到"$targetStoryLineName"？',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('移动'),
+              ),
+            ],
+          ),
+        );
+
+        // 用户取消操作
+        if (confirmed != true) {
+          return;
+        }
+      }
+
+      // 执行关联操作
       if (_isCreatingNew) {
         // 创建新故事线
         final name = _nameController.text.trim();
@@ -262,8 +331,9 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
         }
       }
 
-      // 刷新记录列表
+      // 刷新记录列表和故事线列表
       await recordsNotifier.refresh();
+      await storyLinesNotifier.refresh();
 
       if (mounted) {
         Navigator.of(context).pop(true);

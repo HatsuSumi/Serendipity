@@ -10,17 +10,64 @@ import 'story_line_detail_page.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/story_line.dart';
 
+/// 排序方式
+enum StoryLineSortType {
+  createdDesc('创建时间 ↓'),
+  createdAsc('创建时间 ↑'),
+  updatedDesc('更新时间 ↓'),
+  updatedAsc('更新时间 ↑'),
+  nameAsc('名称 A-Z'),
+  nameDesc('名称 Z-A');
+
+  final String label;
+  const StoryLineSortType(this.label);
+}
+
 /// 故事线列表页面
-class StoryLinesPage extends ConsumerWidget {
+class StoryLinesPage extends ConsumerStatefulWidget {
   const StoryLinesPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StoryLinesPage> createState() => _StoryLinesPageState();
+}
+
+class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
+  // 当前排序方式（默认更新时间降序）
+  StoryLineSortType _currentSort = StoryLineSortType.updatedDesc;
+
+  @override
+  Widget build(BuildContext context) {
     final storyLinesAsync = ref.watch(storyLinesProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的故事线'),
+        actions: [
+          PopupMenuButton<StoryLineSortType>(
+            icon: const Icon(Icons.sort),
+            tooltip: '排序方式',
+            onSelected: (StoryLineSortType type) {
+              setState(() {
+                _currentSort = type;
+              });
+            },
+            itemBuilder: (context) => StoryLineSortType.values.map((type) {
+              return PopupMenuItem(
+                value: type,
+                child: Row(
+                  children: [
+                    if (_currentSort == type)
+                      const Icon(Icons.check, size: 20)
+                    else
+                      const SizedBox(width: 20),
+                    const SizedBox(width: 8),
+                    Text(type.label),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
       body: storyLinesAsync.when(
         data: (storyLines) {
@@ -74,6 +121,7 @@ class StoryLinesPage extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'create_story_line_fab',
         onPressed: () => _showCreateStoryLineDialog(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('创建故事线'),
@@ -81,12 +129,33 @@ class StoryLinesPage extends ConsumerWidget {
     );
   }
 
-  /// 排序故事线：置顶的在前面，然后按更新时间倒序
+  /// 根据排序方式排序故事线
+  /// 
+  /// 置顶故事线始终在最前面，然后按照选择的排序方式排序
   List<StoryLine> _sortStoryLines(List<StoryLine> storyLines) {
     final sorted = List<StoryLine>.from(storyLines);
     
-    // 先按更新时间倒序排序
-    sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    // 先按照选择的排序方式排序
+    switch (_currentSort) {
+      case StoryLineSortType.createdDesc:
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+      case StoryLineSortType.createdAsc:
+        sorted.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        break;
+      case StoryLineSortType.updatedDesc:
+        sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        break;
+      case StoryLineSortType.updatedAsc:
+        sorted.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
+        break;
+      case StoryLineSortType.nameAsc:
+        sorted.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      case StoryLineSortType.nameDesc:
+        sorted.sort((a, b) => b.name.compareTo(a.name));
+        break;
+    }
     
     // 置顶的排在最前面（稳定排序）
     sorted.sort((a, b) {

@@ -230,13 +230,7 @@ enum AuthProvider {
   @HiveField(0)
   email('email', '邮箱'),
   @HiveField(1)
-  phone('phone', '手机号'),
-  @HiveField(2)
-  apple('apple', 'Apple ID'),
-  @HiveField(3)
-  google('google', 'Google'),
-  @HiveField(4)
-  wechat('wechat', '微信');
+  phone('phone', '手机号');
 
   final String value;
   final String label;

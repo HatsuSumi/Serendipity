@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/message_provider.dart';
+import '../../core/utils/message_helper.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';
 import '../settings/settings_page.dart';
@@ -17,7 +19,58 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   int _currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    
+    // 在下一帧检查是否有待显示的消息
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final message = ref.read(messageProvider);
+      if (message != null && mounted) {
+        // 显示消息
+        switch (message.type) {
+          case MessageType.success:
+            MessageHelper.showSuccess(context, message.message);
+            break;
+          case MessageType.error:
+            MessageHelper.showError(context, message.message);
+            break;
+          case MessageType.info:
+            MessageHelper.showSuccess(context, message.message);
+            break;
+        }
+        
+        // 清除消息
+        ref.read(messageProvider.notifier).clear();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // 监听全局消息（用于页面已加载后的消息）
+    ref.listen<AppMessage?>(messageProvider, (previous, next) {
+      if (next != null) {
+        // 根据消息类型显示不同的提示
+        switch (next.type) {
+          case MessageType.success:
+            MessageHelper.showSuccess(context, next.message);
+            break;
+          case MessageType.error:
+            MessageHelper.showError(context, next.message);
+            break;
+          case MessageType.info:
+            // 暂时使用 showSuccess，以后可以添加 showInfo
+            MessageHelper.showSuccess(context, next.message);
+            break;
+        }
+        
+        // 清除消息，避免重复显示
+        Future.microtask(() {
+          ref.read(messageProvider.notifier).clear();
+        });
+      }
+    });
+    
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -66,6 +119,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
       ),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton.extended(
+              heroTag: 'create_record_fab',
               onPressed: () async {
                 // 使用 Navigator.push 以便自定义动画
                 final result = await Navigator.of(context).push<bool>(

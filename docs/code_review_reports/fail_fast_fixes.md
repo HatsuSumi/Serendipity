@@ -309,7 +309,6 @@ try {
   showSuccess('保存成功');
 } on StateError catch (e) {
   // 程序内部错误 - 记录日志并显示技术错误
-  debugPrint('Internal error: $e');
   showError('保存失败：数据异常，请联系开发者');
   rethrow; // 重新抛出，让错误上报系统捕获
 } on NetworkException catch (e) {
@@ -317,7 +316,6 @@ try {
   showError('保存失败：网络连接异常');
 } catch (e) {
   // 未知错误 - 保守处理
-  debugPrint('Unknown error: $e');
   showError('保存失败：$e');
 }
 ```

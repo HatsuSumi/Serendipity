@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "795564018597",
+    "project_id": "serendipity-f3f75",
+    "storage_bucket": "serendipity-f3f75.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795564018597:android:67afa730d8b1e51d6bb64c",
+        "android_client_info": {
+          "package_name": "com.serendipity.serendipity_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPtMWezaSHGFmAVw8-YB4O7I-oHEBjrsc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

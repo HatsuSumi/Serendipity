@@ -1,0 +1,158 @@
+import '../../models/user.dart';
+
+/// 认证仓库接口
+/// 
+/// 定义所有认证相关操作的契约，遵循依赖倒置原则（DIP）。
+/// 具体实现可以是 Firebase、自建服务器或其他认证服务。
+/// 
+/// 调用者：
+/// - AuthProvider：状态管理层，调用所有方法
+/// - LoginPage/RegisterPage：通过 AuthProvider 间接调用
+abstract class IAuthRepository {
+  /// 获取当前登录用户
+  /// 
+  /// 返回当前已登录的用户，如果未登录则返回 null。
+  /// 
+  /// 调用者：
+  /// - AuthProvider.build()：初始化时获取当前用户状态
+  /// 
+  /// Fail Fast：
+  /// - 如果认证服务未初始化，应抛出 StateError
+  Future<User?> get currentUser;
+  
+  /// 监听认证状态变化
+  /// 
+  /// 返回一个 Stream，当用户登录/登出时会发出新的用户状态。
+  /// 
+  /// 调用者：
+  /// - AuthProvider：订阅此 Stream 以自动更新用户状态
+  /// 
+  /// Fail Fast：
+  /// - 如果认证服务未初始化，应抛出 StateError
+  Stream<User?> get authStateChanges;
+  
+  /// 使用邮箱和密码登录
+  /// 
+  /// 参数：
+  /// - [email]：用户邮箱
+  /// - [password]：用户密码
+  /// 
+  /// 返回：登录成功的用户对象
+  /// 
+  /// 调用者：
+  /// - AuthProvider.signInWithEmail()
+  /// - LoginPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - email 为空或格式不正确：抛出 ArgumentError
+  /// - password 长度小于 6：抛出 ArgumentError
+  /// - 认证失败：抛出具体的认证异常（由实现类定义）
+  Future<User> signInWithEmail(String email, String password);
+  
+  /// 使用邮箱和密码注册
+  /// 
+  /// 参数：
+  /// - [email]：用户邮箱
+  /// - [password]：用户密码
+  /// 
+  /// 返回：注册成功的用户对象
+  /// 
+  /// 调用者：
+  /// - AuthProvider.signUpWithEmail()
+  /// - RegisterPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - email 为空或格式不正确：抛出 ArgumentError
+  /// - password 长度小于 6：抛出 ArgumentError
+  /// - 邮箱已被注册：抛出具体的认证异常（由实现类定义）
+  Future<User> signUpWithEmail(String email, String password);
+  
+  /// 使用手机号和验证码登录
+  /// 
+  /// 参数：
+  /// - [phoneNumber]：手机号（包含国家代码，如 +86）
+  /// - [verificationCode]：短信验证码
+  /// - [verificationId]：验证 ID（由 sendPhoneVerificationCode 返回）
+  /// 
+  /// 返回：登录成功的用户对象
+  /// 
+  /// 调用者：
+  /// - AuthProvider.signInWithPhone()
+  /// - LoginPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - phoneNumber 为空或格式不正确：抛出 ArgumentError
+  /// - verificationCode 为空：抛出 ArgumentError
+  /// - verificationId 为空：抛出 ArgumentError
+  /// - 验证码错误：抛出具体的认证异常（由实现类定义）
+  Future<User> signInWithPhone(
+    String phoneNumber,
+    String verificationCode,
+    String verificationId,
+  );
+  
+  /// 发送手机验证码
+  /// 
+  /// 参数：
+  /// - [phoneNumber]：手机号（包含国家代码，如 +86）
+  /// 
+  /// 返回：验证 ID（用于后续验证）
+  /// 
+  /// 调用者：
+  /// - AuthProvider.sendPhoneVerificationCode()
+  /// - LoginPage/RegisterPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - phoneNumber 为空或格式不正确：抛出 ArgumentError
+  /// - 发送失败：抛出具体的认证异常（由实现类定义）
+  Future<String> sendPhoneVerificationCode(String phoneNumber);
+  
+  /// 使用手机号和验证码注册
+  /// 
+  /// 参数：
+  /// - [phoneNumber]：手机号（包含国家代码，如 +86）
+  /// - [verificationCode]：短信验证码
+  /// - [verificationId]：验证 ID（由 sendPhoneVerificationCode 返回）
+  /// 
+  /// 返回：注册成功的用户对象
+  /// 
+  /// 调用者：
+  /// - AuthProvider.signUpWithPhone()
+  /// - RegisterPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - phoneNumber 为空或格式不正确：抛出 ArgumentError
+  /// - verificationCode 为空：抛出 ArgumentError
+  /// - verificationId 为空：抛出 ArgumentError
+  /// - 手机号已被注册：抛出具体的认证异常（由实现类定义）
+  Future<User> signUpWithPhone(
+    String phoneNumber,
+    String verificationCode,
+    String verificationId,
+  );
+  
+  /// 登出
+  /// 
+  /// 调用者：
+  /// - AuthProvider.signOut()
+  /// - SettingsPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - 登出失败：抛出具体的认证异常（由实现类定义）
+  Future<void> signOut();
+  
+  /// 发送密码重置邮件
+  /// 
+  /// 参数：
+  /// - [email]：用户邮箱
+  /// 
+  /// 调用者：
+  /// - AuthProvider.resetPassword()
+  /// - ForgotPasswordPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - email 为空或格式不正确：抛出 ArgumentError
+  /// - 邮箱不存在：抛出具体的认证异常（由实现类定义）
+  Future<void> resetPassword(String email);
+}
+

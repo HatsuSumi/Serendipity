@@ -72,10 +72,11 @@ class StoryLineRepository {
 
   /// 将记录关联到故事线
   /// 
+  /// 如果记录已关联到其他故事线，会自动解除旧关联
+  /// 
   /// Fail Fast:
   /// - 如果记录不存在，抛出 StateError
   /// - 如果故事线不存在，抛出 StateError
-  /// - 如果记录已关联到其他故事线，抛出 StateError
   Future<void> linkRecord(String recordId, String storyLineId) async {
     final record = _storage.getRecord(recordId);
     if (record == null) {
@@ -87,11 +88,14 @@ class StoryLineRepository {
       throw StateError('Cannot link record: Story line $storyLineId does not exist');
     }
 
-    // 如果记录已关联到其他故事线，抛出错误
+    // 如果记录已关联到其他故事线，先解除旧关联
     if (record.storyLineId != null && record.storyLineId != storyLineId) {
-      throw StateError(
-        'Cannot link record: Record $recordId is already linked to story line ${record.storyLineId}'
-      );
+      await unlinkRecord(recordId, record.storyLineId!);
+    }
+
+    // 如果已经关联到目标故事线，直接返回
+    if (record.storyLineId == storyLineId) {
+      return;
     }
 
     // 更新记录的 storyLineId
