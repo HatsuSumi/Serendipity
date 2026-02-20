@@ -54,6 +54,7 @@ void main() async {
   if (kDebugMode && AppConfig.enableTestMode) {
     await Hive.openBox<User>('test_users');
     await Hive.openBox('test_session');
+    await Hive.openBox('test_passwords'); // 新增：初始化密码 box
     print('🔍 [main] 测试用户 box 已初始化');
   }
   

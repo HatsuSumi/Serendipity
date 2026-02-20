@@ -64,8 +64,8 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 密码长度不足立即抛异常
   /// - 登录失败立即抛异常
   Future<void> signInWithEmail(String email, String password) async {
-    // Fail Fast：参数验证
-    if (email.trim().isEmpty) {
+    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
+    if (email.isEmpty) {
       throw ArgumentError('邮箱不能为空');
     }
     if (password.isEmpty) {
@@ -75,7 +75,7 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      await _repository.signInWithEmail(email.trim(), password);
+      await _repository.signInWithEmail(email, password);
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
     } catch (e, stack) {
@@ -93,8 +93,8 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 密码长度不足立即抛异常
   /// - 注册失败立即抛异常
   Future<void> signUpWithEmail(String email, String password) async {
-    // Fail Fast：参数验证
-    if (email.trim().isEmpty) {
+    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
+    if (email.isEmpty) {
       throw ArgumentError('邮箱不能为空');
     }
     if (password.isEmpty) {
@@ -104,7 +104,7 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      await _repository.signUpWithEmail(email.trim(), password);
+      await _repository.signUpWithEmail(email, password);
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
     } catch (e, stack) {
@@ -125,8 +125,8 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 手机号格式错误立即抛异常
   /// - 发送失败立即抛异常
   Future<String> sendPhoneVerificationCode(String phoneNumber) async {
-    // Fail Fast：参数验证
-    if (phoneNumber.trim().isEmpty) {
+    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空和格式）
+    if (phoneNumber.isEmpty) {
       throw ArgumentError('手机号不能为空');
     }
     // 注意：phoneNumber 已经在页面层拼接了国家代码（如 +8613800138000）
@@ -135,7 +135,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       throw ArgumentError('手机号格式错误：缺少国家代码');
     }
 
-    return await _repository.sendPhoneVerificationCode(phoneNumber.trim());
+    return await _repository.sendPhoneVerificationCode(phoneNumber);
   }
 
   /// 手机号登录
@@ -152,14 +152,14 @@ class AuthNotifier extends StreamNotifier<User?> {
     String verificationCode,
     String verificationId,
   ) async {
-    // Fail Fast：参数验证
-    if (phoneNumber.trim().isEmpty) {
+    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
+    if (phoneNumber.isEmpty) {
       throw ArgumentError('手机号不能为空');
     }
-    if (verificationCode.trim().isEmpty) {
+    if (verificationCode.isEmpty) {
       throw ArgumentError('验证码不能为空');
     }
-    if (verificationId.trim().isEmpty) {
+    if (verificationId.isEmpty) {
       throw ArgumentError('验证 ID 不能为空');
     }
 
@@ -167,9 +167,9 @@ class AuthNotifier extends StreamNotifier<User?> {
     
     try {
       await _repository.signInWithPhone(
-        phoneNumber.trim(),
-        verificationCode.trim(),
-        verificationId.trim(),
+        phoneNumber,
+        verificationCode,
+        verificationId,
       );
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
@@ -193,14 +193,14 @@ class AuthNotifier extends StreamNotifier<User?> {
     String verificationCode,
     String verificationId,
   ) async {
-    // Fail Fast：参数验证
-    if (phoneNumber.trim().isEmpty) {
+    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
+    if (phoneNumber.isEmpty) {
       throw ArgumentError('手机号不能为空');
     }
-    if (verificationCode.trim().isEmpty) {
+    if (verificationCode.isEmpty) {
       throw ArgumentError('验证码不能为空');
     }
-    if (verificationId.trim().isEmpty) {
+    if (verificationId.isEmpty) {
       throw ArgumentError('验证 ID 不能为空');
     }
 
@@ -208,9 +208,9 @@ class AuthNotifier extends StreamNotifier<User?> {
     
     try {
       await _repository.signUpWithPhone(
-        phoneNumber.trim(),
-        verificationCode.trim(),
-        verificationId.trim(),
+        phoneNumber,
+        verificationCode,
+        verificationId,
       );
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
@@ -248,12 +248,12 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 邮箱格式错误立即抛异常
   /// - 发送失败立即抛异常
   Future<void> resetPassword(String email) async {
-    // Fail Fast：参数验证
-    if (email.trim().isEmpty) {
+    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
+    if (email.isEmpty) {
       throw ArgumentError('邮箱不能为空');
     }
     
-    await _repository.resetPassword(email.trim());
+    await _repository.resetPassword(email);
   }
 }
 

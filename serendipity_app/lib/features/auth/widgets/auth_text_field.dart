@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/utils/validation_helper.dart';
 
 /// 认证输入框类型
 enum AuthTextFieldType {
@@ -334,41 +335,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
   /// 
   /// Fail Fast：格式不正确立即返回错误信息
   String? _validateEmail(String value) {
-    // 先 trim 去除首尾空格
-    final trimmedValue = value.trim();
-    
-    // 基础格式验证：必须包含 @ 和至少一个点
-    if (!trimmedValue.contains('@') || !trimmedValue.contains('.')) {
-      return '邮箱格式不正确';
-    }
-    
-    // 使用更严格的正则表达式
-    // 要求：用户名@域名.顶级域名（至少2个字符）
-    final emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    );
-    if (!emailRegex.hasMatch(trimmedValue)) {
-      return '邮箱格式不正确';
-    }
-    
-    // 额外验证：不允许连续的点
-    if (trimmedValue.contains('..')) {
-      return '邮箱格式不正确';
-    }
-    
-    // 额外验证：用户名部分不允许以点开头或结尾
-    final parts = trimmedValue.split('@');
-    if (parts[0].startsWith('.') || parts[0].endsWith('.')) {
-      return '邮箱格式不正确';
-    }
-    
-    // 额外验证：域名部分不允许以点或连字符开头或结尾
-    if (parts[1].startsWith('.') || parts[1].startsWith('-') ||
-        parts[1].endsWith('.') || parts[1].endsWith('-')) {
-      return '邮箱格式不正确';
-    }
-    
-    return null;
+    // 使用统一的验证规则
+    return ValidationHelper.validateEmailForUI(value);
   }
   
   /// 验证密码强度
@@ -377,10 +345,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
   /// 
   /// Fail Fast：密码长度不足立即返回错误信息
   String? _validatePassword(String value) {
-    if (value.length < 6) {
-      return '密码至少需要6位';
-    }
-    return null;
+    // 使用统一的验证规则
+    return ValidationHelper.validatePasswordForUI(value);
   }
   
   /// 验证手机号格式
@@ -389,17 +355,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
   /// 
   /// Fail Fast：格式不正确立即返回错误信息
   String? _validatePhone(String value) {
-    // 中国手机号：11 位数字
-    if (value.length == 11 && RegExp(r'^\d{11}$').hasMatch(value)) {
-      return null;
-    }
-    
-    // 其他格式：至少 8 位数字
-    if (value.length >= 8 && RegExp(r'^\d+$').hasMatch(value)) {
-      return null;
-    }
-    
-    return '手机号格式不正确';
+    // 使用统一的验证规则
+    return ValidationHelper.validatePhoneForUI(value);
   }
   
   /// 验证验证码格式
@@ -408,10 +365,8 @@ class _AuthTextFieldState extends State<AuthTextField> {
   /// 
   /// Fail Fast：长度不正确立即返回错误信息
   String? _validateVerificationCode(String value) {
-    if (value.length != 6) {
-      return '验证码应为6位数字';
-    }
-    return null;
+    // 使用统一的验证规则
+    return ValidationHelper.validateVerificationCodeForUI(value);
   }
 }
 

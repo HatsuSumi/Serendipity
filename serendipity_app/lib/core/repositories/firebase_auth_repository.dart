@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import '../../models/user.dart';
 import '../../models/enums.dart';
+import '../../core/utils/validation_helper.dart';
 import 'i_auth_repository.dart';
 
 /// Firebase 认证仓库实现
@@ -209,16 +210,8 @@ class FirebaseAuthRepository implements IAuthRepository {
   /// 
   /// Fail Fast：邮箱格式不正确立即抛出异常
   void _validateEmail(String email) {
-    if (email.isEmpty) {
-      throw ArgumentError('Email cannot be empty');
-    }
-    
-    // 邮箱格式验证（支持 Gmail 别名和长 TLD）
-    // 示例：user+tag@gmail.com, user@example.museum
-    final emailRegex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
-    if (!emailRegex.hasMatch(email)) {
-      throw ArgumentError('Invalid email format');
-    }
+    // 使用统一的验证规则
+    ValidationHelper.validateEmailForRepository(email);
   }
   
   /// 验证密码长度
@@ -229,13 +222,8 @@ class FirebaseAuthRepository implements IAuthRepository {
   /// 
   /// Fail Fast：密码长度不足立即抛出异常
   void _validatePassword(String password) {
-    if (password.isEmpty) {
-      throw ArgumentError('Password cannot be empty');
-    }
-    
-    if (password.length < 6) {
-      throw ArgumentError('Password must be at least 6 characters');
-    }
+    // 使用统一的验证规则
+    ValidationHelper.validatePasswordForRepository(password);
   }
   
   /// 验证手机号格式
@@ -247,20 +235,8 @@ class FirebaseAuthRepository implements IAuthRepository {
   /// 
   /// Fail Fast：手机号格式不正确立即抛出异常
   void _validatePhoneNumber(String phoneNumber) {
-    if (phoneNumber.isEmpty) {
-      throw ArgumentError('Phone number cannot be empty');
-    }
-    
-    // 手机号必须包含国家代码（如 +86）
-    if (!phoneNumber.startsWith('+')) {
-      throw ArgumentError('Phone number must include country code (e.g., +86)');
-    }
-    
-    // 简单验证：+ 号后面至少有 10 位数字
-    final digitsOnly = phoneNumber.substring(1).replaceAll(RegExp(r'\D'), '');
-    if (digitsOnly.length < 10) {
-      throw ArgumentError('Invalid phone number format');
-    }
+    // 使用统一的验证规则
+    ValidationHelper.validatePhoneNumberForRepository(phoneNumber);
   }
   
   /// 将 Firebase User 转换为应用 User

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/user.dart';
 import '../../models/enums.dart';
+import '../../core/utils/validation_helper.dart';
 import 'i_auth_repository.dart';
 
 /// 测试认证仓库
@@ -50,6 +51,7 @@ class TestAuthRepository implements IAuthRepository {
   /// Hive box 名称
   static const String _testUsersBoxName = 'test_users';
   static const String _testSessionBoxName = 'test_session';
+  static const String _testPasswordsBoxName = 'test_passwords'; // 新增：存储密码的 box
   static const String _currentUserIdKey = 'current_user_id';
   
   /// 初始化测试数据（从 Hive 加载）
@@ -61,6 +63,9 @@ class TestAuthRepository implements IAuthRepository {
       }
       if (!Hive.isBoxOpen(_testSessionBoxName)) {
         await Hive.openBox(_testSessionBoxName);
+      }
+      if (!Hive.isBoxOpen(_testPasswordsBoxName)) {
+        await Hive.openBox(_testPasswordsBoxName);
       }
       
       // 从 Hive 恢复当前用户状态
@@ -104,6 +109,9 @@ class TestAuthRepository implements IAuthRepository {
   /// 获取会话 Box
   Box get _sessionBox => Hive.box(_testSessionBoxName);
   
+  /// 获取密码 Box
+  Box get _passwordsBox => Hive.box(_testPasswordsBoxName);
+  
   /// 保存当前用户 ID 到 Hive
   Future<void> _saveCurrentUserId(String userId) async {
     await _sessionBox.put(_currentUserIdKey, userId);
@@ -144,6 +152,20 @@ class TestAuthRepository implements IAuthRepository {
     print('✅ [TestAuth] 用户已保存到 Hive: ${user.id}');
   }
   
+  /// 保存密码到 Hive（仅用于测试环境）
+  /// 
+  /// 注意：生产环境绝不应该明文存储密码！
+  /// 这里仅用于测试环境，方便开发和调试。
+  Future<void> _savePassword(String userId, String password) async {
+    await _passwordsBox.put(userId, password);
+    print('✅ [TestAuth] 密码已保存到 Hive: $userId');
+  }
+  
+  /// 获取保存的密码
+  String? _getPassword(String userId) {
+    return _passwordsBox.get(userId) as String?;
+  }
+  
   @override
   Future<User?> get currentUser async {
     return _currentUser;
@@ -179,15 +201,9 @@ class TestAuthRepository implements IAuthRepository {
     print('🔍 [TestAuth] 邮箱: $email');
     print('🔍 [TestAuth] 密码: $password');
     
-    // Fail Fast：参数验证
-    if (email.isEmpty) {
-      print('❌ [TestAuth] 邮箱为空');
-      throw ArgumentError('Email cannot be empty');
-    }
-    if (password.isEmpty) {
-      print('❌ [TestAuth] 密码为空');
-      throw ArgumentError('Password cannot be empty');
-    }
+    // Fail Fast：参数验证（使用统一的验证规则）
+    ValidationHelper.validateEmailForRepository(email);
+    ValidationHelper.validatePasswordForRepository(password);
     
     // 模拟网络延迟
     await Future.delayed(const Duration(milliseconds: 500));
@@ -205,12 +221,20 @@ class TestAuthRepository implements IAuthRepository {
     }
     print('✅ [TestAuth] 用户存在: ${user.id}');
     
-    // 检查密码（测试环境固定密码：123456）
+    // 检查密码（从 Hive 获取保存的密码）
     print('🔍 [TestAuth] 检查密码...');
+    final savedPassword = _getPassword(user.id);
     print('🔍 [TestAuth] 输入密码: "$password"');
-    print('🔍 [TestAuth] 期望密码: "123456"');
-    print('🔍 [TestAuth] 密码比较结果: ${password == '123456'}');
-    if (password != '123456') {
+    print('🔍 [TestAuth] 保存的密码: "$savedPassword"');
+    
+    if (savedPassword == null) {
+      print('❌ [TestAuth] 未找到保存的密码（数据异常）');
+      _currentUser = null;
+      _authStateController.add(null);
+      throw Exception('账号数据异常，请重新注册');
+    }
+    
+    if (password != savedPassword) {
       print('❌ [TestAuth] 密码错误');
       // 清空当前用户
       _currentUser = null;
@@ -236,19 +260,9 @@ class TestAuthRepository implements IAuthRepository {
     print('🔍 [TestAuth] 邮箱: $email');
     print('🔍 [TestAuth] 密码: $password');
     
-    // Fail Fast：参数验证
-    if (email.isEmpty) {
-      print('❌ [TestAuth] 邮箱为空');
-      throw ArgumentError('Email cannot be empty');
-    }
-    if (password.isEmpty) {
-      print('❌ [TestAuth] 密码为空');
-      throw ArgumentError('Password cannot be empty');
-    }
-    if (password.length < 6) {
-      print('❌ [TestAuth] 密码长度不足');
-      throw ArgumentError('Password must be at least 6 characters');
-    }
+    // Fail Fast：参数验证（使用统一的验证规则）
+    ValidationHelper.validateEmailForRepository(email);
+    ValidationHelper.validatePasswordForRepository(password);
     
     // 模拟网络延迟
     await Future.delayed(const Duration(milliseconds: 500));
@@ -278,6 +292,10 @@ class TestAuthRepository implements IAuthRepository {
     
     // 保存到 Hive
     await _saveUser(user);
+    
+    // 保存密码到 Hive（仅测试环境）
+    await _savePassword(user.id, password);
+    
     print('🔍 [TestAuth] 数据库中的用户数: ${_testUsersBox.length}');
     
     // 自动登录
