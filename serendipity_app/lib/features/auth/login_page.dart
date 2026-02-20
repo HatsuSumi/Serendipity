@@ -48,6 +48,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _passwordController.dispose();
     _phoneController.dispose();
     _verificationCodeController.dispose();
+    // 清空验证 ID，防止内存泄漏
+    _verificationId = null;
     super.dispose();
   }
 
@@ -114,6 +116,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 setState(() {
                   _isEmailLogin = true;
                   _isCodeSent = false;
+                  _verificationId = null; // 清空验证 ID
+                  _verificationCodeController.clear(); // 清空验证码输入
                 });
               }
             },
@@ -150,6 +154,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 setState(() {
                   _isEmailLogin = false;
                   _isCodeSent = false;
+                  _verificationId = null; // 清空验证 ID
+                  _phoneController.clear(); // 清空手机号输入
+                  _verificationCodeController.clear(); // 清空验证码输入
                 });
               }
             },

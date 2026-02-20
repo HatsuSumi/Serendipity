@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import '../../models/user.dart';
 import '../../models/enums.dart';
-import '../services/firebase_service.dart';
 import 'i_auth_repository.dart';
 
 /// Firebase 认证仓库实现
@@ -17,12 +16,9 @@ import 'i_auth_repository.dart';
 /// - AuthProvider：通过接口调用所有方法
 class FirebaseAuthRepository implements IAuthRepository {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
-  final FirebaseService _firebaseService = FirebaseService();
   
   @override
   Future<User?> get currentUser async {
-    _ensureInitialized();
-    
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) {
       return null;
@@ -33,8 +29,6 @@ class FirebaseAuthRepository implements IAuthRepository {
   
   @override
   Stream<User?> get authStateChanges {
-    _ensureInitialized();
-    
     return _auth.authStateChanges().map((firebaseUser) {
       if (firebaseUser == null) {
         return null;
@@ -45,8 +39,6 @@ class FirebaseAuthRepository implements IAuthRepository {
   
   @override
   Future<User> signInWithEmail(String email, String password) async {
-    _ensureInitialized();
-    
     // Fail Fast：参数验证
     _validateEmail(email);
     _validatePassword(password);
@@ -64,15 +56,12 @@ class FirebaseAuthRepository implements IAuthRepository {
       
       return _mapFirebaseUserToUser(credential.user!);
     } on firebase_auth.FirebaseAuthException catch (e) {
-      // Fail Fast：将 Firebase 异常转换为更友好的错误信息
-      throw _handleFirebaseAuthException(e);
+      throw _mapAuthErrorCode(e.code, e.message);
     }
   }
   
   @override
   Future<User> signUpWithEmail(String email, String password) async {
-    _ensureInitialized();
-    
     // Fail Fast：参数验证
     _validateEmail(email);
     _validatePassword(password);
@@ -90,15 +79,12 @@ class FirebaseAuthRepository implements IAuthRepository {
       
       return _mapFirebaseUserToUser(credential.user!);
     } on firebase_auth.FirebaseAuthException catch (e) {
-      // Fail Fast：将 Firebase 异常转换为更友好的错误信息
-      throw _handleFirebaseAuthException(e);
+      throw _mapAuthErrorCode(e.code, e.message);
     }
   }
   
   @override
   Future<String> sendPhoneVerificationCode(String phoneNumber) async {
-    _ensureInitialized();
-    
     // Fail Fast：参数验证
     _validatePhoneNumber(phoneNumber);
     
@@ -106,6 +92,14 @@ class FirebaseAuthRepository implements IAuthRepository {
     final completer = Completer<String>();
     
     try {
+      // Web 平台需要显式配置 reCAPTCHA
+      if (kIsWeb) {
+        // 确保 reCAPTCHA 容器存在
+        await _auth.setSettings(
+          appVerificationDisabledForTesting: false,
+        );
+      }
+      
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         timeout: const Duration(seconds: 60),
@@ -115,7 +109,7 @@ class FirebaseAuthRepository implements IAuthRepository {
         verificationFailed: (firebase_auth.FirebaseAuthException e) {
           // Fail Fast：验证失败立即抛出异常
           if (!completer.isCompleted) {
-            completer.completeError(_handleFirebaseAuthException(e));
+            completer.completeError(_mapAuthErrorCode(e.code, e.message));
           }
         },
         codeSent: (String verificationId, int? resendToken) {
@@ -135,7 +129,7 @@ class FirebaseAuthRepository implements IAuthRepository {
       // 等待验证码发送完成（或失败）
       return await completer.future;
     } on firebase_auth.FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthException(e);
+      throw _mapAuthErrorCode(e.code, e.message);
     }
   }
   
@@ -145,8 +139,6 @@ class FirebaseAuthRepository implements IAuthRepository {
     String verificationCode,
     String verificationId,
   ) async {
-    _ensureInitialized();
-    
     // Fail Fast：参数验证
     _validatePhoneNumber(phoneNumber);
     if (verificationCode.isEmpty) {
@@ -171,7 +163,7 @@ class FirebaseAuthRepository implements IAuthRepository {
       
       return _mapFirebaseUserToUser(userCredential.user!);
     } on firebase_auth.FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthException(e);
+      throw _mapAuthErrorCode(e.code, e.message);
     }
   }
   
@@ -187,43 +179,26 @@ class FirebaseAuthRepository implements IAuthRepository {
   
   @override
   Future<void> signOut() async {
-    _ensureInitialized();
-    
     try {
       await _auth.signOut();
     } on firebase_auth.FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthException(e);
+      throw _mapAuthErrorCode(e.code, e.message);
     }
   }
   
   @override
   Future<void> resetPassword(String email) async {
-    _ensureInitialized();
-    
     // Fail Fast：参数验证
     _validateEmail(email);
     
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } on firebase_auth.FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthException(e);
+      throw _mapAuthErrorCode(e.code, e.message);
     }
   }
   
   // ==================== 私有辅助方法 ====================
-  
-  /// 确保 Firebase 已初始化
-  /// 
-  /// 调用者：所有公开方法
-  /// 
-  /// Fail Fast：如果未初始化，立即抛出异常
-  void _ensureInitialized() {
-    if (!_firebaseService.isInitialized) {
-      throw StateError(
-        'Firebase not initialized. Call FirebaseService.initialize() first.',
-      );
-    }
-  }
   
   /// 验证邮箱格式
   /// 
@@ -238,8 +213,9 @@ class FirebaseAuthRepository implements IAuthRepository {
       throw ArgumentError('Email cannot be empty');
     }
     
-    // 简单的邮箱格式验证
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    // 邮箱格式验证（支持 Gmail 别名和长 TLD）
+    // 示例：user+tag@gmail.com, user@example.museum
+    final emailRegex = RegExp(r'^[\w\-\.+]+@([\w\-]+\.)+[\w\-]{2,}$');
     if (!emailRegex.hasMatch(email)) {
       throw ArgumentError('Invalid email format');
     }
@@ -321,13 +297,11 @@ class FirebaseAuthRepository implements IAuthRepository {
     );
   }
   
-  /// 处理 Firebase 认证异常
+  /// 将错误代码映射为友好的错误信息
   /// 
-  /// 调用者：所有捕获 FirebaseAuthException 的方法
-  /// 
-  /// 将 Firebase 异常转换为更友好的错误信息
-  Exception _handleFirebaseAuthException(firebase_auth.FirebaseAuthException e) {
-    switch (e.code) {
+  /// 调用者：所有捕获异常的方法
+  Exception _mapAuthErrorCode(String code, String? message) {
+    switch (code) {
       // 登录相关错误
       case 'user-not-found':
         return Exception('该邮箱尚未注册');
@@ -372,9 +346,9 @@ class FirebaseAuthRepository implements IAuthRepository {
       
       default:
         // 如果是未知错误，返回详细的错误信息
-        final message = e.message ?? e.code;
-        final details = e.code != message ? ' (${e.code})' : '';
-        return Exception('登录失败：$message$details');
+        final msg = message ?? code;
+        final details = code != msg ? ' ($code)' : '';
+        return Exception('登录失败：$msg$details');
     }
   }
 }

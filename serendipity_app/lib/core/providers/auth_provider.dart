@@ -41,7 +41,11 @@ class AuthNotifier extends StreamNotifier<User?> {
   Stream<User?> build() {
     _repository = ref.read(authRepositoryProvider);
     // 监听认证状态变化
-    return _repository.authStateChanges;
+    // 注意：TestAuthRepository 的 authStateChanges 会立即发送当前状态
+    return _repository.authStateChanges.map((user) {
+      print('🔍 [AuthNotifier] authStateChanges 发送给 UI: ${user?.id ?? "null"}');
+      return user;
+    });
   }
 
   /// 获取当前用户
@@ -69,10 +73,15 @@ class AuthNotifier extends StreamNotifier<User?> {
     }
 
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    
+    try {
       await _repository.signInWithEmail(email.trim(), password);
-      return _repository.currentUser;
-    });
+      final user = await _repository.currentUser;
+      state = AsyncValue.data(user);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 重新抛出异常，让调用者可以捕获
+    }
   }
 
   /// 邮箱注册
@@ -93,10 +102,15 @@ class AuthNotifier extends StreamNotifier<User?> {
     }
 
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    
+    try {
       await _repository.signUpWithEmail(email.trim(), password);
-      return _repository.currentUser;
-    });
+      final user = await _repository.currentUser;
+      state = AsyncValue.data(user);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 重新抛出异常，让调用者可以捕获
+    }
   }
 
   /// 发送手机验证码
@@ -150,14 +164,19 @@ class AuthNotifier extends StreamNotifier<User?> {
     }
 
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    
+    try {
       await _repository.signInWithPhone(
         phoneNumber.trim(),
         verificationCode.trim(),
         verificationId.trim(),
       );
-      return _repository.currentUser;
-    });
+      final user = await _repository.currentUser;
+      state = AsyncValue.data(user);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 重新抛出异常，让调用者可以捕获
+    }
   }
 
   /// 手机号注册
@@ -186,27 +205,39 @@ class AuthNotifier extends StreamNotifier<User?> {
     }
 
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    
+    try {
       await _repository.signUpWithPhone(
         phoneNumber.trim(),
         verificationCode.trim(),
         verificationId.trim(),
       );
-      return _repository.currentUser;
-    });
+      final user = await _repository.currentUser;
+      state = AsyncValue.data(user);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 重新抛出异常，让调用者可以捕获
+    }
   }
 
   /// 登出
   /// 
-  /// 调用者：SettingsPage 的登出按钮（未来）
+  /// 调用者：SettingsPage 的登出按钮
   /// 
   /// Fail Fast：登出失败立即抛异常
   Future<void> signOut() async {
+    print('🔍 [AuthNotifier] signOut 开始');
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    
+    try {
       await _repository.signOut();
-      return null;
-    });
+      state = const AsyncValue.data(null);
+      print('✅ [AuthNotifier] signOut 成功');
+    } catch (e, stack) {
+      print('❌ [AuthNotifier] signOut 失败: $e');
+      state = AsyncValue.error(e, stack);
+      rethrow; // 重新抛出异常，让调用者可以捕获
+    }
   }
   
   /// 发送密码重置邮件

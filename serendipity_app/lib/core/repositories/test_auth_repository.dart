@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/user.dart';
 import '../../models/enums.dart';
 import 'i_auth_repository.dart';
@@ -7,6 +8,8 @@ import 'i_auth_repository.dart';
 /// 
 /// 仅用于开发和测试环境，提供模拟的认证功能。
 /// 遵循依赖倒置原则（DIP），实现 IAuthRepository 接口。
+/// 
+/// 使用单例模式确保数据在整个应用生命周期中持久化。
 /// 
 /// 使用场景：
 /// - 开发环境：无需真实 Firebase 配置即可测试
@@ -19,17 +22,127 @@ import 'i_auth_repository.dart';
 /// - 邮箱：test@example.com
 /// - 密码：123456（固定）
 class TestAuthRepository implements IAuthRepository {
+  // 单例模式
+  static final TestAuthRepository _instance = TestAuthRepository._internal();
+  
+  factory TestAuthRepository() {
+    return _instance;
+  }
+  
+  TestAuthRepository._internal() {
+    _initializeTestData();
+  }
+  
   /// 模拟的当前用户
-  User? _currentUser;
+  User? __currentUser;
+  
+  User? get _currentUser => __currentUser;
+  
+  set _currentUser(User? value) {
+    print('🔍 [TestAuth] _currentUser 被设置: ${value?.id ?? "null"}');
+    print('🔍 [TestAuth] 调用栈: ${StackTrace.current}');
+    __currentUser = value;
+  }
   
   /// 认证状态流控制器
   final _authStateController = StreamController<User?>.broadcast();
   
-  /// 模拟用户数据库（邮箱 -> 用户）
-  final Map<String, User> _usersByEmail = {};
+  /// Hive box 名称
+  static const String _testUsersBoxName = 'test_users';
+  static const String _testSessionBoxName = 'test_session';
+  static const String _currentUserIdKey = 'current_user_id';
   
-  /// 模拟用户数据库（手机号 -> 用户）
-  final Map<String, User> _usersByPhone = {};
+  /// 初始化测试数据（从 Hive 加载）
+  Future<void> _initializeTestData() async {
+    try {
+      // 确保 box 已打开
+      if (!Hive.isBoxOpen(_testUsersBoxName)) {
+        await Hive.openBox<User>(_testUsersBoxName);
+      }
+      if (!Hive.isBoxOpen(_testSessionBoxName)) {
+        await Hive.openBox(_testSessionBoxName);
+      }
+      
+      // 从 Hive 恢复当前用户状态
+      final sessionBox = Hive.box(_testSessionBoxName);
+      final currentUserId = sessionBox.get(_currentUserIdKey) as String?;
+      
+      if (currentUserId != null) {
+        // 尝试从用户列表中恢复用户
+        _currentUser = _testUsersBox.get(currentUserId);
+        print('🔍 [TestAuth] 从 Hive 恢复登录状态: ${_currentUser?.id ?? "null"}');
+      } else {
+        _currentUser = null;
+        print('🔍 [TestAuth] 无保存的登录状态');
+      }
+      
+      // 打印所有已注册用户
+      final allUsers = _testUsersBox.values.toList();
+      print('📊 [TestAuth] 已注册用户数: ${allUsers.length}');
+      if (allUsers.isNotEmpty) {
+        print('📋 [TestAuth] 已注册用户列表:');
+        for (var i = 0; i < allUsers.length; i++) {
+          final user = allUsers[i];
+          print('   ${i + 1}. ID: ${user.id}');
+          if (user.email != null) {
+            print('      邮箱: ${user.email}');
+          }
+          if (user.phoneNumber != null) {
+            print('      手机号: ${user.phoneNumber}');
+          }
+          print('      注册时间: ${user.createdAt}');
+        }
+      }
+    } catch (e) {
+      print('❌ [TestAuth] 初始化测试数据失败: $e');
+    }
+  }
+  
+  /// 获取测试用户 Box
+  Box<User> get _testUsersBox => Hive.box<User>(_testUsersBoxName);
+  
+  /// 获取会话 Box
+  Box get _sessionBox => Hive.box(_testSessionBoxName);
+  
+  /// 保存当前用户 ID 到 Hive
+  Future<void> _saveCurrentUserId(String userId) async {
+    await _sessionBox.put(_currentUserIdKey, userId);
+    print('✅ [TestAuth] 当前用户 ID 已保存到 Hive: $userId');
+  }
+  
+  /// 清除当前用户 ID
+  Future<void> _clearCurrentUserId() async {
+    await _sessionBox.delete(_currentUserIdKey);
+    print('✅ [TestAuth] 当前用户 ID 已从 Hive 清除');
+  }
+  
+  /// 根据邮箱查找用户
+  User? _getUserByEmail(String email) {
+    try {
+      return _testUsersBox.values.firstWhere(
+        (user) => user.email == email,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// 根据手机号查找用户
+  User? _getUserByPhone(String phoneNumber) {
+    try {
+      return _testUsersBox.values.firstWhere(
+        (user) => user.phoneNumber == phoneNumber,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// 保存用户到 Hive
+  Future<void> _saveUser(User user) async {
+    await _testUsersBox.put(user.id, user);
+    print('✅ [TestAuth] 用户已保存到 Hive: ${user.id}');
+  }
   
   @override
   Future<User?> get currentUser async {
@@ -38,16 +151,41 @@ class TestAuthRepository implements IAuthRepository {
   
   @override
   Stream<User?> get authStateChanges {
-    return _authStateController.stream;
+    // 优化：创建一个新的 Stream，先发送当前状态，再监听后续事件
+    return Stream<User?>.multi((controller) {
+      // 立即发送当前状态
+      print('🔍 [TestAuth] authStateChanges 被监听，当前用户: ${_currentUser?.id ?? "null"}');
+      controller.add(_currentUser);
+      
+      // 监听后续事件并转发
+      final subscription = _authStateController.stream.listen(
+        (user) {
+          print('🔍 [TestAuth] authStateChanges 收到新事件: ${user?.id ?? "null"}');
+          controller.add(user);
+        },
+        onError: (error) => controller.addError(error),
+      );
+      
+      // 清理资源
+      controller.onCancel = () {
+        subscription.cancel();
+      };
+    });
   }
   
   @override
   Future<User> signInWithEmail(String email, String password) async {
+    print('🔍 [TestAuth] signInWithEmail 开始');
+    print('🔍 [TestAuth] 邮箱: $email');
+    print('🔍 [TestAuth] 密码: $password');
+    
     // Fail Fast：参数验证
     if (email.isEmpty) {
+      print('❌ [TestAuth] 邮箱为空');
       throw ArgumentError('Email cannot be empty');
     }
     if (password.isEmpty) {
+      print('❌ [TestAuth] 密码为空');
       throw ArgumentError('Password cannot be empty');
     }
     
@@ -55,32 +193,60 @@ class TestAuthRepository implements IAuthRepository {
     await Future.delayed(const Duration(milliseconds: 500));
     
     // 检查用户是否存在
-    if (!_usersByEmail.containsKey(email)) {
+    print('🔍 [TestAuth] 检查用户是否存在...');
+    print('🔍 [TestAuth] 当前数据库中的用户数: ${_testUsersBox.length}');
+    final user = _getUserByEmail(email);
+    if (user == null) {
+      print('❌ [TestAuth] 该邮箱尚未注册');
+      // 清空当前用户
+      _currentUser = null;
+      _authStateController.add(null);
       throw Exception('该邮箱尚未注册');
     }
+    print('✅ [TestAuth] 用户存在: ${user.id}');
     
     // 检查密码（测试环境固定密码：123456）
+    print('🔍 [TestAuth] 检查密码...');
+    print('🔍 [TestAuth] 输入密码: "$password"');
+    print('🔍 [TestAuth] 期望密码: "123456"');
+    print('🔍 [TestAuth] 密码比较结果: ${password == '123456'}');
     if (password != '123456') {
+      print('❌ [TestAuth] 密码错误');
+      // 清空当前用户
+      _currentUser = null;
+      _authStateController.add(null);
       throw Exception('密码错误');
     }
+    print('✅ [TestAuth] 密码正确');
     
     // 登录成功
-    _currentUser = _usersByEmail[email];
+    _currentUser = user;
     _authStateController.add(_currentUser);
     
+    // 保存当前用户 ID 到 Hive
+    await _saveCurrentUserId(user.id);
+    
+    print('✅ [TestAuth] 登录成功');
     return _currentUser!;
   }
   
   @override
   Future<User> signUpWithEmail(String email, String password) async {
+    print('🔍 [TestAuth] signUpWithEmail 开始');
+    print('🔍 [TestAuth] 邮箱: $email');
+    print('🔍 [TestAuth] 密码: $password');
+    
     // Fail Fast：参数验证
     if (email.isEmpty) {
+      print('❌ [TestAuth] 邮箱为空');
       throw ArgumentError('Email cannot be empty');
     }
     if (password.isEmpty) {
+      print('❌ [TestAuth] 密码为空');
       throw ArgumentError('Password cannot be empty');
     }
     if (password.length < 6) {
+      print('❌ [TestAuth] 密码长度不足');
       throw ArgumentError('Password must be at least 6 characters');
     }
     
@@ -88,9 +254,13 @@ class TestAuthRepository implements IAuthRepository {
     await Future.delayed(const Duration(milliseconds: 500));
     
     // 检查邮箱是否已注册
-    if (_usersByEmail.containsKey(email)) {
+    print('🔍 [TestAuth] 检查邮箱是否已注册...');
+    print('🔍 [TestAuth] 当前数据库中的用户数: ${_testUsersBox.length}');
+    if (_getUserByEmail(email) != null) {
+      print('❌ [TestAuth] 该邮箱已被注册');
       throw Exception('该邮箱已被注册');
     }
+    print('✅ [TestAuth] 邮箱可用');
     
     // 创建新用户
     final user = User(
@@ -104,13 +274,20 @@ class TestAuthRepository implements IAuthRepository {
       updatedAt: DateTime.now(),
     );
     
-    // 保存到模拟数据库
-    _usersByEmail[email] = user;
+    print('🔍 [TestAuth] 创建用户: ${user.id}');
+    
+    // 保存到 Hive
+    await _saveUser(user);
+    print('🔍 [TestAuth] 数据库中的用户数: ${_testUsersBox.length}');
     
     // 自动登录
     _currentUser = user;
     _authStateController.add(_currentUser);
     
+    // 保存当前用户 ID 到 Hive
+    await _saveCurrentUserId(user.id);
+    
+    print('✅ [TestAuth] 注册成功并自动登录');
     return user;
   }
   
@@ -159,13 +336,17 @@ class TestAuthRepository implements IAuthRepository {
     }
     
     // 检查用户是否存在
-    if (!_usersByPhone.containsKey(phoneNumber)) {
+    final user = _getUserByPhone(phoneNumber);
+    if (user == null) {
       throw Exception('该手机号尚未注册');
     }
     
     // 登录成功
-    _currentUser = _usersByPhone[phoneNumber];
+    _currentUser = user;
     _authStateController.add(_currentUser);
+    
+    // 保存当前用户 ID 到 Hive
+    await _saveCurrentUserId(user.id);
     
     return _currentUser!;
   }
@@ -196,7 +377,7 @@ class TestAuthRepository implements IAuthRepository {
     }
     
     // 检查手机号是否已注册
-    if (_usersByPhone.containsKey(phoneNumber)) {
+    if (_getUserByPhone(phoneNumber) != null) {
       throw Exception('该手机号已被注册');
     }
     
@@ -212,23 +393,36 @@ class TestAuthRepository implements IAuthRepository {
       updatedAt: DateTime.now(),
     );
     
-    // 保存到模拟数据库
-    _usersByPhone[phoneNumber] = user;
+    // 保存到 Hive
+    await _saveUser(user);
     
     // 自动登录
     _currentUser = user;
     _authStateController.add(_currentUser);
+    
+    // 保存当前用户 ID 到 Hive
+    await _saveCurrentUserId(user.id);
     
     return user;
   }
   
   @override
   Future<void> signOut() async {
+    print('🔍 [TestAuth] signOut 开始');
+    
     // 模拟网络延迟
     await Future.delayed(const Duration(milliseconds: 300));
     
+    print('🔍 [TestAuth] 清空当前用户');
     _currentUser = null;
+    
+    // 清除保存的用户 ID
+    await _clearCurrentUserId();
+    
+    print('🔍 [TestAuth] 发送 null 事件到 authStateChanges');
     _authStateController.add(null);
+    
+    print('✅ [TestAuth] signOut 完成');
   }
   
   @override
@@ -242,7 +436,7 @@ class TestAuthRepository implements IAuthRepository {
     await Future.delayed(const Duration(milliseconds: 500));
     
     // 检查邮箱是否存在
-    if (!_usersByEmail.containsKey(email)) {
+    if (_getUserByEmail(email) == null) {
       throw Exception('该邮箱不存在');
     }
     

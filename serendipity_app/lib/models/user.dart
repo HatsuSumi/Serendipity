@@ -1,17 +1,42 @@
+import 'package:hive/hive.dart';
 import 'enums.dart';
 
+part 'user.g.dart';
+
 /// 用户
-class User {
+@HiveType(typeId: 4)
+class User extends HiveObject {
+  @HiveField(0)
   final String id;
+  
+  @HiveField(1)
   final String? email;
+  
+  @HiveField(2)
   final String? phoneNumber;
+  
+  @HiveField(3)
   final String? displayName;
+  
+  @HiveField(4)
   final String? avatarUrl;
+  
+  @HiveField(5)
   final AuthProvider authProvider;
+  
+  @HiveField(6)
   final bool isEmailVerified;
+  
+  @HiveField(7)
   final bool isPhoneVerified;
+  
+  @HiveField(8)
   final DateTime? lastLoginAt;
+  
+  @HiveField(9)
   final DateTime createdAt;
+  
+  @HiveField(10)
   final DateTime updatedAt;
 
   User({
@@ -76,29 +101,46 @@ class User {
   }
 
   /// 复制并修改部分字段
+  /// 
+  /// 对于可空字段，使用函数包装来区分"未传递"和"传递 null"：
+  /// - 不传参数：保持原值
+  /// - 传递函数返回 null：清空字段
+  /// - 传递函数返回新值：更新字段
+  /// 
+  /// 示例：
+  /// ```dart
+  /// // 清空邮箱
+  /// user.copyWith(email: () => null)
+  /// 
+  /// // 修改邮箱
+  /// user.copyWith(email: () => 'new@example.com')
+  /// 
+  /// // 保持邮箱不变
+  /// user.copyWith(displayName: 'New Name')
+  /// ```
   User copyWith({
     String? id,
-    String? email,
-    String? phoneNumber,
-    String? displayName,
-    String? avatarUrl,
+    String? Function()? email,
+    String? Function()? phoneNumber,
+    String? Function()? displayName,
+    String? Function()? avatarUrl,
     AuthProvider? authProvider,
     bool? isEmailVerified,
     bool? isPhoneVerified,
-    DateTime? lastLoginAt,
+    DateTime? Function()? lastLoginAt,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return User(
       id: id ?? this.id,
-      email: email ?? this.email,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      displayName: displayName ?? this.displayName,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
+      email: email != null ? email() : this.email,
+      phoneNumber: phoneNumber != null ? phoneNumber() : this.phoneNumber,
+      displayName: displayName != null ? displayName() : this.displayName,
+      avatarUrl: avatarUrl != null ? avatarUrl() : this.avatarUrl,
       authProvider: authProvider ?? this.authProvider,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
-      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+      lastLoginAt: lastLoginAt != null ? lastLoginAt() : this.lastLoginAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

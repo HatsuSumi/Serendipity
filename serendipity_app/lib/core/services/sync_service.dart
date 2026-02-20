@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/user.dart';
+import '../config/app_config.dart';
 import '../repositories/i_remote_data_repository.dart';
 import '../repositories/firebase_remote_data_repository.dart';
+import '../repositories/test_remote_data_repository.dart';
 import '../providers/records_provider.dart';
 import 'i_storage_service.dart';
 
@@ -11,7 +14,19 @@ import 'i_storage_service.dart';
 /// 
 /// 依赖抽象接口 IRemoteDataRepository，不依赖具体实现。
 /// 遵循依赖倒置原则（DIP）：切换到自建服务器时只需修改这一行。
+/// 
+/// 环境选择：
+/// - 开发模式 + 启用测试模式：使用 TestRemoteDataRepository
+/// - 其他情况：使用 FirebaseRemoteDataRepository
 final remoteDataRepositoryProvider = Provider<IRemoteDataRepository>((ref) {
+  // 开发环境且启用测试模式时，使用测试仓库
+  if (kDebugMode && AppConfig.enableTestMode) {
+    print('🔍 [SyncService] 使用 TestRemoteDataRepository（测试模式）');
+    return TestRemoteDataRepository();
+  }
+  
+  // 生产环境或未启用测试模式时，使用 Firebase
+  print('🔍 [SyncService] 使用 FirebaseRemoteDataRepository（生产模式）');
   return FirebaseRemoteDataRepository();
 });
 

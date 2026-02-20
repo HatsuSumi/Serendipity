@@ -19,15 +19,16 @@ final recordRepositoryProvider = Provider<RecordRepository>((ref) {
 /// 记录列表状态管理
 class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   late RecordRepository _repository;
-  late SyncService _syncService;
 
   @override
   Future<List<EncounterRecord>> build() async {
     _repository = ref.read(recordRepositoryProvider);
-    _syncService = ref.read(syncServiceProvider);
     // 初始化时加载所有记录
     return _repository.getRecordsSortedByTime();
   }
+  
+  /// 获取同步服务（延迟初始化，避免测试模式下创建 Firebase 实例）
+  SyncService get _syncService => ref.read(syncServiceProvider);
 
   /// 刷新记录列表
   Future<void> refresh() async {

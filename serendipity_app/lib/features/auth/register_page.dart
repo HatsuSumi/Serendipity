@@ -45,6 +45,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _confirmPasswordController.dispose();
     _phoneController.dispose();
     _verificationCodeController.dispose();
+    // 清空验证 ID，防止内存泄漏
+    _verificationId = null;
     super.dispose();
   }
 
@@ -92,6 +94,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 setState(() {
                   _isEmailRegister = true;
                   _isCodeSent = false;
+                  _verificationId = null; // 清空验证 ID
+                  _verificationCodeController.clear(); // 清空验证码输入
                 });
               }
             },
@@ -128,6 +132,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 setState(() {
                   _isEmailRegister = false;
                   _isCodeSent = false;
+                  _verificationId = null; // 清空验证 ID
+                  _phoneController.clear(); // 清空手机号输入
+                  _verificationCodeController.clear(); // 清空验证码输入
                 });
               }
             },
@@ -277,6 +284,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _passwordController.text,
       );
       
+      // 注册成功，跳转到主页并显示消息
       if (mounted) {
         NavigationHelper.navigateToMainPageWithMessage(
           context,
@@ -356,6 +364,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _verificationId!,
       );
       
+      // 注册成功，跳转到主页并显示消息
       if (mounted) {
         NavigationHelper.navigateToMainPageWithMessage(
           context,
