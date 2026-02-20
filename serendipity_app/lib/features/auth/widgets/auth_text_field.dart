@@ -334,8 +334,11 @@ class _AuthTextFieldState extends State<AuthTextField> {
   /// 
   /// Fail Fast：格式不正确立即返回错误信息
   String? _validateEmail(String value) {
+    // 先 trim 去除首尾空格
+    final trimmedValue = value.trim();
+    
     // 基础格式验证：必须包含 @ 和至少一个点
-    if (!value.contains('@') || !value.contains('.')) {
+    if (!trimmedValue.contains('@') || !trimmedValue.contains('.')) {
       return '邮箱格式不正确';
     }
     
@@ -344,17 +347,17 @@ class _AuthTextFieldState extends State<AuthTextField> {
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     );
-    if (!emailRegex.hasMatch(value)) {
+    if (!emailRegex.hasMatch(trimmedValue)) {
       return '邮箱格式不正确';
     }
     
     // 额外验证：不允许连续的点
-    if (value.contains('..')) {
+    if (trimmedValue.contains('..')) {
       return '邮箱格式不正确';
     }
     
     // 额外验证：用户名部分不允许以点开头或结尾
-    final parts = value.split('@');
+    final parts = trimmedValue.split('@');
     if (parts[0].startsWith('.') || parts[0].endsWith('.')) {
       return '邮箱格式不正确';
     }
