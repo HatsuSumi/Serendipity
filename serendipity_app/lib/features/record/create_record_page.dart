@@ -178,7 +178,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         description: description.isEmpty ? null : description,
         tags: _tags,
         emotion: _selectedEmotion,
-        status: _selectedStatus,
+        status: _selectedStatus!,  // 使用 ! 断言非空（已在上面验证）
         storyLineId: _selectedStoryLineId, // 使用用户选择的故事线
         conversationStarter: conversationStarter?.isEmpty ?? true ? null : conversationStarter,
         backgroundMusic: backgroundMusic.isEmpty ? null : backgroundMusic,
