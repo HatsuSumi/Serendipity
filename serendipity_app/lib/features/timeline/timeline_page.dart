@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
@@ -351,33 +352,43 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                     ),
                   ],
                   
-                  // 底部时间信息
+                  // 底部时间信息和故事线信息
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Text(
-                        '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 11,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      // 左侧：时间信息
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Text(
+                              '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: 11,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
                             ),
+                            if (record.createdAt != record.updatedAt) ...[
+                              Text(
+                                ' | ',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontSize: 11,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                              Text(
+                                '更新：${DateTimeHelper.formatRelativeTime(record.updatedAt)}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontSize: 11,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                      if (record.createdAt != record.updatedAt) ...[
-                        Text(
-                          ' | ',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontSize: 11,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                        Text(
-                          '更新：${DateTimeHelper.formatRelativeTime(record.updatedAt)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontSize: 11,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
+                      // 右侧：故事线信息
+                      if (record.storyLineId != null)
+                        _buildStoryLineInfo(context, ref, record.storyLineId!),
                     ],
                   ),
                 ],
@@ -484,5 +495,44 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         }
       }
     }
+  }
+
+  /// 构建故事线信息组件
+  Widget _buildStoryLineInfo(BuildContext context, WidgetRef ref, String storyLineId) {
+    final storyLinesAsync = ref.watch(storyLinesProvider);
+    
+    return storyLinesAsync.when(
+      data: (storyLines) {
+        try {
+          final storyLine = storyLines.firstWhere((sl) => sl.id == storyLineId);
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_stories,
+                size: 12,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                storyLine.name,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          );
+        } catch (e) {
+          // 故事线不存在或已删除
+          return const SizedBox.shrink();
+        }
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
   }
 }
