@@ -299,15 +299,14 @@ class SettingsPage extends ConsumerWidget {
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
+    bool currentPasswordVisible = false;
+    bool newPasswordVisible = false;
+    bool confirmPasswordVisible = false;
     
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
-          bool currentPasswordVisible = false;
-          bool newPasswordVisible = false;
-          bool confirmPasswordVisible = false;
-          
           return AlertDialog(
             title: const Text('修改密码'),
             content: Column(
@@ -430,13 +429,12 @@ class SettingsPage extends ConsumerWidget {
   void _showUpdateEmailDialog(BuildContext context, WidgetRef ref) {
     final newEmailController = TextEditingController();
     final passwordController = TextEditingController();
+    bool passwordVisible = false;
     
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
-          bool passwordVisible = false;
-          
           return AlertDialog(
             title: const Text('更换邮箱'),
             content: Column(
