@@ -6,6 +6,7 @@
 /// - LoginPage
 /// - RegisterPage
 /// - ForgotPasswordPage
+/// - AsyncActionHelper
 /// 
 /// 设计原则：
 /// - DRY: 避免重复的错误处理代码
@@ -21,6 +22,8 @@ class AuthErrorHelper {
   /// - RegisterPage._handlePhoneRegister()
   /// - RegisterPage._sendVerificationCode()
   /// - ForgotPasswordPage._handleSendResetEmail()
+  /// - AsyncActionHelper.execute()
+  /// - AsyncActionHelper.executeWithResult()
   /// 
   /// 参数：
   /// - [error]: 捕获的异常对象
@@ -45,23 +48,6 @@ class AuthErrorHelper {
     }
     
     return message;
-  }
-  
-  /// 格式化手机号（拼接国家代码 + 手机号）
-  /// 
-  /// 调用者：
-  /// - LoginPage._sendVerificationCode()
-  /// - LoginPage._handlePhoneLogin()
-  /// - RegisterPage._sendVerificationCode()
-  /// - RegisterPage._handlePhoneRegister()
-  /// 
-  /// 参数：
-  /// - [countryCode]: 国家代码（如 +86）
-  /// - [phoneNumber]: 手机号（不含国家代码）
-  /// 
-  /// 返回：完整手机号（如 +8613800138000）
-  static String formatPhoneNumberWithCountryCode(String countryCode, String phoneNumber) {
-    return '$countryCode${phoneNumber.trim()}';
   }
 }
 

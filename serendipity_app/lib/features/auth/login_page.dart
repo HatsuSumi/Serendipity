@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
+import '../../core/utils/phone_helper.dart';
 import '../../core/providers/auth_provider.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
@@ -348,7 +349,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     
     try {
       // 拼接完整手机号（国家代码 + 手机号）
-      final fullPhoneNumber = AuthErrorHelper.formatPhoneNumberWithCountryCode(
+      final fullPhoneNumber = PhoneHelper.formatWithCountryCode(
         _countryCode,
         _phoneController.text,
       );
@@ -393,7 +394,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     
     try {
       // 拼接完整手机号（国家代码 + 手机号）
-      final fullPhoneNumber = AuthErrorHelper.formatPhoneNumberWithCountryCode(
+      final fullPhoneNumber = PhoneHelper.formatWithCountryCode(
         _countryCode,
         _phoneController.text,
       );
