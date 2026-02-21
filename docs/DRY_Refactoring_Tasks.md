@@ -10,15 +10,17 @@
 
 | 任务ID | 任务名称 | 优先级 | 状态 | 预计行数减少 |
 |--------|---------|--------|------|-------------|
-| DRY-1 | 日期时间格式化工具类 | P0 | ⏳ 待开始 | ~60 行 |
-| DRY-2 | 地点文本获取工具类 | P0 | ⏳ 待开始 | ~36 行 |
+| DRY-1 | 日期时间格式化工具类 | P0 | ✅ 已完成 | ~60 行 |
+| DRY-2 | 地点文本获取工具类 | P0 | ✅ 已完成 | ~36 行 |
 | DRY-3 | 空状态UI通用组件 | P1 | ⏳ 待开始 | ~100 行 |
-| DRY-4 | 删除确认对话框 | P0 | ⏳ 待开始 | ~120 行 |
+| DRY-4 | 删除确认对话框 | P0 | ✅ 已完成 | ~120 行 |
 | DRY-5 | 重命名对话框 | P1 | ⏳ 待开始 | ~70 行 |
-| DRY-6 | 页面导航工具方法 | P0 | ⏳ 待开始 | ~150 行 |
+| DRY-6 | 页面导航工具方法 | P2 | ✅ 已完成 | ~150 行 |
 | DRY-7 | 排序逻辑工具类 | P2 | ⏳ 待开始 | ~60 行 |
 
-**总计**: 预计减少约 **596 行**重复代码
+**总计**: 预计减少约 **596 行**重复代码  
+**已完成**: 减少约 **366 行**重复代码 (61.4%)  
+**进度**: 4/7 任务完成 (57.1%)
 
 ---
 
@@ -134,10 +136,10 @@
 页面导航代码在多个文件中重复，包括动画类型选择和 PageRouteBuilder 构建。
 
 **重复位置**:
-- [ ] `lib/features/story_line/story_lines_page.dart:213`
-- [ ] `lib/features/story_line/story_line_detail_page.dart:398, 520`
-- [ ] `lib/features/timeline/timeline_page.dart:349, 388`
-- [ ] `lib/features/record/record_detail_page.dart:68, 113`
+- [x] `lib/features/story_line/story_lines_page.dart:213`
+- [x] `lib/features/story_line/story_line_detail_page.dart:398, 520`
+- [x] `lib/features/timeline/timeline_page.dart:349, 388`
+- [x] `lib/features/record/record_detail_page.dart:68, 113`
 
 **解决方案**:
 1. 在 `lib/core/utils/navigation_helper.dart` 中添加 `pushWithTransition()` 方法
@@ -145,19 +147,21 @@
 3. 替换所有使用位置
 
 **修改文件**:
-- [ ] 修改: `lib/core/utils/navigation_helper.dart`
-- [ ] 修改: `lib/features/story_line/story_lines_page.dart`
-- [ ] 修改: `lib/features/story_line/story_line_detail_page.dart`
-- [ ] 修改: `lib/features/timeline/timeline_page.dart`
-- [ ] 修改: `lib/features/record/record_detail_page.dart`
+- [x] 修改: `lib/core/utils/navigation_helper.dart`
+- [x] 修改: `lib/features/story_line/story_lines_page.dart`
+- [x] 修改: `lib/features/story_line/story_line_detail_page.dart`
+- [x] 修改: `lib/features/timeline/timeline_page.dart`
+- [x] 修改: `lib/features/record/record_detail_page.dart`
 
 **测试要点**:
-- [ ] 验证页面跳转动画正常
-- [ ] 验证随机动画模式工作正常
-- [ ] 验证无动画模式工作正常
-- [ ] 验证返回值正确传递
+- [x] 验证页面跳转动画正常
+- [x] 验证随机动画模式工作正常
+- [x] 验证无动画模式工作正常
+- [x] 验证返回值正确传递
 
-**状态**: ⏳ 待开始
+**代码减少**: 约 150 行
+
+**状态**: ✅ 已完成 (2026-02-21)
 
 ---
 

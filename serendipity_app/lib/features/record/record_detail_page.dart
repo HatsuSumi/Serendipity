@@ -6,6 +6,7 @@ import '../../models/enums.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/smart_navigator.dart';
+import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
@@ -67,33 +68,10 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
   /// 导航到编辑页面
   void _navigateToEditPage(BuildContext context, WidgetRef ref) {
-    // 获取用户设置的页面切换动画类型
-    var transitionType = ref.read(pageTransitionProvider);
-    
-    // 如果是随机动画，获取一个具体的动画类型
-    if (transitionType == PageTransitionType.random) {
-      transitionType = PageTransitionBuilder.getRandomType();
-    }
-    
-    // 异步导航
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return CreateRecordPage(recordToEdit: _currentRecord);
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: transitionType == PageTransitionType.none
-            ? Duration.zero
-            : const Duration(milliseconds: 300),
-      ),
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      CreateRecordPage(recordToEdit: _currentRecord),
     ).then((result) {
       // 如果返回了更新后的记录，让 Provider 失效，触发自动重新加载
       if (mounted && result != null && result is EncounterRecord) {
@@ -138,6 +116,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       targetPage: StoryLineDetailPage(storyLineId: storyLine.id),
       currentPageType: RecordDetailPage,
       targetPageType: StoryLineDetailPage,
+      transitionDuration: transitionType == PageTransitionType.none
+          ? Duration.zero
+          : const Duration(milliseconds: 300),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return PageTransitionBuilder.buildTransition(
           transitionType,

@@ -11,6 +11,7 @@ import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/smart_navigator.dart';
+import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../models/enums.dart';
@@ -400,29 +401,10 @@ class StoryLineDetailPage extends ConsumerWidget {
 
   /// 导航到编辑记录页面
   void _navigateToEditRecord(BuildContext context, WidgetRef ref, EncounterRecord record) {
-    var transitionType = ref.read(pageTransitionProvider);
-    if (transitionType == PageTransitionType.random) {
-      transitionType = PageTransitionBuilder.getRandomType();
-    }
-
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return CreateRecordPage(recordToEdit: record);
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: transitionType == PageTransitionType.none
-            ? Duration.zero
-            : const Duration(milliseconds: 300),
-      ),
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      CreateRecordPage(recordToEdit: record),
     );
   }
 
@@ -539,6 +521,7 @@ class StoryLineDetailPage extends ConsumerWidget {
 
   /// 导航到记录详情
   void _navigateToRecordDetail(BuildContext context, WidgetRef ref, EncounterRecord record) {
+    // 获取动画类型
     var transitionType = ref.read(pageTransitionProvider);
     if (transitionType == PageTransitionType.random) {
       transitionType = PageTransitionBuilder.getRandomType();
@@ -550,6 +533,9 @@ class StoryLineDetailPage extends ConsumerWidget {
       targetPage: RecordDetailPage(record: record),
       currentPageType: StoryLineDetailPage,
       targetPageType: RecordDetailPage,
+      transitionDuration: transitionType == PageTransitionType.none
+          ? Duration.zero
+          : const Duration(milliseconds: 300),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return PageTransitionBuilder.buildTransition(
           transitionType,
@@ -564,31 +550,10 @@ class StoryLineDetailPage extends ConsumerWidget {
 
   /// 导航到创建记录页面
   void _navigateToCreateRecord(BuildContext context, WidgetRef ref, StoryLine storyLine) {
-    var transitionType = ref.read(pageTransitionProvider);
-    if (transitionType == PageTransitionType.random) {
-      transitionType = PageTransitionBuilder.getRandomType();
-    }
-
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return CreateRecordPage(
-            initialStoryLineId: storyLine.id,
-          );
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: transitionType == PageTransitionType.none
-            ? Duration.zero
-            : const Duration(milliseconds: 300),
-      ),
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      CreateRecordPage(initialStoryLineId: storyLine.id),
     );
   }
 }

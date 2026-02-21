@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/records_provider.dart';
-import '../../core/providers/page_transition_provider.dart';
-import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
+import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
-import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import '../story_line/link_to_story_line_dialog.dart';
@@ -450,26 +448,10 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 导航到编辑记录页面
   void _navigateToEditRecord(BuildContext context, WidgetRef ref, EncounterRecord record) async {
-    var transitionType = ref.read(pageTransitionProvider);
-    if (transitionType == PageTransitionType.random) {
-      transitionType = PageTransitionBuilder.getRandomType();
-    }
-
-    final result = await Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return CreateRecordPage(recordToEdit: record);
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-      ),
+    final result = await NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      CreateRecordPage(recordToEdit: record),
     );
 
     // 如果编辑成功，刷新列表
@@ -480,26 +462,10 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 导航到记录详情页面（统一方法）
   void _navigateToRecordDetail(BuildContext context, WidgetRef ref, EncounterRecord record) {
-    var transitionType = ref.read(pageTransitionProvider);
-    if (transitionType == PageTransitionType.random) {
-      transitionType = PageTransitionBuilder.getRandomType();
-    }
-
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return RecordDetailPage(record: record);
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-      ),
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      RecordDetailPage(record: record),
     );
   }
 
