@@ -46,7 +46,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   
   // 必填字段
   DateTime _selectedTime = DateTime.now();
-  EncounterStatus _selectedStatus = EncounterStatus.missed;
+  EncounterStatus? _selectedStatus;
   
   // 可选字段
   PlaceType? _selectedPlaceType;
@@ -128,6 +128,12 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   /// 保存记录
   Future<void> _saveRecord() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Fail Fast: 验证状态是否已选择
+    if (_selectedStatus == null) {
+      MessageHelper.showWarning(context, '请选择状态');
       return;
     }
 
@@ -731,6 +737,15 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(width: 4),
+            const Text(
+              '*',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(width: 8),
             // 帮助图标
             IconButton(
@@ -748,6 +763,37 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           ],
         ),
         const SizedBox(height: 8),
+        
+        // 如果未选择状态，显示提示
+        if (_selectedStatus == null)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.orange.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '请选择一个状态',
+                    style: TextStyle(
+                      color: Colors.orange.shade700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
         Wrap(
           spacing: 8,
           runSpacing: 8,
