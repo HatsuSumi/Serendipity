@@ -471,6 +471,142 @@ class TestAuthRepository implements IAuthRepository {
     // 测试环境：直接成功（不发送真实邮件）
   }
   
+  @override
+  Future<void> updatePassword(String currentPassword, String newPassword) async {
+    // Fail Fast：参数验证
+    if (currentPassword.isEmpty) {
+      throw ArgumentError('当前密码不能为空');
+    }
+    ValidationHelper.validatePasswordForRepository(newPassword);
+    
+    // Fail Fast：用户未登录
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    // Fail Fast：只有邮箱登录的用户才能修改密码
+    if (_currentUser!.email == null) {
+      throw StateError('只有邮箱登录的用户才能修改密码');
+    }
+    
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // 验证当前密码
+    final savedPassword = _getPassword(_currentUser!.id);
+    if (savedPassword == null || savedPassword != currentPassword) {
+      throw Exception('当前密码错误');
+    }
+    
+    // 更新密码
+    await _savePassword(_currentUser!.id, newPassword);
+  }
+  
+  @override
+  Future<void> updateEmail(String newEmail, String password) async {
+    // Fail Fast：参数验证
+    ValidationHelper.validateEmailForRepository(newEmail);
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+    
+    // Fail Fast：用户未登录
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    // Fail Fast：只有邮箱登录的用户才能更换邮箱
+    if (_currentUser!.email == null) {
+      throw StateError('只有邮箱登录的用户才能更换邮箱');
+    }
+    
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // 验证密码
+    final savedPassword = _getPassword(_currentUser!.id);
+    if (savedPassword == null || savedPassword != password) {
+      throw Exception('密码错误');
+    }
+    
+    // 检查新邮箱是否已被使用
+    if (_getUserByEmail(newEmail) != null) {
+      throw Exception('该邮箱已被使用');
+    }
+    
+    // 更新邮箱
+    final updatedUser = User(
+      id: _currentUser!.id,
+      email: newEmail,
+      phoneNumber: _currentUser!.phoneNumber,
+      displayName: _currentUser!.displayName,
+      avatarUrl: _currentUser!.avatarUrl,
+      authProvider: _currentUser!.authProvider,
+      isEmailVerified: true,
+      isPhoneVerified: _currentUser!.isPhoneVerified,
+      lastLoginAt: _currentUser!.lastLoginAt,
+      createdAt: _currentUser!.createdAt,
+      updatedAt: DateTime.now(),
+    );
+    
+    await _saveUser(updatedUser);
+    _currentUser = updatedUser;
+    _authStateController.add(_currentUser);
+  }
+  
+  @override
+  Future<void> updatePhoneNumber(
+    String newPhoneNumber,
+    String verificationCode,
+    String verificationId,
+  ) async {
+    // Fail Fast：参数验证
+    ValidationHelper.validatePhoneNumberForRepository(newPhoneNumber);
+    if (verificationCode.isEmpty) {
+      throw ArgumentError('验证码不能为空');
+    }
+    if (verificationId.isEmpty) {
+      throw ArgumentError('验证 ID 不能为空');
+    }
+    
+    // Fail Fast：用户未登录
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // 验证验证码（测试环境固定验证码：123456）
+    if (verificationCode != '123456') {
+      throw Exception('验证码错误');
+    }
+    
+    // 检查新手机号是否已被使用
+    if (_getUserByPhone(newPhoneNumber) != null) {
+      throw Exception('该手机号已被使用');
+    }
+    
+    // 更新手机号
+    final updatedUser = User(
+      id: _currentUser!.id,
+      email: _currentUser!.email,
+      phoneNumber: newPhoneNumber,
+      displayName: _currentUser!.displayName,
+      avatarUrl: _currentUser!.avatarUrl,
+      authProvider: _currentUser!.authProvider,
+      isEmailVerified: _currentUser!.isEmailVerified,
+      isPhoneVerified: true,
+      lastLoginAt: _currentUser!.lastLoginAt,
+      createdAt: _currentUser!.createdAt,
+      updatedAt: DateTime.now(),
+    );
+    
+    await _saveUser(updatedUser);
+    _currentUser = updatedUser;
+    _authStateController.add(_currentUser);
+  }
+  
   /// 释放资源
   void dispose() {
     _authStateController.close();

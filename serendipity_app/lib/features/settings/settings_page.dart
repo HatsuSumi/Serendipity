@@ -5,6 +5,7 @@ import '../../core/providers/dialog_animation_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
+import '../../core/utils/async_action_helper.dart';
 import '../../models/enums.dart';
 import '../auth/welcome_page.dart';
 
@@ -184,6 +185,55 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
           ),
+          // 修改密码（仅邮箱登录用户）
+          authState.when(
+            data: (user) {
+              if (user?.email != null) {
+                return ListTile(
+                  leading: const Icon(Icons.lock_outline),
+                  title: const Text('修改密码'),
+                  onTap: () => _showUpdatePasswordDialog(context, ref),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          // 更换邮箱（仅邮箱登录用户）
+          authState.when(
+            data: (user) {
+              if (user?.email != null) {
+                return ListTile(
+                  leading: const Icon(Icons.email_outlined),
+                  title: const Text('更换邮箱'),
+                  subtitle: Text(user!.email!),
+                  onTap: () => _showUpdateEmailDialog(context, ref),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          // 更换手机号（所有用户）
+          authState.when(
+            data: (user) {
+              if (user != null) {
+                return ListTile(
+                  leading: const Icon(Icons.phone_outlined),
+                  title: const Text('更换手机号'),
+                  subtitle: user.phoneNumber != null 
+                      ? Text(user.phoneNumber!) 
+                      : const Text('未绑定'),
+                  onTap: () => _showUpdatePhoneDialog(context, ref),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text(
@@ -240,6 +290,305 @@ class SettingsPage extends ConsumerWidget {
             child: const Text('退出'),
           ),
         ],
+      ),
+    );
+  }
+  
+  /// 显示修改密码对话框
+  void _showUpdatePasswordDialog(BuildContext context, WidgetRef ref) {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('修改密码'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: currentPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: '当前密码',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: newPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: '新密码',
+                border: OutlineInputBorder(),
+                helperText: '至少6位',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: confirmPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: '确认新密码',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final currentPassword = currentPasswordController.text.trim();
+              final newPassword = newPasswordController.text.trim();
+              final confirmPassword = confirmPasswordController.text.trim();
+              
+              // Fail Fast：验证输入
+              if (currentPassword.isEmpty) {
+                MessageHelper.showError(context, '请输入当前密码');
+                return;
+              }
+              if (newPassword.isEmpty) {
+                MessageHelper.showError(context, '请输入新密码');
+                return;
+              }
+              if (newPassword.length < 6) {
+                MessageHelper.showError(context, '新密码至少需要6位');
+                return;
+              }
+              if (newPassword != confirmPassword) {
+                MessageHelper.showError(context, '两次输入的新密码不一致');
+                return;
+              }
+              if (currentPassword == newPassword) {
+                MessageHelper.showError(context, '新密码不能与当前密码相同');
+                return;
+              }
+              
+              Navigator.of(context).pop();
+              
+              await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(authProvider.notifier).updatePassword(
+                  currentPassword,
+                  newPassword,
+                ),
+                successMessage: '密码修改成功',
+                errorMessagePrefix: '修改密码失败',
+              );
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 显示更换邮箱对话框
+  void _showUpdateEmailDialog(BuildContext context, WidgetRef ref) {
+    final newEmailController = TextEditingController();
+    final passwordController = TextEditingController();
+    
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('更换邮箱'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: newEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: '新邮箱',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: '当前密码',
+                border: OutlineInputBorder(),
+                helperText: '需要验证身份',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newEmail = newEmailController.text.trim();
+              final password = passwordController.text.trim();
+              
+              // Fail Fast：验证输入
+              if (newEmail.isEmpty) {
+                MessageHelper.showError(context, '请输入新邮箱');
+                return;
+              }
+              if (password.isEmpty) {
+                MessageHelper.showError(context, '请输入当前密码');
+                return;
+              }
+              
+              Navigator.of(context).pop();
+              
+              await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(authProvider.notifier).updateEmail(
+                  newEmail,
+                  password,
+                ),
+                successMessage: '邮箱更换成功',
+                errorMessagePrefix: '更换邮箱失败',
+              );
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 显示更换手机号对话框
+  void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref) {
+    final countryCodeController = TextEditingController(text: '+86');
+    final phoneController = TextEditingController();
+    final codeController = TextEditingController();
+    String? verificationId;
+    
+    DialogHelper.show(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('更换手机号'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  SizedBox(
+                    width: 80,
+                    child: TextField(
+                      controller: countryCodeController,
+                      decoration: const InputDecoration(
+                        labelText: '区号',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: '新手机号',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: codeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: '验证码',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final countryCode = countryCodeController.text.trim();
+                      final phone = phoneController.text.trim();
+                      
+                      // Fail Fast：验证输入
+                      if (phone.isEmpty) {
+                        MessageHelper.showError(context, '请输入手机号');
+                        return;
+                      }
+                      
+                      final fullPhone = '$countryCode$phone';
+                      
+                      final result = await AsyncActionHelper.executeWithResult<String>(
+                        context,
+                        action: () => ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhone),
+                        errorMessagePrefix: '发送验证码失败',
+                      );
+                      
+                      if (result != null) {
+                        verificationId = result;
+                        if (context.mounted) {
+                          MessageHelper.showSuccess(context, '验证码已发送');
+                        }
+                      }
+                    },
+                    child: const Text('发送验证码'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final countryCode = countryCodeController.text.trim();
+                final phone = phoneController.text.trim();
+                final code = codeController.text.trim();
+                
+                // Fail Fast：验证输入
+                if (phone.isEmpty) {
+                  MessageHelper.showError(context, '请输入手机号');
+                  return;
+                }
+                if (code.isEmpty) {
+                  MessageHelper.showError(context, '请输入验证码');
+                  return;
+                }
+                if (verificationId == null) {
+                  MessageHelper.showError(context, '请先发送验证码');
+                  return;
+                }
+                
+                final fullPhone = '$countryCode$phone';
+                
+                Navigator.of(context).pop();
+                
+                await AsyncActionHelper.execute(
+                  context,
+                  action: () => ref.read(authProvider.notifier).updatePhoneNumber(
+                    fullPhone,
+                    code,
+                    verificationId!,
+                  ),
+                  successMessage: '手机号更换成功',
+                  errorMessagePrefix: '更换手机号失败',
+                );
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        ),
       ),
     );
   }

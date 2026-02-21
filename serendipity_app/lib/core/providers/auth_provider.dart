@@ -255,6 +255,91 @@ class AuthNotifier extends StreamNotifier<User?> {
     
     await _repository.resetPassword(email);
   }
+  
+  /// 修改密码
+  /// 
+  /// 调用者：SettingsPage（账号管理）
+  /// 
+  /// Fail Fast：
+  /// - 当前密码为空立即抛异常
+  /// - 新密码格式错误立即抛异常
+  /// - 当前密码错误立即抛异常
+  /// - 用户未登录立即抛异常
+  Future<void> updatePassword(String currentPassword, String newPassword) async {
+    // Fail Fast：参数验证
+    if (currentPassword.isEmpty) {
+      throw ArgumentError('当前密码不能为空');
+    }
+    if (newPassword.isEmpty) {
+      throw ArgumentError('新密码不能为空');
+    }
+    
+    await _repository.updatePassword(currentPassword, newPassword);
+  }
+  
+  /// 更换邮箱
+  /// 
+  /// 调用者：SettingsPage（账号管理）
+  /// 
+  /// Fail Fast：
+  /// - 新邮箱格式错误立即抛异常
+  /// - 密码为空立即抛异常
+  /// - 密码错误立即抛异常
+  /// - 邮箱已被使用立即抛异常
+  /// - 用户未登录立即抛异常
+  Future<void> updateEmail(String newEmail, String password) async {
+    // Fail Fast：参数验证
+    if (newEmail.isEmpty) {
+      throw ArgumentError('新邮箱不能为空');
+    }
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+    
+    await _repository.updateEmail(newEmail, password);
+    
+    // 更新成功后刷新用户状态
+    final user = await _repository.currentUser;
+    state = AsyncValue.data(user);
+  }
+  
+  /// 更换手机号
+  /// 
+  /// 调用者：SettingsPage（账号管理）
+  /// 
+  /// Fail Fast：
+  /// - 新手机号格式错误立即抛异常
+  /// - 验证码为空立即抛异常
+  /// - 验证 ID 为空立即抛异常
+  /// - 验证码错误立即抛异常
+  /// - 手机号已被使用立即抛异常
+  /// - 用户未登录立即抛异常
+  Future<void> updatePhoneNumber(
+    String newPhoneNumber,
+    String verificationCode,
+    String verificationId,
+  ) async {
+    // Fail Fast：参数验证
+    if (newPhoneNumber.isEmpty) {
+      throw ArgumentError('新手机号不能为空');
+    }
+    if (verificationCode.isEmpty) {
+      throw ArgumentError('验证码不能为空');
+    }
+    if (verificationId.isEmpty) {
+      throw ArgumentError('验证 ID 不能为空');
+    }
+    
+    await _repository.updatePhoneNumber(
+      newPhoneNumber,
+      verificationCode,
+      verificationId,
+    );
+    
+    // 更新成功后刷新用户状态
+    final user = await _repository.currentUser;
+    state = AsyncValue.data(user);
+  }
 }
 
 /// 用户认证状态 Provider

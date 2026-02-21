@@ -199,6 +199,109 @@ class FirebaseAuthRepository implements IAuthRepository {
     }
   }
   
+  @override
+  Future<void> updatePassword(String currentPassword, String newPassword) async {
+    // Fail Fast：参数验证
+    if (currentPassword.isEmpty) {
+      throw ArgumentError('当前密码不能为空');
+    }
+    _validatePassword(newPassword);
+    
+    // Fail Fast：用户未登录
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('用户未登录');
+    }
+    
+    // Fail Fast：只有邮箱登录的用户才能修改密码
+    if (user.email == null) {
+      throw StateError('只有邮箱登录的用户才能修改密码');
+    }
+    
+    try {
+      // 重新认证（确保是本人操作）
+      final credential = firebase_auth.EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+      
+      // 更新密码
+      await user.updatePassword(newPassword);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw _mapAuthErrorCode(e.code, e.message);
+    }
+  }
+  
+  @override
+  Future<void> updateEmail(String newEmail, String password) async {
+    // Fail Fast：参数验证
+    _validateEmail(newEmail);
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+    
+    // Fail Fast：用户未登录
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('用户未登录');
+    }
+    
+    // Fail Fast：只有邮箱登录的用户才能更换邮箱
+    if (user.email == null) {
+      throw StateError('只有邮箱登录的用户才能更换邮箱');
+    }
+    
+    try {
+      // 重新认证（确保是本人操作）
+      final credential = firebase_auth.EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+      
+      // 更新邮箱
+      await user.verifyBeforeUpdateEmail(newEmail);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw _mapAuthErrorCode(e.code, e.message);
+    }
+  }
+  
+  @override
+  Future<void> updatePhoneNumber(
+    String newPhoneNumber,
+    String verificationCode,
+    String verificationId,
+  ) async {
+    // Fail Fast：参数验证
+    _validatePhoneNumber(newPhoneNumber);
+    if (verificationCode.isEmpty) {
+      throw ArgumentError('验证码不能为空');
+    }
+    if (verificationId.isEmpty) {
+      throw ArgumentError('验证 ID 不能为空');
+    }
+    
+    // Fail Fast：用户未登录
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('用户未登录');
+    }
+    
+    try {
+      // 创建手机号凭证
+      final credential = firebase_auth.PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: verificationCode,
+      );
+      
+      // 更新手机号
+      await user.updatePhoneNumber(credential);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw _mapAuthErrorCode(e.code, e.message);
+    }
+  }
+  
   // ==================== 私有辅助方法 ====================
   
   /// 验证邮箱格式

@@ -154,5 +154,64 @@ abstract class IAuthRepository {
   /// - email 为空或格式不正确：抛出 ArgumentError
   /// - 邮箱不存在：抛出具体的认证异常（由实现类定义）
   Future<void> resetPassword(String email);
+  
+  /// 修改密码
+  /// 
+  /// 参数：
+  /// - [currentPassword]：当前密码
+  /// - [newPassword]：新密码
+  /// 
+  /// 调用者：
+  /// - AuthProvider.updatePassword()
+  /// - SettingsPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - currentPassword 为空：抛出 ArgumentError
+  /// - newPassword 为空或长度小于 6：抛出 ArgumentError
+  /// - 当前密码错误：抛出具体的认证异常（由实现类定义）
+  /// - 用户未登录：抛出 StateError
+  Future<void> updatePassword(String currentPassword, String newPassword);
+  
+  /// 更换邮箱
+  /// 
+  /// 参数：
+  /// - [newEmail]：新邮箱
+  /// - [password]：当前密码（用于重新认证）
+  /// 
+  /// 调用者：
+  /// - AuthProvider.updateEmail()
+  /// - SettingsPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - newEmail 为空或格式不正确：抛出 ArgumentError
+  /// - password 为空：抛出 ArgumentError
+  /// - 密码错误：抛出具体的认证异常（由实现类定义）
+  /// - 邮箱已被使用：抛出具体的认证异常（由实现类定义）
+  /// - 用户未登录：抛出 StateError
+  Future<void> updateEmail(String newEmail, String password);
+  
+  /// 更换手机号
+  /// 
+  /// 参数：
+  /// - [newPhoneNumber]：新手机号（包含国家代码，如 +86）
+  /// - [verificationCode]：短信验证码
+  /// - [verificationId]：验证 ID（由 sendPhoneVerificationCode 返回）
+  /// 
+  /// 调用者：
+  /// - AuthProvider.updatePhoneNumber()
+  /// - SettingsPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - newPhoneNumber 为空或格式不正确：抛出 ArgumentError
+  /// - verificationCode 为空：抛出 ArgumentError
+  /// - verificationId 为空：抛出 ArgumentError
+  /// - 验证码错误：抛出具体的认证异常（由实现类定义）
+  /// - 手机号已被使用：抛出具体的认证异常（由实现类定义）
+  /// - 用户未登录：抛出 StateError
+  Future<void> updatePhoneNumber(
+    String newPhoneNumber,
+    String verificationCode,
+    String verificationId,
+  );
 }
 
