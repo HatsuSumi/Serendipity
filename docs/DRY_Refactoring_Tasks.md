@@ -14,13 +14,13 @@
 | DRY-2 | 地点文本获取工具类 | P0 | ✅ 已完成 | ~36 行 |
 | DRY-3 | 空状态UI通用组件 | P1 | ✅ 已完成 | ~100 行 |
 | DRY-4 | 删除确认对话框 | P0 | ✅ 已完成 | ~120 行 |
-| DRY-5 | 重命名对话框 | P1 | ⏳ 待开始 | ~70 行 |
+| DRY-5 | 重命名对话框 | P1 | ✅ 已完成 | ~70 行 |
 | DRY-6 | 页面导航工具方法 | P2 | ✅ 已完成 | ~150 行 |
 | DRY-7 | 排序逻辑工具类 | P2 | ⏳ 待开始 | ~60 行 |
 
 **总计**: 预计减少约 **596 行**重复代码  
-**已完成**: 减少约 **466 行**重复代码 (78.2%)  
-**进度**: 5/7 任务完成 (71.4%)
+**已完成**: 减少约 **536 行**重复代码 (89.9%)  
+**进度**: 6/7 任务完成 (85.7%)
 
 ---
 
@@ -207,8 +207,8 @@
 重命名对话框在两个文件中重复实现。
 
 **重复位置**:
-- [ ] `lib/features/story_line/story_lines_page.dart:407`
-- [ ] `lib/features/story_line/story_line_detail_page.dart:454`
+- [x] `lib/features/story_line/story_lines_page.dart:407`
+- [x] `lib/features/story_line/story_line_detail_page.dart:454`
 
 **解决方案**:
 1. 在 `lib/core/utils/dialog_helper.dart` 中添加 `showRenameDialog()` 方法
@@ -217,17 +217,19 @@
 4. 替换所有使用位置
 
 **修改文件**:
-- [ ] 修改: `lib/core/utils/dialog_helper.dart`
-- [ ] 修改: `lib/features/story_line/story_lines_page.dart`
-- [ ] 修改: `lib/features/story_line/story_line_detail_page.dart`
+- [x] 修改: `lib/core/utils/dialog_helper.dart`
+- [x] 修改: `lib/features/story_line/story_lines_page.dart`
+- [x] 修改: `lib/features/story_line/story_line_detail_page.dart`
 
 **测试要点**:
-- [ ] 验证对话框正确显示
-- [ ] 验证初始值正确填充
-- [ ] 验证空值验证正常
-- [ ] 验证返回值正确
+- [x] 验证对话框正确显示
+- [x] 验证初始值正确填充
+- [x] 验证空值验证正常
+- [x] 验证返回值正确
 
-**状态**: ⏳ 待开始
+**代码减少**: 约 70 行
+
+**状态**: ✅ 已完成 (2026-02-21)
 
 ---
 

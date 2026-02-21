@@ -235,5 +235,78 @@ class DialogHelper {
       ),
     );
   }
+
+  /// 显示重命名对话框
+  /// 
+  /// 返回新名称字符串，如果用户取消则返回 `null`
+  /// 
+  /// 参数：
+  /// - [context]: BuildContext
+  /// - [title]: 对话框标题（例如：'重命名故事线'）
+  /// - [initialValue]: 初始值（当前名称）
+  /// - [hintText]: 输入框提示文本（例如：'输入新名称...'）
+  /// - [emptyWarning]: 空值警告消息（例如：'请输入故事线名称'）
+  /// 
+  /// 示例：
+  /// ```dart
+  /// final newName = await DialogHelper.showRenameDialog(
+  ///   context: context,
+  ///   title: '重命名故事线',
+  ///   initialValue: storyLine.name,
+  ///   hintText: '输入新名称...',
+  ///   emptyWarning: '请输入故事线名称',
+  /// );
+  /// 
+  /// if (newName != null) {
+  ///   // 执行重命名操作
+  /// }
+  /// ```
+  static Future<String?> showRenameDialog({
+    required BuildContext context,
+    required String title,
+    required String initialValue,
+    String hintText = '输入新名称...',
+    String emptyWarning = '名称不能为空',
+  }) {
+    final nameController = TextEditingController(text: initialValue);
+
+    return show<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            hintText: hintText,
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isEmpty) {
+                // 显示警告但不关闭对话框
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(emptyWarning),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+                return;
+              }
+              Navigator.of(context).pop(name);
+            },
+            child: const Text('确认'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 

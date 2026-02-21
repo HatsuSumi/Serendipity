@@ -420,56 +420,32 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   }
 
   /// 显示重命名对话框
-  void _showRenameDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) {
-    final nameController = TextEditingController(text: storyLine.name);
-
-    DialogHelper.show(
+  void _showRenameDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) async {
+    final newName = await DialogHelper.showRenameDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('重命名故事线'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            hintText: '输入新名称...',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) {
-                MessageHelper.showWarning(context, '请输入故事线名称');
-                return;
-              }
-
-              final updatedStoryLine = storyLine.copyWith(
-                name: name,
-                updatedAt: DateTime.now(),
-              );
-
-              try {
-                await ref.read(storyLinesProvider.notifier).updateStoryLine(updatedStoryLine);
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  MessageHelper.showSuccess(context, '已重命名');
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  MessageHelper.showError(context, '重命名失败：$e');
-                }
-              }
-            },
-            child: const Text('确认'),
-          ),
-        ],
-      ),
+      title: '重命名故事线',
+      initialValue: storyLine.name,
+      hintText: '输入新名称...',
+      emptyWarning: '请输入故事线名称',
     );
+
+    if (newName != null && context.mounted) {
+      final updatedStoryLine = storyLine.copyWith(
+        name: newName,
+        updatedAt: DateTime.now(),
+      );
+
+      try {
+        await ref.read(storyLinesProvider.notifier).updateStoryLine(updatedStoryLine);
+        if (context.mounted) {
+          MessageHelper.showSuccess(context, '已重命名');
+        }
+      } catch (e) {
+        if (context.mounted) {
+          MessageHelper.showError(context, '重命名失败：$e');
+        }
+      }
+    }
   }
 
   /// 显示删除确认对话框

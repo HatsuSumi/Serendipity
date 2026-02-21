@@ -7,7 +7,6 @@ import '../../core/providers/story_lines_provider.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
-import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/smart_navigator.dart';
@@ -429,52 +428,28 @@ class StoryLineDetailPage extends ConsumerWidget {
   }
 
   /// 显示重命名对话框
-  void _showRenameDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) {
-    final nameController = TextEditingController(text: storyLine.name);
-
-    DialogHelper.show(
+  void _showRenameDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) async {
+    final newName = await DialogHelper.showRenameDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('重命名故事线'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            hintText: '输入新名称...',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) {
-                MessageHelper.showWarning(context, '请输入故事线名称');
-                return;
-              }
-
-              final updatedStoryLine = storyLine.copyWith(
-                name: name,
-                updatedAt: DateTime.now(),
-              );
-
-              Navigator.of(context).pop();
-              await AsyncActionHelper.execute(
-                context,
-                action: () => ref.read(storyLinesProvider.notifier).updateStoryLine(updatedStoryLine),
-                successMessage: '已重命名',
-                errorMessagePrefix: '重命名失败',
-              );
-            },
-            child: const Text('确认'),
-          ),
-        ],
-      ),
+      title: '重命名故事线',
+      initialValue: storyLine.name,
+      hintText: '输入新名称...',
+      emptyWarning: '请输入故事线名称',
     );
+
+    if (newName != null && context.mounted) {
+      final updatedStoryLine = storyLine.copyWith(
+        name: newName,
+        updatedAt: DateTime.now(),
+      );
+
+      await AsyncActionHelper.execute(
+        context,
+        action: () => ref.read(storyLinesProvider.notifier).updateStoryLine(updatedStoryLine),
+        successMessage: '已重命名',
+        errorMessagePrefix: '重命名失败',
+      );
+    }
   }
 
   /// 显示删除确认对话框
