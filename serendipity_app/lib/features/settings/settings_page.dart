@@ -302,88 +302,126 @@ class SettingsPage extends ConsumerWidget {
     
     DialogHelper.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('修改密码'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: '当前密码',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: '新密码',
-                border: OutlineInputBorder(),
-                helperText: '至少6位',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: '确认新密码',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final currentPassword = currentPasswordController.text.trim();
-              final newPassword = newPasswordController.text.trim();
-              final confirmPassword = confirmPasswordController.text.trim();
-              
-              // Fail Fast：验证输入
-              if (currentPassword.isEmpty) {
-                MessageHelper.showError(context, '请输入当前密码');
-                return;
-              }
-              if (newPassword.isEmpty) {
-                MessageHelper.showError(context, '请输入新密码');
-                return;
-              }
-              if (newPassword.length < 6) {
-                MessageHelper.showError(context, '新密码至少需要6位');
-                return;
-              }
-              if (newPassword != confirmPassword) {
-                MessageHelper.showError(context, '两次输入的新密码不一致');
-                return;
-              }
-              if (currentPassword == newPassword) {
-                MessageHelper.showError(context, '新密码不能与当前密码相同');
-                return;
-              }
-              
-              Navigator.of(context).pop();
-              
-              await AsyncActionHelper.execute(
-                context,
-                action: () => ref.read(authProvider.notifier).updatePassword(
-                  currentPassword,
-                  newPassword,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          bool currentPasswordVisible = false;
+          bool newPasswordVisible = false;
+          bool confirmPasswordVisible = false;
+          
+          return AlertDialog(
+            title: const Text('修改密码'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: currentPasswordController,
+                  obscureText: !currentPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: '当前密码',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        currentPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          currentPasswordVisible = !currentPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
                 ),
-                successMessage: '密码修改成功',
-                errorMessagePrefix: '修改密码失败',
-              );
-            },
-            child: const Text('确定'),
-          ),
-        ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: newPasswordController,
+                  obscureText: !newPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: '新密码',
+                    border: const OutlineInputBorder(),
+                    helperText: '至少6位',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        newPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          newPasswordVisible = !newPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: !confirmPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: '确认新密码',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        confirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          confirmPasswordVisible = !confirmPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final currentPassword = currentPasswordController.text.trim();
+                  final newPassword = newPasswordController.text.trim();
+                  final confirmPassword = confirmPasswordController.text.trim();
+                  
+                  // Fail Fast：验证输入
+                  if (currentPassword.isEmpty) {
+                    MessageHelper.showError(context, '请输入当前密码');
+                    return;
+                  }
+                  if (newPassword.isEmpty) {
+                    MessageHelper.showError(context, '请输入新密码');
+                    return;
+                  }
+                  if (newPassword.length < 6) {
+                    MessageHelper.showError(context, '新密码至少需要6位');
+                    return;
+                  }
+                  if (newPassword != confirmPassword) {
+                    MessageHelper.showError(context, '两次输入的新密码不一致');
+                    return;
+                  }
+                  if (currentPassword == newPassword) {
+                    MessageHelper.showError(context, '新密码不能与当前密码相同');
+                    return;
+                  }
+                  
+                  Navigator.of(context).pop();
+                  
+                  await AsyncActionHelper.execute(
+                    context,
+                    action: () => ref.read(authProvider.notifier).updatePassword(
+                      currentPassword,
+                      newPassword,
+                    ),
+                    successMessage: '密码修改成功',
+                    errorMessagePrefix: '修改密码失败',
+                  );
+                },
+                child: const Text('确定'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -395,66 +433,82 @@ class SettingsPage extends ConsumerWidget {
     
     DialogHelper.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('更换邮箱'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: newEmailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: '新邮箱',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: '当前密码',
-                border: OutlineInputBorder(),
-                helperText: '需要验证身份',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newEmail = newEmailController.text.trim();
-              final password = passwordController.text.trim();
-              
-              // Fail Fast：验证输入
-              if (newEmail.isEmpty) {
-                MessageHelper.showError(context, '请输入新邮箱');
-                return;
-              }
-              if (password.isEmpty) {
-                MessageHelper.showError(context, '请输入当前密码');
-                return;
-              }
-              
-              Navigator.of(context).pop();
-              
-              await AsyncActionHelper.execute(
-                context,
-                action: () => ref.read(authProvider.notifier).updateEmail(
-                  newEmail,
-                  password,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          bool passwordVisible = false;
+          
+          return AlertDialog(
+            title: const Text('更换邮箱'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: newEmailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: '新邮箱',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-                successMessage: '邮箱更换成功',
-                errorMessagePrefix: '更换邮箱失败',
-              );
-            },
-            child: const Text('确定'),
-          ),
-        ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: !passwordVisible,
+                  decoration: InputDecoration(
+                    labelText: '当前密码',
+                    border: const OutlineInputBorder(),
+                    helperText: '需要验证身份',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        passwordVisible ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          passwordVisible = !passwordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final newEmail = newEmailController.text.trim();
+                  final password = passwordController.text.trim();
+                  
+                  // Fail Fast：验证输入
+                  if (newEmail.isEmpty) {
+                    MessageHelper.showError(context, '请输入新邮箱');
+                    return;
+                  }
+                  if (password.isEmpty) {
+                    MessageHelper.showError(context, '请输入当前密码');
+                    return;
+                  }
+                  
+                  Navigator.of(context).pop();
+                  
+                  await AsyncActionHelper.execute(
+                    context,
+                    action: () => ref.read(authProvider.notifier).updateEmail(
+                      newEmail,
+                      password,
+                    ),
+                    successMessage: '邮箱更换成功',
+                    errorMessagePrefix: '更换邮箱失败',
+                  );
+                },
+                child: const Text('确定'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
