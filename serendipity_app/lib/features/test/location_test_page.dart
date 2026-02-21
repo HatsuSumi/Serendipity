@@ -312,70 +312,87 @@ class LocationTestPage extends ConsumerWidget {
       address: result.address,
     );
     
-    return Card(
-      color: Colors.green.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
+    return Builder(
+      builder: (context) {
+        // 使用主题颜色
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        
+        return Card(
+          color: isDark 
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+              : Colors.green.shade50,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.check_circle, color: Colors.green),
-                SizedBox(width: 8),
-                Text(
-                  '定位成功',
+                Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: isDark 
+                          ? theme.colorScheme.primary
+                          : Colors.green,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '定位成功',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark 
+                            ? theme.colorScheme.primary
+                            : Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // GPS 坐标
+                _buildInfoRow('纬度', result.latitude?.toString() ?? '-'),
+                const SizedBox(height: 8),
+                _buildInfoRow('经度', result.longitude?.toString() ?? '-'),
+                const SizedBox(height: 8),
+                
+                // 地址
+                _buildInfoRow(
+                  '地址',
+                  result.address ?? '逆地理编码失败',
+                ),
+                const SizedBox(height: 16),
+                
+                // LocationHelper 测试
+                const Divider(),
+                const SizedBox(height: 8),
+                const Text(
+                  'LocationHelper 测试：',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
                   ),
+                ),
+                const SizedBox(height: 8),
+                _buildInfoRow(
+                  'getDisplayLocation',
+                  LocationHelper.getDisplayLocation(location),
+                ),
+                const SizedBox(height: 8),
+                _buildInfoRow(
+                  'hasCoordinates',
+                  LocationHelper.hasCoordinates(location).toString(),
+                ),
+                const SizedBox(height: 8),
+                _buildInfoRow(
+                  'isEmpty',
+                  LocationHelper.isEmpty(location).toString(),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            
-            // GPS 坐标
-            _buildInfoRow('纬度', result.latitude?.toString() ?? '-'),
-            const SizedBox(height: 8),
-            _buildInfoRow('经度', result.longitude?.toString() ?? '-'),
-            const SizedBox(height: 8),
-            
-            // 地址
-            _buildInfoRow(
-              '地址',
-              result.address ?? '逆地理编码失败',
-            ),
-            const SizedBox(height: 16),
-            
-            // LocationHelper 测试
-            const Divider(),
-            const SizedBox(height: 8),
-            const Text(
-              'LocationHelper 测试：',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              'getDisplayLocation',
-              LocationHelper.getDisplayLocation(location),
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              'hasCoordinates',
-              LocationHelper.hasCoordinates(location).toString(),
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              'isEmpty',
-              LocationHelper.isEmpty(location).toString(),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
   
