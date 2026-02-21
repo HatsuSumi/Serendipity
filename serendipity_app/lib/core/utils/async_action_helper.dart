@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'message_helper.dart';
+import 'auth_error_helper.dart';
 
 /// 异步操作辅助工具
 /// 
@@ -50,7 +51,8 @@ class AsyncActionHelper {
       return true;
     } catch (e) {
       if (context.mounted) {
-        MessageHelper.showError(context, '$errorMessagePrefix：$e');
+        final cleanMessage = AuthErrorHelper.extractErrorMessage(e);
+        MessageHelper.showError(context, '$errorMessagePrefix：$cleanMessage');
         onError?.call(e);
       }
       
@@ -88,7 +90,8 @@ class AsyncActionHelper {
       return await action();
     } catch (e) {
       if (context.mounted) {
-        MessageHelper.showError(context, '$errorMessagePrefix：$e');
+        final cleanMessage = AuthErrorHelper.extractErrorMessage(e);
+        MessageHelper.showError(context, '$errorMessagePrefix：$cleanMessage');
         onError?.call(e);
       }
       
