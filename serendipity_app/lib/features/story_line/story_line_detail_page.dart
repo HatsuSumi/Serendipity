@@ -12,6 +12,7 @@ import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/smart_navigator.dart';
 import '../../core/utils/record_helper.dart';
+import '../../core/utils/date_time_helper.dart';
 import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
@@ -195,7 +196,7 @@ class StoryLineDetailPage extends ConsumerWidget {
               Row(
                 children: [
                   Text(
-                    _formatDate(record.timestamp),
+                    DateTimeHelper.formatShortDate(record.timestamp),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -603,10 +604,5 @@ class StoryLineDetailPage extends ConsumerWidget {
             : const Duration(milliseconds: 300),
       ),
     );
-  }
-
-  /// 格式化日期
-  String _formatDate(DateTime dateTime) {
-    return '${dateTime.year}.${dateTime.month.toString().padLeft(2, '0')}.${dateTime.day.toString().padLeft(2, '0')}';
   }
 }

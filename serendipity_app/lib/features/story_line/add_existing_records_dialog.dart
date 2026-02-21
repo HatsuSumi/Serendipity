@@ -4,9 +4,9 @@ import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
-import '../../core/utils/message_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/record_helper.dart';
+import '../../core/utils/date_time_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 
 /// 可用记录列表 Provider
@@ -218,7 +218,7 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
                   Row(
                     children: [
                       Text(
-                        _formatDate(record.timestamp),
+                        DateTimeHelper.formatShortDate(record.timestamp),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -290,11 +290,6 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
       successMessage: '已添加 ${_selectedRecordIds.length} 条记录',
       errorMessagePrefix: '添加失败',
     );
-  }
-
-  /// 格式化日期
-  String _formatDate(DateTime dateTime) {
-    return '${dateTime.year}.${dateTime.month.toString().padLeft(2, '0')}.${dateTime.day.toString().padLeft(2, '0')}';
   }
 }
 

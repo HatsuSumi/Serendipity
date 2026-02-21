@@ -6,6 +6,7 @@ import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/record_helper.dart';
+import '../../core/utils/date_time_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
@@ -244,7 +245,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                         ),
                       ),
                       Text(
-                        '创建：${_formatTime(record.createdAt)}',
+                        '创建：${DateTimeHelper.formatRelativeTime(record.createdAt)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
@@ -376,7 +377,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   Row(
                     children: [
                       Text(
-                        '发生：${_formatTime(record.timestamp)}',
+                        '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontSize: 11,
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -391,7 +392,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                               ),
                         ),
                         Text(
-                          '更新：${_formatTime(record.updatedAt)}',
+                          '更新：${DateTimeHelper.formatRelativeTime(record.updatedAt)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 fontSize: 11,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -550,25 +551,5 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         ],
       ),
     );
-  }
-
-  /// 格式化时间
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    
-    // 比较日期（忽略时间）
-    final today = DateTime(now.year, now.month, now.day);
-    final recordDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-    final daysDifference = today.difference(recordDate).inDays;
-
-    if (daysDifference == 0) {
-      return '今天 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (daysDifference == 1) {
-      return '昨天 ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (daysDifference < 7) {
-      return '$daysDifference天前';
-    } else {
-      return '${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
-    }
   }
 }

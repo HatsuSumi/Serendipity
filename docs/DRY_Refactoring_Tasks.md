@@ -30,10 +30,10 @@
 日期格式化函数在多个文件中重复实现，包括 `_formatDate`、`_formatTime`、`_formatDateTime` 等。
 
 **重复位置**:
-- [ ] `lib/features/story_line/story_line_detail_page.dart:565` - `_formatDate()`
-- [ ] `lib/features/story_line/add_existing_records_dialog.dart:238` - `_formatDate()`
-- [ ] `lib/features/timeline/timeline_page.dart:467` - `_formatTime()`
-- [ ] `lib/features/record/record_detail_page.dart:766` - `_formatDateTime()`
+- [x] `lib/features/story_line/story_line_detail_page.dart:565` - `_formatDate()`
+- [x] `lib/features/story_line/add_existing_records_dialog.dart:238` - `_formatDate()`
+- [x] `lib/features/timeline/timeline_page.dart:467` - `_formatTime()`
+- [x] `lib/features/record/record_detail_page.dart:766` - `_formatDateTime()`
 
 **解决方案**:
 1. 创建 `lib/core/utils/date_time_helper.dart`
@@ -44,18 +44,20 @@
 3. 替换所有使用位置
 
 **修改文件**:
-- [ ] 新建: `lib/core/utils/date_time_helper.dart`
-- [ ] 修改: `lib/features/story_line/story_line_detail_page.dart`
-- [ ] 修改: `lib/features/story_line/add_existing_records_dialog.dart`
-- [ ] 修改: `lib/features/timeline/timeline_page.dart`
-- [ ] 修改: `lib/features/record/record_detail_page.dart`
+- [x] 新建: `lib/core/utils/date_time_helper.dart`
+- [x] 修改: `lib/features/story_line/story_line_detail_page.dart`
+- [x] 修改: `lib/features/story_line/add_existing_records_dialog.dart`
+- [x] 修改: `lib/features/timeline/timeline_page.dart`
+- [x] 修改: `lib/features/record/record_detail_page.dart`
 
 **测试要点**:
-- [ ] 验证日期格式化输出正确
-- [ ] 验证相对时间计算准确（今天、昨天、X天前）
-- [ ] 验证所有页面显示一致
+- [x] 验证日期格式化输出正确
+- [x] 验证相对时间计算准确（今天、昨天、X天前）
+- [x] 验证所有页面显示一致
 
-**状态**: ⏳ 待开始
+**代码减少**: 约 60 行
+
+**状态**: ✅ 已完成 (2026-02-21)
 
 ---
 
@@ -255,7 +257,7 @@
 
 ### 2026-02-21
 
-#### 第一阶段：地点文本获取重构
+#### 第一阶段：地点文本获取重构 (DRY-2)
 - ✅ 创建 DRY 重构任务追踪文档
 - ✅ 创建 `RecordHelper` 工具类
 - ✅ 实现 `getLocationText()` 静态方法，支持完整的优先级逻辑
@@ -265,16 +267,28 @@
 - ✅ 删除 3 个重复的 `_getLocationText()` 方法
 - 📊 减少约 36 行重复代码
 
+#### 第二阶段：日期时间格式化重构 (DRY-1)
+- ✅ 创建 `DateTimeHelper` 工具类
+- ✅ 实现 `formatShortDate()` - 格式化为 `2024.01.15`
+- ✅ 实现 `formatDateTime()` - 格式化为 `2024-01-15 14:30`
+- ✅ 实现 `formatRelativeTime()` - 相对时间（今天、昨天、X天前）
+- ✅ 替换 `add_existing_records_dialog.dart` 中的 `_formatDate()`
+- ✅ 替换 `story_line_detail_page.dart` 中的 `_formatDate()`
+- ✅ 替换 `record_detail_page.dart` 中的 `_formatDateTime()`
+- ✅ 替换 `timeline_page.dart` 中的 `_formatTime()`
+- ✅ 删除 4 个重复的日期格式化方法
+- 📊 减少约 60 行重复代码
+
 ---
 
 ## 📈 进度统计
 
 - **总任务数**: 7
-- **已完成**: 1 (DRY-2)
+- **已完成**: 2 (DRY-1, DRY-2)
 - **进行中**: 0
-- **待开始**: 6
-- **完成率**: 14.3%
-- **代码减少**: 36 行 / 596 行 (6.0%)
+- **待开始**: 5
+- **完成率**: 28.6%
+- **代码减少**: 96 行 / 596 行 (16.1%)
 
 ---
 

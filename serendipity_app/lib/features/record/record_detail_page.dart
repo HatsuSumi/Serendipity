@@ -6,6 +6,7 @@ import '../../models/enums.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/smart_navigator.dart';
+import '../../core/utils/date_time_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
@@ -263,7 +264,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           
           // 时间
           Text(
-            _formatDateTime(_currentRecord.timestamp),
+            DateTimeHelper.formatDateTime(_currentRecord.timestamp),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -610,12 +611,12 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             _buildMetadataRow(
               context,
               label: '创建时间',
-              value: _formatDateTime(_currentRecord.createdAt),
+              value: DateTimeHelper.formatDateTime(_currentRecord.createdAt),
             ),
             _buildMetadataRow(
               context,
               label: '更新时间',
-              value: _formatDateTime(_currentRecord.updatedAt),
+              value: DateTimeHelper.formatDateTime(_currentRecord.updatedAt),
             ),
           ],
         ),
@@ -736,12 +737,6 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       // 显示错误提示
       MessageHelper.showError(context, '删除失败：$e');
     }
-  }
-
-  /// 格式化日期时间
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
-        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }
 
