@@ -1,4 +1,4 @@
-import '../models/location_result.dart';
+import '../../models/location_result.dart';
 
 /// 定位服务接口
 /// 
