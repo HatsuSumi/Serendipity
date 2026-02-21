@@ -518,38 +518,24 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   }
 
   /// 显示删除确认对话框
-  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
-    DialogHelper.show(
+  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref, EncounterRecord record) async {
+    final confirmed = await DialogHelper.showDeleteConfirm(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除记录'),
-        content: const Text('确定要删除这条记录吗？此操作无法撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await ref.read(recordsProvider.notifier).deleteRecord(record.id);
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  MessageHelper.showSuccess(context, '记录已删除');
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  MessageHelper.showError(context, '删除失败：$e');
-                }
-              }
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '删除记录',
+      content: '确定要删除这条记录吗？此操作无法撤销。',
     );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await ref.read(recordsProvider.notifier).deleteRecord(record.id);
+        if (context.mounted) {
+          MessageHelper.showSuccess(context, '记录已删除');
+        }
+      } catch (e) {
+        if (context.mounted) {
+          MessageHelper.showError(context, '删除失败：$e');
+        }
+      }
+    }
   }
 }

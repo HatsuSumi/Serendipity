@@ -516,39 +516,25 @@ class StoryLineDetailPage extends ConsumerWidget {
   }
 
   /// 显示删除确认对话框
-  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) {
-    DialogHelper.show(
+  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) async {
+    final confirmed = await DialogHelper.showDeleteConfirm(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除故事线'),
-        content: Text('确定要删除"${storyLine.name}"吗？\n\n记录不会被删除，只是取消关联。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              final success = await AsyncActionHelper.execute(
-                context,
-                action: () => ref.read(storyLinesProvider.notifier).deleteStoryLine(storyLine.id),
-                successMessage: '故事线已删除',
-                errorMessagePrefix: '删除失败',
-              );
-              
-              if (success && context.mounted) {
-                Navigator.of(context).pop(); // 返回列表页
-              }
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+      title: '删除故事线',
+      content: '确定要删除"${storyLine.name}"吗？\n\n记录不会被删除，只是取消关联。',
     );
+
+    if (confirmed == true && context.mounted) {
+      final success = await AsyncActionHelper.execute(
+        context,
+        action: () => ref.read(storyLinesProvider.notifier).deleteStoryLine(storyLine.id),
+        successMessage: '故事线已删除',
+        errorMessagePrefix: '删除失败',
+      );
+      
+      if (success && context.mounted) {
+        Navigator.of(context).pop(); // 返回列表页
+      }
+    }
   }
 
   /// 导航到记录详情

@@ -192,5 +192,48 @@ class DialogHelper {
         );
     }
   }
+
+  /// 显示删除确认对话框
+  /// 
+  /// 返回 `true` 表示用户确认删除，`false` 或 `null` 表示取消
+  /// 
+  /// 示例：
+  /// ```dart
+  /// final confirmed = await DialogHelper.showDeleteConfirm(
+  ///   context: context,
+  ///   title: '删除记录',
+  ///   content: '确定要删除这条记录吗？此操作无法撤销。',
+  /// );
+  /// 
+  /// if (confirmed == true) {
+  ///   // 执行删除操作
+  /// }
+  /// ```
+  static Future<bool?> showDeleteConfirm({
+    required BuildContext context,
+    required String title,
+    required String content,
+  }) {
+    return show<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 

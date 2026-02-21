@@ -98,10 +98,10 @@
 删除确认对话框在多个文件中重复实现，结构高度相似。
 
 **重复位置**:
-- [ ] `lib/features/story_line/story_lines_page.dart:442`
-- [ ] `lib/features/story_line/story_line_detail_page.dart:488`
-- [ ] `lib/features/record/record_detail_page.dart:735`
-- [ ] `lib/features/timeline/timeline_page.dart:413`
+- [x] `lib/features/story_line/story_lines_page.dart:442`
+- [x] `lib/features/story_line/story_line_detail_page.dart:488`
+- [x] `lib/features/record/record_detail_page.dart:735`
+- [x] `lib/features/timeline/timeline_page.dart:413`
 
 **解决方案**:
 1. 在 `lib/core/utils/dialog_helper.dart` 中添加 `showDeleteConfirm()` 方法
@@ -110,19 +110,21 @@
 4. 替换所有使用位置
 
 **修改文件**:
-- [ ] 修改: `lib/core/utils/dialog_helper.dart`
-- [ ] 修改: `lib/features/story_line/story_lines_page.dart`
-- [ ] 修改: `lib/features/story_line/story_line_detail_page.dart`
-- [ ] 修改: `lib/features/record/record_detail_page.dart`
-- [ ] 修改: `lib/features/timeline/timeline_page.dart`
+- [x] 修改: `lib/core/utils/dialog_helper.dart`
+- [x] 修改: `lib/features/story_line/story_lines_page.dart`
+- [x] 修改: `lib/features/story_line/story_line_detail_page.dart`
+- [x] 修改: `lib/features/record/record_detail_page.dart`
+- [x] 修改: `lib/features/timeline/timeline_page.dart`
 
 **测试要点**:
-- [ ] 验证对话框正确显示
-- [ ] 验证取消操作返回 false
-- [ ] 验证确认操作返回 true
-- [ ] 验证对话框动画正常
+- [x] 验证对话框正确显示
+- [x] 验证取消操作返回 false
+- [x] 验证确认操作返回 true
+- [x] 验证对话框动画正常
 
-**状态**: ⏳ 待开始
+**代码减少**: 约 120 行
+
+**状态**: ✅ 已完成 (2026-02-21)
 
 ---
 
@@ -279,16 +281,27 @@
 - ✅ 删除 4 个重复的日期格式化方法
 - 📊 减少约 60 行重复代码
 
+#### 第三阶段：删除确认对话框重构 (DRY-4)
+- ✅ 扩展 `DialogHelper` 工具类
+- ✅ 实现 `showDeleteConfirm()` 方法，返回 `Future<bool?>`
+- ✅ 支持自定义标题和内容
+- ✅ 替换 `timeline_page.dart` 中的删除确认对话框
+- ✅ 替换 `record_detail_page.dart` 中的删除确认对话框
+- ✅ 替换 `story_lines_page.dart` 中的删除确认对话框
+- ✅ 替换 `story_line_detail_page.dart` 中的删除确认对话框
+- ✅ 删除 4 个重复的对话框实现
+- 📊 减少约 120 行重复代码
+
 ---
 
 ## 📈 进度统计
 
 - **总任务数**: 7
-- **已完成**: 2 (DRY-1, DRY-2)
+- **已完成**: 3 (DRY-1, DRY-2, DRY-4)
 - **进行中**: 0
-- **待开始**: 5
-- **完成率**: 28.6%
-- **代码减少**: 96 行 / 596 行 (16.1%)
+- **待开始**: 4
+- **完成率**: 42.9%
+- **代码减少**: 216 行 / 596 行 (36.2%)
 
 ---
 
