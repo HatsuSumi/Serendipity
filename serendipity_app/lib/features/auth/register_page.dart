@@ -5,6 +5,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/phone_helper.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/widgets/countdown_button.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
 import 'login_page.dart';
@@ -224,13 +225,42 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ),
         if (_isCodeSent) ...[
           const SizedBox(height: 16),
-          AuthTextField(
-            type: AuthTextFieldType.verificationCode,
-            controller: _verificationCodeController,
-            label: '验证码',
-            hint: '请输入6位验证码',
-            enabled: !_isLoading,
-            maxLength: 6,
+          Row(
+            children: [
+              Expanded(
+                child: AuthTextField(
+                  type: AuthTextFieldType.verificationCode,
+                  controller: _verificationCodeController,
+                  label: '验证码',
+                  hint: '请输入6位验证码',
+                  enabled: !_isLoading,
+                  maxLength: 6,
+                ),
+              ),
+              const SizedBox(width: 8),
+              CountdownButton(
+                text: '重新发送',
+                onPressed: () async {
+                  final fullPhoneNumber = PhoneHelper.formatWithCountryCode(
+                    _countryCode,
+                    _phoneController.text,
+                  );
+                  
+                  try {
+                    _verificationId = await ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhoneNumber);
+                    if (mounted) {
+                      MessageHelper.showSuccess(context, '验证码已发送');
+                    }
+                    return true;
+                  } catch (e) {
+                    if (mounted) {
+                      MessageHelper.showError(context, AuthErrorHelper.extractErrorMessage(e));
+                    }
+                    return false;
+                  }
+                },
+              ),
+            ],
           ),
         ],
       ],

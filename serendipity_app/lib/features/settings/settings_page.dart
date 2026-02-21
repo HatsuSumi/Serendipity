@@ -6,8 +6,11 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/phone_helper.dart';
+import '../../core/widgets/countdown_button.dart';
 import '../../models/enums.dart';
 import '../auth/welcome_page.dart';
+import '../auth/widgets/auth_text_field.dart';
 
 /// 设置页面（演示版）
 class SettingsPage extends ConsumerWidget {
@@ -520,137 +523,127 @@ class SettingsPage extends ConsumerWidget {
   
   /// 显示更换/绑定手机号对话框
   void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref, bool hasPhone) {
-    final countryCodeController = TextEditingController(text: '+86');
     final phoneController = TextEditingController();
     final codeController = TextEditingController();
+    String countryCode = '+86';
     String? verificationId;
     
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(hasPhone ? '更换手机号' : '绑定手机号'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  SizedBox(
-                    width: 80,
-                    child: TextField(
-                      controller: countryCodeController,
-                      decoration: const InputDecoration(
-                        labelText: '区号',
-                        border: OutlineInputBorder(),
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(hasPhone ? '更换手机号' : '绑定手机号'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AuthTextField(
+                  type: AuthTextFieldType.phone,
+                  controller: phoneController,
+                  label: hasPhone ? '新手机号' : '手机号',
+                  hint: '请输入手机号',
+                  countryCode: countryCode,
+                  onCountryCodeChanged: (code) {
+                    setState(() {
+                      countryCode = code;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AuthTextField(
+                        type: AuthTextFieldType.verificationCode,
+                        controller: codeController,
+                        label: '验证码',
+                        hint: '请输入6位验证码',
+                        maxLength: 6,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: hasPhone ? '新手机号' : '手机号',
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: codeController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: '验证码',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final countryCode = countryCodeController.text.trim();
-                      final phone = phoneController.text.trim();
-                      
-                      // Fail Fast：验证输入
-                      if (phone.isEmpty) {
-                        MessageHelper.showError(context, '请输入手机号');
-                        return;
-                      }
-                      
-                      final fullPhone = '$countryCode$phone';
-                      
-                      final result = await AsyncActionHelper.executeWithResult<String>(
-                        context,
-                        action: () => ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhone),
-                        errorMessagePrefix: '发送验证码失败',
-                      );
-                      
-                      if (result != null) {
-                        verificationId = result;
-                        if (context.mounted) {
-                          MessageHelper.showSuccess(context, '验证码已发送');
+                    const SizedBox(width: 8),
+                    CountdownButton(
+                      text: '发送验证码',
+                      onPressed: () async {
+                        final phone = phoneController.text.trim();
+                        
+                        // Fail Fast：验证输入
+                        if (phone.isEmpty) {
+                          MessageHelper.showError(context, '请输入手机号');
+                          return false;
                         }
-                      }
-                    },
-                    child: const Text('发送验证码'),
-                  ),
-                ],
+                        
+                        final fullPhone = PhoneHelper.formatWithCountryCode(countryCode, phone);
+                        
+                        final result = await AsyncActionHelper.executeWithResult<String>(
+                          context,
+                          action: () => ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhone),
+                          errorMessagePrefix: '发送验证码失败',
+                        );
+                        
+                        if (result != null) {
+                          setState(() {
+                            verificationId = result;
+                          });
+                          if (context.mounted) {
+                            MessageHelper.showSuccess(context, '验证码已发送');
+                          }
+                          return true;
+                        }
+                        return false;
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final phone = phoneController.text.trim();
+                  final code = codeController.text.trim();
+                  
+                  // Fail Fast：验证输入
+                  if (phone.isEmpty) {
+                    MessageHelper.showError(context, '请输入手机号');
+                    return;
+                  }
+                  if (code.isEmpty) {
+                    MessageHelper.showError(context, '请输入验证码');
+                    return;
+                  }
+                  if (verificationId == null) {
+                    MessageHelper.showError(context, '请先发送验证码');
+                    return;
+                  }
+                  
+                  final fullPhone = PhoneHelper.formatWithCountryCode(countryCode, phone);
+                  
+                  // 先执行操作，成功后再关闭对话框
+                  final success = await AsyncActionHelper.execute(
+                    context,
+                    action: () => ref.read(authProvider.notifier).updatePhoneNumber(
+                      fullPhone,
+                      code,
+                      verificationId!,
+                    ),
+                    successMessage: hasPhone ? '手机号更换成功' : '手机号绑定成功',
+                    errorMessagePrefix: hasPhone ? '更换手机号失败' : '绑定手机号失败',
+                  );
+                  
+                  if (success && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: const Text('确定'),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final countryCode = countryCodeController.text.trim();
-                final phone = phoneController.text.trim();
-                final code = codeController.text.trim();
-                
-                // Fail Fast：验证输入
-                if (phone.isEmpty) {
-                  MessageHelper.showError(context, '请输入手机号');
-                  return;
-                }
-                if (code.isEmpty) {
-                  MessageHelper.showError(context, '请输入验证码');
-                  return;
-                }
-                if (verificationId == null) {
-                  MessageHelper.showError(context, '请先发送验证码');
-                  return;
-                }
-                
-                final fullPhone = '$countryCode$phone';
-                
-                // 先执行操作，成功后再关闭对话框
-                final success = await AsyncActionHelper.execute(
-                  context,
-                  action: () => ref.read(authProvider.notifier).updatePhoneNumber(
-                    fullPhone,
-                    code,
-                    verificationId!,
-                  ),
-                  successMessage: hasPhone ? '手机号更换成功' : '手机号绑定成功',
-                  errorMessagePrefix: hasPhone ? '更换手机号失败' : '绑定手机号失败',
-                );
-                
-                if (success && context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('确定'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
