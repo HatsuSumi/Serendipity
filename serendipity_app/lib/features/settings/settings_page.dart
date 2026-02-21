@@ -216,17 +216,18 @@ class SettingsPage extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
           ),
-          // 更换手机号（所有用户）
+          // 更换/绑定手机号（所有用户）
           authState.when(
             data: (user) {
               if (user != null) {
+                final hasPhone = user.phoneNumber != null;
                 return ListTile(
                   leading: const Icon(Icons.phone_outlined),
-                  title: const Text('更换手机号'),
-                  subtitle: user.phoneNumber != null 
+                  title: Text(hasPhone ? '更换手机号' : '绑定手机号'),
+                  subtitle: hasPhone 
                       ? Text(user.phoneNumber!) 
                       : const Text('未绑定'),
-                  onTap: () => _showUpdatePhoneDialog(context, ref),
+                  onTap: () => _showUpdatePhoneDialog(context, ref, hasPhone),
                 );
               }
               return const SizedBox.shrink();
@@ -517,8 +518,8 @@ class SettingsPage extends ConsumerWidget {
     );
   }
   
-  /// 显示更换手机号对话框
-  void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref) {
+  /// 显示更换/绑定手机号对话框
+  void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref, bool hasPhone) {
     final countryCodeController = TextEditingController(text: '+86');
     final phoneController = TextEditingController();
     final codeController = TextEditingController();
@@ -528,7 +529,7 @@ class SettingsPage extends ConsumerWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('更换手机号'),
+          title: Text(hasPhone ? '更换手机号' : '绑定手机号'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -549,9 +550,9 @@ class SettingsPage extends ConsumerWidget {
                     child: TextField(
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
-                        labelText: '新手机号',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: hasPhone ? '新手机号' : '手机号',
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -638,8 +639,8 @@ class SettingsPage extends ConsumerWidget {
                     code,
                     verificationId!,
                   ),
-                  successMessage: '手机号更换成功',
-                  errorMessagePrefix: '更换手机号失败',
+                  successMessage: hasPhone ? '手机号更换成功' : '手机号绑定成功',
+                  errorMessagePrefix: hasPhone ? '更换手机号失败' : '绑定手机号失败',
                 );
                 
                 if (success && context.mounted) {
