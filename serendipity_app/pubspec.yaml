@@ -56,6 +56,12 @@ dependencies:
   
   # Firestore 数据库
   cloud_firestore: ^5.5.2
+  
+  # GPS 定位
+  geolocator: ^13.0.2
+  
+  # 地理编码（GPS 坐标 → 地址）
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:
