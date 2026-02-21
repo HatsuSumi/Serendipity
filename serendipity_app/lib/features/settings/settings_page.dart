@@ -7,10 +7,12 @@ import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/phone_helper.dart';
+import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/countdown_button.dart';
 import '../../models/enums.dart';
 import '../auth/welcome_page.dart';
 import '../auth/widgets/auth_text_field.dart';
+import '../test/location_test_page.dart';
 
 /// 设置页面（演示版）
 class SettingsPage extends ConsumerWidget {
@@ -245,6 +247,32 @@ class SettingsPage extends ConsumerWidget {
               style: TextStyle(color: Colors.red),
             ),
             onTap: () => _showLogoutDialog(context, ref),
+          ),
+          
+          const Divider(),
+          
+          // 开发测试
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              '开发测试',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.location_on),
+            title: const Text('GPS 定位测试'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              NavigationHelper.pushWithTransition(
+                context,
+                ref,
+                const LocationTestPage(),
+              );
+            },
           ),
           
           const SizedBox(height: 32),
