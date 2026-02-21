@@ -36,6 +36,9 @@ class TimelinePage extends ConsumerStatefulWidget {
 class _TimelinePageState extends ConsumerState<TimelinePage> {
   // 当前排序方式（默认创建时间降序）
   RecordSortType _currentSort = RecordSortType.createdDesc;
+  
+  // 是否打码敏感信息
+  bool _isMasked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +48,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       appBar: AppBar(
         title: const Text('TA'),
         actions: [
+          // 排序按钮
           PopupMenuButton<RecordSortType>(
             icon: const Icon(Icons.sort),
             tooltip: '排序方式',
@@ -68,6 +72,34 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                 ),
               );
             }).toList(),
+          ),
+          // 更多菜单按钮
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: '更多',
+            onSelected: (String value) {
+              if (value == 'mask') {
+                setState(() {
+                  _isMasked = !_isMasked;
+                });
+                MessageHelper.showSuccess(
+                  context,
+                  _isMasked ? '已打码敏感信息' : '已显示原始信息',
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'mask',
+                child: Row(
+                  children: [
+                    Icon(_isMasked ? Icons.visibility : Icons.visibility_off),
+                    const SizedBox(width: 8),
+                    Text(_isMasked ? '显示原始信息' : '打码记录'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -302,7 +334,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      RecordHelper.getLocationText(record),
+                      _isMasked ? _maskText(RecordHelper.getLocationText(record)) : RecordHelper.getLocationText(record),
                       style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -315,7 +347,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               if (record.description != null && record.description!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
-                      record.description!,
+                      _isMasked ? _maskText(record.description!) : record.description!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -341,7 +373,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            tag.tag,
+                            _isMasked ? _maskText(tag.tag) : tag.tag,
                             style: TextStyle(
                               fontSize: 12,
                               color: statusColor,
@@ -515,7 +547,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               ),
               const SizedBox(width: 4),
               Text(
-                storyLine.name,
+                _isMasked ? _maskText(storyLine.name) : storyLine.name,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 11,
                       color: Theme.of(context).colorScheme.primary,
@@ -534,5 +566,22 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
     );
+  }
+
+  /// 打码文本（将文本替换为星号）
+  /// 
+  /// 规则：
+  /// - 保留文本长度，每个字符替换为 *
+  /// - 中文字符、英文字符、数字、标点符号都替换为 *
+  /// - 保留空格（用于区分单词）
+  String _maskText(String text) {
+    if (text.isEmpty) return text;
+    
+    return text.split('').map((char) {
+      // 保留空格
+      if (char == ' ') return ' ';
+      // 其他字符替换为 *
+      return '*';
+    }).join();
   }
 }
