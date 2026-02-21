@@ -65,9 +65,9 @@
 `_getLocationText()` 函数在多个文件中完全重复。
 
 **重复位置**:
-- [ ] `lib/features/story_line/story_line_detail_page.dart:571`
-- [ ] `lib/features/story_line/add_existing_records_dialog.dart:244`
-- [ ] `lib/features/record/record_detail_page.dart` (类似逻辑)
+- [x] `lib/features/story_line/story_line_detail_page.dart:571`
+- [x] `lib/features/story_line/add_existing_records_dialog.dart:244`
+- [x] `lib/features/timeline/timeline_page.dart` (简化版本)
 
 **解决方案**:
 1. 创建 `lib/core/utils/record_helper.dart`
@@ -75,16 +75,18 @@
 3. 替换所有使用位置
 
 **修改文件**:
-- [ ] 新建: `lib/core/utils/record_helper.dart`
-- [ ] 修改: `lib/features/story_line/story_line_detail_page.dart`
-- [ ] 修改: `lib/features/story_line/add_existing_records_dialog.dart`
-- [ ] 修改: `lib/features/record/record_detail_page.dart`
+- [x] 新建: `lib/core/utils/record_helper.dart`
+- [x] 修改: `lib/features/story_line/story_line_detail_page.dart`
+- [x] 修改: `lib/features/story_line/add_existing_records_dialog.dart`
+- [x] 修改: `lib/features/timeline/timeline_page.dart`
 
 **测试要点**:
-- [ ] 验证地点名称优先级正确（placeName > address > placeType > 未知地点）
-- [ ] 验证所有页面显示一致
+- [x] 验证地点名称优先级正确（placeName > address > placeType > 未知地点）
+- [x] 验证所有页面显示一致
 
-**状态**: ⏳ 待开始
+**代码减少**: 约 36 行
+
+**状态**: ✅ 已完成 (2026-02-21)
 
 ---
 
@@ -252,18 +254,27 @@
 ## 📝 修改日志
 
 ### 2026-02-21
+
+#### 第一阶段：地点文本获取重构
 - ✅ 创建 DRY 重构任务追踪文档
-- ⏳ 等待开始重构工作
+- ✅ 创建 `RecordHelper` 工具类
+- ✅ 实现 `getLocationText()` 静态方法，支持完整的优先级逻辑
+- ✅ 替换 `add_existing_records_dialog.dart` 中的重复代码
+- ✅ 替换 `story_line_detail_page.dart` 中的重复代码
+- ✅ 替换 `timeline_page.dart` 中的简化版本，统一为完整逻辑
+- ✅ 删除 3 个重复的 `_getLocationText()` 方法
+- 📊 减少约 36 行重复代码
 
 ---
 
 ## 📈 进度统计
 
 - **总任务数**: 7
-- **已完成**: 0
+- **已完成**: 1 (DRY-2)
 - **进行中**: 0
-- **待开始**: 7
-- **完成率**: 0%
+- **待开始**: 6
+- **完成率**: 14.3%
+- **代码减少**: 36 行 / 596 行 (6.0%)
 
 ---
 

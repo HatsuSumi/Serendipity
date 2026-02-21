@@ -6,6 +6,7 @@ import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/record_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 
 /// 可用记录列表 Provider
@@ -251,7 +252,7 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          _getLocationText(record),
+                          RecordHelper.getLocationText(record),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
@@ -294,20 +295,6 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
   /// 格式化日期
   String _formatDate(DateTime dateTime) {
     return '${dateTime.year}.${dateTime.month.toString().padLeft(2, '0')}.${dateTime.day.toString().padLeft(2, '0')}';
-  }
-
-  /// 获取地点文本
-  String _getLocationText(EncounterRecord record) {
-    if (record.location.placeName != null) {
-      return record.location.placeName!;
-    }
-    if (record.location.address != null) {
-      return record.location.address!;
-    }
-    if (record.location.placeType != null) {
-      return record.location.placeType!.label;
-    }
-    return '未知地点';
   }
 }
 

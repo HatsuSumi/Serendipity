@@ -5,6 +5,7 @@ import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
+import '../../core/utils/record_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
@@ -320,7 +321,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      record.location.placeName ?? '未知地点',
+                      RecordHelper.getLocationText(record),
                       style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

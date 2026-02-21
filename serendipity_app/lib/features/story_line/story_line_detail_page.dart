@@ -11,6 +11,7 @@ import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/smart_navigator.dart';
+import '../../core/utils/record_helper.dart';
 import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
@@ -267,7 +268,7 @@ class StoryLineDetailPage extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      _getLocationText(record),
+                      RecordHelper.getLocationText(record),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -607,19 +608,5 @@ class StoryLineDetailPage extends ConsumerWidget {
   /// 格式化日期
   String _formatDate(DateTime dateTime) {
     return '${dateTime.year}.${dateTime.month.toString().padLeft(2, '0')}.${dateTime.day.toString().padLeft(2, '0')}';
-  }
-
-  /// 获取地点文本
-  String _getLocationText(EncounterRecord record) {
-    if (record.location.placeName != null) {
-      return record.location.placeName!;
-    }
-    if (record.location.address != null) {
-      return record.location.address!;
-    }
-    if (record.location.placeType != null) {
-      return record.location.placeType!.label;
-    }
-    return '未知地点';
   }
 }
