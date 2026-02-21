@@ -5,7 +5,41 @@ import '../../models/story_line.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/async_action_helper.dart';
 import '../../core/theme/status_color_extension.dart';
+
+/// 可用记录列表 Provider
+/// 
+/// 根据故事线ID获取未关联到该故事线的记录
+final availableRecordsProvider = Provider.family<List<EncounterRecord>, String>((ref, storyLineId) {
+  final recordsAsync = ref.watch(recordsProvider);
+  final storyLinesAsync = ref.watch(storyLinesProvider);
+  
+  // 如果数据还在加载中，返回空列表
+  if (!recordsAsync.hasValue || !storyLinesAsync.hasValue) {
+    return [];
+  }
+  
+  final allRecords = recordsAsync.value ?? [];
+  final storyLine = storyLinesAsync.value?.firstWhere(
+    (sl) => sl.id == storyLineId,
+    orElse: () => throw StateError('Story line $storyLineId not found'),
+  );
+  
+  if (storyLine == null) {
+    return [];
+  }
+  
+  // 筛选出未关联到该故事线的记录
+  final available = allRecords.where((record) {
+    return !storyLine.recordIds.contains(record.id);
+  }).toList();
+  
+  // 按时间倒序排列
+  available.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  
+  return available;
+});
 
 /// 添加现有记录到故事线对话框
 class AddExistingRecordsDialog extends ConsumerStatefulWidget {
@@ -22,47 +56,11 @@ class AddExistingRecordsDialog extends ConsumerStatefulWidget {
 
 class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDialog> {
   final Set<String> _selectedRecordIds = {};
-  List<EncounterRecord> _availableRecords = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAvailableRecords();
-  }
-
-  /// 加载可用的记录（未关联到该故事线的记录）
-  Future<void> _loadAvailableRecords() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // 通过 Provider 访问数据
-      final recordsAsync = ref.read(recordsProvider);
-      final allRecords = recordsAsync.value ?? [];
-      
-      // 筛选出未关联到该故事线的记录
-      final available = allRecords.where((record) {
-        return !widget.storyLine.recordIds.contains(record.id);
-      }).toList();
-      
-      // 按时间倒序排列
-      available.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-      setState(() {
-        _availableRecords = available;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    // 使用 ref.watch() 自动响应数据变化
+    final availableRecords = ref.watch(availableRecordsProvider(widget.storyLine.id));
     return Dialog(
       child: Container(
         constraints: const BoxConstraints(
@@ -97,11 +95,9 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
 
             // 记录列表
             Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _availableRecords.isEmpty
-                      ? _buildEmptyState(context)
-                      : _buildRecordList(context),
+              child: availableRecords.isEmpty
+                  ? _buildEmptyState(context)
+                  : _buildRecordList(context, availableRecords),
             ),
 
             const Divider(height: 1),
@@ -161,12 +157,12 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
   }
 
   /// 记录列表
-  Widget _buildRecordList(BuildContext context) {
+  Widget _buildRecordList(BuildContext context, List<EncounterRecord> records) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: _availableRecords.length,
+      itemCount: records.length,
       itemBuilder: (context, index) {
-        final record = _availableRecords[index];
+        final record = records[index];
         final isSelected = _selectedRecordIds.contains(record.id);
         
         return _buildRecordItem(context, record, isSelected);
@@ -278,29 +274,21 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
   Future<void> _handleConfirm() async {
     if (_selectedRecordIds.isEmpty) return;
 
-    try {
-      final storyLinesNotifier = ref.read(storyLinesProvider.notifier);
-      
-      // 批量关联记录
-      for (final recordId in _selectedRecordIds) {
-        await storyLinesNotifier.linkRecord(recordId, widget.storyLine.id);
-      }
-
-      // 刷新记录列表
-      await ref.read(recordsProvider.notifier).refresh();
-
-      if (mounted) {
-        Navigator.of(context).pop(true);
-        MessageHelper.showSuccess(
-          context,
-          '已添加 ${_selectedRecordIds.length} 条记录',
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        MessageHelper.showError(context, '添加失败：$e');
-      }
-    }
+    Navigator.of(context).pop();
+    
+    await AsyncActionHelper.execute(
+      context,
+      action: () async {
+        final storyLinesNotifier = ref.read(storyLinesProvider.notifier);
+        
+        // 批量关联记录
+        for (final recordId in _selectedRecordIds) {
+          await storyLinesNotifier.linkRecord(recordId, widget.storyLine.id);
+        }
+      },
+      successMessage: '已添加 ${_selectedRecordIds.length} 条记录',
+      errorMessagePrefix: '添加失败',
+    );
   }
 
   /// 格式化日期

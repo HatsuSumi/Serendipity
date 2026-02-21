@@ -4,6 +4,8 @@ import '../services/i_storage_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_service.dart';
 import '../repositories/record_repository.dart';
+import '../repositories/story_line_repository.dart';
+import 'story_lines_provider.dart';
 import 'auth_provider.dart';
 
 /// 存储服务 Provider
@@ -14,6 +16,11 @@ final storageServiceProvider = Provider<IStorageService>((ref) {
 /// 记录仓储 Provider
 final recordRepositoryProvider = Provider<RecordRepository>((ref) {
   return RecordRepository(ref.read(storageServiceProvider));
+});
+
+/// 故事线仓储 Provider（用于 RecordsProvider）
+final storyLineRepositoryProvider = Provider<StoryLineRepository>((ref) {
+  return StoryLineRepository(ref.read(storageServiceProvider));
 });
 
 /// 记录列表状态管理
@@ -48,7 +55,16 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     // 1. 保存到本地
     await _repository.saveRecord(record);
     
-    // 2. 如果用户已登录，上传到云端
+    // 2. 如果关联了故事线，建立双向关联
+    if (record.storyLineId != null) {
+      final storyLineRepo = ref.read(storyLineRepositoryProvider);
+      await storyLineRepo.linkRecord(record.id, record.storyLineId!);
+      
+      // 刷新故事线列表（重要！）
+      ref.invalidate(storyLinesProvider);
+    }
+    
+    // 3. 如果用户已登录，上传到云端
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
@@ -61,7 +77,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 3. 刷新列表
+    // 4. 刷新记录列表
     await refresh();
   }
 
@@ -72,10 +88,33 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// - 如果用户未登录，只更新本地（离线模式）
   /// - 云端同步失败不影响本地操作
   Future<void> updateRecord(EncounterRecord record) async {
-    // 1. 更新本地
+    // 1. 获取旧记录，检查故事线是否变化
+    final oldRecord = _repository.getRecord(record.id);
+    final oldStoryLineId = oldRecord?.storyLineId;
+    final newStoryLineId = record.storyLineId;
+    
+    // 2. 更新本地
     await _repository.updateRecord(record);
     
-    // 2. 如果用户已登录，上传到云端
+    // 3. 如果故事线发生变化，更新双向关联
+    if (oldStoryLineId != newStoryLineId) {
+      final storyLineRepo = ref.read(storyLineRepositoryProvider);
+      
+      // 从旧故事线移除
+      if (oldStoryLineId != null) {
+        await storyLineRepo.unlinkRecord(record.id, oldStoryLineId);
+      }
+      
+      // 关联到新故事线
+      if (newStoryLineId != null) {
+        await storyLineRepo.linkRecord(record.id, newStoryLineId);
+      }
+      
+      // 刷新故事线列表（重要！）
+      ref.invalidate(storyLinesProvider);
+    }
+    
+    // 4. 如果用户已登录，上传到云端
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
@@ -87,7 +126,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 3. 刷新列表
+    // 5. 刷新记录列表
     await refresh();
   }
 
@@ -98,10 +137,21 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// - 如果用户未登录，只删除本地（离线模式）
   /// - 云端同步失败不影响本地操作
   Future<void> deleteRecord(String id) async {
-    // 1. 删除本地
+    // 1. 获取记录，检查是否关联了故事线
+    final record = _repository.getRecord(id);
+    if (record != null && record.storyLineId != null) {
+      // 先从故事线移除
+      final storyLineRepo = ref.read(storyLineRepositoryProvider);
+      await storyLineRepo.unlinkRecord(id, record.storyLineId!);
+      
+      // 刷新故事线列表（重要！）
+      ref.invalidate(storyLinesProvider);
+    }
+    
+    // 2. 删除本地
     await _repository.deleteRecord(id);
     
-    // 2. 如果用户已登录，删除云端
+    // 3. 如果用户已登录，删除云端
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
@@ -113,7 +163,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 3. 刷新列表
+    // 4. 刷新记录列表
     await refresh();
   }
 

@@ -5,6 +5,7 @@ import '../../models/story_line.dart';
 import '../../models/enums.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
+import '../../core/utils/smart_navigator.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
@@ -28,21 +29,28 @@ class RecordDetailPage extends ConsumerStatefulWidget {
 }
 
 class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
-  late EncounterRecord _currentRecord;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentRecord = widget.record;
+  /// 获取当前记录（从 Provider 实时获取）
+  EncounterRecord get _currentRecord {
+    final recordsAsync = ref.watch(recordsProvider);
+    final records = recordsAsync.value;
+    if (records == null) return widget.record;
+    
+    try {
+      return records.firstWhere((r) => r.id == widget.record.id);
+    } catch (e) {
+      return widget.record;
+    }
   }
 
   /// 获取故事线名称（通过 Provider）
+  /// 
+  /// 注意：此方法只在 storyLineId != null 时被调用
   String _getStoryLineName() {
-    if (_currentRecord.storyLineId == null) return '未知故事线';
-    
     final storyLinesAsync = ref.read(storyLinesProvider);
     final storyLines = storyLinesAsync.value;
-    if (storyLines == null) return '未知故事线';
+    
+    // 如果故事线列表还在加载中，显示"加载中..."
+    if (storyLines == null) return '加载中...';
     
     try {
       final storyLine = storyLines.firstWhere(
@@ -50,7 +58,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       );
       return storyLine.name;
     } catch (e) {
-      return '未知故事线';
+      // 如果找不到对应的故事线（数据不一致，理论上不应该发生）
+      // 因为删除故事线时会自动将记录的 storyLineId 设为 null
+      return '故事线已删除';
     }
   }
 
@@ -84,14 +94,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             : const Duration(milliseconds: 300),
       ),
     ).then((result) {
-      // 如果返回了更新后的记录
+      // 如果返回了更新后的记录，让 Provider 失效，触发自动重新加载
       if (mounted && result != null && result is EncounterRecord) {
-        // 更新当前显示的记录
-        setState(() {
-          _currentRecord = result;
-        });
-        
-        // 让 Provider 失效，触发自动重新加载
         ref.invalidate(recordsProvider);
       }
     });
@@ -127,25 +131,21 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       transitionType = PageTransitionBuilder.getRandomType();
     }
     
-    // 导航到故事线详情页
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return StoryLineDetailPage(storyLine: storyLine!);
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: transitionType == PageTransitionType.none
-            ? Duration.zero
-            : const Duration(milliseconds: 300),
-      ),
+    // 使用 SmartNavigator 自动处理导航栈
+    SmartNavigator.push(
+      context: context,
+      targetPage: StoryLineDetailPage(storyLineId: storyLine.id),
+      currentPageType: RecordDetailPage,
+      targetPageType: StoryLineDetailPage,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return PageTransitionBuilder.buildTransition(
+          transitionType,
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        );
+      },
     );
   }
 
@@ -677,23 +677,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         recordId: _currentRecord.id,
       ),
     ).then((result) {
-      // 如果关联成功，刷新当前记录
+      // 如果关联成功，让 Provider 失效，触发自动重新加载
       if (result == true && mounted) {
-        // 通过 Provider 获取更新后的记录
-        final recordsAsync = ref.read(recordsProvider);
-        final records = recordsAsync.value;
-        if (records != null) {
-          try {
-            final updatedRecord = records.firstWhere(
-              (r) => r.id == _currentRecord.id,
-            );
-            setState(() {
-              _currentRecord = updatedRecord;
-            });
-          } catch (e) {
-            // 记录未找到，忽略
-          }
-        }
+        ref.invalidate(recordsProvider);
       }
     });
   }

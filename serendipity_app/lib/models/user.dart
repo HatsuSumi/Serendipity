@@ -40,7 +40,7 @@ class User extends HiveObject {
   final DateTime updatedAt;
 
   User({
-    required this.id,
+    required String id,
     this.email,
     this.phoneNumber,
     this.displayName,
@@ -51,9 +51,9 @@ class User extends HiveObject {
     this.lastLoginAt,
     required this.createdAt,
     required this.updatedAt,
-  }) {
+  }) : id = id.trim() {
     // Fail Fast：参数验证
-    if (id.trim().isEmpty) {
+    if (this.id.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
     

@@ -1,7 +1,47 @@
 import 'package:flutter/material.dart';
 
 /// 消息提示工具类
-/// 提供统一的消息提示样式和行为
+/// 
+/// 提供统一的消息提示方法，使用右上角滑入滑出动画。
+/// 遵循单一职责原则（SRP）和 DRY 原则。
+/// 
+/// 使用场景说明：
+/// 
+/// 【场景1：当前页面即时反馈】✅ 使用 MessageHelper
+/// - 表单验证错误提示
+/// - 操作失败提示
+/// - 不涉及页面跳转的成功提示
+/// 
+/// 示例：
+/// ```dart
+/// MessageHelper.showError(context, '邮箱格式不正确');
+/// MessageHelper.showSuccess(context, '保存成功');
+/// ```
+/// 
+/// 【场景2：跨页面消息传递】❌ 不要使用 MessageHelper
+/// 当需要在页面跳转后显示消息时，应使用 MessageProvider：
+/// - 登录成功后跳转到主页并显示"登录成功"
+/// - 注册成功后跳转到主页并显示"注册成功"
+/// 
+/// 错误示例：
+/// ```dart
+/// MessageHelper.showSuccess(context, '登录成功'); // ❌ 消息会在跳转前消失
+/// Navigator.push(...);
+/// ```
+/// 
+/// 正确示例：
+/// ```dart
+/// ref.read(messageProvider.notifier).showSuccess('登录成功'); // ✅
+/// Navigator.push(...);
+/// ```
+/// 
+/// 调用者：
+/// - 各个页面的成功/错误/警告/信息提示
+/// 
+/// 设计原则：
+/// - 单一职责：只负责消息提示的显示
+/// - DRY：避免重复的 SnackBar 代码
+/// - 一致性：统一的动画和样式
 class MessageHelper {
   /// 显示成功消息（右上角浮动）
   static void showSuccess(

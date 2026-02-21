@@ -10,8 +10,6 @@ class RecordRepository {
 
   /// 保存记录
   /// 
-  /// 如果记录关联了故事线，会自动建立双向关联
-  /// 
   /// Fail Fast:
   /// - 如果故事线不存在，抛出 StateError
   Future<void> saveRecord(EncounterRecord record) async {
@@ -25,18 +23,11 @@ class RecordRepository {
       }
     }
 
-    // 保存记录
+    // 保存记录（双向关联由 StoryLineRepository 统一维护）
     await _storage.saveRecord(record);
-
-    // 如果关联了故事线，建立双向关联
-    if (record.storyLineId != null) {
-      await _linkRecordToStoryLine(record.id, record.storyLineId!);
-    }
   }
 
   /// 更新记录
-  /// 
-  /// 如果故事线ID发生变化，会自动更新双向关联
   /// 
   /// Fail Fast:
   /// - 如果记录不存在，抛出 StateError
@@ -58,40 +49,20 @@ class RecordRepository {
       }
     }
 
-    // 检查故事线是否发生变化
-    final oldStoryLineId = oldRecord.storyLineId;
-    final newStoryLineId = record.storyLineId;
-
-    if (oldStoryLineId != newStoryLineId) {
-      // 从旧故事线移除
-      if (oldStoryLineId != null) {
-        await _unlinkRecordFromStoryLine(record.id, oldStoryLineId);
-      }
-      // 关联到新故事线
-      if (newStoryLineId != null) {
-        await _linkRecordToStoryLine(record.id, newStoryLineId);
-      }
-    }
-
-    // 更新记录
+    // 更新记录（双向关联由 StoryLineRepository 统一维护）
     await _storage.updateRecord(record);
   }
 
   /// 删除记录
   /// 
-  /// 会自动从关联的故事线中移除
-  /// 
   /// Fail Fast:
   /// - 如果记录不存在，抛出 StateError
+  /// 
+  /// 注意：删除记录前，调用方应先通过 StoryLineRepository 解除关联
   Future<void> deleteRecord(String recordId) async {
     final record = _storage.getRecord(recordId);
     if (record == null) {
       throw StateError('Cannot delete record: Record $recordId does not exist');
-    }
-
-    // 如果关联了故事线，先移除关联
-    if (record.storyLineId != null) {
-      await _unlinkRecordFromStoryLine(recordId, record.storyLineId!);
     }
 
     // 删除记录
@@ -179,31 +150,5 @@ class RecordRepository {
     }
   }
 
-  // ==================== 私有方法 ====================
-
-  /// 将记录关联到故事线（内部方法）
-  Future<void> _linkRecordToStoryLine(String recordId, String storyLineId) async {
-    final storyLine = _storage.getStoryLine(storyLineId);
-    if (storyLine != null && !storyLine.recordIds.contains(recordId)) {
-      final updatedStoryLine = storyLine.copyWith(
-        recordIds: [...storyLine.recordIds, recordId],
-        updatedAt: DateTime.now(),
-      );
-      await _storage.updateStoryLine(updatedStoryLine);
-    }
-  }
-
-  /// 从故事线移除记录（内部方法）
-  Future<void> _unlinkRecordFromStoryLine(String recordId, String storyLineId) async {
-    final storyLine = _storage.getStoryLine(storyLineId);
-    if (storyLine != null) {
-      final updatedRecordIds = storyLine.recordIds.where((id) => id != recordId).toList();
-      final updatedStoryLine = storyLine.copyWith(
-        recordIds: updatedRecordIds,
-        updatedAt: DateTime.now(),
-      );
-      await _storage.updateStoryLine(updatedStoryLine);
-    }
-  }
 }
 

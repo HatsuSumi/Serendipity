@@ -154,8 +154,16 @@ class TestAuthRepository implements IAuthRepository {
   
   /// 保存密码到 Hive（仅用于测试环境）
   /// 
-  /// 注意：生产环境绝不应该明文存储密码！
-  /// 这里仅用于测试环境，方便开发和调试。
+  /// ⚠️ 安全警告：
+  /// 1. 这里使用明文存储密码，仅用于开发和测试环境
+  /// 2. 生产环境绝不应该在客户端存储密码（明文或哈希）
+  /// 3. Firebase Authentication 会在服务器端安全处理密码
+  /// 4. 如果需要本地存储，应该使用加密哈希（如 SHA-256）
+  /// 
+  /// 为什么测试环境可以接受明文：
+  /// - 仅在本地开发环境使用
+  /// - 不会暴露到网络
+  /// - 方便调试和测试
   Future<void> _savePassword(String userId, String password) async {
     await _passwordsBox.put(userId, password);
     print('✅ [TestAuth] 密码已保存到 Hive: $userId');
@@ -227,20 +235,22 @@ class TestAuthRepository implements IAuthRepository {
     print('🔍 [TestAuth] 输入密码: "$password"');
     print('🔍 [TestAuth] 保存的密码: "$savedPassword"');
     
+    // Fail Fast: 密码必须存在
     if (savedPassword == null) {
-      print('❌ [TestAuth] 未找到保存的密码（数据异常）');
+      print('❌ [TestAuth] 数据异常：密码未保存');
       _currentUser = null;
       _authStateController.add(null);
       throw Exception('账号数据异常，请重新注册');
     }
     
+    // Fail Fast: 密码必须匹配
     if (password != savedPassword) {
       print('❌ [TestAuth] 密码错误');
-      // 清空当前用户
       _currentUser = null;
       _authStateController.add(null);
       throw Exception('密码错误');
     }
+    
     print('✅ [TestAuth] 密码正确');
     
     // 登录成功

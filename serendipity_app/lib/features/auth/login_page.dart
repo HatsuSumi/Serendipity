@@ -350,7 +350,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     
     try {
       // 拼接完整手机号（国家代码 + 手机号）
-      final fullPhoneNumber = AuthErrorHelper.buildFullPhoneNumber(
+      final fullPhoneNumber = AuthErrorHelper.formatPhoneNumberWithCountryCode(
         _countryCode,
         _phoneController.text,
       );
@@ -395,7 +395,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     
     try {
       // 拼接完整手机号（国家代码 + 手机号）
-      final fullPhoneNumber = AuthErrorHelper.buildFullPhoneNumber(
+      final fullPhoneNumber = AuthErrorHelper.formatPhoneNumberWithCountryCode(
         _countryCode,
         _phoneController.text,
       );

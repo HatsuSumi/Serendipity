@@ -35,9 +35,36 @@ class AppMessage {
 /// 
 /// 使用 Riverpod 管理全局消息状态，实现页面间解耦通信。
 /// 
+/// 使用场景说明：
+/// 
+/// 【场景1：跨页面消息传递】
+/// 当需要在页面跳转后显示消息时，使用 MessageProvider：
+/// - 登录成功后跳转到主页并显示"登录成功"
+/// - 注册成功后跳转到主页并显示"注册成功"
+/// 
+/// 示例：
+/// ```dart
+/// // 发送消息
+/// ref.read(messageProvider.notifier).showSuccess('登录成功');
+/// // 跳转页面
+/// Navigator.push(...);
+/// // 目标页面监听并显示消息
+/// ```
+/// 
+/// 【场景2：当前页面即时反馈】
+/// 当需要在当前页面立即显示消息时，使用 MessageHelper：
+/// - 表单验证错误提示
+/// - 操作失败提示
+/// - 不涉及页面跳转的成功提示
+/// 
+/// 示例：
+/// ```dart
+/// MessageHelper.showError(context, '邮箱格式不正确');
+/// ```
+/// 
 /// 调用者：
-/// - RegisterPage: 发送注册成功消息
-/// - LoginPage: 发送登录成功消息
+/// - RegisterPage: 发送注册成功消息（跨页面）
+/// - LoginPage: 发送登录成功消息（跨页面）
 /// - MainNavigationPage: 监听并显示消息
 /// 
 /// 设计原则：

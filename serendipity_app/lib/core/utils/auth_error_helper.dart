@@ -47,7 +47,7 @@ class AuthErrorHelper {
     return message;
   }
   
-  /// 拼接完整手机号（国家代码 + 手机号）
+  /// 格式化手机号（拼接国家代码 + 手机号）
   /// 
   /// 调用者：
   /// - LoginPage._sendVerificationCode()
@@ -60,7 +60,7 @@ class AuthErrorHelper {
   /// - [phoneNumber]: 手机号（不含国家代码）
   /// 
   /// 返回：完整手机号（如 +8613800138000）
-  static String buildFullPhoneNumber(String countryCode, String phoneNumber) {
+  static String formatPhoneNumberWithCountryCode(String countryCode, String phoneNumber) {
     return '$countryCode${phoneNumber.trim()}';
   }
 }

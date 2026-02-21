@@ -93,19 +93,16 @@ class StoryLineRepository {
       await unlinkRecord(recordId, record.storyLineId!);
     }
 
-    // 如果已经关联到目标故事线，直接返回
-    if (record.storyLineId == storyLineId) {
-      return;
+    // 更新记录的 storyLineId（如果还没有设置）
+    if (record.storyLineId != storyLineId) {
+      final updatedRecord = record.copyWith(
+        storyLineId: () => storyLineId,
+        updatedAt: DateTime.now(),
+      );
+      await _storage.updateRecord(updatedRecord);
     }
 
-    // 更新记录的 storyLineId
-    final updatedRecord = record.copyWith(
-      storyLineId: () => storyLineId,
-      updatedAt: DateTime.now(),
-    );
-    await _storage.updateRecord(updatedRecord);
-
-    // 更新故事线的 recordIds
+    // 更新故事线的 recordIds（如果还没有包含）
     if (!storyLine.recordIds.contains(recordId)) {
       final updatedStoryLine = storyLine.copyWith(
         recordIds: [...storyLine.recordIds, recordId],

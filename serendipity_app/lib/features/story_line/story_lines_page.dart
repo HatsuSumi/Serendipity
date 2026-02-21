@@ -211,7 +211,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
           Navigator.of(context).push(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) {
-                return StoryLineDetailPage(storyLine: storyLine);
+                return StoryLineDetailPage(storyLineId: storyLine.id);
               },
               transitionsBuilder: (context, animation, secondaryAnimation, child) {
                 return PageTransitionBuilder.buildTransition(
@@ -232,104 +232,106 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
           });
         },
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // 图标
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Center(
-                  child: Text(
-                    '📖',
-                    style: TextStyle(fontSize: 24),
-                  ),
+        child: Stack(
+          children: [
+            // 置顶图标（左上角）
+            if (storyLine.isPinned)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Icon(
+                  Icons.push_pin,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-              const SizedBox(width: 16),
+            // 主要内容
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 32, 16, 16), // 增加顶部 padding
+              child: Row(
+                children: [
+                  // 图标
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        '📖',
+                        style: TextStyle(fontSize: 24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
 
-              // 信息
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                  // 信息
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            storyLine.name,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          storyLine.name,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        if (storyLine.isPinned) ...[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.push_pin,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '${storyLine.recordIds.length} 条记录',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${storyLine.recordIds.length} 条记录',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
 
-              // 更多按钮
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                onSelected: (value) => _handleMenuAction(context, ref, storyLine, value),
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'pin',
-                    child: Row(
-                      children: [
-                        Icon(storyLine.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-                        const SizedBox(width: 8),
-                        Text(storyLine.isPinned ? '取消置顶' : '置顶'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'rename',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined),
-                        SizedBox(width: 8),
-                        Text('重命名'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('删除', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
+                  // 更多按钮
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) => _handleMenuAction(context, ref, storyLine, value),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'pin',
+                        child: Row(
+                          children: [
+                            Icon(storyLine.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                            const SizedBox(width: 8),
+                            Text(storyLine.isPinned ? '取消置顶' : '置顶'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'rename',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined),
+                            SizedBox(width: 8),
+                            Text('重命名'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('删除', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

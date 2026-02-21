@@ -5,12 +5,16 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/sync_service.dart';
+import 'core/repositories/record_repository.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/config/app_config.dart';
+import 'core/utils/smart_navigator.dart';
 import 'features/home/main_navigation_page.dart';
 import 'features/auth/welcome_page.dart';
+import 'features/record/record_detail_page.dart';
+import 'features/story_line/story_line_detail_page.dart';
 import 'models/enums.dart';
 import 'models/encounter_record.dart';
 import 'models/story_line.dart';
@@ -49,6 +53,27 @@ void main() async {
   
   // 初始化存储服务
   await StorageService().init();
+  
+  // 注册循环页面对（用于智能导航）
+  SmartNavigator.registerCyclicPair(RecordDetailPage, StoryLineDetailPage);
+  
+  // 启用调试模式（仅在开发模式下）
+  if (kDebugMode) {
+    SmartNavigator.debugMode = true;
+  }
+  
+  // 验证数据一致性（仅在开发模式下）
+  if (kDebugMode) {
+    try {
+      final recordRepo = RecordRepository(StorageService());
+      recordRepo.validateDataConsistency();
+      print('✅ [main] 数据一致性验证通过');
+    } catch (e) {
+      print('⚠️ [main] 数据一致性验证失败：$e');
+      print('⚠️ [main] 这不会影响应用运行，但建议检查数据');
+      // 开发模式下只打印警告，不阻止应用启动
+    }
+  }
   
   // 测试模式下初始化测试用户 box
   if (kDebugMode && AppConfig.enableTestMode) {

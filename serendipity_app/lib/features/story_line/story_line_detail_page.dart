@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/story_line.dart';
 import '../../models/encounter_record.dart';
-import '../../models/enums.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/theme/status_color_extension.dart';
@@ -10,153 +9,129 @@ import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
+import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/smart_navigator.dart';
+import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import 'add_existing_records_dialog.dart';
 
 /// 故事线详情页面
-class StoryLineDetailPage extends ConsumerStatefulWidget {
-  final StoryLine storyLine;
+class StoryLineDetailPage extends ConsumerWidget {
+  final String storyLineId;
 
   const StoryLineDetailPage({
     super.key,
-    required this.storyLine,
+    required this.storyLineId,
   });
 
   @override
-  ConsumerState<StoryLineDetailPage> createState() => _StoryLineDetailPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 使用 ref.watch() 自动响应数据变化
+    final storyLinesAsync = ref.watch(storyLinesProvider);
+    final recordsAsync = ref.watch(storyLineRecordsProvider(storyLineId));
 
-class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
-  late StoryLine _currentStoryLine;
-  List<EncounterRecord> _records = [];
-  bool _isLoading = true;
+    return storyLinesAsync.when(
+      data: (storyLines) {
+        // 查找当前故事线
+        final storyLine = storyLines.firstWhere(
+          (sl) => sl.id == storyLineId,
+          orElse: () => throw StateError('Story line $storyLineId not found'),
+        );
 
-  @override
-  void initState() {
-    super.initState();
-    _currentStoryLine = widget.storyLine;
-    _loadRecords();
-  }
-
-  /// 加载记录
-  Future<void> _loadRecords() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // 通过 Provider 访问数据
-      final recordsAsync = ref.read(recordsProvider);
-      final allRecords = recordsAsync.value ?? [];
-      
-      // 筛选出属于该故事线的记录
-      final records = allRecords.where((record) {
-        return _currentStoryLine.recordIds.contains(record.id);
-      }).toList();
-      
-      // 按时间排序
-      records.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-      setState(() {
-        _records = records;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      rethrow;  // Fail Fast: 不隐藏错误
-    }
-  }
-
-  /// 刷新故事线数据
-  Future<void> _refresh() async {
-    // 通过 Provider 访问数据
-    final storyLinesAsync = ref.read(storyLinesProvider);
-    final allStoryLines = storyLinesAsync.value ?? [];
-    final updatedStoryLine = allStoryLines.firstWhere(
-      (sl) => sl.id == _currentStoryLine.id,
-      orElse: () => _currentStoryLine,
-    );
-    
-    setState(() {
-      _currentStoryLine = updatedStoryLine;
-    });
-    
-    await _loadRecords();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_currentStoryLine.name),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) => _handleMenuAction(context, value),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'add_existing',
-                child: Row(
-                  children: [
-                    Icon(Icons.playlist_add),
-                    SizedBox(width: 8),
-                    Text('添加现有记录'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'rename',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined),
-                    SizedBox(width: 8),
-                    Text('重命名'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('删除', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(storyLine.name),
+            actions: [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) => _handleMenuAction(context, ref, storyLine, value),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'add_existing',
+                    child: Row(
+                      children: [
+                        Icon(Icons.playlist_add),
+                        SizedBox(width: 8),
+                        Text('添加现有记录'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'rename',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined),
+                        SizedBox(width: 8),
+                        Text('重命名'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('删除', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _records.isEmpty
+          body: recordsAsync.isEmpty
               ? _buildEmptyState(context)
               : RefreshIndicator(
-                  onRefresh: _refresh,
+                  onRefresh: () async {
+                    await ref.refresh(storyLinesProvider.future);
+                  },
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _records.length,
+                    itemCount: recordsAsync.length,
                     itemBuilder: (context, index) {
-                      final record = _records[index];
-                      final isLast = index == _records.length - 1;
+                      final record = recordsAsync[index];
+                      final isLast = index == recordsAsync.length - 1;
 
                       return Column(
                         children: [
-                          _buildRecordCard(context, record),
+                          _buildRecordCard(context, ref, record, storyLine),
                           if (!isLast) _buildArrow(context),
                         ],
                       );
                     },
                   ),
                 ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToCreateRecord(context),
-        icon: const Icon(Icons.add),
-        label: const Text('添加新的进展'),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => _navigateToCreateRecord(context, ref, storyLine),
+            icon: const Icon(Icons.add),
+            label: const Text('添加新的进展'),
+          ),
+        );
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(title: const Text('故事线详情')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '加载失败：$error',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -192,12 +167,12 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
   }
 
   /// 记录卡片
-  Widget _buildRecordCard(BuildContext context, EncounterRecord record) {
+  Widget _buildRecordCard(BuildContext context, WidgetRef ref, EncounterRecord record, StoryLine storyLine) {
     final statusColor = record.status.getColor(context, ref);
 
     return Card(
       child: InkWell(
-        onTap: () => _navigateToRecordDetail(context, record),
+        onTap: () => _navigateToRecordDetail(context, ref, record),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -243,7 +218,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
                   // 菜单按钮
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
-                    onSelected: (value) => _handleRecordMenuAction(context, record, value),
+                    onSelected: (value) => _handleRecordMenuAction(context, ref, record, storyLine, value),
                     itemBuilder: (context) => [
                       const PopupMenuItem(
                         value: 'remove',
@@ -363,37 +338,37 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
   }
 
   /// 处理菜单操作
-  void _handleMenuAction(BuildContext context, String action) {
+  void _handleMenuAction(BuildContext context, WidgetRef ref, StoryLine storyLine, String action) {
     switch (action) {
       case 'add_existing':
-        _showAddExistingRecordsDialog(context);
+        _showAddExistingRecordsDialog(context, storyLine);
         break;
       case 'rename':
-        _showRenameDialog(context);
+        _showRenameDialog(context, ref, storyLine);
         break;
       case 'delete':
-        _showDeleteConfirmDialog(context);
+        _showDeleteConfirmDialog(context, ref, storyLine);
         break;
     }
   }
 
   /// 处理记录卡片菜单操作
-  void _handleRecordMenuAction(BuildContext context, EncounterRecord record, String action) {
+  void _handleRecordMenuAction(BuildContext context, WidgetRef ref, EncounterRecord record, StoryLine storyLine, String action) {
     switch (action) {
       case 'remove':
-        _showRemoveRecordConfirmDialog(context, record);
+        _showRemoveRecordConfirmDialog(context, ref, record, storyLine);
         break;
       case 'edit':
-        _navigateToEditRecord(context, record);
+        _navigateToEditRecord(context, ref, record);
         break;
       case 'delete':
-        _showDeleteRecordConfirmDialog(context, record);
+        _showDeleteRecordConfirmDialog(context, ref, record);
         break;
     }
   }
 
   /// 显示从故事线移除记录确认对话框
-  void _showRemoveRecordConfirmDialog(BuildContext context, EncounterRecord record) {
+  void _showRemoveRecordConfirmDialog(BuildContext context, WidgetRef ref, EncounterRecord record, StoryLine storyLine) {
     DialogHelper.show(
       context: context,
       builder: (context) => AlertDialog(
@@ -406,21 +381,13 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
           ),
           FilledButton(
             onPressed: () async {
-              try {
-                await ref.read(storyLinesProvider.notifier).unlinkRecord(
-                  record.id,
-                  _currentStoryLine.id,
-                );
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  MessageHelper.showSuccess(context, '已从故事线移除');
-                  _refresh();
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  MessageHelper.showError(context, '移除失败：$e');
-                }
-              }
+              Navigator.of(context).pop();
+              await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(storyLinesProvider.notifier).unlinkRecord(record.id, storyLine.id),
+                successMessage: '已从故事线移除',
+                errorMessagePrefix: '移除失败',
+              );
             },
             child: const Text('移除'),
           ),
@@ -430,7 +397,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
   }
 
   /// 导航到编辑记录页面
-  void _navigateToEditRecord(BuildContext context, EncounterRecord record) {
+  void _navigateToEditRecord(BuildContext context, WidgetRef ref, EncounterRecord record) {
     var transitionType = ref.read(pageTransitionProvider);
     if (transitionType == PageTransitionType.random) {
       transitionType = PageTransitionBuilder.getRandomType();
@@ -454,16 +421,11 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
             ? Duration.zero
             : const Duration(milliseconds: 300),
       ),
-    ).then((result) {
-      // 编辑后刷新
-      if (result != null) {
-        _refresh();
-      }
-    });
+    );
   }
 
   /// 显示删除记录确认对话框
-  void _showDeleteRecordConfirmDialog(BuildContext context, EncounterRecord record) {
+  void _showDeleteRecordConfirmDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
     DialogHelper.show(
       context: context,
       builder: (context) => AlertDialog(
@@ -476,19 +438,13 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
           ),
           TextButton(
             onPressed: () async {
-              try {
-                await ref.read(recordsProvider.notifier).deleteRecord(record.id);
-                
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  MessageHelper.showSuccess(context, '记录已删除');
-                  _refresh();
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  MessageHelper.showError(context, '删除失败：$e');
-                }
-              }
+              Navigator.of(context).pop();
+              await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(recordsProvider.notifier).deleteRecord(record.id),
+                successMessage: '记录已删除',
+                errorMessagePrefix: '删除失败',
+              );
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
@@ -501,21 +457,16 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
   }
 
   /// 显示添加现有记录对话框
-  void _showAddExistingRecordsDialog(BuildContext context) {
+  void _showAddExistingRecordsDialog(BuildContext context, StoryLine storyLine) {
     DialogHelper.show(
       context: context,
-      builder: (context) => AddExistingRecordsDialog(storyLine: _currentStoryLine),
-    ).then((result) {
-      if (result == true) {
-        // 添加成功后刷新
-        _refresh();
-      }
-    });
+      builder: (context) => AddExistingRecordsDialog(storyLine: storyLine),
+    );
   }
 
   /// 显示重命名对话框
-  void _showRenameDialog(BuildContext context) {
-    final nameController = TextEditingController(text: _currentStoryLine.name);
+  void _showRenameDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) {
+    final nameController = TextEditingController(text: storyLine.name);
 
     DialogHelper.show(
       context: context,
@@ -542,25 +493,18 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
                 return;
               }
 
-              final updatedStoryLine = _currentStoryLine.copyWith(
+              final updatedStoryLine = storyLine.copyWith(
                 name: name,
                 updatedAt: DateTime.now(),
               );
 
-              try {
-                await ref.read(storyLinesProvider.notifier).updateStoryLine(updatedStoryLine);
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  setState(() {
-                    _currentStoryLine = updatedStoryLine;
-                  });
-                  MessageHelper.showSuccess(context, '已重命名');
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  MessageHelper.showError(context, '重命名失败：$e');
-                }
-              }
+              Navigator.of(context).pop();
+              await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(storyLinesProvider.notifier).updateStoryLine(updatedStoryLine),
+                successMessage: '已重命名',
+                errorMessagePrefix: '重命名失败',
+              );
             },
             child: const Text('确认'),
           ),
@@ -570,12 +514,12 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
   }
 
   /// 显示删除确认对话框
-  void _showDeleteConfirmDialog(BuildContext context) {
+  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) {
     DialogHelper.show(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除故事线'),
-        content: Text('确定要删除"${_currentStoryLine.name}"吗？\n\n记录不会被删除，只是取消关联。'),
+        content: Text('确定要删除"${storyLine.name}"吗？\n\n记录不会被删除，只是取消关联。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -583,17 +527,16 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
           ),
           TextButton(
             onPressed: () async {
-              try {
-                await ref.read(storyLinesProvider.notifier).deleteStoryLine(_currentStoryLine.id);
-                if (context.mounted) {
-                  Navigator.of(context).pop(); // 关闭对话框
-                  Navigator.of(context).pop(); // 返回列表页
-                  MessageHelper.showSuccess(context, '故事线已删除');
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  MessageHelper.showError(context, '删除失败：$e');
-                }
+              Navigator.of(context).pop();
+              final success = await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(storyLinesProvider.notifier).deleteStoryLine(storyLine.id),
+                successMessage: '故事线已删除',
+                errorMessagePrefix: '删除失败',
+              );
+              
+              if (success && context.mounted) {
+                Navigator.of(context).pop(); // 返回列表页
               }
             },
             style: TextButton.styleFrom(
@@ -607,38 +550,32 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
   }
 
   /// 导航到记录详情
-  void _navigateToRecordDetail(BuildContext context, EncounterRecord record) {
+  void _navigateToRecordDetail(BuildContext context, WidgetRef ref, EncounterRecord record) {
     var transitionType = ref.read(pageTransitionProvider);
     if (transitionType == PageTransitionType.random) {
       transitionType = PageTransitionBuilder.getRandomType();
     }
 
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return RecordDetailPage(record: record);
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: transitionType == PageTransitionType.none
-            ? Duration.zero
-            : const Duration(milliseconds: 300),
-      ),
-    ).then((_) {
-      // 返回后刷新
-      _refresh();
-    });
+    // 使用 SmartNavigator 自动处理导航栈
+    SmartNavigator.push(
+      context: context,
+      targetPage: RecordDetailPage(record: record),
+      currentPageType: StoryLineDetailPage,
+      targetPageType: RecordDetailPage,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return PageTransitionBuilder.buildTransition(
+          transitionType,
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        );
+      },
+    );
   }
 
   /// 导航到创建记录页面
-  void _navigateToCreateRecord(BuildContext context) {
+  void _navigateToCreateRecord(BuildContext context, WidgetRef ref, StoryLine storyLine) {
     var transitionType = ref.read(pageTransitionProvider);
     if (transitionType == PageTransitionType.random) {
       transitionType = PageTransitionBuilder.getRandomType();
@@ -648,7 +585,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
           return CreateRecordPage(
-            initialStoryLineId: _currentStoryLine.id,
+            initialStoryLineId: storyLine.id,
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -664,10 +601,7 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
             ? Duration.zero
             : const Duration(milliseconds: 300),
       ),
-    ).then((_) {
-      // 返回后刷新
-      _refresh();
-    });
+    );
   }
 
   /// 格式化日期
@@ -689,4 +623,3 @@ class _StoryLineDetailPageState extends ConsumerState<StoryLineDetailPage> {
     return '未知地点';
   }
 }
-

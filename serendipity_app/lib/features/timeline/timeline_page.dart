@@ -205,23 +205,35 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         // 自定义悬停动画时长（更柔和）
         hoverDuration: const Duration(milliseconds: 300),
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 状态和创建时间
-              Row(
+        child: Stack(
+          children: [
+            // 置顶图标（左上角）
+            if (record.isPinned)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Icon(
+                  Icons.push_pin,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            // 主要内容
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 32, 16, 16), // 增加顶部 padding
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    record.status.icon,
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Text(
+                  // 状态和创建时间
+                  Row(
+                    children: [
+                      Text(
+                        record.status.icon,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
                           record.status.label,
                           style: TextStyle(
                             fontSize: 16,
@@ -229,25 +241,15 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                             color: statusColor,
                           ),
                         ),
-                        if (record.isPinned) ...[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.push_pin,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '创建：${_formatTime(record.createdAt)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  // 更多菜单
-                  PopupMenuButton<String>(
+                      ),
+                      Text(
+                        '创建：${_formatTime(record.createdAt)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      // 更多菜单
+                      PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
                     onSelected: (value) => _handleMenuAction(context, ref, record, value),
                     itemBuilder: (context) => [
@@ -329,76 +331,78 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               
               // 描述（如果有）
               if (record.description != null && record.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  record.description!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              
-              // 标签（如果有）
-              if (record.tags.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: record.tags.take(3).map((tag) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        tag.tag,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: statusColor,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-              
-              // 底部时间信息
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Text(
-                    '发生：${_formatTime(record.timestamp)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  if (record.createdAt != record.updatedAt) ...[
+                    const SizedBox(height: 8),
                     Text(
-                      ' | ',
+                      record.description!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                    ),
-                    Text(
-                      '更新：${_formatTime(record.updatedAt)}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  
+                  // 标签（如果有）
+                  if (record.tags.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: record.tags.take(3).map((tag) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            tag.tag,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: statusColor,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  
+                  // 底部时间信息
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Text(
+                        '发生：${_formatTime(record.timestamp)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      if (record.createdAt != record.updatedAt) ...[
+                        Text(
+                          ' | ',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                        Text(
+                          '更新：${_formatTime(record.updatedAt)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -6,9 +6,37 @@ import '../repositories/story_line_repository.dart';
 import 'records_provider.dart';
 import 'auth_provider.dart';
 
-/// 故事线仓储 Provider
-final storyLineRepositoryProvider = Provider<StoryLineRepository>((ref) {
-  return StoryLineRepository(ref.read(storageServiceProvider));
+/// 故事线记录列表 Provider
+/// 
+/// 根据故事线ID获取该故事线的所有记录
+final storyLineRecordsProvider = Provider.family<List<EncounterRecord>, String>((ref, storyLineId) {
+  final recordsAsync = ref.watch(recordsProvider);
+  final storyLinesAsync = ref.watch(storyLinesProvider);
+  
+  // 如果数据还在加载中，返回空列表
+  if (!recordsAsync.hasValue || !storyLinesAsync.hasValue) {
+    return [];
+  }
+  
+  final allRecords = recordsAsync.value ?? [];
+  final storyLine = storyLinesAsync.value?.firstWhere(
+    (sl) => sl.id == storyLineId,
+    orElse: () => throw StateError('Story line $storyLineId not found'),
+  );
+  
+  if (storyLine == null) {
+    return [];
+  }
+  
+  // 筛选出属于该故事线的记录
+  final records = allRecords.where((record) {
+    return storyLine.recordIds.contains(record.id);
+  }).toList();
+  
+  // 按时间排序
+  records.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  
+  return records;
 });
 
 /// 故事线列表状态管理
@@ -106,20 +134,33 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
       }
     }
     
-    // 3. 刷新列表
+    // 3. 刷新故事线列表
     await refresh();
+    
+    // 4. 刷新记录列表（重要！确保记录的 storyLineId 更新为 null）
+    ref.invalidate(recordsProvider);
   }
 
   /// 将记录关联到故事线
   Future<void> linkRecord(String recordId, String storyLineId) async {
     await _repository.linkRecord(recordId, storyLineId);
+    
+    // 刷新故事线列表
     await refresh();
+    
+    // 刷新记录列表（重要！确保记录的 storyLineId 更新）
+    ref.invalidate(recordsProvider);
   }
 
   /// 从故事线移除记录
   Future<void> unlinkRecord(String recordId, String storyLineId) async {
     await _repository.unlinkRecord(recordId, storyLineId);
+    
+    // 刷新故事线列表
     await refresh();
+    
+    // 刷新记录列表（重要！确保记录的 storyLineId 更新）
+    ref.invalidate(recordsProvider);
   }
 
   /// 获取故事线的所有记录
