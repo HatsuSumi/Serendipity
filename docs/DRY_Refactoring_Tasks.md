@@ -12,15 +12,15 @@
 |--------|---------|--------|------|-------------|
 | DRY-1 | 日期时间格式化工具类 | P0 | ✅ 已完成 | ~60 行 |
 | DRY-2 | 地点文本获取工具类 | P0 | ✅ 已完成 | ~36 行 |
-| DRY-3 | 空状态UI通用组件 | P1 | ⏳ 待开始 | ~100 行 |
+| DRY-3 | 空状态UI通用组件 | P1 | ✅ 已完成 | ~100 行 |
 | DRY-4 | 删除确认对话框 | P0 | ✅ 已完成 | ~120 行 |
 | DRY-5 | 重命名对话框 | P1 | ⏳ 待开始 | ~70 行 |
 | DRY-6 | 页面导航工具方法 | P2 | ✅ 已完成 | ~150 行 |
 | DRY-7 | 排序逻辑工具类 | P2 | ⏳ 待开始 | ~60 行 |
 
 **总计**: 预计减少约 **596 行**重复代码  
-**已完成**: 减少约 **366 行**重复代码 (61.4%)  
-**进度**: 4/7 任务完成 (57.1%)
+**已完成**: 减少约 **466 行**重复代码 (78.2%)  
+**进度**: 5/7 任务完成 (71.4%)
 
 ---
 
@@ -173,10 +173,10 @@
 空状态UI在多个页面中重复实现，结构完全相同，仅图标和文本不同。
 
 **重复位置**:
-- [ ] `lib/features/story_line/story_lines_page.dart:167`
-- [ ] `lib/features/story_line/story_line_detail_page.dart:137`
-- [ ] `lib/features/timeline/timeline_page.dart:127`
-- [ ] `lib/features/story_line/add_existing_records_dialog.dart:109`
+- [x] `lib/features/story_line/story_lines_page.dart:167`
+- [x] `lib/features/story_line/story_line_detail_page.dart:137`
+- [x] `lib/features/timeline/timeline_page.dart:127`
+- [x] `lib/features/story_line/add_existing_records_dialog.dart:109`
 
 **解决方案**:
 1. 创建 `lib/core/widgets/empty_state_widget.dart`
@@ -184,18 +184,20 @@
 3. 替换所有使用位置
 
 **修改文件**:
-- [ ] 新建: `lib/core/widgets/empty_state_widget.dart`
-- [ ] 修改: `lib/features/story_line/story_lines_page.dart`
-- [ ] 修改: `lib/features/story_line/story_line_detail_page.dart`
-- [ ] 修改: `lib/features/timeline/timeline_page.dart`
-- [ ] 修改: `lib/features/story_line/add_existing_records_dialog.dart`
+- [x] 新建: `lib/core/widgets/empty_state_widget.dart`
+- [x] 修改: `lib/features/story_line/story_lines_page.dart`
+- [x] 修改: `lib/features/story_line/story_line_detail_page.dart`
+- [x] 修改: `lib/features/timeline/timeline_page.dart`
+- [x] 修改: `lib/features/story_line/add_existing_records_dialog.dart`
 
 **测试要点**:
-- [ ] 验证空状态UI正确显示
-- [ ] 验证主题适配正常
-- [ ] 验证所有页面样式一致
+- [x] 验证空状态UI正确显示
+- [x] 验证主题适配正常
+- [x] 验证所有页面样式一致
 
-**状态**: ⏳ 待开始
+**代码减少**: 约 100 行
+
+**状态**: ✅ 已完成 (2026-02-21)
 
 ---
 

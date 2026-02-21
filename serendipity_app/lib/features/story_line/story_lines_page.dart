@@ -4,6 +4,7 @@ import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
+import '../../core/widgets/empty_state_widget.dart';
 import 'story_line_detail_page.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/story_line.dart';
@@ -167,31 +168,10 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
 
   /// 空状态
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.auto_stories_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            '还没有故事线',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '点击下方按钮创建第一条故事线',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ],
-      ),
+    return const EmptyStateWidget(
+      icon: Icons.auto_stories_outlined,
+      title: '还没有故事线',
+      description: '点击下方按钮创建第一条故事线',
     );
   }
 

@@ -8,6 +8,7 @@ import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/theme/status_color_extension.dart';
+import '../../core/widgets/empty_state_widget.dart';
 
 /// 可用记录列表 Provider
 /// 
@@ -129,31 +130,11 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
 
   /// 空状态
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 64,
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '所有记录都已添加',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '没有可添加的记录了',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ],
-      ),
+    return const EmptyStateWidget(
+      icon: Icons.check_circle_outline,
+      iconSize: 64,
+      title: '所有记录都已添加',
+      description: '没有可添加的记录了',
     );
   }
 

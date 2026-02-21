@@ -14,6 +14,7 @@ import '../../core/utils/smart_navigator.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
+import '../../core/widgets/empty_state_widget.dart';
 import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
@@ -141,31 +142,10 @@ class StoryLineDetailPage extends ConsumerWidget {
 
   /// 空状态
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.auto_stories_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            '还没有记录',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '点击下方按钮添加第一条记录',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ],
-      ),
+    return const EmptyStateWidget(
+      icon: Icons.auto_stories_outlined,
+      title: '还没有记录',
+      description: '点击下方按钮添加第一条记录',
     );
   }
 
