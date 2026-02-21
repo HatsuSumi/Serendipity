@@ -404,9 +404,8 @@ class SettingsPage extends ConsumerWidget {
                     return;
                   }
                   
-                  Navigator.of(context).pop();
-                  
-                  await AsyncActionHelper.execute(
+                  // 先执行操作，成功后再关闭对话框
+                  final success = await AsyncActionHelper.execute(
                     context,
                     action: () => ref.read(authProvider.notifier).updatePassword(
                       currentPassword,
@@ -415,6 +414,10 @@ class SettingsPage extends ConsumerWidget {
                     successMessage: '密码修改成功',
                     errorMessagePrefix: '修改密码失败',
                   );
+                  
+                  if (success && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                 },
                 child: const Text('确定'),
               ),
@@ -490,9 +493,8 @@ class SettingsPage extends ConsumerWidget {
                     return;
                   }
                   
-                  Navigator.of(context).pop();
-                  
-                  await AsyncActionHelper.execute(
+                  // 先执行操作，成功后再关闭对话框
+                  final success = await AsyncActionHelper.execute(
                     context,
                     action: () => ref.read(authProvider.notifier).updateEmail(
                       newEmail,
@@ -501,6 +503,10 @@ class SettingsPage extends ConsumerWidget {
                     successMessage: '邮箱更换成功',
                     errorMessagePrefix: '更换邮箱失败',
                   );
+                  
+                  if (success && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                 },
                 child: const Text('确定'),
               ),
@@ -624,9 +630,8 @@ class SettingsPage extends ConsumerWidget {
                 
                 final fullPhone = '$countryCode$phone';
                 
-                Navigator.of(context).pop();
-                
-                await AsyncActionHelper.execute(
+                // 先执行操作，成功后再关闭对话框
+                final success = await AsyncActionHelper.execute(
                   context,
                   action: () => ref.read(authProvider.notifier).updatePhoneNumber(
                     fullPhone,
@@ -636,6 +641,10 @@ class SettingsPage extends ConsumerWidget {
                   successMessage: '手机号更换成功',
                   errorMessagePrefix: '更换手机号失败',
                 );
+                
+                if (success && context.mounted) {
+                  Navigator.of(context).pop();
+                }
               },
               child: const Text('确定'),
             ),
