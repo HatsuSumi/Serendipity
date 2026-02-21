@@ -74,6 +74,7 @@ class NavigationHelper {
   /// - Future<T?>: 页面返回值
   /// 
   /// 调用者：
+  /// - LoginPage: 导航到忘记密码页
   /// - StoryLinesPage: 导航到故事线详情
   /// - StoryLineDetailPage: 导航到编辑记录
   /// - TimelinePage: 导航到记录详情/编辑
@@ -92,6 +93,59 @@ class NavigationHelper {
     WidgetRef ref,
     Widget page,
   ) {
+    final route = _buildPageRouteWithTransition<T>(ref, page);
+    return Navigator.of(context).push<T>(route);
+  }
+
+  /// 使用自定义过渡动画替换当前页面
+  /// 
+  /// 参数：
+  /// - [context]: BuildContext
+  /// - [ref]: WidgetRef（用于访问 pageTransitionProvider）
+  /// - [page]: 目标页面 Widget
+  /// 
+  /// 返回：
+  /// - Future<T?>: 页面返回值
+  /// 
+  /// 调用者：
+  /// - LoginPage: 导航到注册页（替换当前页面）
+  /// - RegisterPage: 导航到登录页（替换当前页面）
+  /// 
+  /// 工作流程：
+  /// 1. 从 pageTransitionProvider 读取动画类型
+  /// 2. 如果是 random，获取具体的随机动画类型
+  /// 3. 构建 PageRouteBuilder 并使用 pushReplacement 替换当前页面
+  /// 
+  /// 设计原则：
+  /// - DRY: 与 pushWithTransition 共享动画构建逻辑
+  /// - 一致性: 保持与其他页面跳转相同的动画体验
+  static Future<T?> pushReplacementWithTransition<T>(
+    BuildContext context,
+    WidgetRef ref,
+    Widget page,
+  ) {
+    final route = _buildPageRouteWithTransition<T>(ref, page);
+    return Navigator.of(context).pushReplacement<T, void>(route);
+  }
+
+  /// 构建带有自定义过渡动画的 PageRoute
+  /// 
+  /// 这是一个私有辅助方法，被 pushWithTransition 和 pushReplacementWithTransition 共享。
+  /// 
+  /// 参数：
+  /// - [ref]: WidgetRef（用于访问 pageTransitionProvider）
+  /// - [page]: 目标页面 Widget
+  /// 
+  /// 返回：
+  /// - PageRouteBuilder<T>: 配置好动画的路由对象
+  /// 
+  /// 设计原则：
+  /// - DRY: 避免在 push 和 pushReplacement 中重复动画构建代码
+  /// - 单一职责: 只负责构建路由对象
+  static PageRouteBuilder<T> _buildPageRouteWithTransition<T>(
+    WidgetRef ref,
+    Widget page,
+  ) {
     // 获取用户设置的页面切换动画类型
     var transitionType = ref.read(pageTransitionProvider);
     
@@ -100,23 +154,21 @@ class NavigationHelper {
       transitionType = PageTransitionBuilder.getRandomType();
     }
     
-    // 导航到目标页面
-    return Navigator.of(context).push<T>(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: transitionType == PageTransitionType.none
-            ? Duration.zero
-            : const Duration(milliseconds: 300),
-      ),
+    // 构建并返回 PageRouteBuilder
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return PageTransitionBuilder.buildTransition(
+          transitionType,
+          context,
+          animation,
+          secondaryAnimation,
+          child,
+        );
+      },
+      transitionDuration: transitionType == PageTransitionType.none
+          ? Duration.zero
+          : const Duration(milliseconds: 300),
     );
   }
 }

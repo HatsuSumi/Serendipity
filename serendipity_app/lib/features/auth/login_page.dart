@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/message_helper.dart';
-import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/providers/auth_provider.dart';
@@ -9,7 +8,6 @@ import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
-import '../home/main_navigation_page.dart';
 
 /// 登录页
 /// 
@@ -433,24 +431,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   /// 
   /// 调用者：忘记密码链接的 onPressed
   void _navigateToForgotPassword(BuildContext context) {
-    final transitionType = PageTransitionBuilder.getRandomType();
-    
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return const ForgotPasswordPage();
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      const ForgotPasswordPage(),
     );
   }
   
@@ -458,24 +442,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   /// 
   /// 调用者：注册链接的 onPressed
   void _navigateToRegister(BuildContext context) {
-    final transitionType = PageTransitionBuilder.getRandomType();
-    
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return const RegisterPage();
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
+    // 使用 pushReplacementWithTransition 替换当前页面，并应用用户设置的动画
+    NavigationHelper.pushReplacementWithTransition(
+      context,
+      ref,
+      const RegisterPage(),
     );
   }
 }
