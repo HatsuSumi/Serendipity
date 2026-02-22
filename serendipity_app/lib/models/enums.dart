@@ -8,15 +8,17 @@ enum EncounterStatus {
   @HiveField(0)
   missed(1, '错过', '🌫️'),
   @HiveField(1)
-  reencounter(2, '再遇', '🌟'),
+  avoid(2, '回避', '🙈'),
   @HiveField(2)
-  met(3, '邂逅', '💫'),
+  reencounter(3, '再遇', '🌟'),
   @HiveField(3)
-  reunion(4, '重逢', '💝'),
+  met(4, '邂逅', '💫'),
   @HiveField(4)
-  farewell(5, '别离', '🥀'),
+  reunion(5, '重逢', '💝'),
   @HiveField(5)
-  lost(6, '失联', '🍂');
+  farewell(6, '别离', '🥀'),
+  @HiveField(6)
+  lost(7, '失联', '🍂');
 
   final int value;
   final String label;

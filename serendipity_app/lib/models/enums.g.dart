@@ -16,14 +16,16 @@ class EncounterStatusAdapter extends TypeAdapter<EncounterStatus> {
       case 0:
         return EncounterStatus.missed;
       case 1:
-        return EncounterStatus.reencounter;
+        return EncounterStatus.avoid;
       case 2:
-        return EncounterStatus.met;
+        return EncounterStatus.reencounter;
       case 3:
-        return EncounterStatus.reunion;
+        return EncounterStatus.met;
       case 4:
-        return EncounterStatus.farewell;
+        return EncounterStatus.reunion;
       case 5:
+        return EncounterStatus.farewell;
+      case 6:
         return EncounterStatus.lost;
       default:
         return EncounterStatus.missed;
@@ -36,20 +38,23 @@ class EncounterStatusAdapter extends TypeAdapter<EncounterStatus> {
       case EncounterStatus.missed:
         writer.writeByte(0);
         break;
-      case EncounterStatus.reencounter:
+      case EncounterStatus.avoid:
         writer.writeByte(1);
         break;
-      case EncounterStatus.met:
+      case EncounterStatus.reencounter:
         writer.writeByte(2);
         break;
-      case EncounterStatus.reunion:
+      case EncounterStatus.met:
         writer.writeByte(3);
         break;
-      case EncounterStatus.farewell:
+      case EncounterStatus.reunion:
         writer.writeByte(4);
         break;
-      case EncounterStatus.lost:
+      case EncounterStatus.farewell:
         writer.writeByte(5);
+        break;
+      case EncounterStatus.lost:
+        writer.writeByte(6);
         break;
     }
   }

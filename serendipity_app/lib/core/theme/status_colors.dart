@@ -23,6 +23,7 @@ class StatusColors {
   /// 
   /// 情感基调说明：
   /// - 错过 🌫️：朦胧、柔和、灰蓝色调
+  /// - 回避 🙈：紧张、矛盾、橙黄色调
   /// - 再遇 🌟：明亮、惊喜、金色点缀
   /// - 邂逅 💫：温暖、激动、粉橙色调
   /// - 重逢 💝：圆满、幸福、玫瑰金色调
@@ -58,6 +59,38 @@ class StatusColors {
       ThemeOption.system: (
         light: Color(0xFF7B9EB0),
         dark: Color(0xFF9DB8C7),
+      ),
+    },
+
+    // ==================== 回避 🙈 ====================
+    EncounterStatus.avoid: {
+      ThemeOption.light: (
+        light: Color(0xFFFF9800),
+        dark: Color(0xFFFFB74D),
+      ),
+      ThemeOption.dark: (
+        light: Color(0xFFFFB74D),
+        dark: Color(0xFFFFB74D),
+      ),
+      ThemeOption.misty: (
+        light: Color(0xFFFF8F00),
+        dark: Color(0xFFFF8F00),
+      ),
+      ThemeOption.midnight: (
+        light: Color(0xFFFFCC80),
+        dark: Color(0xFFFFCC80),
+      ),
+      ThemeOption.warm: (
+        light: Color(0xFFFFAB40),
+        dark: Color(0xFFFFAB40),
+      ),
+      ThemeOption.autumn: (
+        light: Color(0xFFF57C00),
+        dark: Color(0xFFF57C00),
+      ),
+      ThemeOption.system: (
+        light: Color(0xFFFF9800),
+        dark: Color(0xFFFFB74D),
       ),
     },
 
