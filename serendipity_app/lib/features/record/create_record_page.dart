@@ -1346,7 +1346,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               const SizedBox(height: 8),
               _buildGuideItem(
                 context,
-                '后天看到 TA，鼓起勇气看了一眼',
+                '后天看到 TA，鼓起勇气看了一眼（没说话）',
                 '→ 创建新记录，选择"再遇"',
               ),
               const SizedBox(height: 8),
