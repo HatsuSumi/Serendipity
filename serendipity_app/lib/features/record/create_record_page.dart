@@ -1426,7 +1426,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '💡 关于状态间的区别详见关于页面',
+                        '关于状态间的区别详见关于页面',
                         style: TextStyle(
                           fontSize: 13,
                           color: Theme.of(context).colorScheme.onSurface,
