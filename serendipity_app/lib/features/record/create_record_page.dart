@@ -1404,6 +1404,39 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              Divider(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '💡 关于状态间的区别详见关于页面',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
