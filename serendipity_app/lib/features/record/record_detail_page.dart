@@ -464,33 +464,71 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       );
     }
 
+    // 详情页：分别显示所有字段，不使用优先级
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 使用 RecordHelper 获取地点显示文本
-        Text(
-          RecordHelper.getLocationText(_currentRecord.location),
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
+        // 地点名称 + 场所类型图标
+        if (_currentRecord.location.placeName != null && 
+            _currentRecord.location.placeName!.isNotEmpty) ...[
+          Row(
+            children: [
+              if (_currentRecord.location.placeType != null) ...[
+                Text(
+                  _currentRecord.location.placeType!.icon,
+                  style: const TextStyle(fontSize: 20),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  _currentRecord.location.placeName!,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
               ),
-        ),
-        
-        // 如果有详细地址且与地点名称不同，显示完整地址
-        if (_currentRecord.location.address != null &&
-            _currentRecord.location.address!.isNotEmpty &&
-            _currentRecord.location.placeName != _currentRecord.location.address) ...[
+            ],
+          ),
           const SizedBox(height: 8),
+        ],
+        
+        // 场所类型（如果没有地点名称，单独显示）
+        if (_currentRecord.location.placeType != null &&
+            (_currentRecord.location.placeName == null || 
+             _currentRecord.location.placeName!.isEmpty)) ...[
+          Row(
+            children: [
+              Text(
+                _currentRecord.location.placeType!.icon,
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _currentRecord.location.placeType!.label,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        
+        // 详细地址（完整显示，不截断）
+        if (_currentRecord.location.address != null &&
+            _currentRecord.location.address!.isNotEmpty) ...[
           Text(
             _currentRecord.location.address!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
+          const SizedBox(height: 8),
         ],
         
         // GPS 坐标（如果有）
-        if (RecordHelper.hasCoordinates(_currentRecord.location)) ...[
-          const SizedBox(height: 8),
+        if (RecordHelper.hasCoordinates(_currentRecord.location))
           Text(
             '${_currentRecord.location.latitude!.toStringAsFixed(6)}, ${_currentRecord.location.longitude!.toStringAsFixed(6)}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -498,7 +536,6 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   fontFamily: 'monospace',
                 ),
           ),
-        ],
       ],
     );
   }
