@@ -1,5 +1,6 @@
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
+import '../../models/achievement.dart';
 
 /// 存储服务接口
 /// 
@@ -59,5 +60,19 @@ abstract class IStorageService {
   
   /// 更新故事线
   Future<void> updateStoryLine(StoryLine storyLine);
+  
+  // ==================== 成就相关操作 ====================
+  
+  /// 保存成就
+  Future<void> saveAchievement(Achievement achievement);
+  
+  /// 获取单个成就
+  Achievement? getAchievement(String id);
+  
+  /// 获取所有成就
+  List<Achievement> getAllAchievements();
+  
+  /// 更新成就
+  Future<void> updateAchievement(Achievement achievement);
 }
 

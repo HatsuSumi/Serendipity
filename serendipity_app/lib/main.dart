@@ -19,6 +19,7 @@ import 'models/enums.dart';
 import 'models/encounter_record.dart';
 import 'models/story_line.dart';
 import 'models/user.dart';
+import 'models/achievement.dart';
 
 void main() async {
   // 确保 Flutter 绑定初始化
@@ -28,7 +29,7 @@ void main() async {
   await Hive.initFlutter();
   
   // 注册所有 TypeAdapter
-  // 枚举类型 (typeId: 10-22)
+  // 枚举类型 (typeId: 10-22, 30)
   Hive.registerAdapter(EncounterStatusAdapter());
   Hive.registerAdapter(EmotionIntensityAdapter());
   Hive.registerAdapter(PlaceTypeAdapter());
@@ -39,11 +40,13 @@ void main() async {
   Hive.registerAdapter(PaymentMethodAdapter());
   Hive.registerAdapter(PaymentStatusAdapter());
   Hive.registerAdapter(ThemeOptionAdapter());
+  Hive.registerAdapter(AchievementCategoryAdapter());
   
-  // 数据模型类型 (typeId: 0-2)
+  // 数据模型类型 (typeId: 0-2, 31)
   Hive.registerAdapter(TagWithNoteAdapter());
   Hive.registerAdapter(LocationAdapter());
   Hive.registerAdapter(EncounterRecordAdapter());
+  Hive.registerAdapter(AchievementAdapter());
   
   // 故事线类型 (typeId: 3)
   Hive.registerAdapter(StoryLineAdapter());

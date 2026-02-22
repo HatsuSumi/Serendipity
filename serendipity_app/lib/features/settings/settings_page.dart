@@ -10,9 +10,9 @@ import '../../core/utils/phone_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/countdown_button.dart';
 import '../../models/enums.dart';
-import '../auth/welcome_page.dart';
 import '../auth/widgets/auth_text_field.dart';
 import '../test/location_test_page.dart';
+import '../achievement/achievements_page.dart';
 
 /// 设置页面（演示版）
 class SettingsPage extends ConsumerWidget {
@@ -94,6 +94,24 @@ class SettingsPage extends ConsumerWidget {
             },
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
+          ),
+          
+          const Divider(),
+          
+          const Divider(),
+          
+          // 成就入口
+          ListTile(
+            leading: const Text('🏆', style: TextStyle(fontSize: 24)),
+            title: const Text('我的成就'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const AchievementsPage(),
+                ),
+              );
+            },
           ),
           
           const Divider(),

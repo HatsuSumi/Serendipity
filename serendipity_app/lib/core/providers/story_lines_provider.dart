@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/story_line.dart';
 import '../../models/encounter_record.dart';
 import '../services/sync_service.dart';
+import '../services/achievement_detector.dart';
 import '../repositories/story_line_repository.dart';
 import 'records_provider.dart';
 import 'auth_provider.dart';
+import 'achievement_provider.dart';
 
 /// 故事线记录列表 Provider
 /// 
@@ -43,6 +45,9 @@ final storyLineRecordsProvider = Provider.family<List<EncounterRecord>, String>(
 class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   late StoryLineRepository _repository;
   late SyncService _syncService;
+  
+  /// 获取成就检测服务
+  AchievementDetector get _achievementDetector => ref.read(achievementDetectorProvider);
 
   @override
   Future<List<StoryLine>> build() async {
@@ -82,7 +87,21 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
       }
     }
     
-    // 3. 刷新列表
+    // 3. 检测成就
+    try {
+      final unlockedAchievements = await _achievementDetector.checkStoryLineAchievements();
+      if (unlockedAchievements.isNotEmpty) {
+        // 通知UI层显示成就解锁通知
+        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+        // 刷新成就列表
+        ref.invalidate(achievementsProvider);
+      }
+    } catch (e) {
+      // 成就检测失败不影响故事线创建
+      // 但需要记录错误日志（生产环境）
+    }
+    
+    // 4. 刷新列表
     await refresh();
   }
 
@@ -144,6 +163,20 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   /// 将记录关联到故事线
   Future<void> linkRecord(String recordId, String storyLineId) async {
     await _repository.linkRecord(recordId, storyLineId);
+    
+    // 检测成就
+    try {
+      final unlockedAchievements = await _achievementDetector.checkStoryLineAchievements();
+      if (unlockedAchievements.isNotEmpty) {
+        // 通知UI层显示成就解锁通知
+        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+        // 刷新成就列表
+        ref.invalidate(achievementsProvider);
+      }
+    } catch (e) {
+      // 成就检测失败不影响记录关联
+      // 但需要记录错误日志（生产环境）
+    }
     
     // 刷新故事线列表
     await refresh();

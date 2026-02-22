@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/message_provider.dart';
+import '../../core/providers/achievement_provider.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/widgets/achievement_unlocked_notification.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';
 import '../settings/settings_page.dart';
@@ -67,6 +69,28 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
         // 清除消息，避免重复显示
         Future.microtask(() {
           ref.read(messageProvider.notifier).clear();
+        });
+      }
+    });
+    
+    // 监听成就解锁通知
+    ref.listen<List<String>>(newlyUnlockedAchievementsProvider, (previous, next) {
+      if (next.isNotEmpty) {
+        // 显示第一个成就解锁通知
+        AchievementNotificationManager.show(context, next.first);
+        
+        // 如果有多个成就，延迟显示后续成就
+        for (int i = 1; i < next.length; i++) {
+          Future.delayed(Duration(seconds: 3 * i + 1), () {
+            if (mounted) {
+              AchievementNotificationManager.show(context, next[i]);
+            }
+          });
+        }
+        
+        // 清空通知列表
+        Future.microtask(() {
+          ref.read(newlyUnlockedAchievementsProvider.notifier).clear();
         });
       }
     });

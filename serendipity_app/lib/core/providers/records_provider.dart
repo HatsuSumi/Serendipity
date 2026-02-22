@@ -3,10 +3,12 @@ import '../../models/encounter_record.dart';
 import '../services/i_storage_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_service.dart';
+import '../services/achievement_detector.dart';
 import '../repositories/record_repository.dart';
 import '../repositories/story_line_repository.dart';
 import 'story_lines_provider.dart';
 import 'auth_provider.dart';
+import 'achievement_provider.dart';
 
 /// 存储服务 Provider
 final storageServiceProvider = Provider<IStorageService>((ref) {
@@ -36,6 +38,9 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   
   /// 获取同步服务（延迟初始化，避免测试模式下创建 Firebase 实例）
   SyncService get _syncService => ref.read(syncServiceProvider);
+  
+  /// 获取成就检测服务
+  AchievementDetector get _achievementDetector => ref.read(achievementDetectorProvider);
 
   /// 刷新记录列表
   Future<void> refresh() async {
@@ -77,7 +82,35 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 4. 刷新记录列表
+    // 4. 检测成就
+    try {
+      final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
+      if (unlockedAchievements.isNotEmpty) {
+        // 通知UI层显示成就解锁通知
+        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+        // 刷新成就列表
+        ref.invalidate(achievementsProvider);
+      }
+    } catch (e) {
+      // 成就检测失败不影响记录保存
+      // 但需要记录错误日志（生产环境）
+    }
+    
+    // 5. 检测成就
+    try {
+      final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
+      if (unlockedAchievements.isNotEmpty) {
+        // 通知UI层显示成就解锁通知
+        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+        // 刷新成就列表
+        ref.invalidate(achievementsProvider);
+      }
+    } catch (e) {
+      // 成就检测失败不影响记录更新
+      // 但需要记录错误日志（生产环境）
+    }
+    
+    // 6. 刷新记录列表
     await refresh();
   }
 

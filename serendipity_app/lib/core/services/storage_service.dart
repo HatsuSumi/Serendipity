@@ -1,6 +1,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
+import '../../models/achievement.dart';
 import 'i_storage_service.dart';
 
 /// 本地存储服务（Hive 实现）
@@ -10,6 +11,7 @@ class StorageService implements IStorageService {
   static const String _recordsBoxName = 'records';
   static const String _settingsBoxName = 'settings';
   static const String _storyLinesBoxName = 'story_lines';
+  static const String _achievementsBoxName = 'achievements';
   
   // 单例模式
   static final StorageService _instance = StorageService._internal();
@@ -20,6 +22,7 @@ class StorageService implements IStorageService {
   Box<EncounterRecord>? _recordsBox;
   Box? _settingsBox;
   Box<StoryLine>? _storyLinesBox;
+  Box<Achievement>? _achievementsBox;
   
   // Box getters with initialization check
   Box<EncounterRecord> get _recordsBoxOrThrow {
@@ -43,12 +46,20 @@ class StorageService implements IStorageService {
     return _storyLinesBox!;
   }
   
+  Box<Achievement> get _achievementsBoxOrThrow {
+    if (_achievementsBox == null) {
+      throw StateError('StorageService not initialized. Call init() first.');
+    }
+    return _achievementsBox!;
+  }
+  
   /// 初始化所有 Box
   @override
   Future<void> init() async {
     _recordsBox = await Hive.openBox<EncounterRecord>(_recordsBoxName);
     _settingsBox = await Hive.openBox(_settingsBoxName);
     _storyLinesBox = await Hive.openBox<StoryLine>(_storyLinesBoxName);
+    _achievementsBox = await Hive.openBox<Achievement>(_achievementsBoxName);
   }
   
   /// 关闭所有 Box
@@ -57,6 +68,7 @@ class StorageService implements IStorageService {
     await _recordsBox?.close();
     await _settingsBox?.close();
     await _storyLinesBox?.close();
+    await _achievementsBox?.close();
   }
   
   // ==================== 记录相关操作 ====================
@@ -164,6 +176,34 @@ class StorageService implements IStorageService {
     await _storyLinesBoxOrThrow.put(storyLine.id, storyLine);
   }
   
+  // ==================== 成就相关操作 ====================
+  
+  /// 保存成就
+  @override
+  Future<void> saveAchievement(Achievement achievement) async {
+    assert(achievement.id.isNotEmpty, 'Achievement ID cannot be empty');
+    await _achievementsBoxOrThrow.put(achievement.id, achievement);
+  }
+  
+  /// 获取单个成就
+  @override
+  Achievement? getAchievement(String id) {
+    assert(id.isNotEmpty, 'Achievement ID cannot be empty');
+    return _achievementsBoxOrThrow.get(id);
+  }
+  
+  /// 获取所有成就
+  @override
+  List<Achievement> getAllAchievements() {
+    return _achievementsBoxOrThrow.values.toList();
+  }
+  
+  /// 更新成就
+  @override
+  Future<void> updateAchievement(Achievement achievement) async {
+    assert(achievement.id.isNotEmpty, 'Achievement ID cannot be empty');
+    await _achievementsBoxOrThrow.put(achievement.id, achievement);
+  }
 
 }
 
