@@ -1,6 +1,7 @@
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/achievement.dart';
+import '../../models/check_in_record.dart';
 
 /// 存储服务接口
 /// 
@@ -74,5 +75,19 @@ abstract class IStorageService {
   
   /// 更新成就
   Future<void> updateAchievement(Achievement achievement);
+  
+  // ==================== 签到相关操作 ====================
+  
+  /// 保存签到记录
+  Future<void> saveCheckIn(CheckInRecord checkIn);
+  
+  /// 获取单个签到记录
+  CheckInRecord? getCheckIn(String id);
+  
+  /// 获取所有签到记录
+  List<CheckInRecord> getAllCheckIns();
+  
+  /// 获取签到记录列表（按日期倒序）
+  List<CheckInRecord> getCheckInsSortedByDate();
 }
 

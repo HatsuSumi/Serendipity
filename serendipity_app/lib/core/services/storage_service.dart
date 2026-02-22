@@ -2,6 +2,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/achievement.dart';
+import '../../models/check_in_record.dart';
 import 'i_storage_service.dart';
 
 /// 本地存储服务（Hive 实现）
@@ -12,6 +13,7 @@ class StorageService implements IStorageService {
   static const String _settingsBoxName = 'settings';
   static const String _storyLinesBoxName = 'story_lines';
   static const String _achievementsBoxName = 'achievements';
+  static const String _checkInsBoxName = 'check_ins';
   
   // 单例模式
   static final StorageService _instance = StorageService._internal();
@@ -23,6 +25,7 @@ class StorageService implements IStorageService {
   Box? _settingsBox;
   Box<StoryLine>? _storyLinesBox;
   Box<Achievement>? _achievementsBox;
+  Box<CheckInRecord>? _checkInsBox;
   
   // Box getters with initialization check
   Box<EncounterRecord> get _recordsBoxOrThrow {
@@ -53,6 +56,13 @@ class StorageService implements IStorageService {
     return _achievementsBox!;
   }
   
+  Box<CheckInRecord> get _checkInsBoxOrThrow {
+    if (_checkInsBox == null) {
+      throw StateError('StorageService not initialized. Call init() first.');
+    }
+    return _checkInsBox!;
+  }
+  
   /// 初始化所有 Box
   @override
   Future<void> init() async {
@@ -60,6 +70,7 @@ class StorageService implements IStorageService {
     _settingsBox = await Hive.openBox(_settingsBoxName);
     _storyLinesBox = await Hive.openBox<StoryLine>(_storyLinesBoxName);
     _achievementsBox = await Hive.openBox<Achievement>(_achievementsBoxName);
+    _checkInsBox = await Hive.openBox<CheckInRecord>(_checkInsBoxName);
   }
   
   /// 关闭所有 Box
@@ -69,6 +80,7 @@ class StorageService implements IStorageService {
     await _settingsBox?.close();
     await _storyLinesBox?.close();
     await _achievementsBox?.close();
+    await _checkInsBox?.close();
   }
   
   // ==================== 记录相关操作 ====================
@@ -203,6 +215,36 @@ class StorageService implements IStorageService {
   Future<void> updateAchievement(Achievement achievement) async {
     assert(achievement.id.isNotEmpty, 'Achievement ID cannot be empty');
     await _achievementsBoxOrThrow.put(achievement.id, achievement);
+  }
+  
+  // ==================== 签到相关操作 ====================
+  
+  /// 保存签到记录
+  @override
+  Future<void> saveCheckIn(CheckInRecord checkIn) async {
+    assert(checkIn.id.isNotEmpty, 'CheckIn ID cannot be empty');
+    await _checkInsBoxOrThrow.put(checkIn.id, checkIn);
+  }
+  
+  /// 获取单个签到记录
+  @override
+  CheckInRecord? getCheckIn(String id) {
+    assert(id.isNotEmpty, 'CheckIn ID cannot be empty');
+    return _checkInsBoxOrThrow.get(id);
+  }
+  
+  /// 获取所有签到记录
+  @override
+  List<CheckInRecord> getAllCheckIns() {
+    return _checkInsBoxOrThrow.values.toList();
+  }
+  
+  /// 获取签到记录列表（按日期倒序）
+  @override
+  List<CheckInRecord> getCheckInsSortedByDate() {
+    final checkIns = getAllCheckIns();
+    checkIns.sort((a, b) => b.date.compareTo(a.date));
+    return checkIns;
   }
 
 }

@@ -1,0 +1,122 @@
+import '../../models/check_in_record.dart';
+import '../services/i_storage_service.dart';
+
+/// 签到仓储
+/// 
+/// 负责签到数据的持久化和查询
+/// 
+/// 调用者：
+/// - CheckInProvider：状态管理层
+/// 
+/// 设计原则：
+/// - 单一职责：只负责签到数据的存取
+/// - Fail Fast：参数校验，立即抛出异常
+class CheckInRepository {
+  final IStorageService _storageService;
+
+  CheckInRepository(this._storageService);
+
+  /// 签到（创建今天的签到记录）
+  /// 
+  /// 如果今天已经签到，抛出异常
+  Future<CheckInRecord> checkIn() async {
+    final today = _getTodayDate();
+    final todayId = today.millisecondsSinceEpoch.toString();
+    
+    // 检查今天是否已经签到
+    final existingCheckIn = _storageService.getCheckIn(todayId);
+    if (existingCheckIn != null) {
+      throw StateError('Already checked in today');
+    }
+    
+    // 创建签到记录
+    final checkIn = CheckInRecord.create();
+    await _storageService.saveCheckIn(checkIn);
+    
+    return checkIn;
+  }
+
+  /// 检查今天是否已签到
+  bool hasCheckedInToday() {
+    final today = _getTodayDate();
+    final todayId = today.millisecondsSinceEpoch.toString();
+    return _storageService.getCheckIn(todayId) != null;
+  }
+
+  /// 获取所有签到记录
+  List<CheckInRecord> getAllCheckIns() {
+    return _storageService.getAllCheckIns();
+  }
+
+  /// 获取签到记录列表（按日期倒序）
+  List<CheckInRecord> getCheckInsSortedByDate() {
+    return _storageService.getCheckInsSortedByDate();
+  }
+
+  /// 计算连续签到天数
+  /// 
+  /// 从今天往前推，连续有签到的天数
+  /// 如果今天没有签到，返回0
+  int calculateConsecutiveDays() {
+    final checkIns = getAllCheckIns();
+    if (checkIns.isEmpty) return 0;
+
+    // 提取所有签到日期
+    final checkInDates = checkIns.map((c) => c.date).toSet().toList();
+    checkInDates.sort((a, b) => b.compareTo(a)); // 降序排列
+
+    final today = _getTodayDate();
+
+    // 如果今天没有签到，返回0
+    if (!checkInDates.contains(today)) {
+      return 0;
+    }
+
+    int consecutiveDays = 1;
+    DateTime currentDate = today;
+
+    for (int i = 1; i < checkInDates.length; i++) {
+      final previousDate = currentDate.subtract(const Duration(days: 1));
+      if (checkInDates.contains(previousDate)) {
+        consecutiveDays++;
+        currentDate = previousDate;
+      } else {
+        break;
+      }
+    }
+
+    return consecutiveDays;
+  }
+
+  /// 获取累计签到天数
+  int getTotalCheckInDays() {
+    return getAllCheckIns().length;
+  }
+
+  /// 获取本月签到天数
+  int getCurrentMonthCheckInDays() {
+    final now = DateTime.now();
+    final checkIns = getAllCheckIns();
+    
+    return checkIns.where((c) {
+      return c.date.year == now.year && c.date.month == now.month;
+    }).length;
+  }
+
+  /// 获取指定月份的签到日期列表
+  List<DateTime> getCheckInDatesInMonth(int year, int month) {
+    final checkIns = getAllCheckIns();
+    
+    return checkIns
+        .where((c) => c.date.year == year && c.date.month == month)
+        .map((c) => c.date)
+        .toList();
+  }
+
+  /// 获取今天的日期（只保留年月日）
+  DateTime _getTodayDate() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+}
+

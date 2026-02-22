@@ -13,6 +13,7 @@ import '../../models/enums.dart';
 import '../auth/widgets/auth_text_field.dart';
 import '../test/location_test_page.dart';
 import '../achievement/achievements_page.dart';
+import '../check_in/check_in_page.dart';
 
 /// 设置页面（演示版）
 class SettingsPage extends ConsumerWidget {

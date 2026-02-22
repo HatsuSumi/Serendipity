@@ -20,6 +20,7 @@ import 'models/encounter_record.dart';
 import 'models/story_line.dart';
 import 'models/user.dart';
 import 'models/achievement.dart';
+import 'models/check_in_record.dart';
 
 void main() async {
   // 确保 Flutter 绑定初始化
@@ -42,11 +43,12 @@ void main() async {
   Hive.registerAdapter(ThemeOptionAdapter());
   Hive.registerAdapter(AchievementCategoryAdapter());
   
-  // 数据模型类型 (typeId: 0-2, 31)
+  // 数据模型类型 (typeId: 0-2, 31, 32)
   Hive.registerAdapter(TagWithNoteAdapter());
   Hive.registerAdapter(LocationAdapter());
   Hive.registerAdapter(EncounterRecordAdapter());
   Hive.registerAdapter(AchievementAdapter());
+  Hive.registerAdapter(CheckInRecordAdapter());
   
   // 故事线类型 (typeId: 3)
   Hive.registerAdapter(StoryLineAdapter());

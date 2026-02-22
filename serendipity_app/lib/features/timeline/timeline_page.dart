@@ -13,6 +13,7 @@ import '../../models/encounter_record.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import '../story_line/link_to_story_line_dialog.dart';
+import '../check_in/widgets/check_in_card.dart';
 
 /// 排序方式
 enum RecordSortType {
@@ -189,11 +190,20 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         await ref.read(recordsProvider.notifier).refresh();
       },
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: records.length,
+        padding: const EdgeInsets.only(bottom: 16),
+        itemCount: records.length + 1, // +1 for check-in card
         itemBuilder: (context, index) {
-          final record = records[index];
-          return _buildRecordCard(context, record, ref);
+          // 第一项显示签到卡片
+          if (index == 0) {
+            return const CheckInCard();
+          }
+          
+          // 其他项显示记录卡片
+          final record = records[index - 1];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildRecordCard(context, record, ref),
+          );
         },
       ),
     );
