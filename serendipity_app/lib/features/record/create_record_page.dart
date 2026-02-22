@@ -501,12 +501,97 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   /// 检查是否有未保存的修改
   /// 
   /// 遵循架构原则：
-  /// - 编辑模式：一定有修改（因为用户打开了编辑页面）
+  /// - 编辑模式：对比当前值与原始值，检测是否真的有修改
   /// - 创建模式：检查是否填写了任何内容
   bool _hasUnsavedChanges() {
-    // 编辑模式：一定提示
+    // 编辑模式：对比当前值与原始值
     if (widget.isEditMode) {
-      return true;
+      final original = widget.recordToEdit!;
+      
+      // 检查时间是否修改
+      if (_selectedTime != original.timestamp) {
+        return true;
+      }
+      
+      // 检查状态是否修改
+      if (_selectedStatus != original.status) {
+        return true;
+      }
+      
+      // 检查地点名称是否修改
+      final currentPlaceName = _placeNameController.text.trim();
+      final originalPlaceName = original.location.placeName ?? '';
+      if (currentPlaceName != originalPlaceName) {
+        return true;
+      }
+      
+      // 检查场所类型是否修改
+      if (_selectedPlaceType != original.location.placeType) {
+        return true;
+      }
+      
+      // 检查描述是否修改
+      final currentDescription = _descriptionController.text.trim();
+      final originalDescription = original.description ?? '';
+      if (currentDescription != originalDescription) {
+        return true;
+      }
+      
+      // 检查对话契机是否修改
+      final currentConversationStarter = _conversationStarterController.text.trim();
+      final originalConversationStarter = original.conversationStarter ?? '';
+      if (currentConversationStarter != originalConversationStarter) {
+        return true;
+      }
+      
+      // 检查背景音乐是否修改
+      final currentBackgroundMusic = _backgroundMusicController.text.trim();
+      final originalBackgroundMusic = original.backgroundMusic ?? '';
+      if (currentBackgroundMusic != originalBackgroundMusic) {
+        return true;
+      }
+      
+      // 检查"如果再遇"是否修改
+      final currentIfReencounter = _ifReencounterController.text.trim();
+      final originalIfReencounter = original.ifReencounter ?? '';
+      if (currentIfReencounter != originalIfReencounter) {
+        return true;
+      }
+      
+      // 检查标签是否修改（比较数量和内容）
+      if (_tags.length != original.tags.length) {
+        return true;
+      }
+      for (int i = 0; i < _tags.length; i++) {
+        if (_tags[i].tag != original.tags[i].tag || 
+            _tags[i].note != original.tags[i].note) {
+          return true;
+        }
+      }
+      
+      // 检查情绪强度是否修改
+      if (_selectedEmotion != original.emotion) {
+        return true;
+      }
+      
+      // 检查天气是否修改（比较数量和内容）
+      if (_selectedWeather.length != original.weather.length) {
+        return true;
+      }
+      final originalWeatherSet = original.weather.toSet();
+      final currentWeatherSet = _selectedWeather.toSet();
+      if (!currentWeatherSet.containsAll(originalWeatherSet) || 
+          !originalWeatherSet.containsAll(currentWeatherSet)) {
+        return true;
+      }
+      
+      // 检查故事线是否修改
+      if (_selectedStoryLineId != original.storyLineId) {
+        return true;
+      }
+      
+      // 所有字段都没有修改
+      return false;
     }
     
     // 创建模式：检查是否有任何输入
