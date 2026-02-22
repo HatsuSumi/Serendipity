@@ -52,9 +52,15 @@ Serendipity/
 
 - [x] 项目规划
 - [x] 文档编写
-- [ ] 环境搭建
-- [ ] MVP 开发
-- [ ] 功能扩展
+- [x] 环境搭建
+- [x] Phase 1: 账号管理（Firebase Authentication）
+- [x] Phase 2: GPS 定位服务（高德地图 API）
+- [ ] Phase 2: 成就系统
+- [ ] Phase 2: 统计功能
+- [ ] Phase 3: 记录系统
+- [ ] Phase 4: 故事线功能
+- [ ] Phase 5: 社区（树洞）
+- [ ] Phase 6: 会员系统
 - [ ] 测试与发布
 
 ## 📚 文档说明
@@ -93,7 +99,44 @@ Serendipity/
 - Firebase Cloud Messaging（推送通知）
 
 ### 第三方服务
-- 高德地图 API（地图服务）
+- 高德地图 API（地图服务、逆地理编码）
+
+## 🛠️ 开发环境配置
+
+### 1. 安装 Flutter
+
+请参考 Flutter 官方文档：https://flutter.dev/docs/get-started/install
+
+### 2. 配置高德地图 API
+
+GPS 定位功能需要高德地图 API Key：
+
+1. 前往高德开放平台注册：https://lbs.amap.com/
+2. 创建应用，获取"Web 服务"类型的 API Key
+3. 复制 `lib/core/config/amap_config.dart.template` 为 `amap_config.dart`
+4. 将 API Key 填入配置文件
+
+详细步骤请查看：[高德地图集成指南](docs/Amap_Integration_Guide.md)
+
+### 3. 安装依赖
+
+```bash
+cd serendipity_app
+flutter pub get
+```
+
+### 4. 运行项目
+
+```bash
+# Android
+flutter run
+
+# iOS
+flutter run
+
+# Web
+flutter run -d chrome
+```
 
 ## 💎 商业模式
 
@@ -125,6 +168,6 @@ Serendipity/
 
 ---
 
-**最后更新**：2026-02-11  
-**版本**：v0.1.0（开发中）
+**最后更新**：2026-02-21  
+**版本**：v0.2.0（开发中）
 

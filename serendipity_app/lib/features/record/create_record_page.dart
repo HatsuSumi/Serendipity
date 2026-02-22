@@ -3,16 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/location_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
+import '../../core/utils/date_time_helper.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/enums.dart';
+import '../../models/location_result.dart';
 import 'models/place_history_item.dart';
 import 'widgets/story_line_selection_dialog.dart';
 import 'widgets/place_history_dialog.dart';
 import 'widgets/tags_section.dart';
 import 'widgets/weather_selection_section.dart';
+import 'widgets/location_permission_dialog.dart';
 
 /// 创建/编辑记录页面
 class CreateRecordPage extends ConsumerStatefulWidget {
@@ -63,12 +67,86 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   
   // 地点历史记录（包含统计信息）
   List<PlaceHistoryItem> _placeHistory = [];
+  
+  // GPS 定位状态
+  bool _isLocating = false;
+  LocationResult? _locationResult;
+  bool _ignoreGPS = false; // 是否忽略 GPS 定位
 
   @override
   void initState() {
     super.initState();
     _loadPlaceHistory();
     _initializeFormData();
+    
+    // 创建模式下自动获取 GPS 定位
+    if (!widget.isEditMode) {
+      _isLocating = true; // 同步设置状态
+      // 使用 Future.microtask 延迟调用，避免在 build 期间修改 provider
+      Future.microtask(() => _requestLocation());
+    }
+  }
+  
+  /// 请求 GPS 定位
+  Future<void> _requestLocation() async {
+    setState(() {
+      _isLocating = true;
+    });
+    
+    try {
+      // 先检查权限
+      await ref.read(locationProvider.notifier).checkPermission();
+      final hasPermission = ref.read(locationProvider).hasPermission ?? false;
+      
+      if (!hasPermission) {
+        // 请求权限
+        final granted = await ref.read(locationProvider.notifier).requestPermission();
+        
+        if (!granted && mounted) {
+          // 权限被拒绝，显示引导对话框
+          setState(() {
+            _isLocating = false;
+          });
+          await _showPermissionDialog();
+          return;
+        }
+      }
+      
+      // 获取位置
+      await ref.read(locationProvider.notifier).getCurrentLocation();
+      
+      if (mounted) {
+        final state = ref.read(locationProvider);
+        setState(() {
+          _locationResult = state.result;
+          _isLocating = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLocating = false;
+        });
+      }
+    }
+  }
+  
+  /// 显示权限引导对话框
+  Future<void> _showPermissionDialog() async {
+    if (!mounted) return;
+    
+    await DialogHelper.show(
+      context: context,
+      builder: (dialogContext) => LocationPermissionDialog(
+        onOpenSettings: () async {
+          final opened = await ref.read(locationProvider.notifier).openSettings();
+          if (!opened && mounted) {
+            if (!mounted) return;
+            MessageHelper.showError(context, '无法打开系统设置');
+          }
+        },
+      ),
+    );
   }
   
   /// 初始化表单数据（编辑模式下预填充）
@@ -170,6 +248,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 placeType: () => _selectedPlaceType,
               )
             : Location(
+                latitude: _ignoreGPS ? null : _locationResult?.latitude,
+                longitude: _ignoreGPS ? null : _locationResult?.longitude,
+                address: _ignoreGPS ? null : _locationResult?.address,
                 placeName: _placeNameController.text.trim().isEmpty 
                     ? null 
                     : _placeNameController.text.trim(),
@@ -588,7 +669,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 const Icon(Icons.access_time),
                 const SizedBox(width: 12),
                 Text(
-                  _formatDateTime(_selectedTime),
+                  DateTimeHelper.formatDateTime(_selectedTime),
                   style: const TextStyle(fontSize: 16),
                 ),
                 const Spacer(),
@@ -615,6 +696,65 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         ),
         const SizedBox(height: 8),
         
+        // GPS 定位状态显示
+        if (!widget.isEditMode) ...[
+          _buildLocationStatus(),
+          const SizedBox(height: 12),
+        ],
+        
+        // 忽略 GPS 定位选项
+        if (!widget.isEditMode) ...[
+          Row(
+            children: [
+              Expanded(
+                child: CheckboxListTile(
+                  value: _ignoreGPS,
+                  onChanged: (value) {
+                    setState(() {
+                      _ignoreGPS = value ?? false;
+                    });
+                  },
+                  title: const Text('忽略 GPS 定位'),
+                  subtitle: Text(
+                    '只使用下面输入的地点名称（用于UI显示）',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.help_outline,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                onPressed: () => _showIgnoreGPSHelpDialog(context),
+                tooltip: '为什么要忽略GPS？',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+        
+        // 引导文字
+        Text(
+          '给这个地点起个名字？（可选）',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        
         // 地点名称输入
         Row(
           children: [
@@ -622,7 +762,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               child: TextFormField(
                 controller: _placeNameController,
                 decoration: InputDecoration(
-                  hintText: '例如：地铁10号线、星巴克...',
+                  hintText: '例如：常去的那家咖啡馆',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -640,7 +780,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         ),
         const SizedBox(height: 12),
         
-        // 场所类型选择
+        // 场所类型标题
         Text(
           '场所类型（可选）',
           style: TextStyle(
@@ -649,6 +789,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           ),
         ),
         const SizedBox(height: 8),
+        
+        // 场所类型选择
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -672,6 +814,145 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           ),
       ],
     );
+  }
+  
+  /// 构建 GPS 定位状态显示
+  Widget _buildLocationStatus() {
+    // 定位中
+    if (_isLocating) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '正在获取位置...',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // 定位成功
+    if (_locationResult != null && _locationResult!.isSuccess) {
+      final address = _locationResult!.address ?? '位置已获取';
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '✅ 已定位',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    address,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 20),
+              onPressed: _requestLocation,
+              tooltip: '重新定位',
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // 定位失败
+    if (_locationResult != null && !_locationResult!.isSuccess) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Theme.of(context).colorScheme.error,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⚠️ 无法获取GPS定位',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _locationResult!.errorMessage ?? '定位失败',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 20),
+              onPressed: _requestLocation,
+              tooltip: '重试',
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // 初始状态：还未开始定位（不应该出现，但作为兜底）
+    return const SizedBox.shrink();
   }
   
   /// 显示历史地点选择对话框
@@ -799,6 +1080,208 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     );
   }
 
+  /// 显示忽略GPS帮助对话框
+  void _showIgnoreGPSHelpDialog(BuildContext context) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Text('💡 '),
+            Expanded(
+              child: Text(
+                '为什么要忽略GPS？',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '延迟记录场景',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '通勤路上擦肩而过的瞬间，往往无法立即记录：',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildHelpItem(
+                context,
+                '早上在地铁站看到 TA',
+                '当时在赶路，没时间掏出手机（走路一般不看手机）',
+              ),
+              const SizedBox(height: 8),
+              _buildHelpItem(
+                context,
+                '回到公司/家后才想起来记录',
+                '此时GPS定位已经变成了公司/家的地址',
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '✅ 勾选"忽略GPS定位"后：',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '不会保存当前的GPS坐标\n'
+                      '只使用你手动输入的地点名称\n'
+                      '适合延迟记录的场景',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '注意：时间字段也会自动获取当前时间，延迟记录时记得手动调整。',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '提示：路上快速看一眼时间，比看具体地点更快更安全。',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Divider(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '❓ 既然位置可能不准，为什么不提供地图选点功能？',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '高德地图 Flutter 插件与当前 Flutter 版本不兼容（使用了已废弃的 API），暂时无法提供地图选点功能。',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '目前的替代方案：\n'
+                'GPS 自动定位 + 手动输入地点名称\n'
+                '使用"忽略 GPS"+ 完全手动输入\n'
+                '使用地点历史记录快速选择',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('我知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建帮助项
+  Widget _buildHelpItem(BuildContext context, String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// 显示记录引导对话框
   void _showRecordGuideDialog(BuildContext context) {
     DialogHelper.show(
@@ -844,25 +1327,25 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               const SizedBox(height: 8),
               _buildGuideItem(
                 context,
-                '• 今天在地铁看到 TA',
+                '今天在地铁看到 TA',
                 '→ 创建记录，选择"错过"',
               ),
               const SizedBox(height: 8),
               _buildGuideItem(
                 context,
-                '• 明天又看到 TA（还是没说话）',
+                '明天又看到 TA（还是没说话）',
                 '→ 创建新记录，选择"再遇"',
               ),
               const SizedBox(height: 8),
               _buildGuideItem(
                 context,
-                '• 后天又看到 TA（还是没说话）',
+                '后天又看到 TA（还是没说话）',
                 '→ 创建新记录，还是选择"再遇"',
               ),
               const SizedBox(height: 8),
               _buildGuideItem(
                 context,
-                '• 第 N 天终于说话了',
+                '第 N 天终于说话了',
                 '→ 创建新记录，选择"邂逅"',
               ),
               const SizedBox(height: 16),
@@ -897,8 +1380,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '• 邂逅后如果继续在一起，就不用再记录了\n'
-                      '• 但如果经历了"别离"或"失联"，之后又"重逢"，可以继续记录，即邂逅→别离/失联→重逢',
+                      '邂逅后如果继续在一起，就不用再记录了\n'
+                      '但如果经历了"别离"或"失联"，之后又"重逢"，可以继续记录，即邂逅→别离/失联→重逢',
                       style: TextStyle(
                         fontSize: 13,
                         color: Theme.of(context).colorScheme.onSurface,
@@ -946,12 +1429,6 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         ),
       ],
     );
-  }
-
-  /// 格式化日期时间
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
-        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
   
   /// 描述输入区域

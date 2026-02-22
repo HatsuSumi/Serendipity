@@ -334,7 +334,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      _isMasked ? _maskText(RecordHelper.getLocationText(record)) : RecordHelper.getLocationText(record),
+                      _isMasked ? _maskText(RecordHelper.getLocationText(record.location)) : RecordHelper.getLocationText(record.location),
                       style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

@@ -233,7 +233,7 @@ class _AddExistingRecordsDialogState extends ConsumerState<AddExistingRecordsDia
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          RecordHelper.getLocationText(record),
+                          RecordHelper.getLocationText(record.location),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),

@@ -249,7 +249,7 @@ class StoryLineDetailPage extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      RecordHelper.getLocationText(record),
+                      RecordHelper.getLocationText(record.location),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),

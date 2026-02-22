@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/location_provider.dart';
-import '../../core/utils/location_helper.dart';
+import '../../core/utils/record_helper.dart';
 import '../../models/encounter_record.dart';
 
 /// GPS 定位测试页面
@@ -363,11 +363,11 @@ class LocationTestPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 
-                // LocationHelper 测试
+                // RecordHelper 测试
                 const Divider(),
                 const SizedBox(height: 8),
                 const Text(
-                  'LocationHelper 测试：',
+                  'RecordHelper 测试：',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -375,18 +375,18 @@ class LocationTestPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 _buildInfoRow(
-                  'getDisplayLocation',
-                  LocationHelper.getDisplayLocation(location),
+                  'getLocationText',
+                  RecordHelper.getLocationText(location),
                 ),
                 const SizedBox(height: 8),
                 _buildInfoRow(
                   'hasCoordinates',
-                  LocationHelper.hasCoordinates(location).toString(),
+                  RecordHelper.hasCoordinates(location).toString(),
                 ),
                 const SizedBox(height: 8),
                 _buildInfoRow(
-                  'isEmpty',
-                  LocationHelper.isEmpty(location).toString(),
+                  'isLocationEmpty',
+                  RecordHelper.isLocationEmpty(location).toString(),
                 ),
               ],
             ),

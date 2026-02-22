@@ -1,11 +1,13 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'i_location_service.dart';
 import '../../models/location_result.dart';
+import '../config/amap_config.dart';
 
 /// Geolocator 定位服务实现
 /// 
-/// 使用 geolocator 和 geocoding 插件实现定位功能。
+/// 使用 geolocator 插件获取 GPS 坐标，使用高德地图 Web API 进行逆地理编码。
 /// 
 /// 调用者：
 /// - LocationProvider：通过 ILocationService 接口调用
@@ -89,38 +91,13 @@ class GeolocatorLocationService implements ILocationService {
         },
       );
       
-      // 尝试逆地理编码（获取地址）
+      // 使用高德地图 API 进行逆地理编码（获取地址）
       String? address;
       try {
-        final placemarks = await placemarkFromCoordinates(
+        address = await _getAddressFromAmap(
           position.latitude,
           position.longitude,
-        ).timeout(
-          const Duration(seconds: _timeoutSeconds),
         );
-        
-        if (placemarks.isNotEmpty) {
-          final placemark = placemarks.first;
-          // 拼接地址：国家 + 省 + 市 + 区 + 街道
-          final parts = <String>[];
-          if (placemark.country != null && placemark.country!.isNotEmpty) {
-            parts.add(placemark.country!);
-          }
-          if (placemark.administrativeArea != null && placemark.administrativeArea!.isNotEmpty) {
-            parts.add(placemark.administrativeArea!);
-          }
-          if (placemark.locality != null && placemark.locality!.isNotEmpty) {
-            parts.add(placemark.locality!);
-          }
-          if (placemark.subLocality != null && placemark.subLocality!.isNotEmpty) {
-            parts.add(placemark.subLocality!);
-          }
-          if (placemark.street != null && placemark.street!.isNotEmpty) {
-            parts.add(placemark.street!);
-          }
-          
-          address = parts.join('');
-        }
       } catch (e) {
         // 逆地理编码失败不影响定位结果，只是没有地址
         address = null;
@@ -147,6 +124,98 @@ class GeolocatorLocationService implements ILocationService {
     } catch (e) {
       return false;
     }
+  }
+  
+  /// 使用高德地图 API 进行逆地理编码
+  /// 
+  /// 将 GPS 坐标转换为地址文本。
+  /// 
+  /// 参数：
+  /// - [latitude] 纬度
+  /// - [longitude] 经度
+  /// 
+  /// 返回：地址字符串，失败时抛出异常
+  /// 
+  /// 调用者：getCurrentLocation()
+  Future<String> _getAddressFromAmap(double latitude, double longitude) async {
+    // 检查 API Key 是否已配置
+    if (!AmapConfig.isConfigured) {
+      throw Exception('高德地图 API Key 未配置，请在 AmapConfig 中设置');
+    }
+    
+    // 构建请求 URL
+    final url = Uri.parse(AmapConfig.geocoderUrl).replace(queryParameters: {
+      'key': AmapConfig.apiKey,
+      'location': '$longitude,$latitude', // 高德地图格式：经度,纬度
+      'output': 'json',
+    });
+    
+    // 发送 HTTP 请求
+    final response = await http.get(url).timeout(
+      Duration(seconds: AmapConfig.timeoutSeconds),
+      onTimeout: () {
+        throw Exception('逆地理编码超时');
+      },
+    );
+    
+    // 检查 HTTP 状态码
+    if (response.statusCode != 200) {
+      throw Exception('逆地理编码请求失败：HTTP ${response.statusCode}');
+    }
+    
+    // 解析 JSON 响应
+    final data = json.decode(response.body);
+    
+    // 检查 API 返回状态
+    if (data['status'] != '1') {
+      throw Exception('逆地理编码失败：${data['info']}');
+    }
+    
+    // 提取地址信息
+    final regeocode = data['regeocode'];
+    if (regeocode == null) {
+      throw Exception('逆地理编码返回数据为空');
+    }
+    
+    // 优先使用 formatted_address（格式化地址）
+    final formattedAddress = regeocode['formatted_address'];
+    if (formattedAddress != null && formattedAddress.toString().isNotEmpty) {
+      return formattedAddress.toString();
+    }
+    
+    // 如果没有 formatted_address，手动拼接地址
+    final addressComponent = regeocode['addressComponent'];
+    if (addressComponent != null) {
+      final parts = <String>[];
+      
+      // 省
+      if (addressComponent['province'] != null) {
+        parts.add(addressComponent['province'].toString());
+      }
+      
+      // 市
+      if (addressComponent['city'] != null && 
+          addressComponent['city'].toString().isNotEmpty &&
+          addressComponent['city'].toString() != '[]') {
+        parts.add(addressComponent['city'].toString());
+      }
+      
+      // 区
+      if (addressComponent['district'] != null) {
+        parts.add(addressComponent['district'].toString());
+      }
+      
+      // 街道
+      if (addressComponent['township'] != null) {
+        parts.add(addressComponent['township'].toString());
+      }
+      
+      if (parts.isNotEmpty) {
+        return parts.join('');
+      }
+    }
+    
+    throw Exception('无法解析地址信息');
   }
   
   /// 提取错误信息

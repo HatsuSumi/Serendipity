@@ -125,9 +125,7 @@ class LocationNotifier extends StateNotifier<LocationState> {
   /// 
   /// 调用者：UI 层（用户手动清空定位结果）
   void clearResult() {
-    state = state.copyWith(
-      result: LocationResult.failure(errorMessage: ''), // 使用空错误信息表示已清空
-    );
+    state = const LocationState();
   }
 }
 
