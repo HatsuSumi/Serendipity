@@ -728,14 +728,27 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           const SizedBox(height: 12),
         ],
         
-        // 引导文字
-        Text(
-          '给这个地点起个名字？（可选）',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+        // 引导文字 + 说明
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '地点名称（可选）',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '可以写地址，也可以取个名字',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         
@@ -746,7 +759,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               child: TextFormField(
                 controller: _placeNameController,
                 decoration: InputDecoration(
-                  hintText: '例如：常去的那家咖啡馆',
+                  hintText: '例如：地铁10号线、常去的咖啡馆',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
