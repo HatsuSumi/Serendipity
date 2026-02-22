@@ -8,6 +8,7 @@ import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/smart_navigator.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
+import '../../core/utils/record_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
@@ -453,35 +454,32 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
   /// 地点信息
   Widget _buildLocationInfo(BuildContext context) {
+    // 使用 RecordHelper 判断地点是否为空
+    if (RecordHelper.isLocationEmpty(_currentRecord.location)) {
+      return Text(
+        '未知地点',
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 地点名称 + 场所类型
-        if (_currentRecord.location.placeName != null || _currentRecord.location.placeType != null)
-          Row(
-            children: [
-              if (_currentRecord.location.placeType != null) ...[
-                Text(
-                  _currentRecord.location.placeType!.icon,
-                  style: const TextStyle(fontSize: 20),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: Text(
-                  _currentRecord.location.placeName ?? _currentRecord.location.placeType?.label ?? '',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                ),
+        // 使用 RecordHelper 获取地点显示文本
+        Text(
+          RecordHelper.getLocationText(_currentRecord.location),
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w500,
               ),
-            ],
-          ),
+        ),
         
-        // 地址
-        if (_currentRecord.location.address != null) ...[
-          if (_currentRecord.location.placeName != null || _currentRecord.location.placeType != null)
-            const SizedBox(height: 8),
+        // 如果有详细地址且与地点名称不同，显示完整地址
+        if (_currentRecord.location.address != null &&
+            _currentRecord.location.address!.isNotEmpty &&
+            _currentRecord.location.placeName != _currentRecord.location.address) ...[
+          const SizedBox(height: 8),
           Text(
             _currentRecord.location.address!,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -490,8 +488,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           ),
         ],
         
-        // GPS 坐标
-        if (_currentRecord.location.latitude != null && _currentRecord.location.longitude != null) ...[
+        // GPS 坐标（如果有）
+        if (RecordHelper.hasCoordinates(_currentRecord.location)) ...[
           const SizedBox(height: 8),
           Text(
             '${_currentRecord.location.latitude!.toStringAsFixed(6)}, ${_currentRecord.location.longitude!.toStringAsFixed(6)}',
@@ -501,17 +499,6 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                 ),
           ),
         ],
-        
-        // 如果什么都没有
-        if (_currentRecord.location.placeName == null &&
-            _currentRecord.location.placeType == null &&
-            _currentRecord.location.address == null)
-          Text(
-            '未知地点',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
       ],
     );
   }

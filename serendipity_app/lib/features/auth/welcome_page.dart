@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/utils/page_transition_builder.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/utils/navigation_helper.dart';
 import 'widgets/auth_button.dart';
 import 'login_page.dart';
 import 'register_page.dart';
@@ -12,11 +13,11 @@ import 'register_page.dart';
 /// 调用者：
 /// - main.dart：应用启动时，未登录用户显示此页面
 /// - AuthProvider：用户登出后跳转到此页面
-class WelcomePage extends StatelessWidget {
+class WelcomePage extends ConsumerWidget {
   const WelcomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     
     return Scaffold(
@@ -42,7 +43,7 @@ class WelcomePage extends StatelessWidget {
               // 登录按钮
               AuthButton.primary(
                 text: '登录',
-                onPressed: () => _navigateToLogin(context),
+                onPressed: () => _navigateToLogin(context, ref),
               ),
               
               const SizedBox(height: 16),
@@ -50,7 +51,7 @@ class WelcomePage extends StatelessWidget {
               // 注册按钮
               AuthButton.secondary(
                 text: '注册',
-                onPressed: () => _navigateToRegister(context),
+                onPressed: () => _navigateToRegister(context, ref),
               ),
               
               const SizedBox(height: 24),
@@ -144,52 +145,22 @@ class WelcomePage extends StatelessWidget {
   /// 导航到登录页
   /// 
   /// 调用者：登录按钮的 onPressed
-  void _navigateToLogin(BuildContext context) {
-    // 获取随机动画类型
-    final transitionType = PageTransitionBuilder.getRandomType();
-    
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return const LoginPage();
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
+  void _navigateToLogin(BuildContext context, WidgetRef ref) {
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      const LoginPage(),
     );
   }
   
   /// 导航到注册页
   /// 
   /// 调用者：注册按钮的 onPressed
-  void _navigateToRegister(BuildContext context) {
-    // 获取随机动画类型
-    final transitionType = PageTransitionBuilder.getRandomType();
-    
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return const RegisterPage();
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return PageTransitionBuilder.buildTransition(
-            transitionType,
-            context,
-            animation,
-            secondaryAnimation,
-            child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
+  void _navigateToRegister(BuildContext context, WidgetRef ref) {
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      const RegisterPage(),
     );
   }
 }

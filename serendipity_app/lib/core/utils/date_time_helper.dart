@@ -78,5 +78,18 @@ class DateTimeHelper {
       return '${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
     }
   }
+
+  /// 格式化为中文日期格式
+  /// 
+  /// 格式：`2024年1月15日`
+  /// 
+  /// 示例：
+  /// ```dart
+  /// final date = DateTimeHelper.formatChineseDate(DateTime.now());
+  /// // 输出: "2024年2月22日"
+  /// ```
+  static String formatChineseDate(DateTime dateTime) {
+    return '${dateTime.year}年${dateTime.month}月${dateTime.day}日';
+  }
 }
 

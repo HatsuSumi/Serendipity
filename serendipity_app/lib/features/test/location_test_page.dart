@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/location_provider.dart';
 import '../../core/utils/record_helper.dart';
+import '../../core/utils/message_helper.dart';
 import '../../models/encounter_record.dart';
 
 /// GPS 定位测试页面
@@ -175,15 +176,11 @@ class LocationTestPage extends ConsumerWidget {
               : () async {
                   await ref.read(locationProvider.notifier).checkPermission();
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          state.hasPermission == true
-                              ? '✅ 已有定位权限'
-                              : '❌ 未授予定位权限',
-                        ),
-                      ),
-                    );
+                    if (state.hasPermission == true) {
+                      MessageHelper.showSuccess(context, '已有定位权限');
+                    } else {
+                      MessageHelper.showError(context, '未授予定位权限');
+                    }
                   }
                 },
           icon: const Icon(Icons.check),
@@ -200,15 +197,11 @@ class LocationTestPage extends ConsumerWidget {
                       .read(locationProvider.notifier)
                       .requestPermission();
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          granted
-                              ? '✅ 权限已授予'
-                              : '❌ 权限被拒绝',
-                        ),
-                      ),
-                    );
+                    if (granted) {
+                      MessageHelper.showSuccess(context, '权限已授予');
+                    } else {
+                      MessageHelper.showError(context, '权限被拒绝');
+                    }
                   }
                 },
           icon: const Icon(Icons.location_on),
@@ -237,15 +230,11 @@ class LocationTestPage extends ConsumerWidget {
                       .read(locationProvider.notifier)
                       .openSettings();
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          opened
-                              ? '✅ 已打开系统设置'
-                              : '❌ 无法打开系统设置',
-                        ),
-                      ),
-                    );
+                    if (opened) {
+                      MessageHelper.showSuccess(context, '已打开系统设置');
+                    } else {
+                      MessageHelper.showError(context, '无法打开系统设置');
+                    }
                   }
                 },
           icon: const Icon(Icons.settings),

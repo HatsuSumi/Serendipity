@@ -428,7 +428,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     } else if (difference.inDays < 365) {
       return '${(difference.inDays / 30).floor()}个月前';
     } else {
-      return '${date.year}年${date.month}月${date.day}日';
+      return DateTimeHelper.formatChineseDate(date);
     }
   }
 
