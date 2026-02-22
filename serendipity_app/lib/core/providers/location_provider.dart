@@ -34,22 +34,49 @@ class LocationState {
   
   /// 复制并修改部分字段
   /// 
-  /// 对于可空字段，使用函数包装来区分"未传递"和"传递 null"：
-  /// - 不传参数：保持原值
-  /// - 传递函数返回 null：清空字段
-  /// - 传递函数返回新值：更新字段
+  /// 设计说明：
+  /// - 非空字段（如 [isLoading]）：直接传递新值
+  /// - 可空字段（如 [result]、[hasPermission]）：使用函数包装，支持清空操作
+  /// 
+  /// 为什么混合使用两种API？
+  /// - 非空字段永远不需要"清空"操作，使用简单API降低认知负担
+  /// - 可空字段需要区分"保持原值"和"清空字段"，使用函数包装提供精确控制
+  /// 
+  /// 参数说明：
+  /// - [isLoading]: 是否正在加载（非空字段）
+  ///   - 不传参数：保持原值
+  ///   - 传递 true/false：更新为新值
+  /// 
+  /// - [result]: 定位结果（可空字段）
+  ///   - 不传参数：保持原值
+  ///   - 传递 () => null：清空字段
+  ///   - 传递 () => newResult：更新为新值
+  /// 
+  /// - [hasPermission]: 权限状态（可空字段）
+  ///   - 不传参数：保持原值
+  ///   - 传递 () => null：清空字段
+  ///   - 传递 () => true/false：更新为新值
   /// 
   /// 示例：
   /// ```dart
-  /// // 清空结果
+  /// // 更新加载状态（简单API）
+  /// state.copyWith(isLoading: true)
+  /// 
+  /// // 清空定位结果（函数包装API）
   /// state.copyWith(result: () => null)
   /// 
-  /// // 更新结果
-  /// state.copyWith(result: () => newResult)
-  /// 
-  /// // 保持结果不变
-  /// state.copyWith(isLoading: true)
+  /// // 同时更新多个字段
+  /// state.copyWith(
+  ///   isLoading: false,
+  ///   result: () => LocationResult.success(...),
+  ///   hasPermission: () => true,
+  /// )
   /// ```
+  /// 
+  /// 参考：
+  /// - 此模式与 EncounterRecord.copyWith() 保持一致
+  /// - 遵循 Flutter 生态的最佳实践
+  /// - 符合 KISS 和 YAGNI 原则
   LocationState copyWith({
     bool? isLoading,
     LocationResult? Function()? result,

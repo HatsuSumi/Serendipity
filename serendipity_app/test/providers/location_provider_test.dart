@@ -201,7 +201,7 @@ void main() {
     });
 
     group('clearResult', () {
-      test('应该清空定位结果 - 使用优化后的 copyWith', () async {
+      test('应该清空定位结果 - 展示函数包装API的优势', () async {
         mockService.setPermission(true);
         mockService.setLocationResult(
           shouldSucceed: true,
