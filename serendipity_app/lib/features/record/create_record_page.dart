@@ -146,6 +146,12 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       }
       _selectedPlaceType = record.location.placeType;
       
+      // 编辑模式：检查是否有GPS数据
+      // 如果没有GPS数据（latitude/longitude为null），默认勾选"忽略GPS"
+      if (record.location.latitude == null || record.location.longitude == null) {
+        _ignoreGPS = true;
+      }
+      
       // 预填充可选字段
       if (record.description != null) {
         _descriptionController.text = record.description!;
@@ -224,13 +230,23 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         timestamp: _selectedTime,
         location: widget.isEditMode
             ? widget.recordToEdit!.location.copyWith(
+                // 编辑模式：如果重新定位了，使用新的GPS数据；如果勾选了"忽略GPS"，清除GPS数据
+                latitude: () => _ignoreGPS 
+                    ? null 
+                    : (ref.read(locationProvider).result?.latitude ?? widget.recordToEdit!.location.latitude),
+                longitude: () => _ignoreGPS 
+                    ? null 
+                    : (ref.read(locationProvider).result?.longitude ?? widget.recordToEdit!.location.longitude),
+                address: () => _ignoreGPS 
+                    ? null 
+                    : (ref.read(locationProvider).result?.address ?? widget.recordToEdit!.location.address),
                 placeName: () => _placeNameController.text.trim().isEmpty 
                     ? null 
                     : _placeNameController.text.trim(),
                 placeType: () => _selectedPlaceType,
               )
             : Location(
-                // 优化：直接从 Provider 读取定位结果
+                // 创建模式：直接从 Provider 读取定位结果
                 latitude: _ignoreGPS ? null : ref.read(locationProvider).result?.latitude,
                 longitude: _ignoreGPS ? null : ref.read(locationProvider).result?.longitude,
                 address: _ignoreGPS ? null : ref.read(locationProvider).result?.address,
@@ -842,53 +858,49 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         ),
         const SizedBox(height: 8),
         
-        // GPS 定位状态显示
-        if (!widget.isEditMode) ...[
-          _buildLocationStatus(),
-          const SizedBox(height: 12),
-        ],
+        // GPS 定位状态显示（创建模式和编辑模式都显示）
+        _buildLocationStatus(),
+        const SizedBox(height: 12),
         
-        // 忽略 GPS 定位选项
-        if (!widget.isEditMode) ...[
-          Row(
-            children: [
-              Expanded(
-                child: CheckboxListTile(
-                  value: _ignoreGPS,
-                  onChanged: (value) {
-                    setState(() {
-                      _ignoreGPS = value ?? false;
-                    });
-                  },
-                  title: const Text('忽略 GPS 定位'),
-                  subtitle: Text(
-                    '只使用下面输入的地点名称（用于UI显示）',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+        // 忽略 GPS 定位选项（创建模式和编辑模式都显示）
+        Row(
+          children: [
+            Expanded(
+              child: CheckboxListTile(
+                value: _ignoreGPS,
+                onChanged: (value) {
+                  setState(() {
+                    _ignoreGPS = value ?? false;
+                  });
+                },
+                title: const Text('忽略 GPS 定位'),
+                subtitle: Text(
+                  '只使用下面输入的地点名称（用于UI显示）',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
                 ),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
               ),
-              IconButton(
-                icon: Icon(
-                  Icons.help_outline,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                onPressed: () => _showIgnoreGPSHelpDialog(context),
-                tooltip: '为什么要忽略GPS？',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                visualDensity: VisualDensity.compact,
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.help_outline,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
+              onPressed: () => _showIgnoreGPSHelpDialog(context),
+              tooltip: '为什么要忽略GPS？',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              visualDensity: VisualDensity.compact,
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        const SizedBox(height: 12),
         
         // 引导文字 + 说明
         Column(
@@ -981,9 +993,108 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   /// - 直接使用 LocationProvider 的状态
   /// - 使用 ref.watch 监听状态变化
   /// - 自动响应状态更新，无需手动 setState
+  /// - 编辑模式：显示已保存的GPS信息，允许重新定位
   Widget _buildLocationStatus() {
     // 直接读取 Provider 状态
     final locationState = ref.watch(locationProvider);
+    
+    // 编辑模式：优先显示已保存的GPS信息
+    if (widget.isEditMode && widget.recordToEdit != null) {
+      final location = widget.recordToEdit!.location;
+      final hasGPS = location.latitude != null && location.longitude != null;
+      
+      // 如果有已保存的GPS信息
+      if (hasGPS && !locationState.isLoading && locationState.result == null) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '📍 已保存的GPS信息',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      location.address ?? '${location.latitude}, ${location.longitude}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.my_location, size: 20),
+                onPressed: _requestLocation,
+                tooltip: '重新定位',
+              ),
+            ],
+          ),
+        );
+      }
+      
+      // 如果没有GPS信息（之前勾选了"忽略GPS"）
+      if (!hasGPS && !locationState.isLoading && locationState.result == null) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '📍 未保存GPS信息',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '当时创建记录时勾选了"忽略GPS"',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_location, size: 20),
+                onPressed: _requestLocation,
+                tooltip: '获取GPS定位',
+              ),
+            ],
+          ),
+        );
+      }
+    }
     
     // 定位中
     if (locationState.isLoading) {
@@ -1008,7 +1119,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             ),
             const SizedBox(width: 12),
             Text(
-              '正在获取位置...',
+              widget.isEditMode ? '正在重新获取位置...' : '正在获取位置...',
               style: TextStyle(
                 fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurface,
@@ -1039,7 +1150,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '✅ 已定位',
+                    widget.isEditMode ? '✅ 已重新定位' : '✅ 已定位',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -1383,6 +1494,39 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               ),
               const SizedBox(height: 16),
               Text(
+                '💡 编辑模式下的"事后补救"',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '如果昨天延迟记录时GPS定位错了，今天又路过同一地点：',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildHelpItem(
+                context,
+                '打开昨天的记录进入编辑模式',
+                '点击"重新定位"按钮获取正确的GPS坐标',
+              ),
+              const SizedBox(height: 8),
+              _buildHelpItem(
+                context,
+                '或者如果想清除错误的GPS数据',
+                '勾选"忽略GPS定位"，只保留地点名称',
+              ),
+              const SizedBox(height: 16),
+              Divider(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 16),
+              Text(
                 '❓ 既然位置可能不准，为什么不提供地图选点功能？',
                 style: TextStyle(
                   fontSize: 14,
@@ -1404,7 +1548,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 '目前的替代方案：\n'
                 'GPS 自动定位 + 手动输入地点名称\n'
                 '使用"忽略 GPS"+ 完全手动输入\n'
-                '使用地点历史记录快速选择',
+                '使用地点历史记录快速选择\n'
+                '编辑模式下"事后补救"重新定位',
                 style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

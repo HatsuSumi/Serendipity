@@ -468,35 +468,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 地点名称 + 场所类型图标
-        if (_currentRecord.location.placeName != null && 
-            _currentRecord.location.placeName!.isNotEmpty) ...[
-          Row(
-            children: [
-              if (_currentRecord.location.placeType != null) ...[
-                Text(
-                  _currentRecord.location.placeType!.icon,
-                  style: const TextStyle(fontSize: 20),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: Text(
-                  _currentRecord.location.placeName!,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-        
-        // 场所类型（如果没有地点名称，单独显示）
-        if (_currentRecord.location.placeType != null &&
-            (_currentRecord.location.placeName == null || 
-             _currentRecord.location.placeName!.isEmpty)) ...[
+        // 场所类型（如果有）- 始终放在第一行
+        if (_currentRecord.location.placeType != null) ...[
           Row(
             children: [
               Text(
@@ -511,6 +484,18 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                     ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        
+        // 地点名称（如果有）
+        if (_currentRecord.location.placeName != null && 
+            _currentRecord.location.placeName!.isNotEmpty) ...[
+          Text(
+            _currentRecord.location.placeName!,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
           ),
           const SizedBox(height: 8),
         ],
@@ -530,7 +515,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         // GPS 坐标（如果有）
         if (RecordHelper.hasCoordinates(_currentRecord.location))
           Text(
-            '${_currentRecord.location.latitude!.toStringAsFixed(6)}, ${_currentRecord.location.longitude!.toStringAsFixed(6)}',
+            '纬度: ${_currentRecord.location.latitude!.toStringAsFixed(6)}, 经度: ${_currentRecord.location.longitude!.toStringAsFixed(6)}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontFamily: 'monospace',

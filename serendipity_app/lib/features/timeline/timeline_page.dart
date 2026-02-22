@@ -325,6 +325,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               
               // 地点
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
                     Icons.location_on,
@@ -336,7 +337,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                     child: Text(
                       _isMasked ? _maskText(RecordHelper.getLocationText(record.location)) : RecordHelper.getLocationText(record.location),
                       style: Theme.of(context).textTheme.bodyMedium,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
