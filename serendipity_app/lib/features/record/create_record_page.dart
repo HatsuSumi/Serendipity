@@ -69,8 +69,6 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   List<PlaceHistoryItem> _placeHistory = [];
   
   // GPS 定位状态
-  bool _isLocating = false;
-  LocationResult? _locationResult;
   bool _ignoreGPS = false; // 是否忽略 GPS 定位
 
   @override
@@ -81,18 +79,18 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     
     // 创建模式下自动获取 GPS 定位
     if (!widget.isEditMode) {
-      _isLocating = true; // 同步设置状态
       // 使用 Future.microtask 延迟调用，避免在 build 期间修改 provider
       Future.microtask(() => _requestLocation());
     }
   }
   
   /// 请求 GPS 定位
+  /// 
+  /// 优化说明：
+  /// - 移除了本地状态管理（_isLocating, _locationResult）
+  /// - 直接使用 LocationProvider 的状态
+  /// - 减少状态同步的复杂度
   Future<void> _requestLocation() async {
-    setState(() {
-      _isLocating = true;
-    });
-    
     try {
       // 先检查权限
       await ref.read(locationProvider.notifier).checkPermission();
@@ -104,9 +102,6 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         
         if (!granted && mounted) {
           // 权限被拒绝，显示引导对话框
-          setState(() {
-            _isLocating = false;
-          });
           await _showPermissionDialog();
           return;
         }
@@ -114,20 +109,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       
       // 获取位置
       await ref.read(locationProvider.notifier).getCurrentLocation();
-      
-      if (mounted) {
-        final state = ref.read(locationProvider);
-        setState(() {
-          _locationResult = state.result;
-          _isLocating = false;
-        });
-      }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLocating = false;
-        });
-      }
+      // 错误已经在 Provider 中处理，这里不需要额外处理
     }
   }
   
@@ -248,9 +231,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 placeType: () => _selectedPlaceType,
               )
             : Location(
-                latitude: _ignoreGPS ? null : _locationResult?.latitude,
-                longitude: _ignoreGPS ? null : _locationResult?.longitude,
-                address: _ignoreGPS ? null : _locationResult?.address,
+                // 优化：直接从 Provider 读取定位结果
+                latitude: _ignoreGPS ? null : ref.read(locationProvider).result?.latitude,
+                longitude: _ignoreGPS ? null : ref.read(locationProvider).result?.longitude,
+                address: _ignoreGPS ? null : ref.read(locationProvider).result?.address,
                 placeName: _placeNameController.text.trim().isEmpty 
                     ? null 
                     : _placeNameController.text.trim(),
@@ -817,9 +801,17 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   }
   
   /// 构建 GPS 定位状态显示
+  /// 
+  /// 优化说明：
+  /// - 直接使用 LocationProvider 的状态
+  /// - 使用 ref.watch 监听状态变化
+  /// - 自动响应状态更新，无需手动 setState
   Widget _buildLocationStatus() {
+    // 直接读取 Provider 状态
+    final locationState = ref.watch(locationProvider);
+    
     // 定位中
-    if (_isLocating) {
+    if (locationState.isLoading) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -853,8 +845,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     }
     
     // 定位成功
-    if (_locationResult != null && _locationResult!.isSuccess) {
-      final address = _locationResult!.address ?? '位置已获取';
+    if (locationState.result?.isSuccess == true) {
+      final result = locationState.result!;
+      final address = result.address ?? '位置已获取';
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -900,7 +893,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     }
     
     // 定位失败
-    if (_locationResult != null && !_locationResult!.isSuccess) {
+    if (locationState.result?.isSuccess == false) {
+      final result = locationState.result!;
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -932,7 +926,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _locationResult!.errorMessage ?? '定位失败',
+                    result.errorMessage ?? '定位失败',
                     style: TextStyle(
                       fontSize: 13,
                       color: Theme.of(context).colorScheme.onSurface,

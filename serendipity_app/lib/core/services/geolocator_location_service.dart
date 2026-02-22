@@ -231,21 +231,53 @@ class GeolocatorLocationService implements ILocationService {
       return errorString.substring('Exception: '.length);
     }
     
-    // 常见错误处理
+    // Geolocator 特定错误（通过类型判断）
+    if (error is LocationServiceDisabledException) {
+      return '定位服务未启用，请在系统设置中开启';
+    }
+    
+    if (error is PermissionDeniedException) {
+      return '定位权限被拒绝，请在设置中授予权限';
+    }
+    
+    // 超时错误
     if (errorString.contains('timeout') || errorString.contains('超时')) {
       return '定位超时，请检查网络或GPS信号';
     }
     
+    // 权限相关错误
     if (errorString.contains('permission') || errorString.contains('权限')) {
-      return '定位权限未授予';
+      return '定位权限未授予，请在设置中开启';
     }
     
+    // 服务相关错误
     if (errorString.contains('service') || errorString.contains('服务')) {
-      return '定位服务未启用';
+      return '定位服务未启用，请在系统设置中开启';
     }
     
-    // 默认错误信息
-    return '定位失败，请稍后重试';
+    // 网络错误
+    if (errorString.contains('network') || errorString.contains('网络') ||
+        errorString.contains('connection') || errorString.contains('连接')) {
+      return '网络连接失败，请检查网络设置';
+    }
+    
+    // 高德地图 API 错误
+    if (errorString.contains('高德') || errorString.contains('amap') ||
+        errorString.contains('API') || errorString.contains('逆地理编码')) {
+      return '地址解析失败，但GPS坐标已获取';
+    }
+    
+    // HTTP 错误
+    if (errorString.contains('HTTP') || errorString.contains('status code')) {
+      return '地址解析服务异常，请稍后重试';
+    }
+    
+    // 默认错误信息（保留部分原始信息用于调试）
+    // 截取前50个字符，避免错误信息过长
+    final truncatedError = errorString.length > 50 
+        ? '${errorString.substring(0, 50)}...' 
+        : errorString;
+    return '定位失败：$truncatedError';
   }
 }
 

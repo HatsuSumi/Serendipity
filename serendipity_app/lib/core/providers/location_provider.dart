@@ -33,15 +33,32 @@ class LocationState {
   });
   
   /// 复制并修改部分字段
+  /// 
+  /// 对于可空字段，使用函数包装来区分"未传递"和"传递 null"：
+  /// - 不传参数：保持原值
+  /// - 传递函数返回 null：清空字段
+  /// - 传递函数返回新值：更新字段
+  /// 
+  /// 示例：
+  /// ```dart
+  /// // 清空结果
+  /// state.copyWith(result: () => null)
+  /// 
+  /// // 更新结果
+  /// state.copyWith(result: () => newResult)
+  /// 
+  /// // 保持结果不变
+  /// state.copyWith(isLoading: true)
+  /// ```
   LocationState copyWith({
     bool? isLoading,
-    LocationResult? result,
-    bool? hasPermission,
+    LocationResult? Function()? result,
+    bool? Function()? hasPermission,
   }) {
     return LocationState(
       isLoading: isLoading ?? this.isLoading,
-      result: result ?? this.result,
-      hasPermission: hasPermission ?? this.hasPermission,
+      result: result != null ? result() : this.result,
+      hasPermission: hasPermission != null ? hasPermission() : this.hasPermission,
     );
   }
 }
@@ -67,7 +84,7 @@ class LocationNotifier extends StateNotifier<LocationState> {
   /// 调用者：UI 层（页面初始化时检查权限）
   Future<void> checkPermission() async {
     final hasPermission = await _locationService.checkPermission();
-    state = state.copyWith(hasPermission: hasPermission);
+    state = state.copyWith(hasPermission: () => hasPermission);
   }
   
   /// 请求定位权限
@@ -79,7 +96,7 @@ class LocationNotifier extends StateNotifier<LocationState> {
   /// 调用者：UI 层（用户点击"开启定位"按钮）
   Future<bool> requestPermission() async {
     final granted = await _locationService.requestPermission();
-    state = state.copyWith(hasPermission: granted);
+    state = state.copyWith(hasPermission: () => granted);
     return granted;
   }
   
@@ -97,13 +114,13 @@ class LocationNotifier extends StateNotifier<LocationState> {
       // 更新状态
       state = state.copyWith(
         isLoading: false,
-        result: result,
+        result: () => result,
       );
     } catch (e) {
       // 捕获异常，更新为失败状态
       state = state.copyWith(
         isLoading: false,
-        result: LocationResult.failure(
+        result: () => LocationResult.failure(
           errorMessage: '定位失败：${e.toString()}',
         ),
       );
@@ -125,7 +142,10 @@ class LocationNotifier extends StateNotifier<LocationState> {
   /// 
   /// 调用者：UI 层（用户手动清空定位结果）
   void clearResult() {
-    state = const LocationState();
+    state = state.copyWith(
+      result: () => null,
+      hasPermission: () => null,
+    );
   }
 }
 

@@ -10,13 +10,22 @@ import 'package:flutter/material.dart';
 /// 设计原则：
 /// - 单一职责：只负责权限引导UI
 /// - 无业务逻辑：不包含权限请求逻辑
+/// - 灵活性：支持多种操作回调
 class LocationPermissionDialog extends StatelessWidget {
   /// 点击"去设置"按钮的回调
-  final VoidCallback onOpenSettings;
+  final VoidCallback? onOpenSettings;
+  
+  /// 点击"重新请求"按钮的回调（可选）
+  final VoidCallback? onRequestAgain;
+  
+  /// 点击"稍后再说"按钮的回调（可选）
+  final VoidCallback? onCancel;
   
   const LocationPermissionDialog({
     super.key,
-    required this.onOpenSettings,
+    this.onOpenSettings,
+    this.onRequestAgain,
+    this.onCancel,
   });
 
   @override
@@ -109,18 +118,41 @@ class LocationPermissionDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('稍后再说'),
-        ),
-        FilledButton.icon(
-          onPressed: () {
-            Navigator.of(context).pop();
-            onOpenSettings();
-          },
-          icon: const Icon(Icons.settings, size: 18),
-          label: const Text('去设置'),
-        ),
+        // 稍后再说按钮
+        if (onCancel != null)
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onCancel!();
+            },
+            child: const Text('稍后再说'),
+          )
+        else
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('稍后再说'),
+          ),
+        
+        // 重新请求按钮（可选）
+        if (onRequestAgain != null)
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onRequestAgain!();
+            },
+            child: const Text('重新请求'),
+          ),
+        
+        // 去设置按钮
+        if (onOpenSettings != null)
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onOpenSettings!();
+            },
+            icon: const Icon(Icons.settings, size: 18),
+            label: const Text('去设置'),
+          ),
       ],
     );
   }

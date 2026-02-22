@@ -201,7 +201,7 @@ void main() {
     });
 
     group('clearResult', () {
-      test('应该清空定位结果', () async {
+      test('应该清空定位结果 - 使用优化后的 copyWith', () async {
         mockService.setPermission(true);
         mockService.setLocationResult(
           shouldSucceed: true,
@@ -210,15 +210,21 @@ void main() {
           address: '北京市东城区',
         );
 
+        // 先检查权限
+        await container.read(locationProvider.notifier).checkPermission();
+        
+        // 再获取位置
         await container.read(locationProvider.notifier).getCurrentLocation();
         var state = container.read(locationProvider);
         expect(state.result, isNotNull);
         expect(state.result!.isSuccess, true);
+        expect(state.hasPermission, true);
 
+        // 清空结果
         container.read(locationProvider.notifier).clearResult();
         state = container.read(locationProvider);
 
-        // 清空后应该恢复到初始状态
+        // 清空后 result 和 hasPermission 应该为 null
         expect(state.isLoading, false);
         expect(state.result, null);
         expect(state.hasPermission, null);
