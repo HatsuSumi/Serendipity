@@ -333,41 +333,91 @@ class AchievementDetector {
 
   /// 计算不同城市的数量
   /// 
-  /// 从地址中提取城市名称（简单实现）
+  /// 从地址中提取城市名称
+  /// 
+  /// 支持的格式：
+  /// - 直辖市：北京市、上海市、天津市、重庆市
+  /// - 省级城市：广东省广州市、浙江省杭州市
+  /// - 自治区：新疆维吾尔自治区乌鲁木齐市
   int _countUniqueCities(List<EncounterRecord> records) {
     final cities = <String>{};
     for (final record in records) {
       final address = record.location.address;
       if (address != null && address.isNotEmpty) {
-        // 简单提取：假设地址格式为 "省份+城市+区县+街道"
-        // 例如："北京市朝阳区建国门外大街1号" -> "北京市"
-        final cityMatch = RegExp(r'([\u4e00-\u9fa5]+市)').firstMatch(address);
-        if (cityMatch != null) {
-          cities.add(cityMatch.group(1)!);
+        final city = _extractCityFromAddress(address);
+        if (city != null) {
+          cities.add(city);
         }
       }
     }
     return cities.length;
   }
 
+  /// 从地址中提取城市名称
+  /// 
+  /// 返回标准化的城市名称（如"北京市"、"广州市"）
+  String? _extractCityFromAddress(String address) {
+    // 1. 直辖市：北京市、上海市、天津市、重庆市
+    final municipalities = ['北京市', '上海市', '天津市', '重庆市'];
+    for (final city in municipalities) {
+      if (address.contains(city)) {
+        return city;
+      }
+    }
+
+    // 2. 省级城市：匹配 "XX省XX市" 或 "XX自治区XX市"
+    final provinceCityPattern = RegExp(
+      r'(?:[\u4e00-\u9fa5]+(?:省|自治区))([\u4e00-\u9fa5]+市)',
+    );
+    final provinceCityMatch = provinceCityPattern.firstMatch(address);
+    if (provinceCityMatch != null) {
+      return provinceCityMatch.group(1); // 返回城市名（如"广州市"）
+    }
+
+    // 3. 只有城市名：匹配 "XX市"（但排除区县）
+    final cityPattern = RegExp(r'([\u4e00-\u9fa5]{2,}市)');
+    final cityMatch = cityPattern.firstMatch(address);
+    if (cityMatch != null) {
+      final cityName = cityMatch.group(1)!;
+      // 排除常见的区县名（如"朝阳市"可能是区名）
+      if (!cityName.endsWith('区市') && !cityName.endsWith('县市')) {
+        return cityName;
+      }
+    }
+
+    return null;
+  }
+
   /// 判断是否为节日
+  /// 
+  /// 支持的节日：
+  /// - 固定日期：元旦、情人节、圣诞节、平安夜、白色情人节、万圣节
+  /// - 近似日期：春节（1月21日-2月20日）、七夕（8月1日-8月31日）
   bool _isHoliday(DateTime date) {
-    // 春节（农历正月初一，简化为公历1月或2月）
-    // 情人节（2月14日）
-    // 圣诞节（12月25日）
-    // 元旦（1月1日）
-    // 七夕（农历七月初七，简化为公历8月）
-    
-    if (date.month == 1 && date.day == 1) return true; // 元旦
-    if (date.month == 2 && date.day == 14) return true; // 情人节
-    if (date.month == 12 && date.day == 25) return true; // 圣诞节
-    
-    // 简化判断：1月或2月的任意一天可能是春节
-    if (date.month == 1 || date.month == 2) return true;
-    
-    // 简化判断：8月的任意一天可能是七夕
-    if (date.month == 8) return true;
-    
+    final month = date.month;
+    final day = date.day;
+
+    // 固定日期节日
+    if (month == 1 && day == 1) return true; // 元旦
+    if (month == 2 && day == 14) return true; // 情人节
+    if (month == 3 && day == 14) return true; // 白色情人节
+    if (month == 5 && day == 20) return true; // 520表白日
+    if (month == 10 && day == 31) return true; // 万圣节
+    if (month == 11 && day == 11) return true; // 双十一（光棍节）
+    if (month == 12 && day == 24) return true; // 平安夜
+    if (month == 12 && day == 25) return true; // 圣诞节
+
+    // 春节：农历正月初一，公历通常在1月21日-2月20日之间
+    if (month == 1 && day >= 21) return true;
+    if (month == 2 && day <= 20) return true;
+
+    // 七夕：农历七月初七，公历通常在8月
+    if (month == 8) return true;
+
+    // 中秋节：农历八月十五，公历通常在9月或10月初
+    if (month == 9 && day >= 10) return true;
+    if (month == 10 && day <= 10) return true;
+
     return false;
   }
 
