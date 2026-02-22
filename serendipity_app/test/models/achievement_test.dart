@@ -2,213 +2,254 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:serendipity_app/models/achievement.dart';
 
 void main() {
-  group('Achievement', () {
-    test('创建 Achievement 对象（已解锁）', () {
-      final now = DateTime.now();
+  group('Achievement Model Tests', () {
+    test('创建成就 - 所有必填字段', () {
       final achievement = Achievement(
-        id: 'first_missed',
-        name: '第一次错过',
-        description: '你记录了第一次错过',
-        icon: '🌫️',
-        unlocked: true,
-        unlockedAt: now,
+        id: 'test_achievement',
+        name: '测试成就',
+        description: '这是一个测试成就',
+        icon: '🎉',
+        category: AchievementCategory.beginner,
       );
 
-      expect(achievement.id, 'first_missed');
-      expect(achievement.name, '第一次错过');
-      expect(achievement.description, '你记录了第一次错过');
-      expect(achievement.icon, '🌫️');
-      expect(achievement.unlocked, true);
-      expect(achievement.unlockedAt, now);
-    });
-
-    test('创建 Achievement 对象（未解锁）', () {
-      final achievement = Achievement(
-        id: 'first_met',
-        name: '第一次邂逅',
-        description: '你第一次标记"邂逅"状态',
-        icon: '💫',
-        unlocked: false,
-        unlockedAt: null,
-      );
-
-      expect(achievement.id, 'first_met');
-      expect(achievement.name, '第一次邂逅');
+      expect(achievement.id, 'test_achievement');
+      expect(achievement.name, '测试成就');
+      expect(achievement.description, '这是一个测试成就');
+      expect(achievement.icon, '🎉');
+      expect(achievement.category, AchievementCategory.beginner);
       expect(achievement.unlocked, false);
       expect(achievement.unlockedAt, isNull);
+      expect(achievement.progress, isNull);
+      expect(achievement.target, isNull);
     });
 
-    test('toJson 转换（已解锁）', () {
-      final now = DateTime(2026, 2, 11, 20, 0, 0);
+    test('创建成就 - 包含进度信息', () {
       final achievement = Achievement(
-        id: 'first_missed',
-        name: '第一次错过',
-        description: '你记录了第一次错过',
-        icon: '🌫️',
+        id: 'progress_achievement',
+        name: '进度成就',
+        description: '需要完成10次',
+        icon: '📝',
+        category: AchievementCategory.advanced,
+        progress: 5,
+        target: 10,
+      );
+
+      expect(achievement.hasProgress, true);
+      expect(achievement.progress, 5);
+      expect(achievement.target, 10);
+      expect(achievement.progressPercentage, 50.0);
+    });
+
+    test('创建成就 - 已解锁状态', () {
+      final unlockedAt = DateTime(2024, 1, 1);
+      final achievement = Achievement(
+        id: 'unlocked_achievement',
+        name: '已解锁成就',
+        description: '已经解锁',
+        icon: '✅',
+        category: AchievementCategory.rare,
         unlocked: true,
-        unlockedAt: now,
+        unlockedAt: unlockedAt,
+      );
+
+      expect(achievement.unlocked, true);
+      expect(achievement.unlockedAt, unlockedAt);
+    });
+
+    test('Fail Fast - ID不能为空', () {
+      expect(
+        () => Achievement(
+          id: '',
+          name: '测试',
+          description: '描述',
+          icon: '🎉',
+          category: AchievementCategory.beginner,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('Fail Fast - 名称不能为空', () {
+      expect(
+        () => Achievement(
+          id: 'test',
+          name: '',
+          description: '描述',
+          icon: '🎉',
+          category: AchievementCategory.beginner,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('Fail Fast - 已解锁必须有解锁时间', () {
+      expect(
+        () => Achievement(
+          id: 'test',
+          name: '测试',
+          description: '描述',
+          icon: '🎉',
+          category: AchievementCategory.beginner,
+          unlocked: true,
+          // 缺少 unlockedAt
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('Fail Fast - 进度不能超过目标', () {
+      expect(
+        () => Achievement(
+          id: 'test',
+          name: '测试',
+          description: '描述',
+          icon: '🎉',
+          category: AchievementCategory.beginner,
+          progress: 15,
+          target: 10,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('toJson 和 fromJson - 基本成就', () {
+      final achievement = Achievement(
+        id: 'test',
+        name: '测试成就',
+        description: '测试描述',
+        icon: '🎉',
+        category: AchievementCategory.beginner,
       );
 
       final json = achievement.toJson();
-
-      expect(json['id'], 'first_missed');
-      expect(json['name'], '第一次错过');
-      expect(json['description'], '你记录了第一次错过');
-      expect(json['icon'], '🌫️');
-      expect(json['unlocked'], true);
-      expect(json['unlockedAt'], now.toIso8601String());
-    });
-
-    test('toJson 转换（未解锁）', () {
-      final achievement = Achievement(
-        id: 'first_met',
-        name: '第一次邂逅',
-        description: '你第一次标记"邂逅"状态',
-        icon: '💫',
-        unlocked: false,
-        unlockedAt: null,
-      );
-
-      final json = achievement.toJson();
-
-      expect(json['id'], 'first_met');
-      expect(json['unlocked'], false);
-      expect(json['unlockedAt'], isNull);
-    });
-
-    test('fromJson 转换（已解锁）', () {
-      final json = {
-        'id': 'first_missed',
-        'name': '第一次错过',
-        'description': '你记录了第一次错过',
-        'icon': '🌫️',
-        'unlocked': true,
-        'unlockedAt': '2026-02-11T20:00:00.000',
-      };
-
-      final achievement = Achievement.fromJson(json);
-
-      expect(achievement.id, 'first_missed');
-      expect(achievement.name, '第一次错过');
-      expect(achievement.description, '你记录了第一次错过');
-      expect(achievement.icon, '🌫️');
-      expect(achievement.unlocked, true);
-      expect(achievement.unlockedAt, DateTime(2026, 2, 11, 20, 0, 0));
-    });
-
-    test('fromJson 转换（未解锁）', () {
-      final json = {
-        'id': 'first_met',
-        'name': '第一次邂逅',
-        'description': '你第一次标记"邂逅"状态',
-        'icon': '💫',
-        'unlocked': false,
-        'unlockedAt': null,
-      };
-
-      final achievement = Achievement.fromJson(json);
-
-      expect(achievement.id, 'first_met');
-      expect(achievement.unlocked, false);
-      expect(achievement.unlockedAt, isNull);
-    });
-
-    test('toJson 和 fromJson 往返转换', () {
-      final now = DateTime.now();
-      final original = Achievement(
-        id: 'first_missed',
-        name: '第一次错过',
-        description: '你记录了第一次错过',
-        icon: '🌫️',
-        unlocked: true,
-        unlockedAt: now,
-      );
-
-      final json = original.toJson();
       final restored = Achievement.fromJson(json);
 
-      expect(restored.id, original.id);
-      expect(restored.name, original.name);
-      expect(restored.description, original.description);
-      expect(restored.icon, original.icon);
-      expect(restored.unlocked, original.unlocked);
-      expect(
-        restored.unlockedAt?.millisecondsSinceEpoch,
-        original.unlockedAt?.millisecondsSinceEpoch,
-      );
+      expect(restored.id, achievement.id);
+      expect(restored.name, achievement.name);
+      expect(restored.description, achievement.description);
+      expect(restored.icon, achievement.icon);
+      expect(restored.category, achievement.category);
+      expect(restored.unlocked, achievement.unlocked);
     });
 
-    test('copyWith 修改字段', () {
-      final now = DateTime.now();
-      final original = Achievement(
-        id: 'first_missed',
-        name: '第一次错过',
-        description: '你记录了第一次错过',
-        icon: '🌫️',
-        unlocked: false,
-        unlockedAt: null,
-      );
-
-      final updated = original.copyWith(
-        unlocked: true,
-        unlockedAt: now,
-      );
-
-      expect(updated.id, original.id);
-      expect(updated.name, original.name);
-      expect(updated.unlocked, true);
-      expect(updated.unlockedAt, now);
-    });
-
-    test('相等性比较', () {
-      final now = DateTime.now();
-      final achievement1 = Achievement(
-        id: 'first_missed',
-        name: '第一次错过',
-        description: '你记录了第一次错过',
-        icon: '🌫️',
-        unlocked: true,
-        unlockedAt: now,
-      );
-
-      final achievement2 = Achievement(
-        id: 'first_missed',
-        name: '第一次错过',
-        description: '你记录了第一次错过',
-        icon: '🌫️',
-        unlocked: true,
-        unlockedAt: now,
-      );
-
-      final achievement3 = Achievement(
-        id: 'first_met',
-        name: '第一次邂逅',
-        description: '你第一次标记"邂逅"状态',
-        icon: '💫',
-        unlocked: false,
-        unlockedAt: null,
-      );
-
-      expect(achievement1 == achievement2, true);
-      expect(achievement1 == achievement3, false);
-    });
-
-    test('toString 输出', () {
+    test('toJson 和 fromJson - 完整成就', () {
+      final unlockedAt = DateTime(2024, 1, 1);
       final achievement = Achievement(
-        id: 'first_missed',
-        name: '第一次错过',
-        description: '你记录了第一次错过',
-        icon: '🌫️',
+        id: 'test',
+        name: '测试成就',
+        description: '测试描述',
+        icon: '🎉',
+        category: AchievementCategory.rare,
         unlocked: true,
-        unlockedAt: DateTime.now(),
+        unlockedAt: unlockedAt,
+        progress: 5,
+        target: 10,
       );
 
-      final str = achievement.toString();
+      final json = achievement.toJson();
+      final restored = Achievement.fromJson(json);
 
-      expect(str.contains('first_missed'), true);
-      expect(str.contains('第一次错过'), true);
-      expect(str.contains('unlocked: true'), true);
+      expect(restored.id, achievement.id);
+      expect(restored.unlocked, true);
+      expect(restored.unlockedAt?.toIso8601String(), unlockedAt.toIso8601String());
+      expect(restored.progress, 5);
+      expect(restored.target, 10);
+    });
+
+    test('copyWith - 解锁成就', () {
+      final achievement = Achievement(
+        id: 'test',
+        name: '测试成就',
+        description: '测试描述',
+        icon: '🎉',
+        category: AchievementCategory.beginner,
+      );
+
+      final unlockedAt = DateTime.now();
+      final unlocked = achievement.copyWith(
+        unlocked: true,
+        unlockedAt: () => unlockedAt,
+      );
+
+      expect(unlocked.unlocked, true);
+      expect(unlocked.unlockedAt, unlockedAt);
+      expect(unlocked.id, achievement.id);
+      expect(unlocked.name, achievement.name);
+    });
+
+    test('copyWith - 更新进度', () {
+      final achievement = Achievement(
+        id: 'test',
+        name: '测试成就',
+        description: '测试描述',
+        icon: '🎉',
+        category: AchievementCategory.beginner,
+        progress: 5,
+        target: 10,
+      );
+
+      final updated = achievement.copyWith(
+        progress: () => 8,
+      );
+
+      expect(updated.progress, 8);
+      expect(updated.target, 10);
+      expect(updated.progressPercentage, 80.0);
+    });
+
+    test('progressPercentage - 边界情况', () {
+      // 无进度信息
+      final noProgress = Achievement(
+        id: 'test',
+        name: '测试',
+        description: '描述',
+        icon: '🎉',
+        category: AchievementCategory.beginner,
+      );
+      expect(noProgress.progressPercentage, 0.0);
+
+      // 0%
+      final zero = Achievement(
+        id: 'test',
+        name: '测试',
+        description: '描述',
+        icon: '🎉',
+        category: AchievementCategory.beginner,
+        progress: 0,
+        target: 10,
+      );
+      expect(zero.progressPercentage, 0.0);
+
+      // 100%
+      final full = Achievement(
+        id: 'test',
+        name: '测试',
+        description: '描述',
+        icon: '🎉',
+        category: AchievementCategory.beginner,
+        progress: 10,
+        target: 10,
+      );
+      expect(full.progressPercentage, 100.0);
+    });
+  });
+
+  group('AchievementCategory Tests', () {
+    test('所有类别都有正确的属性', () {
+      expect(AchievementCategory.beginner.value, 'beginner');
+      expect(AchievementCategory.beginner.label, '新手成就');
+      expect(AchievementCategory.beginner.icon, '🌱');
+
+      expect(AchievementCategory.advanced.value, 'advanced');
+      expect(AchievementCategory.rare.value, 'rare');
+      expect(AchievementCategory.storyLine.value, 'story_line');
+      expect(AchievementCategory.social.value, 'social');
+      expect(AchievementCategory.emotional.value, 'emotional');
+      expect(AchievementCategory.special.value, 'special');
+    });
+
+    test('类别数量正确', () {
+      expect(AchievementCategory.values.length, 7);
     });
   });
 }
-
