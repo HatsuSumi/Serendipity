@@ -10,7 +10,6 @@ import '../../core/utils/date_time_helper.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/enums.dart';
-import '../../models/location_result.dart';
 import 'models/place_history_item.dart';
 import 'widgets/story_line_selection_dialog.dart';
 import 'widgets/place_history_dialog.dart';
@@ -499,12 +498,89 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     }
   }
 
+  /// 检查是否有未保存的修改
+  /// 
+  /// 遵循架构原则：
+  /// - 编辑模式：一定有修改（因为用户打开了编辑页面）
+  /// - 创建模式：检查是否填写了任何内容
+  bool _hasUnsavedChanges() {
+    // 编辑模式：一定提示
+    if (widget.isEditMode) {
+      return true;
+    }
+    
+    // 创建模式：检查是否有任何输入
+    // 注意：时间和GPS定位是自动获取的，不算用户输入
+    return _selectedStatus != null ||  // 选择了状态
+        _placeNameController.text.trim().isNotEmpty ||  // 输入了地点名称
+        _selectedPlaceType != null ||  // 选择了场所类型
+        _descriptionController.text.trim().isNotEmpty ||  // 输入了描述
+        _tags.isNotEmpty ||  // 添加了标签
+        _selectedEmotion != null ||  // 选择了情绪强度
+        _conversationStarterController.text.trim().isNotEmpty ||  // 输入了对话契机
+        _backgroundMusicController.text.trim().isNotEmpty ||  // 输入了背景音乐
+        _selectedWeather.isNotEmpty ||  // 选择了天气
+        _ifReencounterController.text.trim().isNotEmpty ||  // 输入了"如果再遇"
+        _publishToCommunity ||  // 勾选了发布到树洞
+        _selectedStoryLineId != null;  // 选择了故事线
+  }
+  
+  /// 显示未保存修改确认对话框
+  Future<bool> _showUnsavedChangesDialog() async {
+    final result = await DialogHelper.show<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('放弃修改？'),
+        content: Text(
+          widget.isEditMode 
+              ? '你有未保存的修改，确定要放弃吗？'
+              : '你填写的内容还未保存，确定要放弃吗？',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('继续编辑'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('放弃'),
+          ),
+        ],
+      ),
+    );
+    
+    return result ?? false;  // 用户点击外部关闭对话框，视为取消
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEditMode ? '编辑记录' : '创建记录'),
-        actions: [
+    return PopScope(
+      canPop: false,  // 禁止直接返回
+      onPopInvokedWithResult: (didPop, result) async {
+        // 如果已经 pop 了，不需要处理
+        if (didPop) {
+          return;
+        }
+        
+        // 检查是否有未保存的修改
+        if (_hasUnsavedChanges()) {
+          // 显示确认对话框
+          final shouldPop = await _showUnsavedChangesDialog();
+          
+          if (shouldPop && context.mounted) {
+            Navigator.of(context).pop();
+          }
+        } else {
+          // 没有修改，直接返回
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.isEditMode ? '编辑记录' : '创建记录'),
+          actions: [
           if (_isSaving)
             const Center(
               child: Padding(
@@ -607,6 +683,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           ],
         ),
       ),
+    ),
     );
   }
 
