@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/check_in_provider.dart';
 import '../../../core/utils/message_helper.dart';
+import '../../../core/utils/check_in_badge_helper.dart';
 import '../check_in_page.dart';
 
 /// 签到卡片Widget
@@ -86,16 +87,24 @@ class CheckInCard extends ConsumerWidget {
                       const SizedBox(height: 8),
                       _buildStreakIndicator(checkInState, colorScheme),
                       const SizedBox(height: 4),
-                      Text(
-                        checkInState.hasCheckedInToday
-                            ? '今天已签到 ✓'
-                            : '已连续签到 ${checkInState.consecutiveDays} 天',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: checkInState.hasCheckedInToday
-                              ? colorScheme.onSurface.withValues(alpha: 0.5)
-                              : colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            checkInState.hasCheckedInToday
+                                ? '今天已签到 ✓'
+                                : '已连续签到 ${checkInState.consecutiveDays} 天',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: checkInState.hasCheckedInToday
+                                  ? colorScheme.onSurface.withValues(alpha: 0.5)
+                                  : colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                            ),
+                          ),
+                          if (checkInState.consecutiveDays > 0) ...[
+                            const SizedBox(width: 8),
+                            _buildBadge(checkInState.consecutiveDays, colorScheme),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -189,6 +198,35 @@ class CheckInCard extends ConsumerWidget {
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(int consecutiveDays, ColorScheme colorScheme) {
+    final badge = CheckInBadgeHelper.getBadge(consecutiveDays);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            badge.icon,
+            style: const TextStyle(fontSize: 10),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            badge.name,
+            style: TextStyle(
+              fontSize: 10,
+              color: colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

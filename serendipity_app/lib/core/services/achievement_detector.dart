@@ -4,6 +4,7 @@ import '../../models/enums.dart';
 import '../repositories/achievement_repository.dart';
 import '../repositories/record_repository.dart';
 import '../repositories/story_line_repository.dart';
+import '../repositories/check_in_repository.dart';
 
 /// 成就检测服务
 /// 
@@ -12,6 +13,7 @@ import '../repositories/story_line_repository.dart';
 /// 调用者：
 /// - RecordsProvider：记录操作后检测成就
 /// - StoryLinesProvider：故事线操作后检测成就
+/// - CheckInProvider：签到后检测成就
 /// 
 /// 设计原则：
 /// - 单一职责：只负责成就检测逻辑
@@ -21,11 +23,13 @@ class AchievementDetector {
   final AchievementRepository _achievementRepository;
   final RecordRepository _recordRepository;
   final StoryLineRepository _storyLineRepository;
+  final CheckInRepository _checkInRepository;
 
   AchievementDetector(
     this._achievementRepository,
     this._recordRepository,
     this._storyLineRepository,
+    this._checkInRepository,
   );
 
   /// 检测记录相关成就
@@ -223,8 +227,21 @@ class AchievementDetector {
       }
     }
 
-    // 检测：连续天数
-    final consecutiveDays = _calculateConsecutiveDays(allRecords);
+    return unlockedAchievements;
+  }
+
+  /// 检测签到相关成就
+  /// 
+  /// 在签到后调用
+  /// 返回新解锁的成就ID列表
+  Future<List<String>> checkCheckInAchievements() async {
+    final unlockedAchievements = <String>[];
+
+    // 获取签到统计
+    final consecutiveDays = _checkInRepository.calculateConsecutiveDays();
+    final totalDays = _checkInRepository.getTotalCheckInDays();
+
+    // 检测：连续7天签到
     if (consecutiveDays >= 7) {
       await _achievementRepository.updateProgress('streak_7_days', consecutiveDays);
       final achievement = await _achievementRepository.getAchievement('streak_7_days');
@@ -232,11 +249,31 @@ class AchievementDetector {
         unlockedAchievements.add('streak_7_days');
       }
     }
+
+    // 检测：连续30天签到
     if (consecutiveDays >= 30) {
       await _achievementRepository.updateProgress('streak_30_days', consecutiveDays);
       final achievement = await _achievementRepository.getAchievement('streak_30_days');
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('streak_30_days')) {
         unlockedAchievements.add('streak_30_days');
+      }
+    }
+
+    // 检测：累计签到100天
+    if (totalDays >= 100) {
+      await _achievementRepository.updateProgress('checkin_100_days', totalDays);
+      final achievement = await _achievementRepository.getAchievement('checkin_100_days');
+      if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('checkin_100_days')) {
+        unlockedAchievements.add('checkin_100_days');
+      }
+    }
+
+    // 检测：累计签到365天
+    if (totalDays >= 365) {
+      await _achievementRepository.updateProgress('checkin_365_days', totalDays);
+      final achievement = await _achievementRepository.getAchievement('checkin_365_days');
+      if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('checkin_365_days')) {
+        unlockedAchievements.add('checkin_365_days');
       }
     }
 
@@ -430,44 +467,6 @@ class AchievementDetector {
     ).length;
     
     return (successCount / records.length * 100);
-  }
-
-  /// 计算连续天数
-  /// 
-  /// 从今天往前推，连续有记录的天数
-  int _calculateConsecutiveDays(List<EncounterRecord> records) {
-    if (records.isEmpty) return 0;
-
-    // 按日期分组（忽略时间）
-    final recordDates = records.map((r) {
-      final date = r.timestamp;
-      return DateTime(date.year, date.month, date.day);
-    }).toSet().toList();
-
-    recordDates.sort((a, b) => b.compareTo(a)); // 降序排列
-
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-
-    // 如果今天没有记录，返回0
-    if (!recordDates.contains(todayDate)) {
-      return 0;
-    }
-
-    int consecutiveDays = 1;
-    DateTime currentDate = todayDate;
-
-    for (int i = 1; i < recordDates.length; i++) {
-      final previousDate = currentDate.subtract(const Duration(days: 1));
-      if (recordDates.contains(previousDate)) {
-        consecutiveDays++;
-        currentDate = previousDate;
-      } else {
-        break;
-      }
-    }
-
-    return consecutiveDays;
   }
 }
 

@@ -31,8 +31,8 @@ class AchievementDefinitions {
     ),
     Achievement(
       id: 'streak_7_days',
-      name: '连续7天记录',
-      description: '连续7天使用app',
+      name: '连续7天签到',
+      description: '连续7天签到',
       icon: '🗓️',
       category: AchievementCategory.beginner,
       progress: 0,
@@ -120,12 +120,30 @@ class AchievementDefinitions {
     ),
     Achievement(
       id: 'streak_30_days',
-      name: '连续30天记录',
-      description: '连续30天使用app',
+      name: '连续30天签到',
+      description: '连续30天签到',
       icon: '🔥',
       category: AchievementCategory.rare,
       progress: 0,
       target: 30,
+    ),
+    Achievement(
+      id: 'checkin_100_days',
+      name: '百日坚持',
+      description: '累计签到100天',
+      icon: '💯',
+      category: AchievementCategory.rare,
+      progress: 0,
+      target: 100,
+    ),
+    Achievement(
+      id: 'checkin_365_days',
+      name: '全年无休',
+      description: '累计签到365天',
+      icon: '🎊',
+      category: AchievementCategory.rare,
+      progress: 0,
+      target: 365,
     ),
 
     // ==================== 故事线成就 (4个) ====================

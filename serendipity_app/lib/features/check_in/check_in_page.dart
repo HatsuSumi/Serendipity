@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/check_in_provider.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/check_in_badge_helper.dart';
 
 /// 签到详情页面
 /// 
@@ -98,16 +99,25 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            state.hasCheckedInToday
-                ? '今天也要加油哦 ✨'
-                : '已连续签到 ${state.consecutiveDays} 天',
-            style: TextStyle(
-              fontSize: 14,
-              color: state.hasCheckedInToday
-                  ? colorScheme.onSurface.withValues(alpha: 0.5)
-                  : colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                state.hasCheckedInToday
+                    ? '今天也要加油哦 ✨'
+                    : '已连续签到 ${state.consecutiveDays} 天',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: state.hasCheckedInToday
+                      ? colorScheme.onSurface.withValues(alpha: 0.5)
+                      : colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                ),
+              ),
+              if (state.consecutiveDays > 0) ...[
+                const SizedBox(width: 8),
+                _buildBadge(state.consecutiveDays, colorScheme),
+              ],
+            ],
           ),
           if (!state.hasCheckedInToday) ...[
             const SizedBox(height: 20),
@@ -375,6 +385,39 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(int consecutiveDays, ColorScheme colorScheme) {
+    final badge = CheckInBadgeHelper.getBadge(consecutiveDays);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            badge.icon,
+            style: const TextStyle(fontSize: 14),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            badge.name,
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

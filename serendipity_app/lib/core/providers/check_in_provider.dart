@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/check_in_record.dart';
 import '../repositories/check_in_repository.dart';
-import '../services/i_storage_service.dart';
-import '../services/storage_service.dart';
+import '../services/achievement_detector.dart';
+import 'achievement_provider.dart';
+import 'records_provider.dart' show storageServiceProvider;
 
 /// 签到仓储 Provider
 final checkInRepositoryProvider = Provider<CheckInRepository>((ref) {
@@ -45,8 +46,9 @@ class CheckInState {
 /// 签到状态管理
 class CheckInNotifier extends StateNotifier<CheckInState> {
   final CheckInRepository _repository;
+  final Ref _ref;
 
-  CheckInNotifier(this._repository) : super(_initialState(_repository));
+  CheckInNotifier(this._repository, this._ref) : super(_initialState(_repository));
 
   static CheckInState _initialState(CheckInRepository repository) {
     return CheckInState(
@@ -66,6 +68,21 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
 
     await _repository.checkIn();
     _refresh();
+    
+    // 检测成就
+    try {
+      final detector = _ref.read(achievementDetectorProvider);
+      final unlockedAchievements = await detector.checkCheckInAchievements();
+      if (unlockedAchievements.isNotEmpty) {
+        // 通知UI层显示成就解锁通知
+        _ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+        // 刷新成就列表
+        _ref.invalidate(achievementsProvider);
+      }
+    } catch (e) {
+      // 成就检测失败不影响签到
+      // 但需要记录错误日志（生产环境）
+    }
   }
 
   /// 刷新状态
@@ -88,11 +105,6 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
 /// 签到状态 Provider
 final checkInProvider = StateNotifierProvider<CheckInNotifier, CheckInState>((ref) {
   final repository = ref.read(checkInRepositoryProvider);
-  return CheckInNotifier(repository);
-});
-
-/// 存储服务 Provider（如果还没有定义）
-final storageServiceProvider = Provider<IStorageService>((ref) {
-  return StorageService();
+  return CheckInNotifier(repository, ref);
 });
 
