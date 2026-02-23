@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/check_in_record.dart';
 import '../repositories/check_in_repository.dart';
-import '../services/achievement_detector.dart';
 import 'achievement_provider.dart';
 import 'records_provider.dart' show storageServiceProvider;
 

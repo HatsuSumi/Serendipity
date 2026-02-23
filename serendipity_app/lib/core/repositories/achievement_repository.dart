@@ -54,7 +54,11 @@ class AchievementRepository {
   }
 
   /// 解锁成就
-  Future<void> unlockAchievement(String id) async {
+  /// 
+  /// 返回值：
+  /// - true：刚刚解锁成就
+  /// - false：成就已经解锁，无需重复解锁
+  Future<bool> unlockAchievement(String id) async {
     assert(id.isNotEmpty, 'Achievement ID cannot be empty');
     
     final achievement = await getAchievement(id);
@@ -64,7 +68,7 @@ class AchievementRepository {
     
     if (achievement.unlocked) {
       // 已经解锁，不需要重复解锁
-      return;
+      return false;
     }
     
     final unlockedAchievement = achievement.copyWith(
@@ -73,6 +77,7 @@ class AchievementRepository {
     );
     
     await _storageService.updateAchievement(unlockedAchievement);
+    return true;
   }
 
   /// 更新成就进度
@@ -84,7 +89,11 @@ class AchievementRepository {
   /// - 减少操作步骤，避免中间状态
   /// - 如果达到目标，直接解锁（包含进度更新）
   /// - 否则只更新进度
-  Future<void> updateProgress(String id, int progress) async {
+  /// 
+  /// 返回值：
+  /// - true：刚刚解锁成就（进度达到目标）
+  /// - false：未解锁（进度未达到目标或已经解锁）
+  Future<bool> updateProgress(String id, int progress) async {
     assert(id.isNotEmpty, 'Achievement ID cannot be empty');
     assert(progress >= 0, 'Progress cannot be negative');
     
@@ -95,7 +104,7 @@ class AchievementRepository {
     
     if (achievement.unlocked) {
       // 已经解锁，不需要更新进度
-      return;
+      return false;
     }
     
     if (!achievement.hasProgress) {
@@ -107,8 +116,8 @@ class AchievementRepository {
     
     // 如果达到目标，直接解锁（包含进度更新）
     if (clampedProgress >= achievement.target!) {
-      await unlockAchievement(id);
-      return;
+      final justUnlocked = await unlockAchievement(id);
+      return justUnlocked;
     }
     
     // 否则只更新进度
@@ -117,6 +126,7 @@ class AchievementRepository {
     );
     
     await _storageService.updateAchievement(updatedAchievement);
+    return false;
   }
 
   /// 获取已解锁的成就数量

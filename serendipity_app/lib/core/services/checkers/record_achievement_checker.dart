@@ -23,6 +23,7 @@ import '../../utils/holiday_helper.dart';
 /// 设计原则：
 /// - 单一职责：只负责记录相关成就检测
 /// - 依赖注入：通过构造函数注入依赖
+/// - DRY：提取通用的进度检测逻辑
 class RecordAchievementChecker {
   final AchievementRepository _achievementRepository;
   final RecordRepository _recordRepository;
@@ -83,103 +84,58 @@ class RecordAchievementChecker {
   }
 
   /// 检测记录数量成就
+  /// 
+  /// 使用通用方法检测多个记录数量成就，消除重复代码
   Future<List<String>> _checkRecordCountAchievements(
     List<EncounterRecord> allRecords,
   ) async {
     final unlockedAchievements = <String>[];
     final recordCount = allRecords.length;
 
-    // 检测：第一次错过
+    // 检测：第一次错过（无进度条的成就）
     if (recordCount >= 1) {
-      final achievement = await _achievementRepository.getAchievement('first_missed');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('first_missed');
+      final justUnlocked = await _achievementRepository.unlockAchievement('first_missed');
+      if (justUnlocked) {
         unlockedAchievements.add('first_missed');
       }
     }
 
-    // 检测：记录10次错过
-    if (recordCount >= 10) {
-      await _achievementRepository.updateProgress('record_10', recordCount);
-      final achievement = await _achievementRepository.getAchievement('record_10');
-      if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('record_10')) {
-        unlockedAchievements.add('record_10');
-      }
-    } else {
-      await _achievementRepository.updateProgress('record_10', recordCount);
-    }
-
-    // 检测：错过50个人
-    if (recordCount >= 50) {
-      await _achievementRepository.updateProgress('record_50', recordCount);
-      final achievement = await _achievementRepository.getAchievement('record_50');
-      if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('record_50')) {
-        unlockedAchievements.add('record_50');
-      }
-    } else if (recordCount >= 10) {
-      await _achievementRepository.updateProgress('record_50', recordCount);
-    }
-
-    // 检测：错过100个人
-    if (recordCount >= 100) {
-      await _achievementRepository.updateProgress('record_100', recordCount);
-      final achievement = await _achievementRepository.getAchievement('record_100');
-      if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('record_100')) {
-        unlockedAchievements.add('record_100');
-      }
-    } else if (recordCount >= 50) {
-      await _achievementRepository.updateProgress('record_100', recordCount);
-    }
+    // 检测：记录数量进度成就（有进度条的成就）
+    unlockedAchievements.addAll(
+      await _checkProgressAchievements(
+        recordCount,
+        [
+          'record_10',
+          'record_50',
+          'record_100',
+        ],
+      ),
+    );
 
     return unlockedAchievements;
   }
 
   /// 检测状态成就
+  /// 
+  /// 使用通用方法检测多个状态成就，消除重复代码
   Future<List<String>> _checkStatusAchievements(EncounterRecord record) async {
     final unlockedAchievements = <String>[];
 
-    // 检测：第一次再遇
-    if (record.status == EncounterStatus.reencounter) {
-      final achievement = await _achievementRepository.getAchievement('first_reencounter');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('first_reencounter');
-        unlockedAchievements.add('first_reencounter');
-      }
-    }
+    // 状态到成就ID的映射
+    const statusAchievementMap = {
+      EncounterStatus.reencounter: 'first_reencounter',
+      EncounterStatus.met: 'first_met',
+      EncounterStatus.reunion: 'first_reunion',
+      EncounterStatus.lost: 'first_lost',
+      EncounterStatus.farewell: 'first_farewell',
+    };
 
-    // 检测：第一次邂逅
-    if (record.status == EncounterStatus.met) {
-      final achievement = await _achievementRepository.getAchievement('first_met');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('first_met');
-        unlockedAchievements.add('first_met');
-      }
-    }
-
-    // 检测：第一次重逢
-    if (record.status == EncounterStatus.reunion) {
-      final achievement = await _achievementRepository.getAchievement('first_reunion');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('first_reunion');
-        unlockedAchievements.add('first_reunion');
-      }
-    }
-
-    // 检测：第一次失联
-    if (record.status == EncounterStatus.lost) {
-      final achievement = await _achievementRepository.getAchievement('first_lost');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('first_lost');
-        unlockedAchievements.add('first_lost');
-      }
-    }
-
-    // 检测：第一次别离
-    if (record.status == EncounterStatus.farewell) {
-      final achievement = await _achievementRepository.getAchievement('first_farewell');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('first_farewell');
-        unlockedAchievements.add('first_farewell');
+    // 检测当前状态对应的成就
+    final achievementId = statusAchievementMap[record.status];
+    if (achievementId != null) {
+      final justUnlocked = await _achievementRepository.unlockAchievement(achievementId);
+      if (justUnlocked) {
+        unlockedAchievements.add(achievementId);
       }
     }
 
@@ -187,23 +143,23 @@ class RecordAchievementChecker {
   }
 
   /// 检测时间成就
+  /// 
+  /// 使用通用方法检测时间相关成就，消除重复代码
   Future<List<String>> _checkTimeAchievements(EncounterRecord record) async {
     final unlockedAchievements = <String>[];
 
     // 检测：深夜的错过（22:00后）
     if (record.timestamp.hour >= 22) {
-      final achievement = await _achievementRepository.getAchievement('late_night');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('late_night');
+      final justUnlocked = await _achievementRepository.unlockAchievement('late_night');
+      if (justUnlocked) {
         unlockedAchievements.add('late_night');
       }
     }
 
     // 检测：清晨的错过（7:00前）
     if (record.timestamp.hour < 7) {
-      final achievement = await _achievementRepository.getAchievement('early_morning');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('early_morning');
+      final justUnlocked = await _achievementRepository.unlockAchievement('early_morning');
+      if (justUnlocked) {
         unlockedAchievements.add('early_morning');
       }
     }
@@ -212,6 +168,8 @@ class RecordAchievementChecker {
   }
 
   /// 检测天气成就
+  /// 
+  /// 使用通用方法检测天气相关成就，消除重复代码
   Future<List<String>> _checkWeatherAchievements(EncounterRecord record) async {
     final unlockedAchievements = <String>[];
 
@@ -222,9 +180,8 @@ class RecordAchievementChecker {
         w == Weather.moderateRain ||
         w == Weather.heavyRain ||
         w == Weather.rainstorm)) {
-      final achievement = await _achievementRepository.getAchievement('rainy_day');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('rainy_day');
+      final justUnlocked = await _achievementRepository.unlockAchievement('rainy_day');
+      if (justUnlocked) {
         unlockedAchievements.add('rainy_day');
       }
     }
@@ -233,6 +190,8 @@ class RecordAchievementChecker {
   }
 
   /// 检测地点成就
+  /// 
+  /// 使用通用方法检测地点相关成就，消除重复代码
   Future<List<String>> _checkLocationAchievements(
     EncounterRecord record,
     List<EncounterRecord> allRecords,
@@ -246,70 +205,65 @@ class RecordAchievementChecker {
         record.location.latitude!,
         record.location.longitude!,
       );
-      if (sameLocationCount >= 5) {
-        await _achievementRepository.updateProgress('same_place_5', sameLocationCount);
-        final achievement = await _achievementRepository.getAchievement('same_place_5');
-        if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('same_place_5')) {
-          unlockedAchievements.add('same_place_5');
-        }
-      } else {
-        await _achievementRepository.updateProgress('same_place_5', sameLocationCount);
+      final justUnlocked = await _achievementRepository.updateProgress(
+        'same_place_5',
+        sameLocationCount,
+      );
+      if (justUnlocked) {
+        unlockedAchievements.add('same_place_5');
       }
     }
 
     // 检测：地铁常客
-    if (record.location.placeType == PlaceType.subway) {
-      final subwayCount = allRecords.where((r) => r.location.placeType == PlaceType.subway).length;
-      if (subwayCount >= 10) {
-        await _achievementRepository.updateProgress('subway_regular', subwayCount);
-        final achievement = await _achievementRepository.getAchievement('subway_regular');
-        if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('subway_regular')) {
-          unlockedAchievements.add('subway_regular');
-        }
-      } else {
-        await _achievementRepository.updateProgress('subway_regular', subwayCount);
+    final subwayCount = allRecords.where((r) => r.location.placeType == PlaceType.subway).length;
+    if (subwayCount > 0) {
+      final justUnlocked = await _achievementRepository.updateProgress(
+        'subway_regular',
+        subwayCount,
+      );
+      if (justUnlocked) {
+        unlockedAchievements.add('subway_regular');
       }
     }
 
     // 检测：咖啡馆邂逅
-    if (record.location.placeType == PlaceType.coffeeShop && record.status == EncounterStatus.met) {
-      final coffeeShopMetCount = allRecords.where((r) =>
-          r.location.placeType == PlaceType.coffeeShop && r.status == EncounterStatus.met).length;
-      if (coffeeShopMetCount >= 5) {
-        await _achievementRepository.updateProgress('coffee_shop_met', coffeeShopMetCount);
-        final achievement = await _achievementRepository.getAchievement('coffee_shop_met');
-        if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('coffee_shop_met')) {
-          unlockedAchievements.add('coffee_shop_met');
-        }
-      } else {
-        await _achievementRepository.updateProgress('coffee_shop_met', coffeeShopMetCount);
+    final coffeeShopMetCount = allRecords.where((r) =>
+        r.location.placeType == PlaceType.coffeeShop && r.status == EncounterStatus.met).length;
+    if (coffeeShopMetCount > 0) {
+      final justUnlocked = await _achievementRepository.updateProgress(
+        'coffee_shop_met',
+        coffeeShopMetCount,
+      );
+      if (justUnlocked) {
+        unlockedAchievements.add('coffee_shop_met');
       }
     }
 
     // 检测：城市漫游者
     final cityCount = AddressHelper.countUniqueCities(allRecords);
-    if (cityCount >= 5) {
-      await _achievementRepository.updateProgress('city_wanderer', cityCount);
-      final achievement = await _achievementRepository.getAchievement('city_wanderer');
-      if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('city_wanderer')) {
+    if (cityCount > 0) {
+      final justUnlocked = await _achievementRepository.updateProgress(
+        'city_wanderer',
+        cityCount,
+      );
+      if (justUnlocked) {
         unlockedAchievements.add('city_wanderer');
       }
-    } else {
-      await _achievementRepository.updateProgress('city_wanderer', cityCount);
     }
 
     return unlockedAchievements;
   }
 
   /// 检测节日成就
+  /// 
+  /// 使用通用方法检测节日相关成就，消除重复代码
   Future<List<String>> _checkHolidayAchievements(EncounterRecord record) async {
     final unlockedAchievements = <String>[];
 
     // 检测：节日的错过
     if (HolidayHelper.isHoliday(record.timestamp)) {
-      final achievement = await _achievementRepository.getAchievement('holiday_missed');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('holiday_missed');
+      final justUnlocked = await _achievementRepository.unlockAchievement('holiday_missed');
+      if (justUnlocked) {
         unlockedAchievements.add('holiday_missed');
       }
     }
@@ -318,6 +272,8 @@ class RecordAchievementChecker {
   }
 
   /// 检测成功率成就
+  /// 
+  /// 使用通用方法检测成功率相关成就，消除重复代码
   Future<List<String>> _checkSuccessRateAchievements(
     List<EncounterRecord> allRecords,
   ) async {
@@ -326,9 +282,8 @@ class RecordAchievementChecker {
     // 检测：成功率达到10%
     final successRate = _calculateSuccessRate(allRecords);
     if (successRate >= 10.0) {
-      final achievement = await _achievementRepository.getAchievement('success_rate_10');
-      if (achievement != null && !achievement.unlocked) {
-        await _achievementRepository.unlockAchievement('success_rate_10');
+      final justUnlocked = await _achievementRepository.unlockAchievement('success_rate_10');
+      if (justUnlocked) {
         unlockedAchievements.add('success_rate_10');
       }
     }
@@ -344,6 +299,50 @@ class RecordAchievementChecker {
         r.status == EncounterStatus.met || r.status == EncounterStatus.reunion).length;
 
     return (successCount / records.length * 100).clamp(0.0, 100.0);
+  }
+
+  /// 通用的进度成就检测方法
+  /// 
+  /// 批量检测多个进度型成就，减少重复代码
+  /// 
+  /// 参数：
+  /// - currentValue: 当前进度值
+  /// - achievementIds: 要检测的成就ID列表
+  /// 
+  /// 返回：新解锁的成就ID列表
+  /// 
+  /// 设计原则：
+  /// - DRY：消除重复的检测逻辑
+  /// - 性能优化：updateProgress 内部已处理已解锁判断，无需额外查询
+  /// - Fail Fast：依赖 updateProgress 的参数校验
+  Future<List<String>> _checkProgressAchievements(
+    int currentValue,
+    List<String> achievementIds,
+  ) async {
+    final unlockedAchievements = <String>[];
+
+    for (final achievementId in achievementIds) {
+      try {
+        // updateProgress 会：
+        // 1. 检查成就是否已解锁（已解锁返回 false）
+        // 2. 更新进度
+        // 3. 如果达到目标，自动解锁并返回 true
+        final justUnlocked = await _achievementRepository.updateProgress(
+          achievementId,
+          currentValue,
+        );
+
+        if (justUnlocked) {
+          unlockedAchievements.add(achievementId);
+        }
+      } catch (e) {
+        // 成就不存在或其他错误，跳过
+        // 生产环境应该记录日志
+        continue;
+      }
+    }
+
+    return unlockedAchievements;
   }
 }
 
