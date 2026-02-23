@@ -118,5 +118,13 @@ class CheckInRepository {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
   }
+
+  /// 重置所有签到记录（开发者功能）
+  Future<void> resetAllCheckIns() async {
+    final allCheckIns = getAllCheckIns();
+    for (final checkIn in allCheckIns) {
+      await _storageService.deleteCheckIn(checkIn.id);
+    }
+  }
 }
 

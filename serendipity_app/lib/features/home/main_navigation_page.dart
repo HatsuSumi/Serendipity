@@ -4,11 +4,12 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/message_provider.dart';
 import '../../core/providers/achievement_provider.dart';
 import '../../core/utils/message_helper.dart';
-import '../../core/widgets/achievement_unlocked_notification.dart';
+import '../../core/widgets/achievement_unlocked_dialog.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';
 import '../settings/settings_page.dart';
 import '../record/create_record_page.dart';
+import '../achievement/achievements_page.dart';
 
 class MainNavigationPage extends ConsumerStatefulWidget {
   const MainNavigationPage({super.key});
@@ -76,17 +77,26 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
     // 监听成就解锁通知
     ref.listen<List<String>>(newlyUnlockedAchievementsProvider, (previous, next) {
       if (next.isNotEmpty) {
-        // 显示第一个成就解锁通知
-        AchievementNotificationManager.show(context, next.first);
-        
-        // 如果有多个成就，延迟显示后续成就
-        for (int i = 1; i < next.length; i++) {
-          Future.delayed(Duration(seconds: 3 * i + 1), () {
-            if (mounted) {
-              AchievementNotificationManager.show(context, next[i]);
+        // 延迟到下一帧显示对话框，避免在 build 期间显示
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          
+          // 保存 context 引用
+          final navigator = Navigator.of(context);
+          
+          // 显示成就解锁对话框
+          AchievementUnlockedDialog.show(context, next).then((result) {
+            if (!mounted) return;
+            if (result == 'view') {
+              // 用户点击"查看成就"，跳转到成就页面
+              navigator.push(
+                MaterialPageRoute(
+                  builder: (context) => const AchievementsPage(),
+                ),
+              );
             }
           });
-        }
+        });
         
         // 清空通知列表
         Future.microtask(() {

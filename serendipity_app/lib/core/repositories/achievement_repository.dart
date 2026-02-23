@@ -76,6 +76,8 @@ class AchievementRepository {
   }
 
   /// 更新成就进度
+  /// 
+  /// 自动限制进度不超过目标值，确保数据一致性
   Future<void> updateProgress(String id, int progress) async {
     assert(id.isNotEmpty, 'Achievement ID cannot be empty');
     assert(progress >= 0, 'Progress cannot be negative');
@@ -94,14 +96,17 @@ class AchievementRepository {
       throw StateError('Achievement $id does not have progress tracking');
     }
     
+    // 限制进度不超过目标值（防止历史数据导致的进度超标）
+    final clampedProgress = progress.clamp(0, achievement.target!);
+    
     final updatedAchievement = achievement.copyWith(
-      progress: () => progress,
+      progress: () => clampedProgress,
     );
     
     await _storageService.updateAchievement(updatedAchievement);
     
     // 如果达到目标，自动解锁
-    if (progress >= achievement.target!) {
+    if (clampedProgress >= achievement.target!) {
       await unlockAchievement(id);
     }
   }
@@ -129,6 +134,20 @@ class AchievementRepository {
   Future<List<Achievement>> getAchievementsByCategory(AchievementCategory category) async {
     final achievements = await getAllAchievements();
     return achievements.where((a) => a.category == category).toList();
+  }
+
+  /// 重置所有成就（开发者功能）
+  /// 
+  /// 将所有成就重置为未解锁状态，进度清零
+  Future<void> resetAllAchievements() async {
+    for (final achievement in AchievementDefinitions.all) {
+      final resetAchievement = achievement.copyWith(
+        unlocked: false,
+        unlockedAt: () => null,
+        progress: () => 0,
+      );
+      await _storageService.updateAchievement(resetAchievement);
+    }
   }
 }
 

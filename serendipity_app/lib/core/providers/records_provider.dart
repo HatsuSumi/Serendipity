@@ -69,48 +69,40 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       ref.invalidate(storyLinesProvider);
     }
     
-    // 3. 如果用户已登录，上传到云端
+    // 3. 检测成就（在云端同步之前，确保成就检测不受网络影响）
+    try {
+      print('🔍 [RecordsProvider] 开始检测成就...');
+      final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
+      print('🔍 [RecordsProvider] 检测完成，解锁成就数量: ${unlockedAchievements.length}');
+      if (unlockedAchievements.isNotEmpty) {
+        print('🎉 [RecordsProvider] 解锁的成就: $unlockedAchievements');
+        // 通知UI层显示成就解锁通知
+        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+        print('✅ [RecordsProvider] 已添加到 newlyUnlockedAchievementsProvider');
+        // 刷新成就列表
+        ref.invalidate(achievementsProvider);
+      } else {
+        print('ℹ️ [RecordsProvider] 没有解锁新成就');
+      }
+    } catch (e) {
+      print('❌ [RecordsProvider] 成就检测失败: $e');
+      // 成就检测失败不影响记录保存
+      // 但需要记录错误日志（生产环境）
+    }
+    
+    // 4. 如果用户已登录，上传到云端
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
         await _syncService.uploadRecord(currentUser, record);
       } catch (e) {
         // 云端同步失败不影响本地操作
-        // 但需要向上抛出异常，让 UI 层显示提示
+        // 不抛出异常，避免影响后续流程
         // 用户可以稍后手动触发全量同步
-        rethrow;
       }
     }
     
-    // 4. 检测成就
-    try {
-      final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
-      if (unlockedAchievements.isNotEmpty) {
-        // 通知UI层显示成就解锁通知
-        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-        // 刷新成就列表
-        ref.invalidate(achievementsProvider);
-      }
-    } catch (e) {
-      // 成就检测失败不影响记录保存
-      // 但需要记录错误日志（生产环境）
-    }
-    
-    // 5. 检测成就
-    try {
-      final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
-      if (unlockedAchievements.isNotEmpty) {
-        // 通知UI层显示成就解锁通知
-        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-        // 刷新成就列表
-        ref.invalidate(achievementsProvider);
-      }
-    } catch (e) {
-      // 成就检测失败不影响记录更新
-      // 但需要记录错误日志（生产环境）
-    }
-    
-    // 6. 刷新记录列表
+    // 5. 刷新记录列表
     await refresh();
   }
 
@@ -147,19 +139,33 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       ref.invalidate(storyLinesProvider);
     }
     
-    // 4. 如果用户已登录，上传到云端
+    // 4. 检测成就（在云端同步之前，确保成就检测不受网络影响）
+    try {
+      final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
+      if (unlockedAchievements.isNotEmpty) {
+        // 通知UI层显示成就解锁通知
+        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+        // 刷新成就列表
+        ref.invalidate(achievementsProvider);
+      }
+    } catch (e) {
+      // 成就检测失败不影响记录更新
+      // 但需要记录错误日志（生产环境）
+    }
+    
+    // 5. 如果用户已登录，上传到云端
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
         await _syncService.uploadRecord(currentUser, record);
       } catch (e) {
         // 云端同步失败不影响本地操作
-        // 但需要向上抛出异常，让 UI 层显示提示
-        rethrow;
+        // 不抛出异常，避免影响后续流程
+        // 用户可以稍后手动触发全量同步
       }
     }
     
-    // 5. 刷新记录列表
+    // 6. 刷新记录列表
     await refresh();
   }
 

@@ -74,6 +74,12 @@ class AchievementsNotifier extends AsyncNotifier<List<Achievement>> {
   Future<List<Achievement>> getAchievementsByCategory(AchievementCategory category) async {
     return _repository.getAchievementsByCategory(category);
   }
+
+  /// 重置所有成就（开发者功能）
+  Future<void> resetAllAchievements() async {
+    await _repository.resetAllAchievements();
+    ref.invalidate(achievementsProvider);
+  }
 }
 
 /// 成就列表 Provider

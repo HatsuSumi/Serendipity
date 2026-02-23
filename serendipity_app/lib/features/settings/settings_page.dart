@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/providers/dialog_animation_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/achievement_provider.dart';
+import '../../core/providers/check_in_provider.dart';
+import '../../core/repositories/achievement_repository.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
@@ -99,7 +102,31 @@ class SettingsPage extends ConsumerWidget {
           
           const Divider(),
           
-          const Divider(),
+          // 功能入口
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              '功能',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          
+          // 每日签到入口
+          ListTile(
+            leading: const Text('✨', style: TextStyle(fontSize: 24)),
+            title: const Text('每日签到'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CheckInPage(),
+                ),
+              );
+            },
+          ),
           
           // 成就入口
           ListTile(
@@ -292,6 +319,18 @@ class SettingsPage extends ConsumerWidget {
                 const LocationTestPage(),
               );
             },
+          ),
+          ListTile(
+            leading: const Icon(Icons.refresh, color: Colors.orange),
+            title: const Text('重置所有成就'),
+            subtitle: const Text('清空所有已解锁的成就和进度'),
+            onTap: () => _showResetAchievementsDialog(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            title: const Text('重置所有签到记录'),
+            subtitle: const Text('清空所有签到数据'),
+            onTap: () => _showResetCheckInsDialog(context, ref),
           ),
           
           const SizedBox(height: 32),
@@ -691,6 +730,84 @@ class SettingsPage extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// 显示重置成就确认对话框
+  void _showResetAchievementsDialog(BuildContext context, WidgetRef ref) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重置所有成就'),
+        content: const Text('确定要重置所有成就吗？\n\n这将清空所有已解锁的成就和进度，此操作不可恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              final success = await AsyncActionHelper.execute(
+                context,
+                action: () async {
+                  await ref.read(achievementRepositoryProvider).resetAllAchievements();
+                },
+                successMessage: '所有成就已重置',
+                errorMessagePrefix: '重置失败',
+              );
+              
+              if (success) {
+                // 刷新成就列表
+                ref.invalidate(achievementsProvider);
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.orange,
+            ),
+            child: const Text('确定重置'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示重置签到记录确认对话框
+  void _showResetCheckInsDialog(BuildContext context, WidgetRef ref) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重置所有签到记录'),
+        content: const Text('确定要重置所有签到记录吗？\n\n这将清空所有签到数据，此操作不可恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              final success = await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(checkInProvider.notifier).resetAllCheckIns(),
+                successMessage: '所有签到记录已重置',
+                errorMessagePrefix: '重置失败',
+              );
+              
+              if (success) {
+                // 刷新签到状态
+                ref.invalidate(checkInProvider);
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('确定重置'),
+          ),
+        ],
       ),
     );
   }

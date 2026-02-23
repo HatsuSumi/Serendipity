@@ -100,6 +100,12 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
   List<DateTime> getCheckInDatesInMonth(int year, int month) {
     return _repository.getCheckInDatesInMonth(year, month);
   }
+
+  /// 重置所有签到记录（开发者功能）
+  Future<void> resetAllCheckIns() async {
+    await _repository.resetAllCheckIns();
+    _refresh();
+  }
 }
 
 /// 签到状态 Provider

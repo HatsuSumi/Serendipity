@@ -37,18 +37,28 @@ class AchievementDetector {
   /// 在创建或更新记录后调用
   /// 返回新解锁的成就ID列表
   Future<List<String>> checkRecordAchievements(EncounterRecord record) async {
+    print('🔍 [AchievementDetector] 开始检测记录相关成就...');
     final unlockedAchievements = <String>[];
 
     // 获取所有记录
     final allRecords = _recordRepository.getAllRecords();
     final recordCount = allRecords.length;
+    print('🔍 [AchievementDetector] 当前记录总数: $recordCount');
 
     // 检测：第一次错过
-    if (recordCount == 1) {
+    // 兼容历史数据：只要有记录且成就未解锁，就解锁
+    if (recordCount >= 1) {
+      print('🔍 [AchievementDetector] 检测到有记录（共 $recordCount 条），检查 first_missed 成就...');
       final achievement = await _achievementRepository.getAchievement('first_missed');
+      print('🔍 [AchievementDetector] first_missed 成就: ${achievement?.toJson()}');
       if (achievement != null && !achievement.unlocked) {
+        print('🎉 [AchievementDetector] 解锁 first_missed 成就！');
         await _achievementRepository.unlockAchievement('first_missed');
         unlockedAchievements.add('first_missed');
+      } else if (achievement == null) {
+        print('❌ [AchievementDetector] first_missed 成就不存在！');
+      } else {
+        print('ℹ️ [AchievementDetector] first_missed 成就已解锁');
       }
     }
 
@@ -59,6 +69,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('record_10')) {
         unlockedAchievements.add('record_10');
       }
+    } else {
+      await _achievementRepository.updateProgress('record_10', recordCount);
     }
 
     // 检测：错过50个人
@@ -68,6 +80,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('record_50')) {
         unlockedAchievements.add('record_50');
       }
+    } else if (recordCount >= 10) {
+      await _achievementRepository.updateProgress('record_50', recordCount);
     }
 
     // 检测：错过100个人
@@ -77,6 +91,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('record_100')) {
         unlockedAchievements.add('record_100');
       }
+    } else if (recordCount >= 50) {
+      await _achievementRepository.updateProgress('record_100', recordCount);
     }
 
     // 检测：第一次再遇
@@ -169,6 +185,8 @@ class AchievementDetector {
         if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('same_place_5')) {
           unlockedAchievements.add('same_place_5');
         }
+      } else {
+        await _achievementRepository.updateProgress('same_place_5', sameLocationCount);
       }
     }
 
@@ -181,6 +199,8 @@ class AchievementDetector {
         if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('subway_regular')) {
           unlockedAchievements.add('subway_regular');
         }
+      } else {
+        await _achievementRepository.updateProgress('subway_regular', subwayCount);
       }
     }
 
@@ -195,6 +215,8 @@ class AchievementDetector {
         if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('coffee_shop_met')) {
           unlockedAchievements.add('coffee_shop_met');
         }
+      } else {
+        await _achievementRepository.updateProgress('coffee_shop_met', coffeeShopMetCount);
       }
     }
 
@@ -206,6 +228,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('city_wanderer')) {
         unlockedAchievements.add('city_wanderer');
       }
+    } else {
+      await _achievementRepository.updateProgress('city_wanderer', cityCount);
     }
 
     // 检测：节日的错过
@@ -248,6 +272,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('streak_7_days')) {
         unlockedAchievements.add('streak_7_days');
       }
+    } else {
+      await _achievementRepository.updateProgress('streak_7_days', consecutiveDays);
     }
 
     // 检测：连续30天签到
@@ -257,6 +283,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('streak_30_days')) {
         unlockedAchievements.add('streak_30_days');
       }
+    } else if (consecutiveDays >= 7) {
+      await _achievementRepository.updateProgress('streak_30_days', consecutiveDays);
     }
 
     // 检测：累计签到100天
@@ -266,6 +294,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('checkin_100_days')) {
         unlockedAchievements.add('checkin_100_days');
       }
+    } else {
+      await _achievementRepository.updateProgress('checkin_100_days', totalDays);
     }
 
     // 检测：累计签到365天
@@ -275,6 +305,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('checkin_365_days')) {
         unlockedAchievements.add('checkin_365_days');
       }
+    } else if (totalDays >= 100) {
+      await _achievementRepository.updateProgress('checkin_365_days', totalDays);
     }
 
     return unlockedAchievements;
@@ -307,6 +339,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('story_collector')) {
         unlockedAchievements.add('story_collector');
       }
+    } else {
+      await _achievementRepository.updateProgress('story_collector', storyLineCount);
     }
 
     // 检测：故事大师（10条故事线）
@@ -316,6 +350,8 @@ class AchievementDetector {
       if (achievement != null && achievement.unlocked && !unlockedAchievements.contains('story_master')) {
         unlockedAchievements.add('story_master');
       }
+    } else if (storyLineCount >= 3) {
+      await _achievementRepository.updateProgress('story_master', storyLineCount);
     }
 
     // 检测：真爱无价（同一个人的故事线达到10条记录）

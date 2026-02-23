@@ -247,5 +247,11 @@ class StorageService implements IStorageService {
     return checkIns;
   }
 
+  /// 删除签到记录
+  @override
+  Future<void> deleteCheckIn(String id) async {
+    assert(id.isNotEmpty, 'CheckIn ID cannot be empty');
+    await _checkInsBoxOrThrow.delete(id);
+  }
 }
 

@@ -89,5 +89,8 @@ abstract class IStorageService {
   
   /// 获取签到记录列表（按日期倒序）
   List<CheckInRecord> getCheckInsSortedByDate();
+  
+  /// 删除签到记录
+  Future<void> deleteCheckIn(String id);
 }
 
