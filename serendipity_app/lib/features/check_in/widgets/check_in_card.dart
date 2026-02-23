@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:confetti/confetti.dart';
 import '../../../core/providers/check_in_provider.dart';
 import '../../../core/utils/message_helper.dart';
 import '../../../core/utils/check_in_badge_helper.dart';
 import '../../../core/utils/navigation_helper.dart';
+import '../../../core/utils/check_in_animation_helper.dart';
 import '../check_in_page.dart';
+import 'check_in_button.dart';
 
 /// 签到卡片Widget
 /// 
@@ -12,11 +15,22 @@ import '../check_in_page.dart';
 /// 
 /// 调用者：
 /// - TimelinePage：显示在页面顶部
-class CheckInCard extends ConsumerWidget {
-  const CheckInCard({super.key});
+class CheckInCard extends ConsumerStatefulWidget {
+  final ConfettiController? confettiController;
+  
+  const CheckInCard({
+    super.key,
+    this.confettiController,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CheckInCard> createState() => _CheckInCardState();
+}
+
+class _CheckInCardState extends ConsumerState<CheckInCard> {
+
+  @override
+  Widget build(BuildContext context) {
     final checkInState = ref.watch(checkInProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -175,7 +189,25 @@ class CheckInCard extends ConsumerWidget {
       );
     }
 
-    return _CheckInButton(colorScheme: colorScheme);
+    return CheckInButton(
+      colorScheme: colorScheme,
+      onCheckInSuccess: _handleCheckInSuccess,
+    );
+  }
+  
+  /// 处理签到成功
+  Future<void> _handleCheckInSuccess() async {
+    // 触发粒子效果和震动
+    if (widget.confettiController != null) {
+      await CheckInAnimationHelper.triggerSuccessFeedback(
+        confettiController: widget.confettiController!,
+      );
+    }
+    
+    // 显示成功消息
+    if (mounted && context.mounted) {
+      MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+    }
   }
 
   Widget _buildBadgeWidget(int consecutiveDays, ColorScheme colorScheme) {
@@ -203,82 +235,7 @@ class CheckInCard extends ConsumerWidget {
             ),
           ),
         ],
-      ),
+      ),  
     );
   }
 }
-
-/// 签到按钮组件（带防抖逻辑）
-/// 
-/// 使用 StatefulWidget 管理按钮状态，防止重复点击
-class _CheckInButton extends ConsumerStatefulWidget {
-  final ColorScheme colorScheme;
-
-  const _CheckInButton({required this.colorScheme});
-
-  @override
-  ConsumerState<_CheckInButton> createState() => _CheckInButtonState();
-}
-
-class _CheckInButtonState extends ConsumerState<_CheckInButton> {
-  bool _isCheckingIn = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: _isCheckingIn ? null : _handleCheckIn,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: widget.colorScheme.primary,
-        foregroundColor: widget.colorScheme.onPrimary,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-      child: _isCheckingIn
-          ? SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  widget.colorScheme.onPrimary,
-                ),
-              ),
-            )
-          : const Text(
-              '签到',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-    );
-  }
-
-  Future<void> _handleCheckIn() async {
-    if (_isCheckingIn) return;
-
-    setState(() {
-      _isCheckingIn = true;
-    });
-
-    try {
-      await ref.read(checkInProvider.notifier).checkIn();
-      if (mounted && context.mounted) {
-        MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
-      }
-    } catch (e) {
-      if (mounted && context.mounted) {
-        MessageHelper.showError(context, '签到失败：$e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCheckingIn = false;
-        });
-      }
-    }
-  }
-}
-  

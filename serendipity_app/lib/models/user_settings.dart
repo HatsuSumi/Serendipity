@@ -14,7 +14,6 @@ class UserSettings {
   final List<String> hiddenRecordIds;
   final bool achievementNotification;
   final bool anniversaryReminder;
-  final bool locationReminder;
   final bool matchNotification;
   final bool messageNotification;
   final bool matchingEnabled;
@@ -35,7 +34,6 @@ class UserSettings {
     required this.hiddenRecordIds,
     required this.achievementNotification,
     required this.anniversaryReminder,
-    required this.locationReminder,
     required this.matchNotification,
     required this.messageNotification,
     required this.matchingEnabled,
@@ -72,7 +70,6 @@ class UserSettings {
           .toList(),
       achievementNotification: json['achievementNotification'] as bool,
       anniversaryReminder: json['anniversaryReminder'] as bool,
-      locationReminder: json['locationReminder'] as bool,
       matchNotification: json['matchNotification'] as bool,
       messageNotification: json['messageNotification'] as bool,
       matchingEnabled: json['matchingEnabled'] as bool,
@@ -97,7 +94,6 @@ class UserSettings {
       'hiddenRecordIds': hiddenRecordIds,
       'achievementNotification': achievementNotification,
       'anniversaryReminder': anniversaryReminder,
-      'locationReminder': locationReminder,
       'matchNotification': matchNotification,
       'messageNotification': messageNotification,
       'matchingEnabled': matchingEnabled,
@@ -138,7 +134,6 @@ class UserSettings {
     List<String>? hiddenRecordIds,
     bool? achievementNotification,
     bool? anniversaryReminder,
-    bool? locationReminder,
     bool? matchNotification,
     bool? messageNotification,
     bool? matchingEnabled,
@@ -159,7 +154,6 @@ class UserSettings {
       hiddenRecordIds: hiddenRecordIds ?? this.hiddenRecordIds,
       achievementNotification: achievementNotification ?? this.achievementNotification,
       anniversaryReminder: anniversaryReminder ?? this.anniversaryReminder,
-      locationReminder: locationReminder ?? this.locationReminder,
       matchNotification: matchNotification ?? this.matchNotification,
       messageNotification: messageNotification ?? this.messageNotification,
       matchingEnabled: matchingEnabled ?? this.matchingEnabled,
@@ -191,7 +185,6 @@ class UserSettings {
         listEquals(other.hiddenRecordIds, hiddenRecordIds) &&
         other.achievementNotification == achievementNotification &&
         other.anniversaryReminder == anniversaryReminder &&
-        other.locationReminder == locationReminder &&
         other.matchNotification == matchNotification &&
         other.messageNotification == messageNotification &&
         other.matchingEnabled == matchingEnabled &&
@@ -214,7 +207,6 @@ class UserSettings {
         hiddenRecordIds.hashCode ^
         achievementNotification.hashCode ^
         anniversaryReminder.hashCode ^
-        locationReminder.hashCode ^
         matchNotification.hashCode ^
         messageNotification.hashCode ^
         matchingEnabled.hashCode ^

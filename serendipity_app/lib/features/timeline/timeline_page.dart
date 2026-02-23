@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:confetti/confetti.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/message_helper.dart';
@@ -7,6 +8,7 @@ import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
+import '../../core/utils/check_in_animation_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../models/encounter_record.dart';
@@ -40,6 +42,21 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   
   // 是否打码敏感信息
   bool _isMasked = false;
+  
+  // 粒子效果控制器
+  ConfettiController? _confettiController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = CheckInAnimationHelper.createConfettiController();
+  }
+  
+  @override
+  void dispose() {
+    _confettiController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,40 +121,57 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           ),
         ],
       ),
-      body: recordsAsync.when(
-        data: (records) {
-          // 根据当前排序方式排序
-          final sortedRecords = _sortRecords(records);
-          
-          return sortedRecords.isEmpty
-              ? _buildEmptyState(context)
-              : _buildRecordList(context, sortedRecords, ref);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
+      body: Stack(
+        children: [
+          // 主内容
+          recordsAsync.when(
+            data: (records) {
+              // 根据当前排序方式排序
+              final sortedRecords = _sortRecords(records);
+              
+              return sortedRecords.isEmpty
+                  ? _buildEmptyState(context)
+                  : _buildRecordList(context, sortedRecords, ref);
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '加载失败：$error',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.refresh(recordsProvider),
+                    child: const Text('重试'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                '加载失败：$error',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.refresh(recordsProvider),
-                child: const Text('重试'),
-              ),
-            ],
+            ),
           ),
-        ),
+          // 粒子效果（覆盖在整个页面最顶层）
+          if (_confettiController != null)
+            Positioned(
+              top: 16,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: CheckInAnimationHelper.createConfettiWidget(
+                  controller: _confettiController!,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -195,7 +229,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         itemBuilder: (context, index) {
           // 第一项显示签到卡片
           if (index == 0) {
-            return const CheckInCard();
+            return CheckInCard(
+              confettiController: _confettiController,
+            );
           }
           
           // 其他项显示记录卡片

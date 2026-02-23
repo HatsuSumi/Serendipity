@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:confetti/confetti.dart';
 import '../../core/providers/check_in_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/check_in_badge_helper.dart';
+import '../../core/utils/check_in_animation_helper.dart';
+import 'widgets/check_in_button.dart';
 
 /// 签到详情页面
 /// 
@@ -20,11 +23,19 @@ class CheckInPage extends ConsumerStatefulWidget {
 
 class _CheckInPageState extends ConsumerState<CheckInPage> {
   late DateTime _currentMonth;
-
+  ConfettiController? _confettiController;
+  
   @override
   void initState() {
     super.initState();
     _currentMonth = DateTime.now();
+    _confettiController = CheckInAnimationHelper.createConfettiController();
+  }
+  
+  @override
+  void dispose() {
+    _confettiController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -38,25 +49,42 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
         title: const Text('每日签到'),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // 签到按钮区域
-            _buildCheckInSection(checkInState, colorScheme),
-            
-            const SizedBox(height: 16),
-            
-            // 统计数据
-            _buildStatsSection(checkInState, colorScheme),
-            
-            const SizedBox(height: 24),
-            
-            // 签到日历
-            _buildCalendarSection(checkInState, colorScheme),
-            
-            const SizedBox(height: 24),
-          ],
-        ),
+      body: Stack(
+        children: [
+          // 主内容
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                // 签到按钮区域
+                _buildCheckInSection(checkInState, colorScheme),
+                
+                const SizedBox(height: 16),
+                
+                // 统计数据
+                _buildStatsSection(checkInState, colorScheme),
+                
+                const SizedBox(height: 24),
+                
+                // 签到日历
+                _buildCalendarSection(checkInState, colorScheme),
+                
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+          // 粒子效果（覆盖在整个页面最顶层）
+          if (_confettiController != null)
+            Positioned(
+              top: 100,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: CheckInAnimationHelper.createConfettiWidget(
+                  controller: _confettiController!,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -124,11 +152,32 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
           ),
           if (!state.hasCheckedInToday) ...[
             const SizedBox(height: 20),
-            _CheckInButton(colorScheme: colorScheme),
+            CheckInButton(
+              colorScheme: colorScheme,
+              onCheckInSuccess: _handleCheckInSuccess,
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              fontSize: 16,
+              text: '立即签到',
+            ),
           ],
         ],
       ),
     );
+  }
+  
+  /// 处理签到成功
+  Future<void> _handleCheckInSuccess() async {
+    // 触发粒子效果和震动
+    if (_confettiController != null) {
+      await CheckInAnimationHelper.triggerSuccessFeedback(
+        confettiController: _confettiController!,
+      );
+    }
+    
+    // 显示成功消息
+    if (mounted && context.mounted) {
+      MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+    }
   }
 
   Widget _buildStatsSection(CheckInState state, ColorScheme colorScheme) {
@@ -335,24 +384,48 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
                       d.month == date.month &&
                       d.day == date.day);
 
+                  // 检查是否是连续签到的一部分
+                  final isPartOfStreak = _isPartOfStreak(date, checkInDates);
+                  final isStreakStart = isPartOfStreak && !_isPartOfStreak(
+                    date.subtract(const Duration(days: 1)),
+                    checkInDates,
+                  );
+                  final isStreakEnd = isPartOfStreak && !_isPartOfStreak(
+                    date.add(const Duration(days: 1)),
+                    checkInDates,
+                  );
+
                   return Container(
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isCheckedIn
-                          ? colorScheme.primary
+                      // 连续签到背景（矩形，连接相邻日期）
+                      color: isPartOfStreak
+                          ? colorScheme.primaryContainer.withValues(alpha: 0.3)
                           : Colors.transparent,
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.horizontal(
+                        left: isStreakStart ? const Radius.circular(16) : Radius.zero,
+                        right: isStreakEnd ? const Radius.circular(16) : Radius.zero,
+                      ),
                     ),
-                    child: Center(
-                      child: Text(
-                        '$dayNumber',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isCheckedIn
-                              ? colorScheme.onPrimary
-                              : colorScheme.onSurface.withValues(alpha: 0.6),
-                          fontWeight: isCheckedIn ? FontWeight.bold : FontWeight.normal,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        // 签到日期圆形标记
+                        color: isCheckedIn
+                            ? colorScheme.primary
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$dayNumber',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isCheckedIn
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurface.withValues(alpha: 0.6),
+                            fontWeight: isCheckedIn ? FontWeight.bold : FontWeight.normal,
+                          ),
                         ),
                       ),
                     ),
@@ -364,6 +437,44 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
         ],
       ),
     );
+  }
+
+  /// 检查日期是否是连续签到的一部分
+  /// 
+  /// 逻辑：
+  /// - 当前日期已签到
+  /// - 前一天或后一天至少有一个已签到
+  /// 
+  /// 遵循原则：
+  /// - 单一职责原则（SRP）：只负责判断是否连续
+  /// - Fail Fast：参数验证
+  bool _isPartOfStreak(DateTime date, List<DateTime> checkInDates) {
+    // 当前日期未签到，不是连续的一部分
+    final isCurrentCheckedIn = checkInDates.any((d) =>
+        d.year == date.year &&
+        d.month == date.month &&
+        d.day == date.day);
+    
+    if (!isCurrentCheckedIn) {
+      return false;
+    }
+
+    // 检查前一天
+    final previousDay = date.subtract(const Duration(days: 1));
+    final isPreviousCheckedIn = checkInDates.any((d) =>
+        d.year == previousDay.year &&
+        d.month == previousDay.month &&
+        d.day == previousDay.day);
+
+    // 检查后一天
+    final nextDay = date.add(const Duration(days: 1));
+    final isNextCheckedIn = checkInDates.any((d) =>
+        d.year == nextDay.year &&
+        d.month == nextDay.month &&
+        d.day == nextDay.day);
+
+    // 前一天或后一天至少有一个已签到，则是连续的一部分
+    return isPreviousCheckedIn || isNextCheckedIn;
   }
 
   Widget _buildBadge(int consecutiveDays, ColorScheme colorScheme) {
@@ -397,80 +508,6 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
         ],
       ),
     );
-  }
-}
-
-/// 签到按钮组件（带防抖逻辑）
-/// 
-/// 使用 StatefulWidget 管理按钮状态，防止重复点击
-class _CheckInButton extends ConsumerStatefulWidget {
-  final ColorScheme colorScheme;
-
-  const _CheckInButton({required this.colorScheme});
-
-  @override
-  ConsumerState<_CheckInButton> createState() => _CheckInButtonState();
-}
-
-class _CheckInButtonState extends ConsumerState<_CheckInButton> {
-  bool _isCheckingIn = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: _isCheckingIn ? null : _handleCheckIn,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: widget.colorScheme.primary,
-        foregroundColor: widget.colorScheme.onPrimary,
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-      ),
-      child: _isCheckingIn
-          ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  widget.colorScheme.onPrimary,
-                ),
-              ),
-            )
-          : const Text(
-              '立即签到',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-    );
-  }
-
-  Future<void> _handleCheckIn() async {
-    if (_isCheckingIn) return;
-
-    setState(() {
-      _isCheckingIn = true;
-    });
-
-    try {
-      await ref.read(checkInProvider.notifier).checkIn();
-      if (mounted && context.mounted) {
-        MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
-      }
-    } catch (e) {
-      if (mounted && context.mounted) {
-        MessageHelper.showError(context, '签到失败：$e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCheckingIn = false;
-        });
-      }
-    }
   }
 }
 

@@ -1112,7 +1112,6 @@ void checkConsecutiveDaysAchievement(User user) {
 
 #### 8.3 通知设置
 - 纪念日提醒（会员功能）
-- 地点提醒（会员功能）
 - 成就解锁通知
 
 #### 8.4 导出功能
@@ -1166,7 +1165,6 @@ void checkConsecutiveDaysAchievement(User user) {
 - 💎 标签词云图（局部 + 全局）
 - 💎 高级主题（全部解锁）
 - 💎 地图热力图
-- 💎 地点提醒
 - 💎 纪念日提醒
 - 💎 导出故事线为图文卡片
 
@@ -1739,7 +1737,6 @@ class UserSettings {
   // 通知设置
   bool achievementNotification; // 成就解锁通知
   bool anniversaryReminder;     // 纪念日提醒（会员功能）
-  bool locationReminder;        // 地点提醒（会员功能）
   
   // 社区设置
   bool autoPublishToCommunity;  // 是否自动发布到社区（默认 false）
