@@ -5,6 +5,7 @@ import '../../core/providers/dialog_animation_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/achievement_provider.dart';
 import '../../core/providers/check_in_provider.dart';
+import '../../core/providers/first_launch_provider.dart';
 import '../../core/repositories/achievement_repository.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
@@ -16,6 +17,7 @@ import '../../models/enums.dart';
 import '../auth/widgets/auth_text_field.dart';
 import '../auth/login_page.dart';
 import '../auth/register_page.dart';
+import '../auth/welcome_page.dart';
 import '../test/location_test_page.dart';
 import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
@@ -290,6 +292,12 @@ class SettingsPage extends ConsumerWidget {
             title: const Text('重置所有签到记录'),
             subtitle: const Text('清空所有签到数据'),
             onTap: () => _showResetCheckInsDialog(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.restart_alt, color: Colors.blue),
+            title: const Text('重置首次启动标记'),
+            subtitle: const Text('下次启动将显示欢迎页面'),
+            onTap: () => _showResetFirstLaunchDialog(context, ref),
           ),
           
           const SizedBox(height: 32),
@@ -922,6 +930,47 @@ class SettingsPage extends ConsumerWidget {
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
+            ),
+            child: const Text('确定重置'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示重置首次启动标记确认对话框
+  void _showResetFirstLaunchDialog(BuildContext context, WidgetRef ref) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重置首次启动标记'),
+        content: const Text('确定要重置首次启动标记吗？\n\n将立即跳转到欢迎页面。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              final success = await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(firstLaunchProvider.notifier).reset(),
+                successMessage: '首次启动标记已重置',
+                errorMessagePrefix: '重置失败',
+              );
+              
+              if (success && context.mounted) {
+                // 跳转到欢迎页面
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const WelcomePage()),
+                  (route) => false,
+                );
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue,
             ),
             child: const Text('确定重置'),
           ),
