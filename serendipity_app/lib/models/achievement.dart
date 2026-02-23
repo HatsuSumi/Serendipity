@@ -138,3 +138,4 @@ class Achievement {
     return (progress! / target! * 100).clamp(0.0, 100.0);
   }
 }
+ 

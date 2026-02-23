@@ -62,6 +62,9 @@ dependencies:
   
   # HTTP 请求（用于高德地图 API - 仅用于逆地理编码）
   http: ^1.2.2
+  
+  # 粒子效果
+  confetti: ^0.7.0
 
 dev_dependencies:
   flutter_test:
