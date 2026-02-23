@@ -1,24 +1,38 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'enums.dart';
 
 /// 用户设置
 class UserSettings {
   final String id;
   final String userId;
+  
+  // 主题设置
   final ThemeOption theme;
   final String? accentColor;
+  final PageTransitionType pageTransition;
+  final DialogAnimationType dialogAnimation;
+  
+  // 隐私设置
   final bool cloudSyncEnabled;
   final bool biometricLockEnabled;
   final bool passwordLockEnabled;
   final String? passwordHash;
   final List<String> hiddenRecordIds;
+  
+  // 通知设置
   final bool achievementNotification;
   final bool anniversaryReminder;
-  final bool matchNotification;
-  final bool messageNotification;
-  final bool matchingEnabled;
-  final bool gpsVerificationEnabled;
+  final bool checkInReminderEnabled;
+  final TimeOfDay checkInReminderTime;
+  
+  // 签到设置
+  final bool checkInVibrationEnabled;
+  final bool checkInConfettiEnabled;
+  
+  // 社区设置
   final bool autoPublishToCommunity;
+  
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -27,6 +41,8 @@ class UserSettings {
     required this.userId,
     required this.theme,
     this.accentColor,
+    required this.pageTransition,
+    required this.dialogAnimation,
     required this.cloudSyncEnabled,
     required this.biometricLockEnabled,
     required this.passwordLockEnabled,
@@ -34,10 +50,10 @@ class UserSettings {
     required this.hiddenRecordIds,
     required this.achievementNotification,
     required this.anniversaryReminder,
-    required this.matchNotification,
-    required this.messageNotification,
-    required this.matchingEnabled,
-    required this.gpsVerificationEnabled,
+    required this.checkInReminderEnabled,
+    required this.checkInReminderTime,
+    required this.checkInVibrationEnabled,
+    required this.checkInConfettiEnabled,
     required this.autoPublishToCommunity,
     required this.createdAt,
     required this.updatedAt,
@@ -50,6 +66,15 @@ class UserSettings {
 
   /// 从 JSON 创建 UserSettings
   factory UserSettings.fromJson(Map<String, dynamic> json) {
+    // 解析签到提醒时间
+    final reminderTimeMap = json['checkInReminderTime'] as Map<String, dynamic>?;
+    final reminderTime = reminderTimeMap != null
+        ? TimeOfDay(
+            hour: reminderTimeMap['hour'] as int,
+            minute: reminderTimeMap['minute'] as int,
+          )
+        : const TimeOfDay(hour: 20, minute: 0); // 默认 20:00
+    
     return UserSettings(
       id: json['id'] as String,
       userId: json['userId'] as String,
@@ -61,6 +86,14 @@ class UserSettings {
         ),
       ),
       accentColor: json['accentColor'] as String?,
+      pageTransition: PageTransitionType.values.firstWhere(
+        (e) => e.value == json['pageTransition'] as String,
+        orElse: () => PageTransitionType.random,
+      ),
+      dialogAnimation: DialogAnimationType.values.firstWhere(
+        (e) => e.value == json['dialogAnimation'] as String,
+        orElse: () => DialogAnimationType.random,
+      ),
       cloudSyncEnabled: json['cloudSyncEnabled'] as bool,
       biometricLockEnabled: json['biometricLockEnabled'] as bool,
       passwordLockEnabled: json['passwordLockEnabled'] as bool,
@@ -70,10 +103,10 @@ class UserSettings {
           .toList(),
       achievementNotification: json['achievementNotification'] as bool,
       anniversaryReminder: json['anniversaryReminder'] as bool,
-      matchNotification: json['matchNotification'] as bool,
-      messageNotification: json['messageNotification'] as bool,
-      matchingEnabled: json['matchingEnabled'] as bool,
-      gpsVerificationEnabled: json['gpsVerificationEnabled'] as bool,
+      checkInReminderEnabled: json['checkInReminderEnabled'] as bool? ?? true,
+      checkInReminderTime: reminderTime,
+      checkInVibrationEnabled: json['checkInVibrationEnabled'] as bool? ?? true,
+      checkInConfettiEnabled: json['checkInConfettiEnabled'] as bool? ?? true,
       autoPublishToCommunity: json['autoPublishToCommunity'] as bool,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
@@ -87,6 +120,8 @@ class UserSettings {
       'userId': userId,
       'theme': theme.value,
       'accentColor': accentColor,
+      'pageTransition': pageTransition.value,
+      'dialogAnimation': dialogAnimation.value,
       'cloudSyncEnabled': cloudSyncEnabled,
       'biometricLockEnabled': biometricLockEnabled,
       'passwordLockEnabled': passwordLockEnabled,
@@ -94,10 +129,13 @@ class UserSettings {
       'hiddenRecordIds': hiddenRecordIds,
       'achievementNotification': achievementNotification,
       'anniversaryReminder': anniversaryReminder,
-      'matchNotification': matchNotification,
-      'messageNotification': messageNotification,
-      'matchingEnabled': matchingEnabled,
-      'gpsVerificationEnabled': gpsVerificationEnabled,
+      'checkInReminderEnabled': checkInReminderEnabled,
+      'checkInReminderTime': {
+        'hour': checkInReminderTime.hour,
+        'minute': checkInReminderTime.minute,
+      },
+      'checkInVibrationEnabled': checkInVibrationEnabled,
+      'checkInConfettiEnabled': checkInConfettiEnabled,
       'autoPublishToCommunity': autoPublishToCommunity,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -127,6 +165,8 @@ class UserSettings {
     String? userId,
     ThemeOption? theme,
     String? Function()? accentColor,
+    PageTransitionType? pageTransition,
+    DialogAnimationType? dialogAnimation,
     bool? cloudSyncEnabled,
     bool? biometricLockEnabled,
     bool? passwordLockEnabled,
@@ -134,10 +174,10 @@ class UserSettings {
     List<String>? hiddenRecordIds,
     bool? achievementNotification,
     bool? anniversaryReminder,
-    bool? matchNotification,
-    bool? messageNotification,
-    bool? matchingEnabled,
-    bool? gpsVerificationEnabled,
+    bool? checkInReminderEnabled,
+    TimeOfDay? checkInReminderTime,
+    bool? checkInVibrationEnabled,
+    bool? checkInConfettiEnabled,
     bool? autoPublishToCommunity,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -147,6 +187,8 @@ class UserSettings {
       userId: userId ?? this.userId,
       theme: theme ?? this.theme,
       accentColor: accentColor != null ? accentColor() : this.accentColor,
+      pageTransition: pageTransition ?? this.pageTransition,
+      dialogAnimation: dialogAnimation ?? this.dialogAnimation,
       cloudSyncEnabled: cloudSyncEnabled ?? this.cloudSyncEnabled,
       biometricLockEnabled: biometricLockEnabled ?? this.biometricLockEnabled,
       passwordLockEnabled: passwordLockEnabled ?? this.passwordLockEnabled,
@@ -154,10 +196,10 @@ class UserSettings {
       hiddenRecordIds: hiddenRecordIds ?? this.hiddenRecordIds,
       achievementNotification: achievementNotification ?? this.achievementNotification,
       anniversaryReminder: anniversaryReminder ?? this.anniversaryReminder,
-      matchNotification: matchNotification ?? this.matchNotification,
-      messageNotification: messageNotification ?? this.messageNotification,
-      matchingEnabled: matchingEnabled ?? this.matchingEnabled,
-      gpsVerificationEnabled: gpsVerificationEnabled ?? this.gpsVerificationEnabled,
+      checkInReminderEnabled: checkInReminderEnabled ?? this.checkInReminderEnabled,
+      checkInReminderTime: checkInReminderTime ?? this.checkInReminderTime,
+      checkInVibrationEnabled: checkInVibrationEnabled ?? this.checkInVibrationEnabled,
+      checkInConfettiEnabled: checkInConfettiEnabled ?? this.checkInConfettiEnabled,
       autoPublishToCommunity: autoPublishToCommunity ?? this.autoPublishToCommunity,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -166,7 +208,7 @@ class UserSettings {
 
   @override
   String toString() {
-    return 'UserSettings(id: $id, theme: ${theme.label}, matchingEnabled: $matchingEnabled)';
+    return 'UserSettings(id: $id, theme: ${theme.label}, checkInReminderEnabled: $checkInReminderEnabled)';
   }
 
   @override
@@ -178,6 +220,8 @@ class UserSettings {
         other.userId == userId &&
         other.theme == theme &&
         other.accentColor == accentColor &&
+        other.pageTransition == pageTransition &&
+        other.dialogAnimation == dialogAnimation &&
         other.cloudSyncEnabled == cloudSyncEnabled &&
         other.biometricLockEnabled == biometricLockEnabled &&
         other.passwordLockEnabled == passwordLockEnabled &&
@@ -185,10 +229,10 @@ class UserSettings {
         listEquals(other.hiddenRecordIds, hiddenRecordIds) &&
         other.achievementNotification == achievementNotification &&
         other.anniversaryReminder == anniversaryReminder &&
-        other.matchNotification == matchNotification &&
-        other.messageNotification == messageNotification &&
-        other.matchingEnabled == matchingEnabled &&
-        other.gpsVerificationEnabled == gpsVerificationEnabled &&
+        other.checkInReminderEnabled == checkInReminderEnabled &&
+        other.checkInReminderTime == checkInReminderTime &&
+        other.checkInVibrationEnabled == checkInVibrationEnabled &&
+        other.checkInConfettiEnabled == checkInConfettiEnabled &&
         other.autoPublishToCommunity == autoPublishToCommunity &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
@@ -200,6 +244,8 @@ class UserSettings {
         userId.hashCode ^
         theme.hashCode ^
         accentColor.hashCode ^
+        pageTransition.hashCode ^
+        dialogAnimation.hashCode ^
         cloudSyncEnabled.hashCode ^
         biometricLockEnabled.hashCode ^
         passwordLockEnabled.hashCode ^
@@ -207,10 +253,10 @@ class UserSettings {
         hiddenRecordIds.hashCode ^
         achievementNotification.hashCode ^
         anniversaryReminder.hashCode ^
-        matchNotification.hashCode ^
-        messageNotification.hashCode ^
-        matchingEnabled.hashCode ^
-        gpsVerificationEnabled.hashCode ^
+        checkInReminderEnabled.hashCode ^
+        checkInReminderTime.hashCode ^
+        checkInVibrationEnabled.hashCode ^
+        checkInConfettiEnabled.hashCode ^
         autoPublishToCommunity.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
