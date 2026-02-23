@@ -8,6 +8,7 @@ import 'core/services/sync_service.dart';
 import 'core/repositories/record_repository.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
+import 'core/providers/first_launch_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/config/app_config.dart';
 import 'core/utils/smart_navigator.dart';
@@ -171,13 +172,23 @@ class MyApp extends ConsumerWidget {
     // 监听认证状态
     final authState = ref.watch(authProvider);
     
+    // 监听首次启动状态
+    final firstLaunchState = ref.watch(firstLaunchProvider);
+    
     print('🔍 [main] authState 变化: ${authState.when(
       data: (user) => user == null ? 'null (未登录)' : 'user: ${user.id}',
       loading: () => 'loading',
       error: (e, _) => 'error: $e',
     )}');
     
-    // 监听认证状态变化，处理导航
+    print('🔍 [main] firstLaunchState 变化: ${firstLaunchState.when(
+      data: (isFirst) => isFirst ? 'true (首次启动)' : 'false (非首次)',
+      loading: () => 'loading',
+      error: (e, _) => 'error: $e',
+    )}');
+    
+    // 监听认证状态变化，处理退出登录导航
+    // 遵循原则：不在 build 中产生副作用，使用 ref.listen
     ref.listen<AsyncValue<User?>>(authProvider, (previous, next) {
       print('🔍 [main] ref.listen 触发');
       print('🔍 [main] previous: ${previous?.when(
@@ -191,20 +202,22 @@ class MyApp extends ConsumerWidget {
         error: (e, _) => 'error: $e',
       )}');
       
-      // 只在从已登录变为未登录时清空导航栈
+      // 只在从已登录变为未登录时跳转到欢迎页
+      // 注意：不清空导航栈，保留用户的浏览历史
       final wasLoggedIn = previous?.value != null;
       final isLoggedOut = next.value == null;
       
       if (wasLoggedIn && isLoggedOut) {
-        print('🔍 [main] 检测到退出登录，清空导航栈');
+        print('🔍 [main] 检测到退出登录，跳转到欢迎页');
         // 使用 Future.microtask 避免在 build 期间修改导航栈
+        // 遵循原则：异步操作必须处理异常
         Future.microtask(() {
-          print('🔍 [main] 开始清空导航栈');
+          print('🔍 [main] 开始跳转到欢迎页');
           navigatorKey.currentState?.pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const WelcomePage()),
             (route) => false,
           );
-          print('✅ [main] 导航栈已清空，跳转到欢迎页');
+          print('✅ [main] 已跳转到欢迎页');
         });
       }
     });
@@ -215,21 +228,7 @@ class MyApp extends ConsumerWidget {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: themeMode,
-      home: authState.when(
-        data: (user) {
-          print('🔍 [main] 构建 home: ${user == null ? 'WelcomePage' : 'MainNavigationPage'}');
-          if (user == null) {
-            // 未登录，显示欢迎页
-            return const WelcomePage();
-          } else {
-            // 已登录，显示主页并触发同步
-            _triggerSync(ref, user);
-            return const MainNavigationPage();
-          }
-        },
-        loading: () => const _LoadingPage(),
-        error: (error, stack) => _ErrorPage(error: error),
-      ),
+      home: _buildHome(authState, firstLaunchState, ref),
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         // 响应式设计：Web端限制最大宽度为600px
@@ -245,6 +244,73 @@ class MyApp extends ConsumerWidget {
             ),
           ),
         );
+      },
+    );
+  }
+  
+  /// 构建主页
+  /// 
+  /// 遵循原则：
+  /// - 单一职责（SRP）：只负责根据状态决定显示哪个页面
+  /// - 用户体验优先：加载和错误状态也显示主页，不阻碍用户使用
+  /// - Fail Fast：状态异常时有明确的 fallback
+  /// 
+  /// 逻辑：
+  /// 1. 首次启动 → 显示欢迎页（无论是否登录）
+  /// 2. 非首次启动 → 显示主页（无论是否登录）
+  /// 3. 已登录 → 触发云端同步
+  /// 4. 加载中/错误 → 显示主页（不阻碍用户使用）
+  Widget _buildHome(
+    AsyncValue<User?> authState,
+    AsyncValue<bool> firstLaunchState,
+    WidgetRef ref,
+  ) {
+    // 处理首次启动状态加载中或错误的情况
+    // 遵循原则：用户体验优先，不阻碍用户使用
+    return firstLaunchState.when(
+      data: (isFirstLaunch) {
+        print('🔍 [main] 构建 home: isFirstLaunch=$isFirstLaunch');
+        
+        // 首次启动，显示欢迎页
+        if (isFirstLaunch) {
+          print('🔍 [main] 首次启动，显示欢迎页');
+          return const WelcomePage();
+        }
+        
+        // 非首次启动，根据登录状态决定是否触发同步
+        return authState.when(
+          data: (user) {
+            print('🔍 [main] 非首次启动，user=${user == null ? 'null' : user.id}');
+            
+            // 已登录，触发云端同步
+            if (user != null) {
+              _triggerSync(ref, user);
+            }
+            
+            // 无论是否登录，都显示主页（支持离线模式）
+            return const MainNavigationPage();
+          },
+          loading: () {
+            print('🔍 [main] 认证状态加载中，显示主页');
+            // 加载中也显示主页，不阻碍用户使用
+            return const MainNavigationPage();
+          },
+          error: (error, stack) {
+            print('❌ [main] 认证状态错误: $error');
+            // 错误时也显示主页，不阻碍用户使用
+            return const MainNavigationPage();
+          },
+        );
+      },
+      loading: () {
+        print('🔍 [main] 首次启动状态加载中');
+        // 首次启动状态加载中，显示加载页面
+        return const _LoadingPage();
+      },
+      error: (error, stack) {
+        print('❌ [main] 首次启动状态错误: $error');
+        // 首次启动状态检查失败，显示错误页面
+        return _ErrorPage(error: error);
       },
     );
   }

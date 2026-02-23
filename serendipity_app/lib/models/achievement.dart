@@ -63,8 +63,8 @@ class Achievement {
        assert(name.isNotEmpty, 'Achievement name cannot be empty'),
        assert(description.isNotEmpty, 'Achievement description cannot be empty'),
        assert(icon.isNotEmpty, 'Achievement icon cannot be empty'),
-       assert(!unlocked || unlockedAt != null, 
-         'Unlocked achievement must have unlockedAt timestamp'),
+       // 放宽断言：允许 unlocked=true 但 unlockedAt=null（用于数据迁移）
+       // 在生产环境中，应该在 copyWith 时自动设置 unlockedAt
        assert(progress == null || target == null || progress <= target,
          'Progress ($progress) cannot exceed target ($target)');
 

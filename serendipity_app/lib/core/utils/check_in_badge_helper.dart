@@ -1,3 +1,37 @@
+/// 签到徽章等级枚举
+/// 
+/// 根据连续签到天数划分为5个等级
+enum CheckInBadgeLevel {
+  /// 萌芽（1-6天）
+  sprout(1, '🌱', '萌芽', 1, 6),
+  
+  /// 成长（7-13天）
+  growing(2, '🌿', '成长', 7, 13),
+  
+  /// 茁壮（14-29天）
+  strong(3, '🌳', '茁壮', 14, 29),
+  
+  /// 火热（30-99天）
+  fire(4, '🔥', '火热', 30, 99),
+  
+  /// 钻石（100天+）
+  diamond(5, '💎', '钻石', 100, 999999);
+
+  final int level;
+  final String icon;
+  final String name;
+  final int minDays;
+  final int maxDays;
+  
+  const CheckInBadgeLevel(
+    this.level,
+    this.icon,
+    this.name,
+    this.minDays,
+    this.maxDays,
+  );
+}
+
 /// 签到徽章工具类
 /// 
 /// 根据连续签到天数返回对应的徽章
@@ -10,7 +44,7 @@ class CheckInBadgeHelper {
 
   /// 获取签到徽章
   /// 
-  /// 根据连续签到天数返回对应的徽章图标和名称
+  /// 根据连续签到天数返回对应的徽章等级
   /// 
   /// 规则：
   /// - 1-6天：🌱 萌芽
@@ -18,31 +52,19 @@ class CheckInBadgeHelper {
   /// - 14-29天：🌳 茁壮
   /// - 30-99天：🔥 火热
   /// - 100天+：💎 钻石
-  static CheckInBadge getBadge(int consecutiveDays) {
-    if (consecutiveDays >= 100) {
-      return const CheckInBadge(icon: '💎', name: '钻石', level: 5);
-    } else if (consecutiveDays >= 30) {
-      return const CheckInBadge(icon: '🔥', name: '火热', level: 4);
-    } else if (consecutiveDays >= 14) {
-      return const CheckInBadge(icon: '🌳', name: '茁壮', level: 3);
-    } else if (consecutiveDays >= 7) {
-      return const CheckInBadge(icon: '🌿', name: '成长', level: 2);
+  static CheckInBadgeLevel getBadge(int consecutiveDays) {
+    // 从高到低检查，确保返回最高等级
+    if (consecutiveDays >= CheckInBadgeLevel.diamond.minDays) {
+      return CheckInBadgeLevel.diamond;
+    } else if (consecutiveDays >= CheckInBadgeLevel.fire.minDays) {
+      return CheckInBadgeLevel.fire;
+    } else if (consecutiveDays >= CheckInBadgeLevel.strong.minDays) {
+      return CheckInBadgeLevel.strong;
+    } else if (consecutiveDays >= CheckInBadgeLevel.growing.minDays) {
+      return CheckInBadgeLevel.growing;
     } else {
-      return const CheckInBadge(icon: '🌱', name: '萌芽', level: 1);
+      return CheckInBadgeLevel.sprout;
     }
   }
-}
-
-/// 签到徽章
-class CheckInBadge {
-  final String icon;
-  final String name;
-  final int level;
-
-  const CheckInBadge({
-    required this.icon,
-    required this.name,
-    required this.level,
-  });
 }
 

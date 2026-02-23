@@ -4,6 +4,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/message_provider.dart';
 import '../../core/providers/achievement_provider.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/achievement_unlocked_dialog.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';
@@ -88,11 +89,11 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
           AchievementUnlockedDialog.show(context, next).then((result) {
             if (!mounted) return;
             if (result == 'view') {
-              // 用户点击"查看成就"，跳转到成就页面
-              navigator.push(
-                MaterialPageRoute(
-                  builder: (context) => const AchievementsPage(),
-                ),
+              // 用户点击"查看成就"，跳转到成就页面（使用随机动画）
+              NavigationHelper.pushWithTransition(
+                context,
+                ref,
+                const AchievementsPage(),
               );
             }
           });

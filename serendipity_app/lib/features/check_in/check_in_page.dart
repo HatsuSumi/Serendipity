@@ -121,35 +121,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
           ),
           if (!state.hasCheckedInToday) ...[
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  await ref.read(checkInProvider.notifier).checkIn();
-                  if (mounted) {
-                    MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    MessageHelper.showError(context, '签到失败：$e');
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-              child: const Text(
-                '立即签到',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            _CheckInButton(colorScheme: colorScheme),
           ],
         ],
       ),
@@ -421,6 +393,80 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
         ],
       ),
     );
+  }
+}
+
+/// 签到按钮组件（带防抖逻辑）
+/// 
+/// 使用 StatefulWidget 管理按钮状态，防止重复点击
+class _CheckInButton extends ConsumerStatefulWidget {
+  final ColorScheme colorScheme;
+
+  const _CheckInButton({required this.colorScheme});
+
+  @override
+  ConsumerState<_CheckInButton> createState() => _CheckInButtonState();
+}
+
+class _CheckInButtonState extends ConsumerState<_CheckInButton> {
+  bool _isCheckingIn = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: _isCheckingIn ? null : _handleCheckIn,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: widget.colorScheme.primary,
+        foregroundColor: widget.colorScheme.onPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+      ),
+      child: _isCheckingIn
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  widget.colorScheme.onPrimary,
+                ),
+              ),
+            )
+          : const Text(
+              '立即签到',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+    );
+  }
+
+  Future<void> _handleCheckIn() async {
+    if (_isCheckingIn) return;
+
+    setState(() {
+      _isCheckingIn = true;
+    });
+
+    try {
+      await ref.read(checkInProvider.notifier).checkIn();
+      if (mounted && context.mounted) {
+        MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+      }
+    } catch (e) {
+      if (mounted && context.mounted) {
+        MessageHelper.showError(context, '签到失败：$e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingIn = false;
+        });
+      }
+    }
   }
 }
 

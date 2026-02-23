@@ -2,7 +2,7 @@ import '../../models/achievement.dart';
 
 /// 成就定义常量
 /// 
-/// 包含所有27个成就的完整定义
+/// 包含所有29个成就的完整定义
 /// 
 /// 调用者：
 /// - AchievementRepository：初始化成就列表
@@ -92,7 +92,7 @@ class AchievementDefinitions {
       category: AchievementCategory.advanced,
     ),
 
-    // ==================== 稀有成就 (4个) ====================
+    // ==================== 稀有成就 (6个) ====================
     Achievement(
       id: 'record_50',
       name: '错过50个人',
@@ -126,6 +126,15 @@ class AchievementDefinitions {
       category: AchievementCategory.rare,
       progress: 0,
       target: 30,
+    ),
+    Achievement(
+      id: 'streak_100_days',
+      name: '签到大师',
+      description: '连续签到100天',
+      icon: '💎',
+      category: AchievementCategory.rare,
+      progress: 0,
+      target: 100,
     ),
     Achievement(
       id: 'checkin_100_days',

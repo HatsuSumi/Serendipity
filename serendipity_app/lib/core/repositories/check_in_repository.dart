@@ -57,27 +57,29 @@ class CheckInRepository {
   /// 
   /// 从今天往前推，连续有签到的天数
   /// 如果今天没有签到，返回0
+  /// 
+  /// 时间复杂度：O(n)，其中 n 是签到记录总数
   int calculateConsecutiveDays() {
     final checkIns = getAllCheckIns();
     if (checkIns.isEmpty) return 0;
 
-    // 提取所有签到日期
-    final checkInDates = checkIns.map((c) => c.date).toSet().toList();
-    checkInDates.sort((a, b) => b.compareTo(a)); // 降序排列
+    // 使用 Set 提高查找效率（O(1) vs O(n)）
+    final checkInDatesSet = checkIns.map((c) => c.date).toSet();
 
     final today = _getTodayDate();
 
     // 如果今天没有签到，返回0
-    if (!checkInDates.contains(today)) {
+    if (!checkInDatesSet.contains(today)) {
       return 0;
     }
 
     int consecutiveDays = 1;
     DateTime currentDate = today;
 
-    for (int i = 1; i < checkInDates.length; i++) {
+    // 从今天往前推，检查每一天是否签到
+    while (true) {
       final previousDate = currentDate.subtract(const Duration(days: 1));
-      if (checkInDates.contains(previousDate)) {
+      if (checkInDatesSet.contains(previousDate)) {
         consecutiveDays++;
         currentDate = previousDate;
       } else {

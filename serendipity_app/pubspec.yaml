@@ -65,6 +65,9 @@ dependencies:
   
   # 粒子效果
   confetti: ^0.7.0
+  
+  # 本地持久化存储（用于首次启动标记）
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:

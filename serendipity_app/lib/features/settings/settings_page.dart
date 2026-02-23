@@ -14,11 +14,23 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/countdown_button.dart';
 import '../../models/enums.dart';
 import '../auth/widgets/auth_text_field.dart';
+import '../auth/login_page.dart';
+import '../auth/register_page.dart';
 import '../test/location_test_page.dart';
 import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
 
-/// 设置页面（演示版）
+/// 设置页面（我的页面）
+/// 
+/// 显示用户信息、功能入口、设置选项等。
+/// 
+/// 遵循原则：
+/// - 单一职责（SRP）：只负责展示设置界面和处理用户交互
+/// - 分层约束：UI层不包含业务逻辑，通过Provider调用
+/// - 用户体验优先：未登录时显示登录/注册入口，不阻碍功能使用
+/// 
+/// 调用者：
+/// - MainNavigationPage：底部导航栏的"我的"标签
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
@@ -38,63 +50,12 @@ class SettingsPage extends ConsumerWidget {
           authState.when(
             data: (user) {
               if (user != null) {
-                return Card(
-                  margin: const EdgeInsets.all(16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              child: Text(
-                                user.displayName?.substring(0, 1).toUpperCase() ?? 
-                                user.email?.substring(0, 1).toUpperCase() ?? 
-                                user.phoneNumber?.substring(user.phoneNumber!.length - 4) ?? 
-                                '?',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    user.displayName ?? user.email ?? user.phoneNumber ?? '用户',
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    user.authProvider == AuthProvider.email 
-                                        ? '邮箱登录' 
-                                        : '手机号登录',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                // 已登录状态
+                return _buildLoggedInUserCard(context, user);
+              } else {
+                // 未登录状态
+                return _buildLoggedOutUserCard(context, ref);
               }
-              return const SizedBox.shrink();
             },
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
@@ -226,73 +187,71 @@ class SettingsPage extends ConsumerWidget {
           const Divider(),
           
           // 账号管理
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '账号管理',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          // 修改密码（仅邮箱登录用户）
-          authState.when(
-            data: (user) {
-              if (user?.email != null) {
-                return ListTile(
-                  leading: const Icon(Icons.lock_outline),
-                  title: const Text('修改密码'),
-                  onTap: () => _showUpdatePasswordDialog(context, ref),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          // 更换邮箱（仅邮箱登录用户）
-          authState.when(
-            data: (user) {
-              if (user?.email != null) {
-                return ListTile(
-                  leading: const Icon(Icons.email_outlined),
-                  title: const Text('更换邮箱'),
-                  subtitle: Text(user!.email!),
-                  onTap: () => _showUpdateEmailDialog(context, ref),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          // 更换/绑定手机号（所有用户）
           authState.when(
             data: (user) {
               if (user != null) {
-                final hasPhone = user.phoneNumber != null;
-                return ListTile(
-                  leading: const Icon(Icons.phone_outlined),
-                  title: Text(hasPhone ? '更换手机号' : '绑定手机号'),
-                  subtitle: hasPhone 
-                      ? Text(user.phoneNumber!) 
-                      : const Text('未绑定'),
-                  onTap: () => _showUpdatePhoneDialog(context, ref, hasPhone),
+                // 已登录，显示账号管理选项
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(),
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        '账号管理',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    // 修改密码（仅邮箱登录用户）
+                    if (user.email != null)
+                      ListTile(
+                        leading: const Icon(Icons.lock_outline),
+                        title: const Text('修改密码'),
+                        onTap: () => _showUpdatePasswordDialog(context, ref),
+                      ),
+                    // 更换邮箱（仅邮箱登录用户）
+                    if (user.email != null)
+                      ListTile(
+                        leading: const Icon(Icons.email_outlined),
+                        title: const Text('更换邮箱'),
+                        subtitle: Text(user.email!),
+                        onTap: () => _showUpdateEmailDialog(context, ref),
+                      ),
+                    // 更换/绑定手机号（所有用户）
+                    Builder(
+                      builder: (context) {
+                        final hasPhone = user.phoneNumber != null;
+                        return ListTile(
+                          leading: const Icon(Icons.phone_outlined),
+                          title: Text(hasPhone ? '更换手机号' : '绑定手机号'),
+                          subtitle: hasPhone 
+                              ? Text(user.phoneNumber!) 
+                              : const Text('未绑定'),
+                          onTap: () => _showUpdatePhoneDialog(context, ref, hasPhone),
+                        );
+                      },
+                    ),
+                    // 退出登录
+                    ListTile(
+                      leading: const Icon(Icons.logout, color: Colors.red),
+                      title: const Text(
+                        '退出登录',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onTap: () => _showLogoutDialog(context, ref),
+                    ),
+                  ],
                 );
+              } else {
+                // 未登录，不显示账号管理
+                return const SizedBox.shrink();
               }
-              return const SizedBox.shrink();
             },
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text(
-              '退出登录',
-              style: TextStyle(color: Colors.red),
-            ),
-            onTap: () => _showLogoutDialog(context, ref),
           ),
           
           const Divider(),
@@ -336,6 +295,165 @@ class SettingsPage extends ConsumerWidget {
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+  
+  /// 构建已登录用户卡片
+  /// 
+  /// 调用者：build()
+  /// 
+  /// 遵循原则：
+  /// - 单一职责：只负责展示已登录用户信息
+  /// - 性能优化：使用 const 构造
+  Widget _buildLoggedInUserCard(BuildContext context, user) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Text(
+                user.displayName?.substring(0, 1).toUpperCase() ?? 
+                user.email?.substring(0, 1).toUpperCase() ?? 
+                user.phoneNumber?.substring(user.phoneNumber!.length - 4) ?? 
+                '?',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.displayName ?? user.email ?? user.phoneNumber ?? '用户',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    user.authProvider == AuthProvider.email 
+                        ? '邮箱登录' 
+                        : '手机号登录',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// 构建未登录用户卡片
+  /// 
+  /// 调用者：build()
+  /// 
+  /// 遵循原则：
+  /// - 单一职责：只负责展示未登录状态和登录/注册入口
+  /// - 用户体验优先：清晰展示登录的好处，鼓励用户登录
+  /// - 分层约束：UI层只负责展示和导航，不包含业务逻辑
+  Widget _buildLoggedOutUserCard(BuildContext context, WidgetRef ref) {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // 头像
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Icon(
+                Icons.person_outline,
+                size: 40,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // 未登录提示
+            const Text(
+              '未登录',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // 登录好处说明
+            Text(
+              '登录后可同步数据到云端',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            
+            // 登录/注册按钮
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => _navigateToLogin(context, ref),
+                  child: const Text('登录'),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: () => _navigateToRegister(context, ref),
+                  child: const Text('注册'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// 导航到登录页
+  /// 
+  /// 调用者：_buildLoggedOutUserCard()
+  /// 
+  /// 遵循原则：
+  /// - 单一职责：只负责导航
+  /// - 使用 NavigationHelper 保持导航一致性
+  void _navigateToLogin(BuildContext context, WidgetRef ref) {
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      const LoginPage(),
+    );
+  }
+  
+  /// 导航到注册页
+  /// 
+  /// 调用者：_buildLoggedOutUserCard()
+  /// 
+  /// 遵循原则：
+  /// - 单一职责：只负责导航
+  /// - 使用 NavigationHelper 保持导航一致性
+  void _navigateToRegister(BuildContext context, WidgetRef ref) {
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      const RegisterPage(),
     );
   }
   

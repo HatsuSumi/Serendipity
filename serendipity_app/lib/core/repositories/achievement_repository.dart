@@ -78,6 +78,12 @@ class AchievementRepository {
   /// 更新成就进度
   /// 
   /// 自动限制进度不超过目标值，确保数据一致性
+  /// 如果达到目标，自动解锁成就
+  /// 
+  /// 设计原则：
+  /// - 减少操作步骤，避免中间状态
+  /// - 如果达到目标，直接解锁（包含进度更新）
+  /// - 否则只更新进度
   Future<void> updateProgress(String id, int progress) async {
     assert(id.isNotEmpty, 'Achievement ID cannot be empty');
     assert(progress >= 0, 'Progress cannot be negative');
@@ -99,16 +105,18 @@ class AchievementRepository {
     // 限制进度不超过目标值（防止历史数据导致的进度超标）
     final clampedProgress = progress.clamp(0, achievement.target!);
     
+    // 如果达到目标，直接解锁（包含进度更新）
+    if (clampedProgress >= achievement.target!) {
+      await unlockAchievement(id);
+      return;
+    }
+    
+    // 否则只更新进度
     final updatedAchievement = achievement.copyWith(
       progress: () => clampedProgress,
     );
     
     await _storageService.updateAchievement(updatedAchievement);
-    
-    // 如果达到目标，自动解锁
-    if (clampedProgress >= achievement.target!) {
-      await unlockAchievement(id);
-    }
   }
 
   /// 获取已解锁的成就数量

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/check_in_provider.dart';
 import '../../../core/utils/message_helper.dart';
 import '../../../core/utils/check_in_badge_helper.dart';
+import '../../../core/utils/navigation_helper.dart';
 import '../check_in_page.dart';
 
 /// 签到卡片Widget
@@ -49,10 +50,10 @@ class CheckInCard extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const CheckInPage(),
-              ),
+            NavigationHelper.pushWithTransition(
+              context,
+              ref,
+              const CheckInPage(),
             );
           },
           borderRadius: BorderRadius.circular(16),
@@ -102,7 +103,7 @@ class CheckInCard extends ConsumerWidget {
                           ),
                           if (checkInState.consecutiveDays > 0) ...[
                             const SizedBox(width: 8),
-                            _buildBadge(checkInState.consecutiveDays, colorScheme),
+                            _buildBadgeWidget(checkInState.consecutiveDays, colorScheme),
                           ],
                         ],
                       ),
@@ -171,38 +172,10 @@ class CheckInCard extends ConsumerWidget {
       );
     }
 
-    return ElevatedButton(
-      onPressed: () async {
-        try {
-          await ref.read(checkInProvider.notifier).checkIn();
-          if (context.mounted) {
-            MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
-          }
-        } catch (e) {
-          if (context.mounted) {
-            MessageHelper.showError(context, '签到失败：$e');
-          }
-        }
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-      child: const Text(
-        '签到',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
+    return _CheckInButton(colorScheme: colorScheme);
   }
 
-  Widget _buildBadge(int consecutiveDays, ColorScheme colorScheme) {
+  Widget _buildBadgeWidget(int consecutiveDays, ColorScheme colorScheme) {
     final badge = CheckInBadgeHelper.getBadge(consecutiveDays);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -232,3 +205,77 @@ class CheckInCard extends ConsumerWidget {
   }
 }
 
+/// 签到按钮组件（带防抖逻辑）
+/// 
+/// 使用 StatefulWidget 管理按钮状态，防止重复点击
+class _CheckInButton extends ConsumerStatefulWidget {
+  final ColorScheme colorScheme;
+
+  const _CheckInButton({required this.colorScheme});
+
+  @override
+  ConsumerState<_CheckInButton> createState() => _CheckInButtonState();
+}
+
+class _CheckInButtonState extends ConsumerState<_CheckInButton> {
+  bool _isCheckingIn = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: _isCheckingIn ? null : _handleCheckIn,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: widget.colorScheme.primary,
+        foregroundColor: widget.colorScheme.onPrimary,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+      child: _isCheckingIn
+          ? SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  widget.colorScheme.onPrimary,
+                ),
+              ),
+            )
+          : const Text(
+              '签到',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+    );
+  }
+
+  Future<void> _handleCheckIn() async {
+    if (_isCheckingIn) return;
+
+    setState(() {
+      _isCheckingIn = true;
+    });
+
+    try {
+      await ref.read(checkInProvider.notifier).checkIn();
+      if (mounted && context.mounted) {
+        MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+      }
+    } catch (e) {
+      if (mounted && context.mounted) {
+        MessageHelper.showError(context, '签到失败：$e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingIn = false;
+        });
+      }
+    }
+  }
+}
+  
