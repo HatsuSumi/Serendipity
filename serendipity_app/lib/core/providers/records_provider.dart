@@ -71,21 +71,14 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     
     // 3. 检测成就（在云端同步之前，确保成就检测不受网络影响）
     try {
-      print('🔍 [RecordsProvider] 开始检测成就...');
       final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
-      print('🔍 [RecordsProvider] 检测完成，解锁成就数量: ${unlockedAchievements.length}');
       if (unlockedAchievements.isNotEmpty) {
-        print('🎉 [RecordsProvider] 解锁的成就: $unlockedAchievements');
         // 通知UI层显示成就解锁通知
         ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-        print('✅ [RecordsProvider] 已添加到 newlyUnlockedAchievementsProvider');
         // 刷新成就列表
         ref.invalidate(achievementsProvider);
-      } else {
-        print('ℹ️ [RecordsProvider] 没有解锁新成就');
       }
     } catch (e) {
-      print('❌ [RecordsProvider] 成就检测失败: $e');
       // 成就检测失败不影响记录保存
       // 但需要记录错误日志（生产环境）
     }

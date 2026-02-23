@@ -479,21 +479,15 @@ class SettingsPage extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () async {
-              print('🔍 [SettingsPage] 退出按钮被点击');
-              
               // 关闭对话框
-              print('🔍 [SettingsPage] 关闭对话框');
               Navigator.of(context).pop();
               
               try {
-                print('🔍 [SettingsPage] 开始执行 signOut');
                 // 执行登出
                 await ref.read(authProvider.notifier).signOut();
                 
-                print('✅ [SettingsPage] signOut 完成，等待 authProvider 自动跳转到欢迎页');
                 // 注意：不需要手动跳转，main.dart 的 authProvider 监听器会自动处理
               } catch (e) {
-                print('❌ [SettingsPage] signOut 失败: $e');
                 // 显示错误信息
                 if (context.mounted) {
                   MessageHelper.showError(context, '退出登录失败：$e');

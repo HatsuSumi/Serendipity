@@ -42,10 +42,7 @@ class AuthNotifier extends StreamNotifier<User?> {
     _repository = ref.read(authRepositoryProvider);
     // 监听认证状态变化
     // 注意：TestAuthRepository 的 authStateChanges 会立即发送当前状态
-    return _repository.authStateChanges.map((user) {
-      print('🔍 [AuthNotifier] authStateChanges 发送给 UI: ${user?.id ?? "null"}');
-      return user;
-    });
+    return _repository.authStateChanges;
   }
 
   /// 获取当前用户
@@ -226,15 +223,12 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// Fail Fast：登出失败立即抛异常
   Future<void> signOut() async {
-    print('🔍 [AuthNotifier] signOut 开始');
     state = const AsyncValue.loading();
     
     try {
       await _repository.signOut();
       state = const AsyncValue.data(null);
-      print('✅ [AuthNotifier] signOut 成功');
     } catch (e, stack) {
-      print('❌ [AuthNotifier] signOut 失败: $e');
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
     }
