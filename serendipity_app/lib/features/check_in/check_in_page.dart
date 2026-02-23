@@ -144,7 +144,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
-              '📊',
+              '📅',
               '本月签到',
               '${state.currentMonthDays} 天',
               colorScheme,
