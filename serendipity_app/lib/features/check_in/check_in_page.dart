@@ -84,7 +84,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
       child: Column(
         children: [
           Text(
-            state.hasCheckedInToday ? '✓' : '✨',
+            state.hasCheckedInToday ? '✓' : '❌',
             style: const TextStyle(fontSize: 48),
           ),
           const SizedBox(height: 16),
