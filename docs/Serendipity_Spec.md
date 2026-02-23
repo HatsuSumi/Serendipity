@@ -1117,7 +1117,11 @@ void checkConsecutiveDaysAchievement(User user) {
   - 是否启用签到提醒
   - 提醒时间（默认 20:00）
 
-#### 8.4 导出功能
+#### 8.4 签到设置
+- 签到时启用震动（默认开启）
+- 签到时启用粒子特效（默认开启）
+
+#### 8.5 导出功能
 - 导出单条记录为图片（免费）
 - 导出故事线为图文卡片（💎 会员功能）
 
@@ -1742,6 +1746,10 @@ class UserSettings {
   bool anniversaryReminder;     // 纪念日提醒（会员功能）
   bool checkInReminderEnabled;  // 签到提醒开关
   TimeOfDay checkInReminderTime; // 签到提醒时间（默认 20:00）
+  
+  // 签到设置
+  bool checkInVibrationEnabled; // 签到时启用震动（默认 true）
+  bool checkInConfettiEnabled;  // 签到时启用粒子特效（默认 true）
   
   // 社区设置
   bool autoPublishToCommunity;  // 是否自动发布到社区（默认 false）
