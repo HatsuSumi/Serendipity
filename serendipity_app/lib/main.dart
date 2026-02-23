@@ -73,10 +73,7 @@ void main() async {
     try {
       final recordRepo = RecordRepository(StorageService());
       recordRepo.validateDataConsistency();
-      print('✅ [main] 数据一致性验证通过');
     } catch (e) {
-      print('⚠️ [main] 数据一致性验证失败：$e');
-      print('⚠️ [main] 这不会影响应用运行，但建议检查数据');
       // 开发模式下只打印警告，不阻止应用启动
     }
   }
@@ -86,7 +83,6 @@ void main() async {
     await Hive.openBox<User>('test_users');
     await Hive.openBox('test_session');
     await Hive.openBox('test_passwords'); // 新增：初始化密码 box
-    print('🔍 [main] 测试用户 box 已初始化');
   }
   
   // 初始化 Firebase（仅在非测试模式下）
@@ -138,8 +134,6 @@ void main() async {
       );
       return;
     }
-  } else {
-    print('🔍 [main] 测试模式已启用，跳过 Firebase 初始化');
   }
   
   runApp(
@@ -175,49 +169,22 @@ class MyApp extends ConsumerWidget {
     // 监听首次启动状态
     final firstLaunchState = ref.watch(firstLaunchProvider);
     
-    print('🔍 [main] authState 变化: ${authState.when(
-      data: (user) => user == null ? 'null (未登录)' : 'user: ${user.id}',
-      loading: () => 'loading',
-      error: (e, _) => 'error: $e',
-    )}');
-    
-    print('🔍 [main] firstLaunchState 变化: ${firstLaunchState.when(
-      data: (isFirst) => isFirst ? 'true (首次启动)' : 'false (非首次)',
-      loading: () => 'loading',
-      error: (e, _) => 'error: $e',
-    )}');
-    
     // 监听认证状态变化，处理退出登录导航
     // 遵循原则：不在 build 中产生副作用，使用 ref.listen
     ref.listen<AsyncValue<User?>>(authProvider, (previous, next) {
-      print('🔍 [main] ref.listen 触发');
-      print('🔍 [main] previous: ${previous?.when(
-        data: (user) => user == null ? 'null' : 'user: ${user.id}',
-        loading: () => 'loading',
-        error: (e, _) => 'error: $e',
-      )}');
-      print('🔍 [main] next: ${next.when(
-        data: (user) => user == null ? 'null' : 'user: ${user.id}',
-        loading: () => 'loading',
-        error: (e, _) => 'error: $e',
-      )}');
-      
       // 只在从已登录变为未登录时跳转到欢迎页
       // 注意：不清空导航栈，保留用户的浏览历史
       final wasLoggedIn = previous?.value != null;
       final isLoggedOut = next.value == null;
       
       if (wasLoggedIn && isLoggedOut) {
-        print('🔍 [main] 检测到退出登录，跳转到欢迎页');
         // 使用 Future.microtask 避免在 build 期间修改导航栈
         // 遵循原则：异步操作必须处理异常
         Future.microtask(() {
-          print('🔍 [main] 开始跳转到欢迎页');
           navigatorKey.currentState?.pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const WelcomePage()),
             (route) => false,
           );
-          print('✅ [main] 已跳转到欢迎页');
         });
       }
     });
@@ -269,19 +236,14 @@ class MyApp extends ConsumerWidget {
     // 遵循原则：用户体验优先，不阻碍用户使用
     return firstLaunchState.when(
       data: (isFirstLaunch) {
-        print('🔍 [main] 构建 home: isFirstLaunch=$isFirstLaunch');
-        
         // 首次启动，显示欢迎页
         if (isFirstLaunch) {
-          print('🔍 [main] 首次启动，显示欢迎页');
           return const WelcomePage();
         }
         
         // 非首次启动，根据登录状态决定是否触发同步
         return authState.when(
           data: (user) {
-            print('🔍 [main] 非首次启动，user=${user == null ? 'null' : user.id}');
-            
             // 已登录，触发云端同步
             if (user != null) {
               _triggerSync(ref, user);
@@ -291,24 +253,20 @@ class MyApp extends ConsumerWidget {
             return const MainNavigationPage();
           },
           loading: () {
-            print('🔍 [main] 认证状态加载中，显示主页');
             // 加载中也显示主页，不阻碍用户使用
             return const MainNavigationPage();
           },
           error: (error, stack) {
-            print('❌ [main] 认证状态错误: $error');
             // 错误时也显示主页，不阻碍用户使用
             return const MainNavigationPage();
           },
         );
       },
       loading: () {
-        print('🔍 [main] 首次启动状态加载中');
         // 首次启动状态加载中，显示加载页面
         return const _LoadingPage();
       },
       error: (error, stack) {
-        print('❌ [main] 首次启动状态错误: $error');
         // 首次启动状态检查失败，显示错误页面
         return _ErrorPage(error: error);
       },
