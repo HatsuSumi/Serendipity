@@ -135,7 +135,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
         children: [
           Expanded(
             child: _buildStatCard(
-              '🔥',
+              Icons.local_fire_department,
               '连续签到',
               '${state.consecutiveDays} 天',
               colorScheme,
@@ -144,7 +144,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
-              '📅',
+              Icons.calendar_month,
               '本月签到',
               '${state.currentMonthDays} 天',
               colorScheme,
@@ -153,7 +153,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
-              '🏆',
+              Icons.emoji_events,
               '累计签到',
               '${state.totalDays} 天',
               colorScheme,
@@ -165,7 +165,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
   }
 
   Widget _buildStatCard(
-    String icon,
+    IconData icon,
     String label,
     String value,
     ColorScheme colorScheme,
@@ -181,9 +181,10 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
       ),
       child: Column(
         children: [
-          Text(
+          Icon(
             icon,
-            style: const TextStyle(fontSize: 24),
+            size: 28,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 8),
           Text(
