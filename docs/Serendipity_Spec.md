@@ -1733,6 +1733,7 @@ class UserSettings {
   AppTheme theme;               // 主题选择：light / dark / system / misty / midnight / warm / autumn
   String? accentColor;          // 强调色（会员专属）
   PageTransitionType pageTransition; // 页面切换动画类型
+  DialogAnimationType dialogAnimation; // 对话框动画类型
   
   // 隐私设置
   bool cloudSyncEnabled;        // 是否启用云同步（会员功能）
