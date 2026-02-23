@@ -1113,6 +1113,9 @@ void checkConsecutiveDaysAchievement(User user) {
 #### 8.3 通知设置
 - 纪念日提醒（会员功能）
 - 成就解锁通知
+- 签到提醒
+  - 是否启用签到提醒
+  - 提醒时间（默认 20:00）
 
 #### 8.4 导出功能
 - 导出单条记录为图片（免费）
@@ -1737,6 +1740,8 @@ class UserSettings {
   // 通知设置
   bool achievementNotification; // 成就解锁通知
   bool anniversaryReminder;     // 纪念日提醒（会员功能）
+  bool checkInReminderEnabled;  // 签到提醒开关
+  TimeOfDay checkInReminderTime; // 签到提醒时间（默认 20:00）
   
   // 社区设置
   bool autoPublishToCommunity;  // 是否自动发布到社区（默认 false）
