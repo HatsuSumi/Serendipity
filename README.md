@@ -22,7 +22,7 @@ Serendipity/
 │   ├── Serendipity_Spec.md     # 完整规格文档
 │   ├── Development_Roadmap.md  # 开发路线图
 │   └── About_Page_Content.md   # 关于页面内容
-└── serendipity_app/            # Flutter 项目（待创建）
+└── serendipity_app/            # Flutter 项目
     ├── lib/                    # 源代码
     ├── android/                # Android 配置
     ├── ios/                    # iOS 配置
@@ -47,21 +47,6 @@ Serendipity/
 - ✅ 社区（树洞）
 - ✅ 成就系统
 - ✅ 会员系统（自愿付费 ¥0-648/月）
-
-## 🚀 开发进度
-
-- [x] 项目规划
-- [x] 文档编写
-- [x] 环境搭建
-- [x] Phase 1: 账号管理（Firebase Authentication）
-- [x] Phase 2: GPS 定位服务（高德地图 API）
-- [ ] Phase 2: 成就系统
-- [ ] Phase 2: 统计功能
-- [ ] Phase 3: 记录系统
-- [ ] Phase 4: 故事线功能
-- [ ] Phase 5: 社区（树洞）
-- [ ] Phase 6: 会员系统
-- [ ] 测试与发布
 
 ## 📚 文档说明
 

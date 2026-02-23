@@ -68,9 +68,12 @@ class CheckInCard extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            '✨',
-                            style: const TextStyle(fontSize: 20),
+                          Icon(
+                            Icons.event_available,
+                            size: 20,
+                            color: checkInState.hasCheckedInToday
+                                ? colorScheme.onSurface.withValues(alpha: 0.6)
+                                : colorScheme.onPrimaryContainer,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -92,7 +95,7 @@ class CheckInCard extends ConsumerWidget {
                         children: [
                           Text(
                             checkInState.hasCheckedInToday
-                                ? '今天已签到 ✓'
+                                ? '今天已签到'
                                 : '已连续签到 ${checkInState.consecutiveDays} 天',
                             style: TextStyle(
                               fontSize: 12,

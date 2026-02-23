@@ -83,9 +83,12 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
       ),
       child: Column(
         children: [
-          Text(
-            state.hasCheckedInToday ? '✓' : '❌',
-            style: const TextStyle(fontSize: 48),
+          Icon(
+            state.hasCheckedInToday ? Icons.check_circle : Icons.cancel,
+            size: 48,
+            color: state.hasCheckedInToday
+                ? colorScheme.onSurface.withValues(alpha: 0.6)
+                : colorScheme.onPrimaryContainer,
           ),
           const SizedBox(height: 16),
           Text(

@@ -143,9 +143,10 @@ class AchievementsPage extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                '🏆',
-                style: TextStyle(fontSize: 32),
+              Icon(
+                Icons.emoji_events,
+                size: 32,
+                color: colorScheme.onPrimaryContainer,
               ),
               const SizedBox(width: 12),
               Column(

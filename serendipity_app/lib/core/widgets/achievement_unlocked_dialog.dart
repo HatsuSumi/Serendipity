@@ -145,8 +145,14 @@ class _AchievementUnlockedDialogState
     return AlertDialog(
       title: Row(
         children: [
+          Icon(
+            Icons.celebration,
+            size: 24,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
           Text(
-            '🎉 成就解锁！',
+            '成就解锁！',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
