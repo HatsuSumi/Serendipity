@@ -68,6 +68,12 @@ dependencies:
   
   # 本地持久化存储（用于首次启动标记）
   shared_preferences: ^2.2.2
+  
+  # 本地通知
+  flutter_local_notifications: ^18.0.1
+  
+  # 时区支持（用于通知调度）
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:

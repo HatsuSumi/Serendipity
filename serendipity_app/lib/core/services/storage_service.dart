@@ -3,6 +3,7 @@ import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/achievement.dart';
 import '../../models/check_in_record.dart';
+import '../../models/user_settings.dart';
 import 'i_storage_service.dart';
 
 /// 本地存储服务（Hive 实现）
@@ -252,6 +253,26 @@ class StorageService implements IStorageService {
   Future<void> deleteCheckIn(String id) async {
     assert(id.isNotEmpty, 'CheckIn ID cannot be empty');
     await _checkInsBoxOrThrow.delete(id);
+  }
+  
+  // ==================== 用户设置相关操作 ====================
+  
+  /// 获取用户设置
+  /// 
+  /// 使用固定的 key 'user_settings' 存储
+  @override
+  UserSettings? getUserSettings() {
+    final json = _settingsBoxOrThrow.get('user_settings');
+    if (json == null) return null;
+    return UserSettings.fromJson(Map<String, dynamic>.from(json as Map));
+  }
+  
+  /// 保存用户设置
+  /// 
+  /// 使用固定的 key 'user_settings' 存储
+  @override
+  Future<void> saveUserSettings(UserSettings settings) async {
+    await _settingsBoxOrThrow.put('user_settings', settings.toJson());
   }
 }
 

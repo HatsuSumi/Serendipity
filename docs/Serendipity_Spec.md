@@ -1753,7 +1753,7 @@ class UserSettings {
   String userId;                // 用户ID
   
   // 主题设置
-  AppTheme theme;               // 主题选择：light / dark / system / misty / midnight / warm / autumn
+  ThemeOption theme;            // 主题选择：light / dark / system / misty / midnight / warm / autumn
   String? accentColor;          // 强调色（会员专属）
   PageTransitionType pageTransition; // 页面切换动画类型
   DialogAnimationType dialogAnimation; // 对话框动画类型
@@ -1783,21 +1783,21 @@ class UserSettings {
 }
 ```
 
-### AppTheme（应用主题枚举）
+### ThemeOption（应用主题枚举）
 ```dart
-enum AppTheme {
-  light(1, '浅色', false),           // 浅色模式（免费）
-  dark(2, '深色', false),            // 深色模式（免费）
-  system(3, '跟随系统', false),      // 跟随系统（免费）
-  misty(4, '朦胧', true),            // 灰蓝色调（会员专属）
-  midnight(5, '深夜', true),         // 深蓝黑色调（会员专属）
-  warm(6, '温暖', true),             // 米黄色调（会员专属）
-  autumn(7, '秋日', true);           // 橙棕色调（会员专属）
+enum ThemeOption {
+  light('light', '浅色', false),           // 浅色模式（免费）
+  dark('dark', '深色', false),            // 深色模式（免费）
+  system('system', '跟随系统', false),      // 跟随系统（免费）
+  misty('misty', '朦胧', true),            // 灰蓝色调（会员专属）
+  midnight('midnight', '深夜', true),         // 深蓝黑色调（会员专属）
+  warm('warm', '温暖', true),             // 米黄色调（会员专属）
+  autumn('autumn', '秋日', true);           // 橙棕色调（会员专属）
 
-  final int value;
+  final String value;
   final String label;
   final bool isPremium;              // 是否为会员专属
-  const AppTheme(this.value, this.label, this.isPremium);
+  const ThemeOption(this.value, this.label, this.isPremium);
 }
 ```
 

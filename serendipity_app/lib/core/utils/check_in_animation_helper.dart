@@ -18,26 +18,36 @@ class CheckInAnimationHelper {
   /// 触发签到成功的完整反馈
   /// 
   /// 包含：
-  /// 1. 震动反馈
-  /// 2. 粒子效果
+  /// 1. 震动反馈（可选）
+  /// 2. 粒子效果（可选）
   /// 
   /// 参数：
   /// - [confettiController] 粒子效果控制器
+  /// - [enableVibration] 是否启用震动（默认 true）
+  /// - [enableConfetti] 是否启用粒子特效（默认 true）
   /// 
   /// 使用示例：
   /// ```dart
   /// await CheckInAnimationHelper.triggerSuccessFeedback(
   ///   confettiController: _confettiController,
+  ///   enableVibration: settings.checkInVibrationEnabled,
+  ///   enableConfetti: settings.checkInConfettiEnabled,
   /// );
   /// ```
   static Future<void> triggerSuccessFeedback({
     required ConfettiController confettiController,
+    bool enableVibration = true,
+    bool enableConfetti = true,
   }) async {
-    // 1. 触发震动反馈
-    await triggerHapticFeedback();
+    // 1. 触发震动反馈（如果启用）
+    if (enableVibration) {
+      await triggerHapticFeedback();
+    }
     
-    // 2. 触发粒子效果
-    confettiController.play();
+    // 2. 触发粒子效果（如果启用）
+    if (enableConfetti) {
+      confettiController.play();
+    }
   }
 
   /// 触发震动反馈

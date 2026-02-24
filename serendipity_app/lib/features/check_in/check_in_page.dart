@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import '../../core/providers/check_in_provider.dart';
+import '../../core/providers/user_settings_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/check_in_badge_helper.dart';
 import '../../core/utils/check_in_animation_helper.dart';
@@ -167,10 +168,15 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
   
   /// 处理签到成功
   Future<void> _handleCheckInSuccess() async {
-    // 触发粒子效果和震动
-    if (_confettiController != null) {
+    // 读取用户设置
+    final settings = ref.read(userSettingsProvider);
+    
+    // 触发粒子效果和震动（根据用户设置）
+    if (_confettiController != null && settings != null) {
       await CheckInAnimationHelper.triggerSuccessFeedback(
         confettiController: _confettiController!,
+        enableVibration: settings.checkInVibrationEnabled,
+        enableConfetti: settings.checkInConfettiEnabled,
       );
     }
     

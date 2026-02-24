@@ -5,7 +5,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/sync_service.dart';
+import 'core/services/notification_service.dart';
 import 'core/repositories/record_repository.dart';
+import 'core/repositories/check_in_repository.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
@@ -59,6 +61,20 @@ void main() async {
   
   // 初始化存储服务
   await StorageService().init();
+  
+  // 初始化通知服务
+  try {
+    final storageService = StorageService();
+    final checkInRepository = CheckInRepository(storageService);
+    final notificationService = NotificationService(checkInRepository);
+    await notificationService.initialize();
+  } catch (e) {
+    // 通知服务初始化失败不影响应用启动
+    // 生产环境应记录错误日志
+    if (kDebugMode) {
+      print('通知服务初始化失败: $e');
+    }
+  }
   
   // 注册循环页面对（用于智能导航）
   SmartNavigator.registerCyclicPair(RecordDetailPage, StoryLineDetailPage);

@@ -6,6 +6,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/achievement_provider.dart';
 import '../../core/providers/check_in_provider.dart';
 import '../../core/providers/first_launch_provider.dart';
+import '../../core/providers/user_settings_provider.dart';
 import '../../core/repositories/achievement_repository.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
@@ -101,6 +102,93 @@ class SettingsPage extends ConsumerWidget {
                 MaterialPageRoute(
                   builder: (context) => const AchievementsPage(),
                 ),
+              );
+            },
+          ),
+          
+          const Divider(),
+          
+          // 签到设置
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              '签到设置',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          
+          // 签到提醒开关
+          Consumer(
+            builder: (context, ref, child) {
+              final settings = ref.watch(userSettingsProvider);
+              
+              return SwitchListTile(
+                title: const Text('签到提醒'),
+                subtitle: const Text('每天提醒你签到'),
+                value: settings.checkInReminderEnabled,
+                onChanged: (value) async {
+                  await ref.read(userSettingsProvider.notifier).updateCheckInReminderEnabled(value);
+                  if (context.mounted) {
+                    MessageHelper.showSuccess(
+                      context,
+                      value ? '签到提醒已开启' : '签到提醒已关闭',
+                    );
+                  }
+                },
+              );
+            },
+          ),
+          
+          // 签到提醒时间
+          Consumer(
+            builder: (context, ref, child) {
+              final settings = ref.watch(userSettingsProvider);
+              
+              return ListTile(
+                title: const Text('提醒时间'),
+                subtitle: Text(
+                  '${settings.checkInReminderTime.hour.toString().padLeft(2, '0')}:${settings.checkInReminderTime.minute.toString().padLeft(2, '0')}',
+                ),
+                trailing: const Icon(Icons.access_time),
+                enabled: settings.checkInReminderEnabled,
+                onTap: settings.checkInReminderEnabled
+                    ? () => _showTimePickerDialog(context, ref, settings.checkInReminderTime)
+                    : null,
+              );
+            },
+          ),
+          
+          // 签到震动开关
+          Consumer(
+            builder: (context, ref, child) {
+              final settings = ref.watch(userSettingsProvider);
+              
+              return SwitchListTile(
+                title: const Text('签到震动'),
+                subtitle: const Text('签到时震动反馈'),
+                value: settings.checkInVibrationEnabled,
+                onChanged: (value) async {
+                  await ref.read(userSettingsProvider.notifier).updateCheckInVibrationEnabled(value);
+                },
+              );
+            },
+          ),
+          
+          // 签到粒子特效开关
+          Consumer(
+            builder: (context, ref, child) {
+              final settings = ref.watch(userSettingsProvider);
+              
+              return SwitchListTile(
+                title: const Text('签到粒子特效'),
+                subtitle: const Text('签到时显示彩色粒子'),
+                value: settings.checkInConfettiEnabled,
+                onChanged: (value) async {
+                  await ref.read(userSettingsProvider.notifier).updateCheckInConfettiEnabled(value);
+                },
               );
             },
           ),
@@ -304,6 +392,36 @@ class SettingsPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+  
+  /// 显示时间选择器对话框
+  /// 
+  /// 调用者：签到提醒时间 ListTile
+  /// 
+  /// 遵循原则：
+  /// - 单一职责：只负责显示时间选择器
+  /// - Fail Fast：参数校验
+  void _showTimePickerDialog(BuildContext context, WidgetRef ref, TimeOfDay currentTime) {
+    showTimePicker(
+      context: context,
+      initialTime: currentTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    ).then((selectedTime) async {
+      if (selectedTime != null && selectedTime != currentTime) {
+        await ref.read(userSettingsProvider.notifier).updateCheckInReminderTime(selectedTime);
+        if (context.mounted) {
+          MessageHelper.showSuccess(
+            context,
+            '提醒时间已更新为 ${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+          );
+        }
+      }
+    });
   }
   
   /// 构建已登录用户卡片

@@ -2,6 +2,7 @@ import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/achievement.dart';
 import '../../models/check_in_record.dart';
+import '../../models/user_settings.dart';
 
 /// 存储服务接口
 /// 
@@ -92,5 +93,13 @@ abstract class IStorageService {
   
   /// 删除签到记录
   Future<void> deleteCheckIn(String id);
+  
+  // ==================== 用户设置相关操作 ====================
+  
+  /// 获取用户设置
+  UserSettings? getUserSettings();
+  
+  /// 保存用户设置
+  Future<void> saveUserSettings(UserSettings settings);
 }
 
