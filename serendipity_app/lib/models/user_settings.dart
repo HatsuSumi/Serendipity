@@ -67,7 +67,10 @@ class UserSettings {
   /// 从 JSON 创建 UserSettings
   factory UserSettings.fromJson(Map<String, dynamic> json) {
     // 解析签到提醒时间
-    final reminderTimeMap = json['checkInReminderTime'] as Map<String, dynamic>?;
+    final reminderTimeData = json['checkInReminderTime'];
+    final Map<String, dynamic>? reminderTimeMap = reminderTimeData != null
+        ? Map<String, dynamic>.from(reminderTimeData as Map)
+        : null;
     final reminderTime = reminderTimeMap != null
         ? TimeOfDay(
             hour: reminderTimeMap['hour'] as int,

@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
+import '../../core/providers/community_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/utils/check_in_animation_helper.dart';
+import '../../core/utils/async_action_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../models/encounter_record.dart';
@@ -548,10 +550,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     );
   }
 
-  /// 显示发布到社区对话框
+  /// 发布到社区
+  /// 
+  /// 调用者：_handleMenuAction()
   void _showPublishToCommunityDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
-    // TODO: 实现发布到社区功能
-    MessageHelper.showWarning(context, '社区功能开发中，敬请期待');
+    AsyncActionHelper.execute(
+      context,
+      action: () => ref.read(communityProvider.notifier).publishPost(record),
+      successMessage: '已发布到树洞',
+      errorMessagePrefix: '发布失败',
+    );
   }
 
   /// 显示删除确认对话框

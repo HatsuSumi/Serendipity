@@ -22,6 +22,7 @@ import '../auth/welcome_page.dart';
 import '../test/location_test_page.dart';
 import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
+import '../community/my_posts_page.dart';
 
 /// 设置页面（我的页面）
 /// 
@@ -102,6 +103,20 @@ class SettingsPage extends ConsumerWidget {
                 MaterialPageRoute(
                   builder: (context) => const AchievementsPage(),
                 ),
+              );
+            },
+          ),
+          
+          // 我的发布入口
+          ListTile(
+            leading: const Text('🌍', style: TextStyle(fontSize: 24)),
+            title: const Text('我的发布'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              NavigationHelper.pushWithTransition(
+                context,
+                ref,
+                const MyPostsPage(),
               );
             },
           ),

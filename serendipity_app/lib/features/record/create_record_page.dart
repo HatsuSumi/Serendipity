@@ -4,9 +4,11 @@ import 'package:uuid/uuid.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/location_provider.dart';
+import '../../core/providers/community_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/date_time_helper.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/enums.dart';
@@ -273,6 +275,18 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         await ref.read(recordsProvider.notifier).updateRecord(record);
       } else {
         await ref.read(recordsProvider.notifier).saveRecord(record);
+      }
+
+      // 如果勾选了"发布到树洞"，发布到社区
+      if (_publishToCommunity) {
+        try {
+          await ref.read(communityProvider.notifier).publishPost(record);
+        } catch (e) {
+          // 发布失败不影响记录保存，只显示警告
+          if (mounted) {
+            MessageHelper.showWarning(context, '记录已保存，但发布到树洞失败：${AuthErrorHelper.extractErrorMessage(e)}');
+          }
+        }
       }
 
       if (mounted) {

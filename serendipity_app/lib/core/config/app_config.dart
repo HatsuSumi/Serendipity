@@ -14,6 +14,6 @@ class AppConfig {
   /// - 数据存储在内存中
   /// 
   /// ⚠️ 注意：生产环境必须设置为 false
-  static const bool enableTestMode = true;
+  static const bool enableTestMode = false;
 }
 

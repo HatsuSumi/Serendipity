@@ -140,5 +140,61 @@ class RecordHelper {
            (location.placeName == null || location.placeName!.trim().isEmpty) &&
            location.placeType == null;
   }
+
+  /// 获取社区帖子的地点显示文本
+  /// 
+  /// 显示优先级：
+  /// 1. placeType + address（最标准）
+  /// 2. address（标准地址）
+  /// 3. placeName（用户输入，无 GPS 时）
+  /// 4. cityName 或 "未知地点"
+  /// 
+  /// 示例：
+  /// - 有场所类型 + 地址：`地铁 · 北京市朝阳区建国门外大街1号`
+  /// - 只有地址：`北京市朝阳区建国门外大街1号`
+  /// - 只有场所类型：`地铁`
+  /// - 只有 placeName：`常去的那家咖啡馆`
+  /// - 都没有：`未知地点`
+  /// 
+  /// 调用者：CommunityPostCard._buildLocation()
+  static String getCommunityLocationText({
+    String? placeTypeLabel,
+    String? address,
+    String? placeName,
+    String? cityName,
+  }) {
+    String result = '';
+
+    // 第一部分：场所类型（如果有）
+    if (placeTypeLabel != null && placeTypeLabel.isNotEmpty) {
+      result = placeTypeLabel;
+    }
+
+    // 第二部分：标准地址（如果有）
+    if (address != null && address.isNotEmpty) {
+      if (result.isNotEmpty) {
+        result += ' · $address'; // 场所类型 · 地址
+      } else {
+        result = address; // 只有地址
+      }
+    }
+
+    // 第三部分：如果没有 GPS，尝试 placeName
+    if (result.isEmpty && placeName != null && placeName.isNotEmpty) {
+      result = placeName; // 显示用户输入的地点名称
+    }
+
+    // 第四部分：如果都没有，尝试城市名称
+    if (result.isEmpty && cityName != null && cityName.isNotEmpty) {
+      result = cityName;
+    }
+
+    // 实在没有，显示默认文本
+    if (result.isEmpty) {
+      result = '未知地点';
+    }
+
+    return result;
+  }
 }
 

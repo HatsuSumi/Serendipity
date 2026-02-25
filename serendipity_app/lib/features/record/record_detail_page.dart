@@ -9,9 +9,11 @@ import '../../core/utils/smart_navigator.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/utils/record_helper.dart';
+import '../../core/utils/async_action_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
+import '../../core/providers/community_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../story_line/link_to_story_line_dialog.dart';
@@ -651,13 +653,24 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         _showLinkToStoryLineDialog(context);
         break;
       case 'community':
-        // TODO: 发布到社区
-        MessageHelper.showInfo(context, '发布到社区功能待开发');
+        _publishToCommunity(context);
         break;
       case 'delete':
         _showDeleteConfirmDialog(context);
         break;
     }
+  }
+
+  /// 发布到社区
+  /// 
+  /// 调用者：_handleMenuAction()
+  Future<void> _publishToCommunity(BuildContext context) async {
+    await AsyncActionHelper.execute(
+      context,
+      action: () => ref.read(communityProvider.notifier).publishPost(_currentRecord),
+      successMessage: '已发布到树洞',
+      errorMessagePrefix: '发布失败',
+    );
   }
 
   /// 显示关联到故事线对话框

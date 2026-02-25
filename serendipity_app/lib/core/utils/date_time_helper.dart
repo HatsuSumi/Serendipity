@@ -91,5 +91,69 @@ class DateTimeHelper {
   static String formatChineseDate(DateTime dateTime) {
     return '${dateTime.year}年${dateTime.month}月${dateTime.day}日';
   }
+
+  /// 格式化为发布时间（用于社区帖子）
+  /// 
+  /// 根据时间差返回不同的格式：
+  /// - 1分钟内：`刚刚`
+  /// - 1小时内：`X分钟前`
+  /// - 今天：`X小时前`
+  /// - 昨天：`昨天`
+  /// - 2-6天前：`X天前`
+  /// - 7天及以上：`MM-DD`
+  /// 
+  /// 示例：
+  /// ```dart
+  /// final now = DateTime.now();
+  /// 
+  /// // 30秒前
+  /// final text1 = DateTimeHelper.formatPublishTime(now.subtract(Duration(seconds: 30)));
+  /// // 输出: "刚刚"
+  /// 
+  /// // 5分钟前
+  /// final text2 = DateTimeHelper.formatPublishTime(now.subtract(Duration(minutes: 5)));
+  /// // 输出: "5分钟前"
+  /// 
+  /// // 2小时前
+  /// final text3 = DateTimeHelper.formatPublishTime(now.subtract(Duration(hours: 2)));
+  /// // 输出: "2小时前"
+  /// ```
+  /// 
+  /// 调用者：CommunityPostCard._buildPublishTime()
+  static String formatPublishTime(DateTime publishedAt) {
+    final now = DateTime.now();
+    final difference = now.difference(publishedAt);
+
+    // 1分钟内：刚刚
+    if (difference.inMinutes < 1) {
+      return '刚刚';
+    }
+
+    // 1小时内：X分钟前
+    if (difference.inHours < 1) {
+      return '${difference.inMinutes}分钟前';
+    }
+
+    // 今天：X小时前
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDate = DateTime(publishedAt.year, publishedAt.month, publishedAt.day);
+    if (targetDate == today) {
+      return '${difference.inHours}小时前';
+    }
+
+    // 昨天：昨天
+    final yesterday = today.subtract(const Duration(days: 1));
+    if (targetDate == yesterday) {
+      return '昨天';
+    }
+
+    // 2-6天前：X天前
+    if (difference.inDays < 7) {
+      return '${difference.inDays}天前';
+    }
+
+    // 7天及以上：MM-DD
+    return '${publishedAt.month.toString().padLeft(2, '0')}-${publishedAt.day.toString().padLeft(2, '0')}';
+  }
 }
 

@@ -8,6 +8,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/achievement_unlocked_dialog.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';
+import '../community/community_page.dart';
 import '../settings/settings_page.dart';
 import '../record/create_record_page.dart';
 import '../achievement/achievements_page.dart';
@@ -113,7 +114,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
           TimelinePage(), // 时间轴
           StoryLinesPage(), // 故事线
           Center(child: Text('地图')), // TODO: 地图页面
-          Center(child: Text('树洞')), // TODO: 社区页面
+          CommunityPage(), // 社区页面
           SettingsPage(), // 我的
         ],
       ),

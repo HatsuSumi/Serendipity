@@ -1,5 +1,6 @@
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
+import '../../models/community_post.dart';
 import 'i_remote_data_repository.dart';
 
 /// 测试远程数据仓库
@@ -52,6 +53,45 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   @override
   Future<void> deleteStoryLine(String userId, String storyLineId) async {
     // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<void> saveCommunityPost(CommunityPost post) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<List<CommunityPost>> getCommunityPosts({
+    int limit = 20,
+    DateTime? lastTimestamp,
+  }) async {
+    // 测试模式：返回空列表
+    return [];
+  }
+
+  @override
+  Future<List<CommunityPost>> getMyCommunityPosts(String userId) async {
+    // 测试模式：返回空列表
+    return [];
+  }
+
+  @override
+  Future<void> deleteCommunityPost(String postId, String userId) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<List<CommunityPost>> filterCommunityPosts({
+    DateTime? startDate,
+    DateTime? endDate,
+    String? cityName,
+    String? placeType,
+    String? tag,
+    int? status,
+    int limit = 20,
+  }) async {
+    // 测试模式：返回空列表
+    return [];
   }
 }
 

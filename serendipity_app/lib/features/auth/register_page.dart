@@ -85,6 +85,29 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
   
   Widget _buildRegisterTypeTabs() {
+    // 暂时只显示邮箱注册，手机号注册需要配置 Supabase SMS 服务
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+        ),
+      ),
+      child: Text(
+        '邮箱注册',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    );
+    
+    /* 手机号注册暂时禁用，需要配置 Supabase SMS 服务
     return Row(
       children: [
         Expanded(
@@ -94,8 +117,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 setState(() {
                   _isEmailRegister = true;
                   _isCodeSent = false;
-                  _verificationId = null; // 清空验证 ID
-                  _verificationCodeController.clear(); // 清空验证码输入
+                  _verificationId = null;
+                  _verificationCodeController.clear();
                 });
               }
             },
@@ -132,9 +155,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 setState(() {
                   _isEmailRegister = false;
                   _isCodeSent = false;
-                  _verificationId = null; // 清空验证 ID
-                  _phoneController.clear(); // 清空手机号输入
-                  _verificationCodeController.clear(); // 清空验证码输入
+                  _verificationId = null;
+                  _phoneController.clear();
+                  _verificationCodeController.clear();
                 });
               }
             },
@@ -166,6 +189,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ),
       ],
     );
+    */
   }
   
   Widget _buildEmailRegisterForm() {

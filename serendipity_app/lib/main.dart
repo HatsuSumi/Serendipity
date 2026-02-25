@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/services/storage_service.dart';
-import 'core/services/firebase_service.dart';
 import 'core/services/sync_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/repositories/record_repository.dart';
@@ -13,6 +13,7 @@ import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/config/app_config.dart';
+import 'core/config/supabase_config.dart';
 import 'core/utils/smart_navigator.dart';
 import 'features/home/main_navigation_page.dart';
 import 'features/auth/welcome_page.dart';
@@ -21,13 +22,19 @@ import 'features/story_line/story_line_detail_page.dart';
 import 'models/enums.dart';
 import 'models/encounter_record.dart';
 import 'models/story_line.dart';
-import 'models/user.dart';
+import 'models/user.dart' as app_user;
 import 'models/achievement.dart';
 import 'models/check_in_record.dart';
 
 void main() async {
   // 确保 Flutter 绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化 Supabase
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
   
   // 初始化 Hive
   await Hive.initFlutter();
@@ -57,7 +64,7 @@ void main() async {
   Hive.registerAdapter(StoryLineAdapter());
   
   // 用户类型 (typeId: 4)
-  Hive.registerAdapter(UserAdapter());
+  Hive.registerAdapter(app_user.UserAdapter());
   
   // 初始化存储服务
   await StorageService().init();
@@ -96,60 +103,9 @@ void main() async {
   
   // 测试模式下初始化测试用户 box
   if (kDebugMode && AppConfig.enableTestMode) {
-    await Hive.openBox<User>('test_users');
+    await Hive.openBox<app_user.User>('test_users');
     await Hive.openBox('test_session');
-    await Hive.openBox('test_passwords'); // 新增：初始化密码 box
-  }
-  
-  // 初始化 Firebase（仅在非测试模式下）
-  if (!kDebugMode || !AppConfig.enableTestMode) {
-    // Fail Fast：如果初始化失败，显示错误页面
-    try {
-      await FirebaseService().initialize();
-    } catch (e) {
-      // Firebase 初始化失败，显示错误页面
-      runApp(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Firebase 初始化失败',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '错误信息：$e',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      '请检查网络连接或稍后重试',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      return;
-    }
+    await Hive.openBox('test_passwords');
   }
   
   runApp(
@@ -187,7 +143,7 @@ class MyApp extends ConsumerWidget {
     
     // 监听认证状态变化，处理退出登录导航
     // 遵循原则：不在 build 中产生副作用，使用 ref.listen
-    ref.listen<AsyncValue<User?>>(authProvider, (previous, next) {
+    ref.listen<AsyncValue<app_user.User?>>(authProvider, (previous, next) {
       // 只在从已登录变为未登录时跳转到欢迎页
       // 注意：不清空导航栈，保留用户的浏览历史
       final wasLoggedIn = previous?.value != null;
@@ -244,7 +200,7 @@ class MyApp extends ConsumerWidget {
   /// 3. 已登录 → 触发云端同步
   /// 4. 加载中/错误 → 显示主页（不阻碍用户使用）
   Widget _buildHome(
-    AsyncValue<User?> authState,
+    AsyncValue<app_user.User?> authState,
     AsyncValue<bool> firstLaunchState,
     WidgetRef ref,
   ) {

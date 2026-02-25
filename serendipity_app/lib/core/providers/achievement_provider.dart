@@ -4,6 +4,7 @@ import '../repositories/achievement_repository.dart';
 import '../services/achievement_detector.dart';
 import 'records_provider.dart';
 import 'check_in_provider.dart';
+import 'community_provider.dart';
 
 /// 成就仓储 Provider
 final achievementRepositoryProvider = Provider<AchievementRepository>((ref) {
@@ -17,6 +18,7 @@ final achievementDetectorProvider = Provider<AchievementDetector>((ref) {
     ref.read(recordRepositoryProvider),
     ref.read(storyLineRepositoryProvider),
     ref.read(checkInRepositoryProvider),
+    ref.read(communityRepositoryProvider),
   );
 });
 

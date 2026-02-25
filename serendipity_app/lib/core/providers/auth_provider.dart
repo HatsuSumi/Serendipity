@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../repositories/i_auth_repository.dart';
-import '../repositories/firebase_auth_repository.dart';
+import '../repositories/supabase_auth_repository.dart';
 import '../repositories/test_auth_repository.dart';
 import '../config/app_config.dart';
 
@@ -13,15 +13,15 @@ import '../config/app_config.dart';
 /// 
 /// 环境选择：
 /// - 开发模式 + 启用测试模式：使用 TestAuthRepository
-/// - 其他情况：使用 FirebaseAuthRepository
+/// - 其他情况：使用 SupabaseAuthRepository
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   // 开发环境且启用测试模式时，使用测试仓库
   if (kDebugMode && AppConfig.enableTestMode) {
     return TestAuthRepository();
   }
   
-  // 生产环境或未启用测试模式时，使用 Firebase
-  return FirebaseAuthRepository();
+  // 生产环境或未启用测试模式时，使用 Supabase
+  return SupabaseAuthRepository();
 });
 
 /// 用户认证状态管理

@@ -1,5 +1,6 @@
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
+import '../../models/community_post.dart';
 
 /// 远程数据仓库接口
 /// 
@@ -9,6 +10,7 @@ import '../../models/story_line.dart';
 /// 调用者：
 /// - SyncService：数据同步服务，调用所有方法
 /// - RecordsProvider/StoryLinesProvider：通过 SyncService 间接调用
+/// - CommunityRepository：社区功能，调用社区相关方法
 abstract class IRemoteDataRepository {
   // ==================== 记录相关操作 ====================
   
@@ -141,5 +143,101 @@ abstract class IRemoteDataRepository {
   /// - storyLineId 为空：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<void> deleteStoryLine(String userId, String storyLineId);
+  
+  // ==================== 社区相关操作 ====================
+  
+  /// 保存社区帖子到云端
+  /// 
+  /// 参数：
+  /// - [post]：要保存的社区帖子
+  /// 
+  /// 调用者：
+  /// - CommunityRepository.publishPost()
+  /// 
+  /// Fail Fast：
+  /// - post 为 null：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<void> saveCommunityPost(CommunityPost post);
+  
+  /// 获取社区帖子列表（分页）
+  /// 
+  /// 参数：
+  /// - [limit]：每页数量
+  /// - [lastTimestamp]：上一页最后一条帖子的时间戳（用于分页）
+  /// 
+  /// 返回：按发布时间倒序排列的帖子列表
+  /// 
+  /// 调用者：
+  /// - CommunityRepository.getPosts()
+  /// 
+  /// Fail Fast：
+  /// - limit <= 0：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<CommunityPost>> getCommunityPosts({
+    int limit = 20,
+    DateTime? lastTimestamp,
+  });
+  
+  /// 获取用户自己的社区帖子
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// 
+  /// 返回：用户发布的所有帖子列表
+  /// 
+  /// 调用者：
+  /// - CommunityRepository.getMyPosts()
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<CommunityPost>> getMyCommunityPosts(String userId);
+  
+  /// 删除社区帖子
+  /// 
+  /// 参数：
+  /// - [postId]：帖子 ID
+  /// - [userId]：用户 ID（用于验证权限）
+  /// 
+  /// 调用者：
+  /// - CommunityRepository.deletePost()
+  /// 
+  /// Fail Fast：
+  /// - postId 为空：抛出 ArgumentError
+  /// - userId 为空：抛出 ArgumentError
+  /// - 帖子不存在：抛出 StateError
+  /// - 不是帖子作者：抛出 StateError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<void> deleteCommunityPost(String postId, String userId);
+  
+  /// 筛选社区帖子
+  /// 
+  /// 参数：
+  /// - [startDate]：开始日期（可选）
+  /// - [endDate]：结束日期（可选）
+  /// - [cityName]：城市名称（可选）
+  /// - [placeType]：场所类型（可选）
+  /// - [tag]：标签名称（可选）
+  /// - [status]：状态（可选）
+  /// - [limit]：每页数量
+  /// 
+  /// 返回：符合条件的帖子列表
+  /// 
+  /// 调用者：
+  /// - CommunityRepository.filterPosts()
+  /// 
+  /// Fail Fast：
+  /// - limit <= 0：抛出 ArgumentError
+  /// - startDate > endDate：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<CommunityPost>> filterCommunityPosts({
+    DateTime? startDate,
+    DateTime? endDate,
+    String? cityName,
+    String? placeType,
+    String? tag,
+    int? status,
+    int limit = 20,
+  });
 }
 
