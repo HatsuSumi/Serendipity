@@ -1,0 +1,330 @@
+import { AuthService } from '../../../src/services/authService';
+import { IUserRepository } from '../../../src/repositories/userRepository';
+import { IRefreshTokenRepository } from '../../../src/repositories/refreshTokenRepository';
+import { IVerificationService } from '../../../src/services/verificationService';
+import { JwtService } from '../../../src/services/jwtService';
+import { createMockUser } from '../../helpers/factories';
+import { AppError } from '../../../src/middlewares/errorHandler';
+import { ErrorCode } from '../../../src/types/errors';
+import bcrypt from 'bcrypt';
+
+// Mock bcrypt
+jest.mock('bcrypt');
+const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
+
+describe('AuthService', () => {
+  let authService: AuthService;
+  let mockUserRepository: jest.Mocked<IUserRepository>;
+  let mockRefreshTokenRepository: jest.Mocked<IRefreshTokenRepository>;
+  let mockVerificationService: jest.Mocked<IVerificationService>;
+  let mockJwtService: jest.Mocked<JwtService>;
+
+  beforeEach(() => {
+    // 创建 mock 对象
+    mockUserRepository = {
+      findById: jest.fn(),
+      findByEmail: jest.fn(),
+      findByPhone: jest.fn(),
+      create: jest.fn(),
+      updateLastLogin: jest.fn(),
+      updateUser: jest.fn(),
+      updateDisplayName: jest.fn(),
+      updateAvatarUrl: jest.fn(),
+      bindEmail: jest.fn(),
+      bindPhone: jest.fn(),
+      updatePassword: jest.fn(),
+    };
+
+    mockRefreshTokenRepository = {
+      create: jest.fn(),
+      findByToken: jest.fn(),
+      deleteByToken: jest.fn(),
+      deleteByUserId: jest.fn(),
+      deleteExpired: jest.fn(),
+    };
+
+    mockVerificationService = {
+      sendVerificationCode: jest.fn(),
+      verifyCode: jest.fn(),
+      generateCode: jest.fn(),
+    };
+
+    mockJwtService = {
+      generateToken: jest.fn(),
+      generateRefreshToken: jest.fn(),
+      verifyToken: jest.fn(),
+    } as any;
+
+    authService = new AuthService(
+      mockUserRepository,
+      mockRefreshTokenRepository,
+      mockVerificationService,
+      mockJwtService
+    );
+  });
+
+  describe('registerEmail', () => {
+    it('应该成功注册新用户', async () => {
+      const registerData = {
+        email: 'test@example.com',
+        password: 'password123',
+        verificationCode: '123456',
+      };
+
+      const mockUser = createMockUser();
+      
+      mockVerificationService.verifyCode.mockResolvedValue(true);
+      mockUserRepository.findByEmail.mockResolvedValue(null);
+      mockedBcrypt.hash.mockResolvedValue('hashed-password' as never);
+      mockUserRepository.create.mockResolvedValue(mockUser);
+      mockJwtService.generateToken.mockReturnValue('access-token');
+      mockJwtService.generateRefreshToken.mockReturnValue('refresh-token');
+      mockRefreshTokenRepository.create.mockResolvedValue({} as any);
+
+      const result = await authService.registerEmail(registerData);
+
+      expect(result).toHaveProperty('user');
+      expect(result).toHaveProperty('tokens');
+      expect(result.tokens.accessToken).toBe('access-token');
+      expect(mockVerificationService.verifyCode).toHaveBeenCalledWith(
+        registerData.email,
+        registerData.verificationCode,
+        'register'
+      );
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(registerData.email);
+      expect(mockUserRepository.create).toHaveBeenCalled();
+    });
+
+    it('邮箱已存在时应该抛出错误', async () => {
+      const registerData = {
+        email: 'existing@example.com',
+        password: 'password123',
+        verificationCode: '123456',
+      };
+
+      mockVerificationService.verifyCode.mockResolvedValue(true);
+      mockUserRepository.findByEmail.mockResolvedValue(createMockUser());
+
+      await expect(authService.registerEmail(registerData)).rejects.toThrow(AppError);
+      await expect(authService.registerEmail(registerData)).rejects.toMatchObject({
+        code: ErrorCode.EMAIL_ALREADY_EXISTS,
+      });
+    });
+  });
+
+  describe('loginEmail', () => {
+    it('应该成功登录', async () => {
+      const loginData = {
+        email: 'test@example.com',
+        password: 'password123',
+      };
+
+      const mockUser = createMockUser();
+      
+      mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+      mockUserRepository.updateLastLogin.mockResolvedValue(mockUser);
+      mockJwtService.generateToken.mockReturnValue('access-token');
+      mockJwtService.generateRefreshToken.mockReturnValue('refresh-token');
+      mockRefreshTokenRepository.create.mockResolvedValue({} as any);
+
+      const result = await authService.loginEmail(loginData);
+
+      expect(result).toHaveProperty('user');
+      expect(result).toHaveProperty('tokens');
+      expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('用户不存在时应该抛出错误', async () => {
+      const loginData = {
+        email: 'nonexistent@example.com',
+        password: 'password123',
+      };
+
+      mockUserRepository.findByEmail.mockResolvedValue(null);
+
+      await expect(authService.loginEmail(loginData)).rejects.toThrow(AppError);
+      await expect(authService.loginEmail(loginData)).rejects.toMatchObject({
+        code: ErrorCode.INVALID_CREDENTIALS,
+      });
+    });
+
+    it('密码错误时应该抛出错误', async () => {
+      const loginData = {
+        email: 'test@example.com',
+        password: 'wrong-password',
+      };
+
+      const mockUser = createMockUser();
+      
+      mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+      mockedBcrypt.compare.mockResolvedValue(false as never);
+
+      await expect(authService.loginEmail(loginData)).rejects.toThrow(AppError);
+      await expect(authService.loginEmail(loginData)).rejects.toMatchObject({
+        code: ErrorCode.INVALID_CREDENTIALS,
+      });
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('应该成功重置密码', async () => {
+      const resetData = {
+        email: 'test@example.com',
+        verificationCode: '123456',
+        newPassword: 'new-password123',
+      };
+
+      const mockUser = createMockUser();
+      
+      mockVerificationService.verifyCode.mockResolvedValue(true);
+      mockUserRepository.findByEmail.mockResolvedValue(mockUser);
+      mockedBcrypt.hash.mockResolvedValue('new-hashed-password' as never);
+      mockUserRepository.updatePassword.mockResolvedValue(mockUser);
+      mockRefreshTokenRepository.deleteByUserId.mockResolvedValue(1);
+
+      await authService.resetPassword(resetData);
+
+      expect(mockVerificationService.verifyCode).toHaveBeenCalledWith(
+        resetData.email,
+        resetData.verificationCode,
+        'reset_password'
+      );
+      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+        mockUser.id,
+        'new-hashed-password'
+      );
+      expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('用户不存在时应该抛出错误', async () => {
+      const resetData = {
+        email: 'nonexistent@example.com',
+        verificationCode: '123456',
+        newPassword: 'new-password123',
+      };
+
+      mockVerificationService.verifyCode.mockResolvedValue(true);
+      mockUserRepository.findByEmail.mockResolvedValue(null);
+
+      await expect(authService.resetPassword(resetData)).rejects.toThrow(AppError);
+      await expect(authService.resetPassword(resetData)).rejects.toMatchObject({
+        code: ErrorCode.USER_NOT_FOUND,
+      });
+    });
+  });
+
+  describe('changePassword', () => {
+    it('应该成功修改密码', async () => {
+      const userId = 'test-user-id';
+      const changeData = {
+        currentPassword: 'old-password',
+        newPassword: 'new-password123',
+      };
+
+      const mockUser = createMockUser();
+      
+      mockUserRepository.findById.mockResolvedValue(mockUser);
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+      mockedBcrypt.hash.mockResolvedValue('new-hashed-password' as never);
+      mockUserRepository.updatePassword.mockResolvedValue(mockUser);
+      mockRefreshTokenRepository.deleteByUserId.mockResolvedValue(1);
+
+      await authService.changePassword(userId, changeData);
+
+      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+        userId,
+        'new-hashed-password'
+      );
+      expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(userId);
+    });
+
+    it('当前密码错误时应该抛出错误', async () => {
+      const userId = 'test-user-id';
+      const changeData = {
+        currentPassword: 'wrong-password',
+        newPassword: 'new-password123',
+      };
+
+      const mockUser = createMockUser();
+      
+      mockUserRepository.findById.mockResolvedValue(mockUser);
+      mockedBcrypt.compare.mockResolvedValue(false as never);
+
+      await expect(authService.changePassword(userId, changeData)).rejects.toThrow(AppError);
+      await expect(authService.changePassword(userId, changeData)).rejects.toMatchObject({
+        code: ErrorCode.INVALID_CREDENTIALS,
+      });
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('应该成功刷新 Token', async () => {
+      const refreshToken = 'valid-refresh-token';
+      const mockUser = createMockUser();
+      const mockTokenRecord = {
+        id: 'token-id',
+        userId: mockUser.id,
+        token: refreshToken,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        createdAt: new Date(),
+      };
+
+      mockRefreshTokenRepository.findByToken.mockResolvedValue(mockTokenRecord);
+      mockUserRepository.findById.mockResolvedValue(mockUser);
+      mockRefreshTokenRepository.deleteByToken.mockResolvedValue(undefined as any);
+      mockJwtService.generateToken.mockReturnValue('new-access-token');
+      mockJwtService.generateRefreshToken.mockReturnValue('new-refresh-token');
+      mockRefreshTokenRepository.create.mockResolvedValue({} as any);
+
+      const result = await authService.refreshToken(refreshToken);
+
+      expect(result.tokens.accessToken).toBe('new-access-token');
+      expect(result.tokens.refreshToken).toBe('new-refresh-token');
+      expect(mockRefreshTokenRepository.deleteByToken).toHaveBeenCalledWith(refreshToken);
+    });
+
+    it('无效的 Refresh Token 应该抛出错误', async () => {
+      const refreshToken = 'invalid-refresh-token';
+
+      mockRefreshTokenRepository.findByToken.mockResolvedValue(null);
+
+      await expect(authService.refreshToken(refreshToken)).rejects.toThrow(AppError);
+      await expect(authService.refreshToken(refreshToken)).rejects.toMatchObject({
+        code: ErrorCode.INVALID_TOKEN,
+      });
+    });
+
+    it('过期的 Refresh Token 应该抛出错误', async () => {
+      const refreshToken = 'expired-refresh-token';
+      const mockTokenRecord = {
+        id: 'token-id',
+        userId: 'user-id',
+        token: refreshToken,
+        expiresAt: new Date(Date.now() - 1000), // 已过期
+        createdAt: new Date(),
+      };
+
+      mockRefreshTokenRepository.findByToken.mockResolvedValue(mockTokenRecord);
+      mockRefreshTokenRepository.deleteByToken.mockResolvedValue(undefined as any);
+
+      await expect(authService.refreshToken(refreshToken)).rejects.toThrow(AppError);
+      await expect(authService.refreshToken(refreshToken)).rejects.toMatchObject({
+        code: ErrorCode.TOKEN_EXPIRED,
+      });
+    });
+  });
+
+  describe('logout', () => {
+    it('应该成功登出', async () => {
+      const userId = 'test-user-id';
+
+      mockRefreshTokenRepository.deleteByUserId.mockResolvedValue(1);
+
+      await authService.logout(userId);
+
+      expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(userId);
+    });
+  });
+});
+
