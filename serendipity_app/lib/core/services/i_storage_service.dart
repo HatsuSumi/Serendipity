@@ -101,5 +101,16 @@ abstract class IStorageService {
   
   /// 保存用户设置
   Future<void> saveUserSettings(UserSettings settings);
+  
+  // ==================== 键值对存储（用于 Token 等） ====================
+  
+  /// 保存字符串
+  Future<void> saveString(String key, String value);
+  
+  /// 获取字符串
+  Future<String?> getString(String key);
+  
+  /// 删除键值对
+  Future<void> remove(String key);
 }
 

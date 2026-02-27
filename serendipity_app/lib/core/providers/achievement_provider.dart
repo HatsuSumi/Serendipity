@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/achievement.dart';
 import '../repositories/achievement_repository.dart';
 import '../services/achievement_detector.dart';
+import 'auth_provider.dart';
 import 'records_provider.dart';
 import 'check_in_provider.dart';
 import 'community_provider.dart';

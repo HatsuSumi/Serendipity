@@ -7,25 +7,32 @@ import '../config/app_config.dart';
 import '../repositories/i_remote_data_repository.dart';
 import '../repositories/supabase_remote_data_repository.dart';
 import '../repositories/test_remote_data_repository.dart';
+import '../repositories/custom_server_remote_data_repository.dart';
 import '../providers/records_provider.dart';
+import '../providers/auth_provider.dart';
 import 'i_storage_service.dart';
 
 /// 远程数据仓储 Provider
 /// 
 /// 依赖抽象接口 IRemoteDataRepository，不依赖具体实现。
-/// 遵循依赖倒置原则（DIP）：切换到自建服务器时只需修改这一行。
+/// 遵循依赖倒置原则（DIP）：切换后端只需修改 AppConfig.serverType。
 /// 
-/// 环境选择：
-/// - 开发模式 + 启用测试模式：使用 TestRemoteDataRepository
-/// - 其他情况：使用 SupabaseRemoteDataRepository
+/// 后端选择：
+/// - ServerType.test：使用 TestRemoteDataRepository（测试模式）
+/// - ServerType.supabase：使用 SupabaseRemoteDataRepository（Supabase 后端）
+/// - ServerType.customServer：使用 CustomServerRemoteDataRepository（自建服务器）
 final remoteDataRepositoryProvider = Provider<IRemoteDataRepository>((ref) {
-  // 开发环境且启用测试模式时，使用测试仓库
-  if (kDebugMode && AppConfig.enableTestMode) {
-    return TestRemoteDataRepository();
+  switch (AppConfig.serverType) {
+    case ServerType.test:
+      return TestRemoteDataRepository();
+    
+    case ServerType.supabase:
+      return SupabaseRemoteDataRepository();
+    
+    case ServerType.customServer:
+      final httpClient = ref.watch(httpClientServiceProvider);
+      return CustomServerRemoteDataRepository(httpClient: httpClient);
   }
-  
-  // 生产环境或未启用测试模式时，使用 Supabase
-  return SupabaseRemoteDataRepository();
 });
 
 /// 数据同步服务

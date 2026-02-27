@@ -1,27 +1,45 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../repositories/i_auth_repository.dart';
 import '../repositories/supabase_auth_repository.dart';
 import '../repositories/test_auth_repository.dart';
+import '../repositories/custom_server_auth_repository.dart';
+import '../services/http_client_service.dart';
+import '../services/i_storage_service.dart';
 import '../config/app_config.dart';
+
+/// 存储服务 Provider
+final storageServiceProvider = Provider<IStorageService>((ref) {
+  throw UnimplementedError('storageServiceProvider must be overridden in main.dart');
+});
+
+/// HTTP 客户端服务 Provider
+final httpClientServiceProvider = Provider<HttpClientService>((ref) {
+  final storage = ref.watch(storageServiceProvider);
+  return HttpClientService(storage: storage);
+});
 
 /// 认证仓储 Provider
 /// 
 /// 依赖抽象接口 IAuthRepository，不依赖具体实现。
-/// 遵循依赖倒置原则（DIP）：切换到自建服务器时只需修改这一行。
+/// 遵循依赖倒置原则（DIP）：切换后端只需修改 AppConfig.serverType。
 /// 
-/// 环境选择：
-/// - 开发模式 + 启用测试模式：使用 TestAuthRepository
-/// - 其他情况：使用 SupabaseAuthRepository
+/// 后端选择：
+/// - ServerType.test：使用 TestAuthRepository（测试模式）
+/// - ServerType.supabase：使用 SupabaseAuthRepository（Supabase 后端）
+/// - ServerType.customServer：使用 CustomServerAuthRepository（自建服务器）
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
-  // 开发环境且启用测试模式时，使用测试仓库
-  if (kDebugMode && AppConfig.enableTestMode) {
-    return TestAuthRepository();
+  switch (AppConfig.serverType) {
+    case ServerType.test:
+      return TestAuthRepository();
+    
+    case ServerType.supabase:
+      return SupabaseAuthRepository();
+    
+    case ServerType.customServer:
+      final httpClient = ref.watch(httpClientServiceProvider);
+      return CustomServerAuthRepository(httpClient: httpClient);
   }
-  
-  // 生产环境或未启用测试模式时，使用 Supabase
-  return SupabaseAuthRepository();
 });
 
 /// 用户认证状态管理

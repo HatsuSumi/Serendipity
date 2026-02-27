@@ -1609,7 +1609,7 @@ class CommunityPost {
 3. 再次显示：`placeName`（用户输入，无 GPS 时）
 4. 最后显示：`cityName` 或 "未知地点"
 
-**地点显示优先级**（社区页面）：
+**地点显示优先级**（社区页面）： 
 ```dart
 /// 获取社区帖子的地点显示文本
 String getCommunityPostLocation(CommunityPost post) {

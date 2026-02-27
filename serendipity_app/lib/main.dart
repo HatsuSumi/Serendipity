@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/services/storage_service.dart';
+import 'core/services/i_storage_service.dart';
 import 'core/services/sync_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/repositories/record_repository.dart';
@@ -30,11 +31,14 @@ void main() async {
   // 确保 Flutter 绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 初始化 Supabase
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
-  );
+  // 根据配置初始化后端服务
+  if (AppConfig.serverType == ServerType.supabase) {
+    // 初始化 Supabase
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
+    );
+  }
   
   // 初始化 Hive
   await Hive.initFlutter();
@@ -67,11 +71,11 @@ void main() async {
   Hive.registerAdapter(app_user.UserAdapter());
   
   // 初始化存储服务
-  await StorageService().init();
+  final storageService = StorageService();
+  await storageService.init();
   
   // 初始化通知服务
   try {
-    final storageService = StorageService();
     final checkInRepository = CheckInRepository(storageService);
     final notificationService = NotificationService(checkInRepository);
     await notificationService.initialize();
@@ -91,28 +95,26 @@ void main() async {
     SmartNavigator.debugMode = true;
   }
   
-  // 验证数据一致性（仅在开发模式下）
-  if (kDebugMode) {
-    try {
-      final recordRepo = RecordRepository(StorageService());
-      recordRepo.validateDataConsistency();
-    } catch (e) {
-      // 开发模式下只打印警告，不阻止应用启动
-    }
-  }
-  
-  // 测试模式下初始化测试用户 box
-  if (kDebugMode && AppConfig.enableTestMode) {
-    await Hive.openBox<app_user.User>('test_users');
-    await Hive.openBox('test_session');
-    await Hive.openBox('test_passwords');
-  }
-  
+  // 运行应用，并提供 storageServiceProvider 的实现
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      overrides: [
+        // 提供 StorageService 实例给所有 Provider
+        storageServiceProvider.overrideWithValue(storageService),
+      ],
+      child: const MyApp(),
     ),
   );
+}
+
+// 验证数据一致性（仅在开发模式下）
+void _validateDataConsistency() {
+  try {
+    final recordRepo = RecordRepository(StorageService());
+    recordRepo.validateDataConsistency();
+  } catch (e) {
+    // 开发模式下只打印警告，不阻止应用启动
+  }
 }
 
 /// 全局导航器 Key

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../services/i_storage_service.dart';
-import '../services/storage_service.dart';
 import '../services/sync_service.dart';
 import '../services/achievement_detector.dart';
 import '../repositories/record_repository.dart';
@@ -9,11 +8,6 @@ import '../repositories/story_line_repository.dart';
 import 'story_lines_provider.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
-
-/// 存储服务 Provider
-final storageServiceProvider = Provider<IStorageService>((ref) {
-  return StorageService();
-});
 
 /// 记录仓储 Provider
 final recordRepositoryProvider = Provider<RecordRepository>((ref) {

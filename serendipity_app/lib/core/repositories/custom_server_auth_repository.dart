@@ -1,0 +1,361 @@
+import '../../models/user.dart';
+import '../../models/enums.dart';
+import 'i_auth_repository.dart';
+import '../services/http_client_service.dart';
+import '../config/server_config.dart';
+
+/// 自建服务器认证仓库实现
+/// 
+/// 使用自建 Node.js 后端，支持邮箱、手机号等多种认证方式。
+class CustomServerAuthRepository implements IAuthRepository {
+  final HttpClientService _httpClient;
+  User? _currentUser;
+  
+  CustomServerAuthRepository({required HttpClientService httpClient})
+      : _httpClient = httpClient;
+  
+  @override
+  Future<User?> get currentUser async {
+    // 如果已有缓存的用户，直接返回
+    if (_currentUser != null) {
+      return _currentUser;
+    }
+    
+    // 检查是否有 Token
+    final token = await _httpClient.getAccessToken();
+    if (token == null) {
+      return null;
+    }
+    
+    // 从服务器获取用户信息
+    try {
+      final response = await _httpClient.get(ServerConfig.usersProfile);
+      final userData = response['data'] as Map<String, dynamic>;
+      _currentUser = _convertToAppUser(userData);
+      return _currentUser;
+    } catch (e) {
+      // Token 无效，清除缓存
+      _currentUser = null;
+      await _httpClient.clearTokens();
+      return null;
+    }
+  }
+  
+  @override
+  Stream<User?> get authStateChanges {
+    // 自建服务器使用轮询方式检查认证状态
+    // 每 5 秒检查一次
+    return Stream.periodic(
+      const Duration(seconds: 5),
+      (_) => currentUser,
+    ).asyncMap((future) => future);
+  }
+  
+  @override
+  Future<User> signInWithEmail(String email, String password) async {
+    // Fail Fast：参数验证
+    if (email.isEmpty) {
+      throw ArgumentError('邮箱不能为空');
+    }
+    if (password.isEmpty || password.length < 6) {
+      throw ArgumentError('密码长度必须至少 6 位');
+    }
+    
+    try {
+      final response = await _httpClient.post(
+        ServerConfig.authLogin,
+        body: {
+          'email': email,
+          'password': password,
+        },
+        skipAuth: true,
+      );
+      
+      final data = response['data'] as Map<String, dynamic>;
+      
+      // 保存 Token
+      await _httpClient.saveTokens(
+        accessToken: data['accessToken'] as String,
+        refreshToken: data['refreshToken'] as String,
+        expiresAt: DateTime.parse(data['expiresAt'] as String),
+      );
+      
+      // 保存用户信息
+      _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
+      return _currentUser!;
+    } on HttpException catch (e) {
+      throw Exception('登录失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<User> signUpWithEmail(String email, String password) async {
+    // Fail Fast：参数验证
+    if (email.isEmpty) {
+      throw ArgumentError('邮箱不能为空');
+    }
+    if (password.isEmpty || password.length < 6) {
+      throw ArgumentError('密码长度必须至少 6 位');
+    }
+    
+    try {
+      final response = await _httpClient.post(
+        ServerConfig.authRegister,
+        body: {
+          'email': email,
+          'password': password,
+        },
+        skipAuth: true,
+      );
+      
+      final data = response['data'] as Map<String, dynamic>;
+      
+      // 保存 Token
+      await _httpClient.saveTokens(
+        accessToken: data['accessToken'] as String,
+        refreshToken: data['refreshToken'] as String,
+        expiresAt: DateTime.parse(data['expiresAt'] as String),
+      );
+      
+      // 保存用户信息
+      _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
+      return _currentUser!;
+    } on HttpException catch (e) {
+      throw Exception('注册失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<User> signInWithPhone(
+    String phoneNumber,
+    String verificationCode,
+    String verificationId,
+  ) async {
+    // Fail Fast：参数验证
+    if (phoneNumber.isEmpty) {
+      throw ArgumentError('手机号不能为空');
+    }
+    if (verificationCode.isEmpty) {
+      throw ArgumentError('验证码不能为空');
+    }
+    
+    try {
+      final response = await _httpClient.post(
+        ServerConfig.authLoginCode,
+        body: {
+          'phoneNumber': phoneNumber,
+          'code': verificationCode,
+        },
+        skipAuth: true,
+      );
+      
+      final data = response['data'] as Map<String, dynamic>;
+      
+      // 保存 Token
+      await _httpClient.saveTokens(
+        accessToken: data['accessToken'] as String,
+        refreshToken: data['refreshToken'] as String,
+        expiresAt: DateTime.parse(data['expiresAt'] as String),
+      );
+      
+      // 保存用户信息
+      _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
+      return _currentUser!;
+    } on HttpException catch (e) {
+      throw Exception('登录失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<String> sendPhoneVerificationCode(String phoneNumber) async {
+    // Fail Fast：参数验证
+    if (phoneNumber.isEmpty) {
+      throw ArgumentError('手机号不能为空');
+    }
+    if (!phoneNumber.startsWith('+')) {
+      throw ArgumentError('手机号格式错误：缺少国家代码');
+    }
+    
+    try {
+      await _httpClient.post(
+        ServerConfig.authVerificationCode,
+        body: {
+          'phoneNumber': phoneNumber,
+          'purpose': 'login',
+        },
+        skipAuth: true,
+      );
+      
+      // 自建服务器不返回 verificationId，直接返回手机号作为标识
+      return phoneNumber;
+    } on HttpException catch (e) {
+      throw Exception('发送验证码失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<User> signUpWithPhone(
+    String phoneNumber,
+    String verificationCode,
+    String verificationId,
+  ) async {
+    // 自建服务器的手机号注册和登录是同一个流程
+    return signInWithPhone(phoneNumber, verificationCode, verificationId);
+  }
+  
+  @override
+  Future<void> signOut() async {
+    try {
+      // 调用服务器登出接口
+      await _httpClient.post(ServerConfig.authLogout);
+    } catch (e) {
+      // 即使服务器登出失败，也清除本地 Token
+    } finally {
+      // 清除本地缓存
+      _currentUser = null;
+      await _httpClient.clearTokens();
+    }
+  }
+  
+  @override
+  Future<void> resetPassword(String email) async {
+    // Fail Fast：参数验证
+    if (email.isEmpty) {
+      throw ArgumentError('邮箱不能为空');
+    }
+    
+    try {
+      await _httpClient.post(
+        ServerConfig.authResetPassword,
+        body: {'email': email},
+        skipAuth: true,
+      );
+    } on HttpException catch (e) {
+      throw Exception('发送重置邮件失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<void> updatePassword(String currentPassword, String newPassword) async {
+    // Fail Fast：参数验证
+    if (currentPassword.isEmpty) {
+      throw ArgumentError('当前密码不能为空');
+    }
+    if (newPassword.isEmpty || newPassword.length < 6) {
+      throw ArgumentError('新密码长度必须至少 6 位');
+    }
+    
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    try {
+      await _httpClient.post(
+        ServerConfig.authChangePassword,
+        body: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+    } on HttpException catch (e) {
+      throw Exception('修改密码失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<void> updateEmail(String newEmail, String password) async {
+    // Fail Fast：参数验证
+    if (newEmail.isEmpty) {
+      throw ArgumentError('新邮箱不能为空');
+    }
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+    
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    try {
+      final response = await _httpClient.post(
+        ServerConfig.usersBindEmail,
+        body: {
+          'email': newEmail,
+          'password': password,
+        },
+      );
+      
+      // 更新本地用户信息
+      final userData = response['data'] as Map<String, dynamic>;
+      _currentUser = _convertToAppUser(userData);
+    } on HttpException catch (e) {
+      throw Exception('更换邮箱失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<void> updatePhoneNumber(
+    String newPhoneNumber,
+    String verificationCode,
+    String verificationId,
+  ) async {
+    // Fail Fast：参数验证
+    if (newPhoneNumber.isEmpty) {
+      throw ArgumentError('新手机号不能为空');
+    }
+    if (verificationCode.isEmpty) {
+      throw ArgumentError('验证码不能为空');
+    }
+    
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    try {
+      final response = await _httpClient.post(
+        ServerConfig.usersBindPhone,
+        body: {
+          'phoneNumber': newPhoneNumber,
+          'code': verificationCode,
+        },
+      );
+      
+      // 更新本地用户信息
+      final userData = response['data'] as Map<String, dynamic>;
+      _currentUser = _convertToAppUser(userData);
+    } on HttpException catch (e) {
+      throw Exception('更换手机号失败：${e.message}');
+    }
+  }
+  
+  /// 将服务器返回的用户数据转换为应用的 User 模型
+  User _convertToAppUser(Map<String, dynamic> data) {
+    return User(
+      id: data['id'] as String,
+      email: data['email'] as String?,
+      phoneNumber: data['phoneNumber'] as String?,
+      displayName: data['displayName'] as String?,
+      avatarUrl: data['avatarUrl'] as String?,
+      authProvider: _parseAuthProvider(data['authProvider'] as String?),
+      isEmailVerified: data['isEmailVerified'] as bool? ?? false,
+      isPhoneVerified: data['isPhoneVerified'] as bool? ?? false,
+      createdAt: DateTime.parse(data['createdAt'] as String),
+      updatedAt: DateTime.parse(data['updatedAt'] as String),
+    );
+  }
+  
+  /// 解析认证提供商
+  AuthProvider _parseAuthProvider(String? provider) {
+    if (provider == null) return AuthProvider.email;
+    
+    switch (provider.toLowerCase()) {
+      case 'email':
+        return AuthProvider.email;
+      case 'phone':
+        return AuthProvider.phone;
+      default:
+        return AuthProvider.email;
+    }
+  }
+}
+

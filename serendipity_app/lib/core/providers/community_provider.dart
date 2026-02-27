@@ -3,22 +3,10 @@ import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../repositories/community_repository.dart';
-import '../repositories/i_remote_data_repository.dart';
-import '../repositories/supabase_remote_data_repository.dart';
-import '../repositories/test_remote_data_repository.dart';
-import '../config/app_config.dart';
+import '../services/sync_service.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
 import '../services/achievement_detector.dart';
-
-/// 远程数据仓储 Provider
-final remoteDataRepositoryProvider = Provider<IRemoteDataRepository>((ref) {
-  if (AppConfig.enableTestMode) {
-    return TestRemoteDataRepository();
-  } else {
-    return SupabaseRemoteDataRepository();
-  }
-});
 
 /// 社区仓储 Provider
 final communityRepositoryProvider = Provider<CommunityRepository>((ref) {

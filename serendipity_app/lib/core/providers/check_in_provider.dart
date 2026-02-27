@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/check_in_record.dart';
 import '../repositories/check_in_repository.dart';
+import 'auth_provider.dart';
 import 'achievement_provider.dart';
-import 'records_provider.dart' show storageServiceProvider;
 
 /// 签到仓储 Provider
 final checkInRepositoryProvider = Provider<CheckInRepository>((ref) {

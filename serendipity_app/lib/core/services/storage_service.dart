@@ -274,5 +274,25 @@ class StorageService implements IStorageService {
   Future<void> saveUserSettings(UserSettings settings) async {
     await _settingsBoxOrThrow.put('user_settings', settings.toJson());
   }
+  
+  // ==================== 键值对存储（用于 Token 等） ====================
+  
+  /// 保存字符串
+  @override
+  Future<void> saveString(String key, String value) async {
+    await _settingsBoxOrThrow.put(key, value);
+  }
+  
+  /// 获取字符串
+  @override
+  Future<String?> getString(String key) async {
+    return _settingsBoxOrThrow.get(key) as String?;
+  }
+  
+  /// 删除键值对
+  @override
+  Future<void> remove(String key) async {
+    await _settingsBoxOrThrow.delete(key);
+  }
 }
 
