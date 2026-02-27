@@ -1534,24 +1534,25 @@ serendipity_server/
 
 ---
 
-## 🔄 下一步（Phase 1.9）
+## 🔄 下一步（Phase 2.1）
 
-### Phase 1.9: Flutter 客户端适配
-- 创建 CustomServerAuthRepository
-- 创建 CustomServerRemoteDataRepository
-- 创建 HttpClientService
-- 端到端测试
+### Phase 2.1: 服务器部署
+- 购买云服务器（阿里云 ECS）
+- 部署后端应用（Docker + Nginx）
+- 配置域名和 SSL 证书
+- 配置生产环境数据库
 
 ---
 
 **最后更新**：2026-02-27  
-**文档版本**：v1.5  
+**文档版本**：v2.0  
 **维护者**：AI Assistant + 开发者
 
 **更新内容**：
-- ✅ 新增 Phase 1.8: 用户相关 API
-- 📝 新增 6 个文件（用户相关代码 + 测试）
-- 🎯 新增 3 个用户 API 端点
-- 📊 更新统计数据（63 个文件，~12210 行代码，59 个测试用例）
-- 🔄 文档版本：v1.4 → v1.5
+- ✅ 新增 Phase 1.9: Flutter 客户端适配（Flutter 端）
+- 📝 后端 API 全部完成（35 个接口）
+- 🎯 阶段 1 完成：100%
+- 📊 更新统计数据（63 个后端文件，~12210 行代码，59 个测试用例）
+- 🚀 下一步：Phase 2.1 服务器部署
+- 🔄 文档版本：v1.5 → v2.0
 
