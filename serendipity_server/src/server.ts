@@ -6,6 +6,12 @@ import { initializeContainer, shutdownContainer } from './config/container';
 // 初始化依赖注入容器
 initializeContainer();
 
+// 容器初始化后再导入路由
+import routes from './routes';
+
+// 注册路由
+app.use('/api/v1', routes);
+
 const PORT = config.port;
 
 const server = app.listen(PORT, () => {
