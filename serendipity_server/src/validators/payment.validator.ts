@@ -2,73 +2,61 @@
  * 支付相关的验证规则
  */
 
-import Joi from 'joi';
+import { body } from 'express-validator';
 import { PaymentMethod } from '../types/payment.dto';
 
 /**
  * 创建支付订单验证规则
  */
-export const createPaymentSchema = Joi.object({
-  amount: Joi.number()
-    .min(0)
-    .max(648)
-    .required()
-    .messages({
-      'number.base': 'Amount must be a number',
-      'number.min': 'Amount must be at least ¥0',
-      'number.max': 'Amount must be at most ¥648',
-      'any.required': 'Amount is required',
-    }),
-  method: Joi.string()
-    .valid(PaymentMethod.FREE, PaymentMethod.WECHAT, PaymentMethod.ALIPAY)
-    .required()
-    .messages({
-      'string.base': 'Payment method must be a string',
-      'any.only': 'Payment method must be one of: free, wechat, alipay',
-      'any.required': 'Payment method is required',
-    }),
-});
+export const createPaymentSchema = [
+  body('amount')
+    .isNumeric()
+    .withMessage('Amount must be a number')
+    .isFloat({ min: 0, max: 648 })
+    .withMessage('Amount must be between ¥0 and ¥648'),
+  
+  body('method')
+    .isString()
+    .withMessage('Payment method must be a string')
+    .isIn([PaymentMethod.FREE, PaymentMethod.WECHAT, PaymentMethod.ALIPAY])
+    .withMessage('Payment method must be one of: free, wechat, alipay'),
+];
 
 /**
  * 支付回调验证规则
  */
-export const paymentCallbackSchema = Joi.object({
-  orderId: Joi.string()
-    .required()
-    .messages({
-      'string.base': 'Order ID must be a string',
-      'any.required': 'Order ID is required',
-    }),
-  transactionId: Joi.string()
-    .required()
-    .messages({
-      'string.base': 'Transaction ID must be a string',
-      'any.required': 'Transaction ID is required',
-    }),
-  amount: Joi.number()
-    .min(0)
-    .required()
-    .messages({
-      'number.base': 'Amount must be a number',
-      'number.min': 'Amount must be at least 0',
-      'any.required': 'Amount is required',
-    }),
-  status: Joi.string()
-    .required()
-    .messages({
-      'string.base': 'Status must be a string',
-      'any.required': 'Status is required',
-    }),
-  paidAt: Joi.date()
-    .required()
-    .messages({
-      'date.base': 'Paid at must be a valid date',
-      'any.required': 'Paid at is required',
-    }),
-  signature: Joi.string()
+export const paymentCallbackSchema = [
+  body('orderId')
+    .isString()
+    .withMessage('Order ID must be a string')
+    .notEmpty()
+    .withMessage('Order ID is required'),
+  
+  body('transactionId')
+    .isString()
+    .withMessage('Transaction ID must be a string')
+    .notEmpty()
+    .withMessage('Transaction ID is required'),
+  
+  body('amount')
+    .isNumeric()
+    .withMessage('Amount must be a number')
+    .isFloat({ min: 0 })
+    .withMessage('Amount must be at least 0'),
+  
+  body('status')
+    .isString()
+    .withMessage('Status must be a string')
+    .notEmpty()
+    .withMessage('Status is required'),
+  
+  body('paidAt')
+    .isISO8601()
+    .withMessage('Paid at must be a valid date'),
+  
+  body('signature')
     .optional()
-    .messages({
-      'string.base': 'Signature must be a string',
-    }),
-});
+    .isString()
+    .withMessage('Signature must be a string'),
+];
 

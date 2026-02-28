@@ -6,8 +6,8 @@
 
 import { Router } from 'express';
 import { PaymentController } from '../controllers/paymentController';
-import { authenticate } from '../middlewares/auth';
-import { validateBody } from '../middlewares/validation';
+import { authMiddleware } from '../middlewares/auth';
+import { validateRequest } from '../utils/validation';
 import { createPaymentSchema, paymentCallbackSchema } from '../validators/payment.validator';
 
 export function createPaymentRoutes(paymentController: PaymentController): Router {
@@ -20,8 +20,9 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
    */
   router.post(
     '/create',
-    authenticate,
-    validateBody(createPaymentSchema),
+    authMiddleware,
+    createPaymentSchema,
+    validateRequest,
     paymentController.createPayment
   );
 
@@ -32,7 +33,8 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
    */
   router.post(
     '/wechat/callback',
-    validateBody(paymentCallbackSchema),
+    paymentCallbackSchema,
+    validateRequest,
     paymentController.handleWechatCallback
   );
 
@@ -43,7 +45,8 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
    */
   router.post(
     '/alipay/callback',
-    validateBody(paymentCallbackSchema),
+    paymentCallbackSchema,
+    validateRequest,
     paymentController.handleAlipayCallback
   );
 
@@ -54,7 +57,7 @@ export function createPaymentRoutes(paymentController: PaymentController): Route
    */
   router.get(
     '/status/:orderId',
-    authenticate,
+    authMiddleware,
     paymentController.getPaymentStatus
   );
 
@@ -74,7 +77,7 @@ export function createMembershipRoutes(paymentController: PaymentController): Ro
    */
   router.get(
     '/status',
-    authenticate,
+    authMiddleware,
     paymentController.getMembershipStatus
   );
 

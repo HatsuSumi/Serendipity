@@ -4,7 +4,7 @@
  * 职责：用户设置数据访问层
  */
 
-import { PrismaClient, UserSettings } from '@prisma/client';
+import { PrismaClient, UserSettings, Prisma } from '@prisma/client';
 
 /**
  * 用户设置 Repository 接口
@@ -65,7 +65,11 @@ export class UserSettingsRepository implements IUserSettingsRepository {
     return this.prisma.userSettings.update({
       where: { userId },
       data: {
-        ...data,
+        theme: data.theme,
+        pageTransition: data.pageTransition,
+        dialogAnimation: data.dialogAnimation,
+        notifications: data.notifications as Prisma.InputJsonValue | undefined,
+        checkIn: data.checkIn as Prisma.InputJsonValue | undefined,
         updatedAt: new Date(),
       },
     });
@@ -81,7 +85,11 @@ export class UserSettingsRepository implements IUserSettingsRepository {
     return this.prisma.userSettings.upsert({
       where: { userId },
       update: {
-        ...data,
+        theme: data.theme,
+        pageTransition: data.pageTransition,
+        dialogAnimation: data.dialogAnimation,
+        notifications: data.notifications as Prisma.InputJsonValue | undefined,
+        checkIn: data.checkIn as Prisma.InputJsonValue | undefined,
         updatedAt: new Date(),
       },
       create: {
@@ -89,15 +97,15 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         theme: data.theme || 'system',
         pageTransition: data.pageTransition || 'slide_from_right',
         dialogAnimation: data.dialogAnimation || 'fade_in',
-        notifications: data.notifications || {
+        notifications: (data.notifications || {
           checkInReminder: false,
           checkInReminderTime: '20:00',
           achievementUnlocked: true,
-        },
-        checkIn: data.checkIn || {
+        }) as Prisma.InputJsonValue,
+        checkIn: (data.checkIn || {
           vibrationEnabled: true,
           confettiEnabled: true,
-        },
+        }) as Prisma.InputJsonValue,
       },
     });
   }
