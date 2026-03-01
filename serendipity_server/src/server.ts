@@ -1,17 +1,22 @@
-import app from './app';
 import { config } from './config';
 import { logger } from './utils/logger';
 import { initializeContainer, shutdownContainer } from './config/container';
+import { createApp } from './app';
 
-// 初始化依赖注入容器
+/**
+ * 服务器启动流程：
+ * 1. 初始化依赖注入容器（注册所有服务）
+ * 2. 创建 Express 应用（配置中间件和路由）
+ * 3. 启动 HTTP 服务器
+ */
+
+// 1. 初始化依赖注入容器
 initializeContainer();
 
-// 容器初始化后再导入路由
-import routes from './routes';
+// 2. 创建 Express 应用
+const app = createApp();
 
-// 注册路由
-app.use('/api/v1', routes);
-
+// 3. 启动 HTTP 服务器
 const PORT = config.port;
 
 const server = app.listen(PORT, () => {
