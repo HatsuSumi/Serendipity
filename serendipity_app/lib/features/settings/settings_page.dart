@@ -7,7 +7,6 @@ import '../../core/providers/achievement_provider.dart';
 import '../../core/providers/check_in_provider.dart';
 import '../../core/providers/first_launch_provider.dart';
 import '../../core/providers/user_settings_provider.dart';
-import '../../core/repositories/achievement_repository.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';

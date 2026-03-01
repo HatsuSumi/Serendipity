@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
-import '../services/i_storage_service.dart';
 import '../services/sync_service.dart';
 import '../services/achievement_detector.dart';
 import '../repositories/record_repository.dart';

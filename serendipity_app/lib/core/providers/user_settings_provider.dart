@@ -4,7 +4,6 @@ import '../../models/user_settings.dart';
 import '../../models/enums.dart';
 import '../services/i_storage_service.dart';
 import '../services/notification_service.dart';
-import '../repositories/check_in_repository.dart';
 import 'auth_provider.dart';
 import 'check_in_provider.dart' show checkInRepositoryProvider;
 

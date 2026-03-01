@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:serendipity_app/core/services/geolocator_location_service.dart';
-import 'package:serendipity_app/models/location_result.dart';
 
 void main() {
   group('GeolocatorLocationService', () {
