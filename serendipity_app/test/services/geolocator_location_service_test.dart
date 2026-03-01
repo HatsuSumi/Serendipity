@@ -3,11 +3,11 @@ import 'package:serendipity_app/core/services/geolocator_location_service.dart';
 
 void main() {
   group('GeolocatorLocationService', () {
-    late GeolocatorLocationService service;
+    // late GeolocatorLocationService service;
 
-    setUp(() {
-      service = GeolocatorLocationService();
-    });
+    // setUp(() {
+    //   service = GeolocatorLocationService();
+    // });
 
     group('_extractErrorMessage', () {
       test('应该移除 "Exception: " 前缀', () {

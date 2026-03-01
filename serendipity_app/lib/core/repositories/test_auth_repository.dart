@@ -77,8 +77,6 @@ class TestAuthRepository implements IAuthRepository {
         _currentUser = null;
       }
       
-      // 静默加载已注册用户
-      final allUsers = _testUsersBox.values.toList();
       // 测试环境数据已加载
     } catch (e) {
       // 初始化失败不影响应用启动

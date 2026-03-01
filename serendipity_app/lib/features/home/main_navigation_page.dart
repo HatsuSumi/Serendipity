@@ -83,9 +83,6 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           
-          // 保存 context 引用
-          final navigator = Navigator.of(context);
-          
           // 显示成就解锁对话框
           AchievementUnlockedDialog.show(context, next).then((result) {
             if (!mounted) return;

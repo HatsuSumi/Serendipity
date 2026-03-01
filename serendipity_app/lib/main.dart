@@ -94,16 +94,6 @@ void main() async {
   );
 }
 
-// 验证数据一致性（仅在开发模式下）
-void _validateDataConsistency() {
-  try {
-    final recordRepo = RecordRepository(StorageService());
-    recordRepo.validateDataConsistency();
-  } catch (e) {
-    // 开发模式下只打印警告，不阻止应用启动
-  }
-}
-
 /// 全局导航器 Key
 /// 
 /// 用于在认证状态变化时控制导航，避免重建整个 MaterialApp
