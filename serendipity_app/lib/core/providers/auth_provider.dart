@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../repositories/i_auth_repository.dart';
-import '../repositories/supabase_auth_repository.dart';
 import '../repositories/test_auth_repository.dart';
 import '../repositories/custom_server_auth_repository.dart';
 import '../services/http_client_service.dart';
@@ -26,15 +25,11 @@ final httpClientServiceProvider = Provider<HttpClientService>((ref) {
 /// 
 /// 后端选择：
 /// - ServerType.test：使用 TestAuthRepository（测试模式）
-/// - ServerType.supabase：使用 SupabaseAuthRepository（Supabase 后端）
 /// - ServerType.customServer：使用 CustomServerAuthRepository（自建服务器）
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   switch (AppConfig.serverType) {
     case ServerType.test:
       return TestAuthRepository();
-    
-    case ServerType.supabase:
-      return SupabaseAuthRepository();
     
     case ServerType.customServer:
       final httpClient = ref.watch(httpClientServiceProvider);

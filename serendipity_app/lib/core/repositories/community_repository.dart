@@ -99,7 +99,7 @@ class CommunityRepository {
       return;
     }
 
-    // 上传到 Firestore
+    // 上传到云端
     await _remoteData.saveCommunityPost(post);
   }
 
@@ -126,7 +126,7 @@ class CommunityRepository {
       return [];
     }
 
-    // 从 Firestore 获取
+    // 从云端获取
     return await _remoteData.getCommunityPosts(
       limit: limit,
       lastTimestamp: lastTimestamp,
@@ -150,7 +150,7 @@ class CommunityRepository {
       return [];
     }
 
-    // 从 Firestore 获取
+    // 从云端获取
     return await _remoteData.getMyCommunityPosts(userId);
   }
 
@@ -176,7 +176,7 @@ class CommunityRepository {
       return;
     }
 
-    // 从 Firestore 删除
+    // 从云端删除
     await _remoteData.deleteCommunityPost(postId, userId);
   }
 
@@ -216,7 +216,7 @@ class CommunityRepository {
       return [];
     }
 
-    // 从 Firestore 筛选
+    // 从云端筛选
     return await _remoteData.filterCommunityPosts(
       startDate: startDate,
       endDate: endDate,

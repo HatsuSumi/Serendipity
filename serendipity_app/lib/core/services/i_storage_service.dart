@@ -8,7 +8,6 @@ import '../../models/user_settings.dart';
 /// 
 /// 定义数据持久化的抽象接口，支持多种实现：
 /// - HiveStorageService: 本地存储（Hive）
-/// - FirestoreStorageService: 云存储（Firestore）
 /// - SyncStorageService: 同步存储（本地+云端）
 abstract class IStorageService {
   /// 初始化存储服务

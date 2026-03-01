@@ -9,7 +9,7 @@ import 'i_remote_data_repository.dart';
 /// 遵循依赖倒置原则（DIP），实现 IRemoteDataRepository 接口。
 /// 
 /// 使用场景：
-/// - 开发环境：无需真实 Firebase 配置即可测试
+/// - 开发环境：无需真实后端配置即可测试
 /// - 单元测试：避免真实网络请求
 /// - 集成测试：提供可预测的行为
 class TestRemoteDataRepository implements IRemoteDataRepository {

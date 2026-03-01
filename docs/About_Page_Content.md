@@ -324,7 +324,8 @@
 │ 技术选择                 │
 │                         │
 │ • Flutter + Dart        │
-│ • Firebase 云同步       │
+│ • 自建服务器云同步       │
+│   (Node.js + PostgreSQL)│
 │ • GPS 定位验证          │
 │ • 端到端加密            │
 │                         │

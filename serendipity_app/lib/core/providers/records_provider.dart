@@ -30,7 +30,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     return _repository.getRecordsSortedByTime();
   }
   
-  /// 获取同步服务（延迟初始化，避免测试模式下创建 Firebase 实例）
+  /// 获取同步服务（延迟初始化）
   SyncService get _syncService => ref.read(syncServiceProvider);
   
   /// 获取成就检测服务

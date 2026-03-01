@@ -48,9 +48,6 @@ dependencies:
   # 国际化
   intl: ^0.20.1
   
-  # Supabase（PostgreSQL 数据库 + 认证 + 存储）
-  supabase_flutter: ^2.5.0
-  
   # GPS 定位
   geolocator: ^13.0.2
   

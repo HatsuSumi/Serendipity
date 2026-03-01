@@ -26,12 +26,12 @@
 - **地图服务**：高德地图 API (`amap_flutter_map`)
 
 ### 后端
-- **方案**：Firebase（纯云服务）
-- **认证**：Firebase Authentication
-- **数据库**：Cloud Firestore
-- **云函数**：Cloud Functions
-- **推送**：Firebase Cloud Messaging (FCM)
-- **存储**：暂不使用 Firebase Storage（后期如需头像上传功能再添加）
+- **方案**：自建服务器（Node.js + Express）
+- **认证**：JWT + 自建认证系统
+- **数据库**：PostgreSQL + Prisma ORM
+- **缓存**：Redis
+- **推送**：待实现
+- **存储**：本地文件系统（后期如需头像上传功能再添加）
 
 ### 平台
 - ✅ Android（最低支持 API 21 / Android 5.0+）
@@ -51,10 +51,7 @@
 
 #### 1.2 依赖配置
 - [ ] 添加核心依赖包
-  - `firebase_core`
-  - `firebase_auth`
-  - `cloud_firestore`
-  - `firebase_messaging`
+  - `http`（网络请求）
   - `riverpod` / `flutter_riverpod`
   - `go_router`
   - `hive` / `hive_flutter`
@@ -63,22 +60,13 @@
   - `intl`（国际化）
   - `freezed` / `json_serializable`（数据模型）
 
-#### 1.3 Firebase 配置
-- [ ] 注册 Firebase 账号
-- [ ] 创建 Firebase 项目：`Serendipity`
-- [ ] 添加 Android 应用
-  - 包名：`com.serendipity.app`
-  - 下载 `google-services.json`
-  - 配置 `android/app/build.gradle`
-- [ ] 添加 iOS 应用
-  - Bundle ID：`com.serendipity.app`
-  - 下载 `GoogleService-Info.plist`
-  - 配置 Xcode 项目
-- [ ] 启用 Firebase 服务
-  - Authentication（邮箱、手机号）~~、Apple、Google~~ ❌ 已移除第三方登录
-  - Firestore Database
-  - Cloud Functions
-  - Cloud Messaging
+#### 1.3 服务器配置
+- [ ] 搭建 Node.js 服务器
+- [ ] 配置 PostgreSQL 数据库
+- [ ] 配置 Redis 缓存
+- [ ] 配置 JWT 认证
+- [ ] 配置短信服务（阿里云/腾讯云）
+- [ ] 配置支付服务（微信支付/支付宝）
 
 #### 1.4 高德地图配置
 - [ ] 注册高德开放平台账号
@@ -172,7 +160,7 @@ lib/
 - [ ] 首次使用引导
   - 显示"如何记录"提示（每次见面 = 一条新记录）
   - 状态选择下方的提示文字
-- [ ] 保存到 Firestore
+- [ ] 保存到服务器
 - [ ] 本地缓存（Hive）
 
 #### 2.3 时间轴视图（2-3天）
@@ -484,11 +472,12 @@ lib/
 
 ## 🚨 风险与应对
 
-### 风险1：Firebase 在中国访问慢
+### 风险1：服务器稳定性
 **应对**：
-- 使用 Firebase 国内镜像
+- 使用可靠的云服务商（阿里云/腾讯云）
 - 添加本地缓存（Hive）
 - 优化数据同步策略
+- 配置服务器监控和告警
 
 ### 风险2：高德地图 API 配额不够
 **应对**：
@@ -541,7 +530,7 @@ lib/
 1. ✅ 确认技术栈
 2. ✅ 确认开发路线
 3. ⏳ 初始化 Flutter 项目
-4. ⏳ 配置 Firebase
+4. ⏳ 搭建自建服务器
 5. ⏳ 开始编码
 
 **让我知道你准备好了，我们就开始 Phase 1！** 🚀
@@ -564,7 +553,7 @@ lib/
 - ✅ 更新里程碑时间线
 
 ### v1.2 (2026-02-11)
-- ✅ 明确 Firebase Storage 暂不使用（后期如需头像上传功能再添加）
+- ✅ 明确文件存储暂不使用（后期如需头像上传功能再添加）
 - ✅ 明确最低支持版本：Android API 21 (5.0+) / iOS 12.0+
 - ✅ 明确标签备注字数限制：最多50字（可选）
 

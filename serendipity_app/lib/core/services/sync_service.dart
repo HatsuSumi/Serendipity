@@ -5,7 +5,6 @@ import '../../models/story_line.dart';
 import '../../models/user.dart';
 import '../config/app_config.dart';
 import '../repositories/i_remote_data_repository.dart';
-import '../repositories/supabase_remote_data_repository.dart';
 import '../repositories/test_remote_data_repository.dart';
 import '../repositories/custom_server_remote_data_repository.dart';
 import '../providers/records_provider.dart';
@@ -19,15 +18,11 @@ import 'i_storage_service.dart';
 /// 
 /// 后端选择：
 /// - ServerType.test：使用 TestRemoteDataRepository（测试模式）
-/// - ServerType.supabase：使用 SupabaseRemoteDataRepository（Supabase 后端）
 /// - ServerType.customServer：使用 CustomServerRemoteDataRepository（自建服务器）
 final remoteDataRepositoryProvider = Provider<IRemoteDataRepository>((ref) {
   switch (AppConfig.serverType) {
     case ServerType.test:
       return TestRemoteDataRepository();
-    
-    case ServerType.supabase:
-      return SupabaseRemoteDataRepository();
     
     case ServerType.customServer:
       final httpClient = ref.watch(httpClientServiceProvider);

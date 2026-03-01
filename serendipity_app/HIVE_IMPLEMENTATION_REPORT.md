@@ -194,7 +194,7 @@ flutter test test/services/storage_service_test.dart
 ### 其他待完成功能
 
 - [ ] GPS 定位服务
-- [ ] Firebase 服务
+- [ ] 自建服务器集成
 - [ ] 路由管理 (go_router)
 - [ ] 创建记录页面
 - [ ] 记录列表展示

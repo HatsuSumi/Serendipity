@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/i_storage_service.dart';
 import 'core/services/sync_service.dart';
@@ -14,7 +13,6 @@ import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/config/app_config.dart';
-import 'core/config/supabase_config.dart';
 import 'core/utils/smart_navigator.dart';
 import 'features/home/main_navigation_page.dart';
 import 'features/auth/welcome_page.dart';
@@ -30,15 +28,6 @@ import 'models/check_in_record.dart';
 void main() async {
   // 确保 Flutter 绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // 根据配置初始化后端服务
-  if (AppConfig.serverType == ServerType.supabase) {
-    // 初始化 Supabase
-    await Supabase.initialize(
-      url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
-    );
-  }
   
   // 初始化 Hive
   await Hive.initFlutter();

@@ -5,7 +5,7 @@ import '../../models/community_post.dart';
 /// 远程数据仓库接口
 /// 
 /// 定义所有远程数据操作的契约，遵循依赖倒置原则（DIP）。
-/// 具体实现可以是 Firebase Firestore、自建服务器 API 或其他数据服务。
+/// 具体实现可以是自建服务器 API 或其他数据服务。
 /// 
 /// 调用者：
 /// - SyncService：数据同步服务，调用所有方法

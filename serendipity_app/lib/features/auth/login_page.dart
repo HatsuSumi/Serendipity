@@ -107,7 +107,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   /// 
   /// 调用者：build()
   Widget _buildLoginTypeTabs() {
-    // 暂时只显示邮箱登录，手机号登录需要配置 Supabase SMS 服务
+    // 暂时只显示邮箱登录，手机号登录需要配置 SMS 服务
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
@@ -129,7 +129,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
     
-    /* 手机号登录暂时禁用，需要配置 Supabase SMS 服务
+    /* 手机号登录暂时禁用，需要配置 SMS 服务
     return Row(
       children: [
         Expanded(

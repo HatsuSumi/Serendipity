@@ -1032,7 +1032,7 @@ void checkConsecutiveDaysAchievement(User user) {
 
 9. **技术选择**
    - Flutter + Dart
-   - Firebase 云同步
+   - 自建服务器云同步（Node.js + PostgreSQL）
    - GPS 定位验证
 
 10. **开发者信息**
@@ -1127,7 +1127,7 @@ void checkConsecutiveDaysAchievement(User user) {
 - 淡入+滑动 🌟
 
 #### 8.2 隐私设置
-- 云同步（所有用户数据存 Firestore）
+- 云同步（所有用户数据存自建服务器）
   - 免费版：单设备登录（换设备会踢下线旧设备）
   - 会员版：多设备同步（无限设备）
 - 密码锁 / 生物识别锁
@@ -1327,11 +1327,12 @@ void checkConsecutiveDaysAchievement(User user) {
 - **动画**：Flutter 内置动画 + Rive
 
 ### 后端方案
-**Firebase（已确定）**
-- Firebase Authentication（用户登录）
-- Firestore（数据存储）
-- Cloud Functions（业务逻辑）
-- Cloud Messaging（推送通知）
+**自建服务器（已确定）**
+- Node.js 20 LTS + Express + TypeScript
+- PostgreSQL 15（数据库）
+- Redis 7（缓存）
+- JWT（用户认证）
+- Prisma（ORM）
 - 支持跨设备同步
 
 ### 第三方服务
@@ -1916,17 +1917,16 @@ enum AuthProvider {
 
 **决策**：从一开始就做登录 + 云同步
 
-**技术方案**：Firebase
-- Firebase Authentication（多种登录方式）
-- Firestore（数据存储）
-- Cloud Functions（业务逻辑）
+**技术方案**：自建服务器
+- Node.js 20 LTS + Express + TypeScript
+- PostgreSQL 15（数据库）
+- Redis 7（缓存）
+- JWT（认证）
+- Prisma（ORM）
 
 **登录方式**：
 - 邮箱 + 密码
 - 手机号 + 验证码
-- ~~Apple ID（iOS）~~ ❌ 已移除
-- ~~Google 账号~~ ❌ 已移除
-- ~~微信登录（国内版）~~ ❌ 已移除
 
 ---
 

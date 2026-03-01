@@ -5,7 +5,7 @@
 /// 
 /// 调用者：
 /// - AuthTextField：UI 层表单验证
-/// - FirebaseAuthRepository：Repository 层参数验证
+/// - AuthRepository：Repository 层参数验证
 /// - TestAuthRepository：Repository 层参数验证
 /// 
 /// 设计原则：
@@ -106,7 +106,7 @@ class ValidationHelper {
   /// 抛出：ArgumentError（如果验证失败）
   /// 
   /// 调用者：
-  /// - FirebaseAuthRepository._validateEmail()
+  /// - AuthRepository._validateEmail()
   /// - TestAuthRepository.signInWithEmail()
   /// - TestAuthRepository.signUpWithEmail()
   static void validateEmailForRepository(String email) {
@@ -144,7 +144,7 @@ class ValidationHelper {
   /// 抛出：ArgumentError（如果验证失败）
   /// 
   /// 调用者：
-  /// - FirebaseAuthRepository._validatePassword()
+  /// - AuthRepository._validatePassword()
   /// - TestAuthRepository.signInWithEmail()
   /// - TestAuthRepository.signUpWithEmail()
   static void validatePasswordForRepository(String password) {
@@ -190,7 +190,7 @@ class ValidationHelper {
   /// 抛出：ArgumentError（如果验证失败）
   /// 
   /// 调用者：
-  /// - FirebaseAuthRepository._validatePhoneNumber()
+  /// - AuthRepository._validatePhoneNumber()
   /// - TestAuthRepository.signInWithPhone()
   /// - TestAuthRepository.signUpWithPhone()
   static void validatePhoneNumberForRepository(String phoneNumber) {
@@ -244,7 +244,7 @@ class ValidationHelper {
   /// 抛出：ArgumentError（如果验证失败）
   /// 
   /// 调用者：
-  /// - FirebaseAuthRepository.signInWithPhone()
+  /// - AuthRepository.signInWithPhone()
   /// - TestAuthRepository.signInWithPhone()
   static void validateVerificationCodeForRepository(String verificationCode) {
     final error = validateVerificationCodeForUI(verificationCode);

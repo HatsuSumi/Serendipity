@@ -85,7 +85,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
   
   Widget _buildRegisterTypeTabs() {
-    // 暂时只显示邮箱注册，手机号注册需要配置 Supabase SMS 服务
+    // 暂时只显示邮箱注册，手机号注册需要配置 SMS 服务
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
@@ -107,7 +107,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       ),
     );
     
-    /* 手机号注册暂时禁用，需要配置 Supabase SMS 服务
+    /* 手机号注册暂时禁用，需要配置 SMS 服务
     return Row(
       children: [
         Expanded(
