@@ -94,7 +94,7 @@ class CommunityRepository {
     final post = _createPostFromRecord(record, userId);
 
     // 测试模式：不上传到云端
-    if (AppConfig.enableTestMode) {
+    if (AppConfig.serverType == ServerType.test) {
       // 测试模式下，直接返回成功
       return;
     }
@@ -122,7 +122,7 @@ class CommunityRepository {
     }
 
     // 测试模式：返回空列表
-    if (AppConfig.enableTestMode) {
+    if (AppConfig.serverType == ServerType.test) {
       return [];
     }
 
@@ -146,7 +146,7 @@ class CommunityRepository {
     }
 
     // 测试模式：返回空列表
-    if (AppConfig.enableTestMode) {
+    if (AppConfig.serverType == ServerType.test) {
       return [];
     }
 
@@ -172,7 +172,7 @@ class CommunityRepository {
     }
 
     // 测试模式：直接返回成功
-    if (AppConfig.enableTestMode) {
+    if (AppConfig.serverType == ServerType.test) {
       return;
     }
 
@@ -212,7 +212,7 @@ class CommunityRepository {
     }
 
     // 测试模式：返回空列表
-    if (AppConfig.enableTestMode) {
+    if (AppConfig.serverType == ServerType.test) {
       return [];
     }
 
