@@ -88,7 +88,7 @@ class StoryLineDetailPage extends ConsumerWidget {
               ? _buildEmptyState(context)
               : RefreshIndicator(
                   onRefresh: () async {
-                    await ref.refresh(storyLinesProvider.future);
+                    ref.invalidate(storyLinesProvider);
                   },
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),

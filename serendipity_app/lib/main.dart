@@ -5,7 +5,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/sync_service.dart';
 import 'core/services/notification_service.dart';
-import 'core/repositories/record_repository.dart';
 import 'core/repositories/check_in_repository.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
