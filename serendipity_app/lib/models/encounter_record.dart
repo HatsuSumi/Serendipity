@@ -16,7 +16,7 @@ class TagWithNote {
     this.note,
   }) : assert(tag.isNotEmpty, 'Tag cannot be empty'),
        assert(note == null || note.length <= 50, 
-         'Note must be at most 50 characters, got ${note?.length}');
+         'Note must be at most 50 characters, got ${note.length}');
 
   Map<String, dynamic> toJson() {
     return {
@@ -155,9 +155,9 @@ class EncounterRecord {
     this.isPinned = false,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
        assert(description == null || description.length <= 500, 
-         'Description must be at most 500 characters, got ${description?.length}'),
+         'Description must be at most 500 characters, got ${description.length}'),
        assert(conversationStarter == null || conversationStarter.length <= 500, 
-         'ConversationStarter must be at most 500 characters, got ${conversationStarter?.length}');
+         'ConversationStarter must be at most 500 characters, got ${conversationStarter.length}');
 
   Map<String, dynamic> toJson() {
     return {

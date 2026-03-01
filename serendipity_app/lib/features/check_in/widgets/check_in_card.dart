@@ -202,7 +202,7 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
     final settings = ref.read(userSettingsProvider);
     
     // 触发粒子效果和震动（根据用户设置）
-    if (widget.confettiController != null && settings != null) {
+    if (widget.confettiController != null) {
       await CheckInAnimationHelper.triggerSuccessFeedback(
         confettiController: widget.confettiController!,
         enableVibration: settings.checkInVibrationEnabled,

@@ -172,7 +172,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
     final settings = ref.read(userSettingsProvider);
     
     // 触发粒子效果和震动（根据用户设置）
-    if (_confettiController != null && settings != null) {
+    if (_confettiController != null) {
       await CheckInAnimationHelper.triggerSuccessFeedback(
         confettiController: _confettiController!,
         enableVibration: settings.checkInVibrationEnabled,
