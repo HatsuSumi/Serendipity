@@ -188,6 +188,7 @@ void main() {
 
       final original = User(
         id: 'user123',
+        email: 'old@example.com', // 需要提供邮箱或手机号
         authProvider: AuthProvider.email,
         isEmailVerified: false,
         isPhoneVerified: false,
@@ -196,8 +197,8 @@ void main() {
       );
 
       final updated = original.copyWith(
-        email: 'test@example.com',
-        displayName: '张三',
+        email: () => 'test@example.com',
+        displayName: () => '张三',
         isEmailVerified: true,
       );
 

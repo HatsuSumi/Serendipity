@@ -2,6 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:serendipity_app/core/services/storage_service.dart';
 import 'package:serendipity_app/models/encounter_record.dart';
+import 'package:serendipity_app/models/story_line.dart';
+import 'package:serendipity_app/models/achievement.dart';
+import 'package:serendipity_app/models/check_in_record.dart';
+import 'package:serendipity_app/models/user.dart' as app_user;
 import 'package:serendipity_app/models/enums.dart';
 import 'dart:io';
 
@@ -17,37 +21,45 @@ void main() {
       // 初始化 Hive（使用临时目录）
       Hive.init(testDir.path);
       
-      // 注册 TypeAdapter
+      // 注册 TypeAdapter（只注册实际存在的）
       Hive.registerAdapter(EncounterStatusAdapter());
       Hive.registerAdapter(EmotionIntensityAdapter());
       Hive.registerAdapter(PlaceTypeAdapter());
       Hive.registerAdapter(WeatherAdapter());
-      Hive.registerAdapter(MatchStatusAdapter());
-      Hive.registerAdapter(MatchConfidenceAdapter());
-      Hive.registerAdapter(VerificationChoiceAdapter());
       Hive.registerAdapter(AuthProviderAdapter());
       Hive.registerAdapter(MembershipTierAdapter());
       Hive.registerAdapter(MembershipStatusAdapter());
       Hive.registerAdapter(PaymentMethodAdapter());
       Hive.registerAdapter(PaymentStatusAdapter());
-      Hive.registerAdapter(AppThemeAdapter());
-      Hive.registerAdapter(CreditChangeReasonAdapter());
+      Hive.registerAdapter(ThemeOptionAdapter());
+      Hive.registerAdapter(AchievementCategoryAdapter());
       Hive.registerAdapter(TagWithNoteAdapter());
       Hive.registerAdapter(LocationAdapter());
       Hive.registerAdapter(EncounterRecordAdapter());
+      Hive.registerAdapter(StoryLineAdapter());
+      Hive.registerAdapter(app_user.UserAdapter());
+      Hive.registerAdapter(AchievementAdapter());
+      Hive.registerAdapter(CheckInRecordAdapter());
       
       storageService = StorageService();
       await storageService.init();
     });
 
     tearDownAll(() async {
-      await storageService.clearAllRecords();
       await storageService.close();
       await Hive.close();
       
       // 删除临时测试目录
       if (testDir.existsSync()) {
         testDir.deleteSync(recursive: true);
+      }
+    });
+
+    setUp(() async {
+      // 每个测试前清空数据
+      final records = storageService.getAllRecords();
+      for (final record in records) {
+        await storageService.deleteRecord(record.id);
       }
     });
 
@@ -93,9 +105,6 @@ void main() {
     });
 
     test('获取所有记录', () async {
-      // 清空现有记录
-      await storageService.clearAllRecords();
-
       // 创建多条记录
       for (int i = 0; i < 5; i++) {
         final record = EncounterRecord(
@@ -121,9 +130,6 @@ void main() {
     });
 
     test('按时间排序获取记录', () async {
-      // 清空现有记录
-      await storageService.clearAllRecords();
-
       // 创建多条记录（不同时间）
       final now = DateTime.now();
       await storageService.saveRecord(EncounterRecord(
@@ -221,9 +227,6 @@ void main() {
     });
 
     test('根据故事线ID获取记录', () async {
-      // 清空现有记录
-      await storageService.clearAllRecords();
-
       // 创建记录（部分有故事线ID）
       await storageService.saveRecord(EncounterRecord(
         id: 'test-1',
@@ -265,9 +268,6 @@ void main() {
     });
 
     test('获取未关联故事线的记录', () async {
-      // 清空现有记录
-      await storageService.clearAllRecords();
-
       // 创建记录（部分没有故事线ID）
       await storageService.saveRecord(EncounterRecord(
         id: 'test-1',
@@ -299,4 +299,3 @@ void main() {
     });
   });
 }
-
