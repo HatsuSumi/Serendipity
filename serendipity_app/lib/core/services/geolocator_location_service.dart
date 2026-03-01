@@ -83,7 +83,9 @@ class GeolocatorLocationService implements ILocationService {
       
       // 获取当前位置（带超时）
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       ).timeout(
         const Duration(seconds: _timeoutSeconds),
         onTimeout: () {

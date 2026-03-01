@@ -66,12 +66,12 @@ class NavigationHelper {
   /// 使用自定义过渡动画导航到新页面
   /// 
   /// 参数：
-  /// - [context]: BuildContext
-  /// - [ref]: WidgetRef（用于访问 pageTransitionProvider）
-  /// - [page]: 目标页面 Widget
+  /// - `context`: BuildContext
+  /// - `ref`: WidgetRef（用于访问 pageTransitionProvider）
+  /// - `page`: 目标页面 Widget
   /// 
   /// 返回：
-  /// - Future<T?>: 页面返回值
+  /// - Future\<T?\>: 页面返回值
   /// 
   /// 调用者：
   /// - LoginPage: 导航到忘记密码页
@@ -100,12 +100,12 @@ class NavigationHelper {
   /// 使用自定义过渡动画替换当前页面
   /// 
   /// 参数：
-  /// - [context]: BuildContext
-  /// - [ref]: WidgetRef（用于访问 pageTransitionProvider）
-  /// - [page]: 目标页面 Widget
+  /// - `context`: BuildContext
+  /// - `ref`: WidgetRef（用于访问 pageTransitionProvider）
+  /// - `page`: 目标页面 Widget
   /// 
   /// 返回：
-  /// - Future<T?>: 页面返回值
+  /// - Future\<T?\>: 页面返回值
   /// 
   /// 调用者：
   /// - LoginPage: 导航到注册页（替换当前页面）
@@ -133,11 +133,11 @@ class NavigationHelper {
   /// 这是一个私有辅助方法，被 pushWithTransition 和 pushReplacementWithTransition 共享。
   /// 
   /// 参数：
-  /// - [ref]: WidgetRef（用于访问 pageTransitionProvider）
-  /// - [page]: 目标页面 Widget
+  /// - `ref`: WidgetRef（用于访问 pageTransitionProvider）
+  /// - `page`: 目标页面 Widget
   /// 
   /// 返回：
-  /// - PageRouteBuilder<T>: 配置好动画的路由对象
+  /// - PageRouteBuilder\<T\>: 配置好动画的路由对象
   /// 
   /// 设计原则：
   /// - DRY: 避免在 push 和 pushReplacement 中重复动画构建代码

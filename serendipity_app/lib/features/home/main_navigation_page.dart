@@ -23,6 +23,24 @@ class MainNavigationPage extends ConsumerStatefulWidget {
 class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   int _currentIndex = 0;
 
+  /// 显示成就解锁对话框
+  /// 
+  /// 提取为独立方法，使代码更清晰，避免嵌套过深
+  Future<void> _showAchievementDialog(List<String> achievementIds) async {
+    if (!mounted) return;
+    
+    final result = await AchievementUnlockedDialog.show(context, achievementIds);
+    
+    // 用户点击"查看成就"，跳转到成就页面
+    if (mounted && result == 'view') {
+      NavigationHelper.pushWithTransition(
+        context,
+        ref,
+        const AchievementsPage(),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -83,18 +101,8 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           
-          // 显示成就解锁对话框
-          AchievementUnlockedDialog.show(context, next).then((result) {
-            if (!mounted) return;
-            if (result == 'view') {
-              // 用户点击"查看成就"，跳转到成就页面（使用随机动画）
-              NavigationHelper.pushWithTransition(
-                context,
-                ref,
-                const AchievementsPage(),
-              );
-            }
-          });
+          // 显示成就解锁对话框并处理结果
+          _showAchievementDialog(next);
         });
         
         // 清空通知列表

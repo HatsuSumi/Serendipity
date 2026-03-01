@@ -25,7 +25,7 @@ class AppTheme {
   }
 
   /// 浅色主题（粉色系，浪漫温柔）
-  static late final ThemeData _lightTheme = ThemeData(
+  static final ThemeData _lightTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: Colors.pink,
@@ -53,7 +53,7 @@ class AppTheme {
     );
 
   /// 深色主题（粉色系深色版）
-  static late final ThemeData _darkTheme = ThemeData(
+  static final ThemeData _darkTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: Colors.pink,
@@ -81,7 +81,7 @@ class AppTheme {
     );
 
   /// 朦胧主题（会员专属 - 灰蓝色调，朦胧梦幻）
-  static late final ThemeData _mistyTheme = ThemeData(
+  static final ThemeData _mistyTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF7B9EB0), // 灰蓝色
@@ -100,7 +100,7 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 1,
-        color: const Color(0xFFFAFBFC).withOpacity(0.9), // 半透明卡片
+        color: const Color(0xFFFAFBFC).withValues(alpha: 0.9), // 半透明卡片
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -111,7 +111,7 @@ class AppTheme {
     );
 
   /// 深夜主题（会员专属 - 深蓝黑色调，静谧深邃）
-  static late final ThemeData _midnightTheme = ThemeData(
+  static final ThemeData _midnightTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF1A237E),
@@ -139,7 +139,7 @@ class AppTheme {
     );
 
   /// 温暖主题（会员专属 - 米黄色调，温馨舒适）
-  static late final ThemeData _warmTheme = ThemeData(
+  static final ThemeData _warmTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFFD4A574), // 米黄色（柔和的暖色）
@@ -168,7 +168,7 @@ class AppTheme {
     );
 
   /// 秋日主题（会员专属 - 棕红色调，怀旧复古）
-  static late final ThemeData _autumnTheme = ThemeData(
+  static final ThemeData _autumnTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF8D6E63),

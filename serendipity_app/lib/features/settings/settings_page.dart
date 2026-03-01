@@ -61,7 +61,7 @@ class SettingsPage extends ConsumerWidget {
               }
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (error, stackTrace) => const SizedBox.shrink(),
           ),
           
           const Divider(),
@@ -355,7 +355,7 @@ class SettingsPage extends ConsumerWidget {
               }
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (error, stackTrace) => const SizedBox.shrink(),
           ),
           
           const Divider(),

@@ -35,13 +35,7 @@ class TestAuthRepository implements IAuthRepository {
   }
   
   /// 模拟的当前用户
-  User? __currentUser;
-  
-  User? get _currentUser => __currentUser;
-  
-  set _currentUser(User? value) {
-    __currentUser = value;
-  }
+  User? _currentUser;
   
   /// 认证状态流控制器
   final _authStateController = StreamController<User?>.broadcast();

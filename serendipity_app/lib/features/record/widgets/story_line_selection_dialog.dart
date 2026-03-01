@@ -8,6 +8,11 @@ import '../../../models/story_line.dart';
 /// 故事线选择对话框
 /// 
 /// 用于创建/编辑记录时选择或创建故事线
+/// 
+/// 注意：使用旧的 Radio API（groupValue/onChanged）
+/// 原因：Flutter 3.32+ 的新 RadioGroup API 还不够稳定
+/// 计划：等 Flutter 生态稳定后再迁移
+// ignore_for_file: deprecated_member_use
 class StoryLineSelectionDialog extends ConsumerStatefulWidget {
   final List<StoryLine> storyLines;
   final String? currentStoryLineId;
@@ -88,17 +93,35 @@ class _StoryLineSelectionDialogState extends ConsumerState<StoryLineSelectionDia
               const SizedBox(height: 24),
 
               // 创建新故事线选项
-              RadioListTile<bool>(
-                value: true,
-                groupValue: _isCreatingNew,
-                onChanged: (value) {
+              InkWell(
+                onTap: () {
                   setState(() {
-                    _isCreatingNew = value ?? false;
+                    _isCreatingNew = true;
                     _selectedStoryLineId = null;
                   });
                 },
-                title: const Text('创建新故事线'),
-                contentPadding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  child: Row(
+                    children: [
+                      Radio<bool>(
+                        value: true,
+                        groupValue: _isCreatingNew,
+                        onChanged: (value) {
+                          setState(() {
+                            _isCreatingNew = value ?? false;
+                            _selectedStoryLineId = null;
+                          });
+                        },
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const Expanded(
+                        child: Text('创建新故事线'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
 
               // 新故事线名称输入
@@ -122,16 +145,33 @@ class _StoryLineSelectionDialogState extends ConsumerState<StoryLineSelectionDia
 
               // 已有故事线列表
               if (widget.storyLines.isNotEmpty) ...[
-                RadioListTile<bool>(
-                  value: false,
-                  groupValue: _isCreatingNew,
-                  onChanged: (value) {
+                InkWell(
+                  onTap: () {
                     setState(() {
-                      _isCreatingNew = value ?? true;
+                      _isCreatingNew = false;
                     });
                   },
-                  title: const Text('选择现有故事线'),
-                  contentPadding: EdgeInsets.zero,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: Row(
+                      children: [
+                        Radio<bool>(
+                          value: false,
+                          groupValue: _isCreatingNew,
+                          onChanged: (value) {
+                            setState(() {
+                              _isCreatingNew = value ?? true;
+                            });
+                          },
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        const Expanded(
+                          child: Text('选择现有故事线'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 if (!_isCreatingNew) ...[
                   const SizedBox(height: 8),
@@ -148,30 +188,42 @@ class _StoryLineSelectionDialogState extends ConsumerState<StoryLineSelectionDia
                       itemCount: widget.storyLines.length,
                       itemBuilder: (context, index) {
                         final storyLine = widget.storyLines[index];
-                        return RadioListTile<String>(
-                          value: storyLine.id,
-                          groupValue: _selectedStoryLineId,
-                          onChanged: (value) {
+                        return InkWell(
+                          onTap: () {
                             setState(() {
-                              _selectedStoryLineId = value;
+                              _selectedStoryLineId = storyLine.id;
                             });
                           },
-                          title: Row(
-                            children: [
-                              const Text('📖 '),
-                              Expanded(
-                                child: Text(
-                                  storyLine.name,
-                                  overflow: TextOverflow.ellipsis,
+                          borderRadius: BorderRadius.circular(4),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            child: Row(
+                              children: [
+                                Radio<String>(
+                                  value: storyLine.id,
+                                  groupValue: _selectedStoryLineId,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedStoryLineId = value;
+                                    });
+                                  },
+                                  visualDensity: VisualDensity.compact,
                                 ),
-                              ),
-                              Text(
-                                '（${storyLine.recordIds.length}条）',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
+                                const Text('📖 '),
+                                Expanded(
+                                  child: Text(
+                                    storyLine.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Text(
+                                  '（${storyLine.recordIds.length}条）',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },

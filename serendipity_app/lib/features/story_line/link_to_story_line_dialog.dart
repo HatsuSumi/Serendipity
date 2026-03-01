@@ -8,6 +8,11 @@ import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 
 /// 关联到故事线对话框
+/// 
+/// 注意：使用旧的 Radio API（groupValue/onChanged）
+/// 原因：Flutter 3.32+ 的新 RadioGroup API 还不够稳定
+/// 计划：等 Flutter 生态稳定后再迁移
+// ignore_for_file: deprecated_member_use
 class LinkToStoryLineDialog extends ConsumerStatefulWidget {
   final String recordId;
 
@@ -82,17 +87,35 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
               const SizedBox(height: 24),
 
               // 创建新故事线选项
-              RadioListTile<bool>(
-                value: true,
-                groupValue: _isCreatingNew,
-                onChanged: (value) {
+              InkWell(
+                onTap: () {
                   setState(() {
-                    _isCreatingNew = value ?? false;
+                    _isCreatingNew = true;
                     _selectedStoryLineId = null;
                   });
                 },
-                title: const Text('创建新故事线'),
-                contentPadding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  child: Row(
+                    children: [
+                      Radio<bool>(
+                        value: true,
+                        groupValue: _isCreatingNew,
+                        onChanged: (value) {
+                          setState(() {
+                            _isCreatingNew = value ?? false;
+                            _selectedStoryLineId = null;
+                          });
+                        },
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const Expanded(
+                        child: Text('创建新故事线'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
 
               // 新故事线名称输入
@@ -124,16 +147,33 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      RadioListTile<bool>(
-                        value: false,
-                        groupValue: _isCreatingNew,
-                        onChanged: (value) {
+                      InkWell(
+                        onTap: () {
                           setState(() {
-                            _isCreatingNew = value ?? true;
+                            _isCreatingNew = false;
                           });
                         },
-                        title: const Text('添加到现有故事线'),
-                        contentPadding: EdgeInsets.zero,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          child: Row(
+                            children: [
+                              Radio<bool>(
+                                value: false,
+                                groupValue: _isCreatingNew,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _isCreatingNew = value ?? true;
+                                  });
+                                },
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              const Expanded(
+                                child: Text('添加到现有故事线'),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       if (!_isCreatingNew) ...[
                         const SizedBox(height: 8),
@@ -150,30 +190,42 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                             itemCount: storyLines.length,
                             itemBuilder: (context, index) {
                               final storyLine = storyLines[index];
-                              return RadioListTile<String>(
-                                value: storyLine.id,
-                                groupValue: _selectedStoryLineId,
-                                onChanged: (value) {
+                              return InkWell(
+                                onTap: () {
                                   setState(() {
-                                    _selectedStoryLineId = value;
+                                    _selectedStoryLineId = storyLine.id;
                                   });
                                 },
-                                title: Row(
-                                  children: [
-                                    const Text('📖 '),
-                                    Expanded(
-                                      child: Text(
-                                        storyLine.name,
-                                        overflow: TextOverflow.ellipsis,
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  child: Row(
+                                    children: [
+                                      Radio<String>(
+                                        value: storyLine.id,
+                                        groupValue: _selectedStoryLineId,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _selectedStoryLineId = value;
+                                          });
+                                        },
+                                        visualDensity: VisualDensity.compact,
                                       ),
-                                    ),
-                                    Text(
-                                      '（${storyLine.recordIds.length}条）',
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ],
+                                      const Text('📖 '),
+                                      Expanded(
+                                        child: Text(
+                                          storyLine.name,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Text(
+                                        '（${storyLine.recordIds.length}条）',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             },

@@ -37,7 +37,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   
   // 状态
   bool _isLoading = false;
-  bool _isEmailLogin = true; // true: 邮箱登录, false: 手机号登录
+  final bool _isEmailLogin = true; // true: 邮箱登录, false: 手机号登录
   bool _isCodeSent = false; // 验证码是否已发送
   String _countryCode = '+86'; // 国家代码，默认中国
   String? _verificationId; // 验证 ID（由 sendPhoneVerificationCode 返回）

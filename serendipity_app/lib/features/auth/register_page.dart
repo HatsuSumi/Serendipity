@@ -33,7 +33,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _verificationCodeController = TextEditingController();
   
   bool _isLoading = false;
-  bool _isEmailRegister = true;
+  final bool _isEmailRegister = true;
   bool _isCodeSent = false;
   String _countryCode = '+86'; // 国家代码，默认中国
   String? _verificationId; // 验证 ID（由 sendPhoneVerificationCode 返回）

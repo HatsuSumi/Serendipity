@@ -39,9 +39,6 @@ void main() {
       // 尝试将 description 设置为 null（使用函数包装）
       final updated = originalRecord.copyWith(description: () => null);
 
-      print('原始 description: ${originalRecord.description}');
-      print('更新后 description: ${updated.description}');
-
       // 现在应该成功清空
       expect(updated.description, isNull, 
         reason: '期望 description 为 null');
@@ -50,18 +47,12 @@ void main() {
     test('测试2: 尝试清空 emotion 字段', () {
       final updated = originalRecord.copyWith(emotion: () => null);
 
-      print('原始 emotion: ${originalRecord.emotion}');
-      print('更新后 emotion: ${updated.emotion}');
-
       expect(updated.emotion, isNull,
         reason: '期望 emotion 为 null');
     });
 
     test('测试3: 尝试清空 storyLineId 字段', () {
       final updated = originalRecord.copyWith(storyLineId: () => null);
-
-      print('原始 storyLineId: ${originalRecord.storyLineId}');
-      print('更新后 storyLineId: ${updated.storyLineId}');
 
       expect(updated.storyLineId, isNull,
         reason: '期望 storyLineId 为 null');
@@ -70,9 +61,6 @@ void main() {
     test('测试4: 尝试清空 ifReencounter 字段', () {
       final updated = originalRecord.copyWith(ifReencounter: () => null);
 
-      print('原始 ifReencounter: ${originalRecord.ifReencounter}');
-      print('更新后 ifReencounter: ${updated.ifReencounter}');
-
       expect(updated.ifReencounter, isNull,
         reason: '期望 ifReencounter 为 null');
     });
@@ -80,18 +68,12 @@ void main() {
     test('测试5: 尝试清空 conversationStarter 字段', () {
       final updated = originalRecord.copyWith(conversationStarter: () => null);
 
-      print('原始 conversationStarter: ${originalRecord.conversationStarter}');
-      print('更新后 conversationStarter: ${updated.conversationStarter}');
-
       expect(updated.conversationStarter, isNull,
         reason: '期望 conversationStarter 为 null');
     });
 
     test('测试6: 尝试清空 backgroundMusic 字段', () {
       final updated = originalRecord.copyWith(backgroundMusic: () => null);
-
-      print('原始 backgroundMusic: ${originalRecord.backgroundMusic}');
-      print('更新后 backgroundMusic: ${updated.backgroundMusic}');
 
       expect(updated.backgroundMusic, isNull,
         reason: '期望 backgroundMusic 为 null');
