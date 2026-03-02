@@ -8,9 +8,6 @@ export const registerEmailValidation = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters'),
-  body('verificationCode')
-    .isLength({ min: 6, max: 6 })
-    .withMessage('Verification code must be 6 digits'),
 ];
 
 // 手机号注册验证规则
@@ -21,9 +18,6 @@ export const registerPhoneValidation = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters'),
-  body('verificationCode')
-    .isLength({ min: 6, max: 6 })
-    .withMessage('Verification code must be 6 digits'),
 ];
 
 // 邮箱登录验证规则

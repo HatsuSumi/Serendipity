@@ -48,17 +48,10 @@ export class AuthService implements IAuthService {
   ) {}
 
   async registerEmail(data: RegisterEmailDto): Promise<AuthResponseDto> {
-    // 验证验证码
-    await this.verificationService.verifyCode(
-      data.email,
-      data.verificationCode,
-      'register'
-    );
-
     // 检查邮箱是否已存在
     const existingUser = await this.userRepository.findByEmail(data.email);
     if (existingUser) {
-      throw new AppError('Email already exists', ErrorCode.EMAIL_ALREADY_EXISTS);
+      throw new AppError('邮箱已存在', ErrorCode.EMAIL_ALREADY_EXISTS);
     }
 
     // 哈希密码
@@ -75,18 +68,11 @@ export class AuthService implements IAuthService {
   }
 
   async registerPhone(data: RegisterPhoneDto): Promise<AuthResponseDto> {
-    // 验证验证码
-    await this.verificationService.verifyCode(
-      data.phoneNumber,
-      data.verificationCode,
-      'register'
-    );
-
     // 检查手机号是否已存在
     const existingUser = await this.userRepository.findByPhone(data.phoneNumber);
     if (existingUser) {
       throw new AppError(
-        'Phone number already exists',
+        '手机号已存在',
         ErrorCode.PHONE_ALREADY_EXISTS
       );
     }
@@ -109,7 +95,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.findByEmail(data.email);
 
     if (!user) {
-      throw new AppError('Invalid credentials', ErrorCode.INVALID_CREDENTIALS);
+      throw new AppError('邮箱或密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
     // 验证密码
@@ -119,7 +105,7 @@ export class AuthService implements IAuthService {
     );
 
     if (!isPasswordValid) {
-      throw new AppError('Invalid credentials', ErrorCode.INVALID_CREDENTIALS);
+      throw new AppError('邮箱或密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
     // 更新最后登录时间
@@ -134,7 +120,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.findByPhone(data.phoneNumber);
 
     if (!user) {
-      throw new AppError('Invalid credentials', ErrorCode.INVALID_CREDENTIALS);
+      throw new AppError('手机号或密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
     // 验证密码
@@ -144,7 +130,7 @@ export class AuthService implements IAuthService {
     );
 
     if (!isPasswordValid) {
-      throw new AppError('Invalid credentials', ErrorCode.INVALID_CREDENTIALS);
+      throw new AppError('手机号或密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
     // 更新最后登录时间
@@ -166,7 +152,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.findByEmail(data.email);
 
     if (!user) {
-      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
     }
 
     // 哈希新密码
@@ -186,7 +172,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.findById(userId);
 
     if (!user) {
-      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
     }
 
     // 验证当前密码
@@ -197,7 +183,7 @@ export class AuthService implements IAuthService {
 
     if (!isPasswordValid) {
       throw new AppError(
-        'Invalid current password',
+        '当前密码错误',
         ErrorCode.INVALID_CREDENTIALS
       );
     }
@@ -216,7 +202,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.findById(userId);
 
     if (!user) {
-      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
     }
 
     // 验证密码
@@ -226,7 +212,7 @@ export class AuthService implements IAuthService {
     );
 
     if (!isPasswordValid) {
-      throw new AppError('Invalid password', ErrorCode.INVALID_CREDENTIALS);
+      throw new AppError('密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
     // 验证验证码
@@ -239,7 +225,7 @@ export class AuthService implements IAuthService {
     // 检查新邮箱是否已被使用
     const existingUser = await this.userRepository.findByEmail(data.newEmail);
     if (existingUser && existingUser.id !== userId) {
-      throw new AppError('Email already in use', ErrorCode.EMAIL_ALREADY_EXISTS);
+      throw new AppError('邮箱已被使用', ErrorCode.EMAIL_ALREADY_EXISTS);
     }
 
     // 更新邮箱
@@ -250,7 +236,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.findById(userId);
 
     if (!user) {
-      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
     }
 
     // 验证验证码
@@ -266,7 +252,7 @@ export class AuthService implements IAuthService {
     );
     if (existingUser && existingUser.id !== userId) {
       throw new AppError(
-        'Phone number already in use',
+        '手机号已被使用',
         ErrorCode.PHONE_ALREADY_EXISTS
       );
     }
@@ -279,7 +265,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.findById(userId);
 
     if (!user) {
-      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
     }
 
     // TODO: 获取会员信息
@@ -303,20 +289,20 @@ export class AuthService implements IAuthService {
       await this.refreshTokenRepository.findByToken(refreshToken);
 
     if (!tokenRecord) {
-      throw new AppError('Invalid refresh token', ErrorCode.INVALID_TOKEN);
+      throw new AppError('刷新令牌无效', ErrorCode.INVALID_TOKEN);
     }
 
     // 检查是否过期
     if (tokenRecord.expiresAt < new Date()) {
       await this.refreshTokenRepository.deleteByToken(refreshToken);
-      throw new AppError('Refresh token expired', ErrorCode.TOKEN_EXPIRED);
+      throw new AppError('刷新令牌已过期', ErrorCode.TOKEN_EXPIRED);
     }
 
     // 查找用户
     const user = await this.userRepository.findById(tokenRecord.userId);
 
     if (!user) {
-      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
     }
 
     // 删除旧的刷新令牌

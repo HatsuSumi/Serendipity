@@ -4,14 +4,14 @@
 export interface RegisterEmailDto {
   email: string;
   password: string;
-  verificationCode: string;
+  verificationCode?: string;
 }
 
 // 手机号注册请求
 export interface RegisterPhoneDto {
   phoneNumber: string;
   password: string;
-  verificationCode: string;
+  verificationCode?: string;
 }
 
 // 邮箱登录请求

@@ -29,7 +29,7 @@ class CustomServerAuthRepository implements IAuthRepository {
     
     // 从服务器获取用户信息
     try {
-      final response = await _httpClient.get(ServerConfig.usersProfile);
+      final response = await _httpClient.get(ServerConfig.authMe);
       final userData = response['data'] as Map<String, dynamic>;
       _currentUser = _convertToAppUser(userData);
       return _currentUser;
@@ -277,10 +277,10 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
     
     try {
-      final response = await _httpClient.post(
-        ServerConfig.usersBindEmail,
+      final response = await _httpClient.put(
+        ServerConfig.authChangeEmail,
         body: {
-          'email': newEmail,
+          'newEmail': newEmail,
           'password': password,
         },
       );
@@ -312,11 +312,11 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
     
     try {
-      final response = await _httpClient.post(
-        ServerConfig.usersBindPhone,
+      final response = await _httpClient.put(
+        ServerConfig.authChangePhone,
         body: {
-          'phoneNumber': newPhoneNumber,
-          'code': verificationCode,
+          'newPhoneNumber': newPhoneNumber,
+          'verificationCode': verificationCode,
         },
       );
       

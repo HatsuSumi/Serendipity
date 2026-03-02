@@ -37,21 +37,21 @@ class ServerConfig {
   // ==================== API 端点 ====================
   
   // 认证相关
-  static const String authRegister = '/auth/register';
-  static const String authLogin = '/auth/login';
-  static const String authLoginCode = '/auth/login/code';
-  static const String authVerificationCode = '/auth/verification-code';
+  static const String authRegister = '/auth/register/email';
+  static const String authLogin = '/auth/login/email';
+  static const String authLoginCode = '/auth/login/phone';
+  static const String authVerificationCode = '/auth/send-verification-code';
   static const String authResetPassword = '/auth/reset-password';
-  static const String authChangePassword = '/auth/change-password';
+  static const String authChangePassword = '/auth/password';
   static const String authRefreshToken = '/auth/refresh-token';
   static const String authLogout = '/auth/logout';
+  static const String authMe = '/auth/me';
+  static const String authChangeEmail = '/auth/email';
+  static const String authChangePhone = '/auth/phone';
   
   // 用户相关
-  static const String usersProfile = '/users/profile';
   static const String usersMe = '/users/me';
   static const String usersSettings = '/users/settings';
-  static const String usersBindEmail = '/users/bind-email';
-  static const String usersBindPhone = '/users/bind-phone';
   
   // 记录相关
   static const String records = '/records';
