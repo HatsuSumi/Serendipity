@@ -1,4 +1,5 @@
 import '../../models/user.dart';
+import '../../models/register_result.dart';
 import '../../models/enums.dart';
 import 'i_auth_repository.dart';
 import '../services/http_client_service.dart';
@@ -89,7 +90,7 @@ class CustomServerAuthRepository implements IAuthRepository {
   }
   
   @override
-  Future<User> signUpWithEmail(String email, String password) async {
+  Future<RegisterResult> signUpWithEmail(String email, String password) async {
     // Fail Fast：参数验证
     if (email.isEmpty) {
       throw ArgumentError('邮箱不能为空');
@@ -119,7 +120,14 @@ class CustomServerAuthRepository implements IAuthRepository {
       
       // 保存用户信息
       _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
-      return _currentUser!;
+      
+      // 提取恢复密钥（仅在注册时返回）
+      final recoveryKey = data['recoveryKey'] as String?;
+      
+      return RegisterResult(
+        user: _currentUser!,
+        recoveryKey: recoveryKey,
+      );
     } on HttpException catch (e) {
       throw Exception('注册失败：${e.message}');
     }
@@ -194,13 +202,21 @@ class CustomServerAuthRepository implements IAuthRepository {
   }
   
   @override
-  Future<User> signUpWithPhone(
+  Future<RegisterResult> signUpWithPhone(
     String phoneNumber,
     String verificationCode,
     String verificationId,
   ) async {
     // 自建服务器的手机号注册和登录是同一个流程
-    return signInWithPhone(phoneNumber, verificationCode, verificationId);
+    // 但注册时会返回恢复密钥
+    final user = await signInWithPhone(phoneNumber, verificationCode, verificationId);
+    
+    // 注意：这里无法获取恢复密钥，因为 signInWithPhone 不返回恢复密钥
+    // 如果需要支持手机号注册时返回恢复密钥，需要后端提供单独的注册接口
+    return RegisterResult(
+      user: user,
+      recoveryKey: null, // 手机号注册暂不返回恢复密钥
+    );
   }
   
   @override

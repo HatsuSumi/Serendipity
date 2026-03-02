@@ -101,6 +101,13 @@ export const validateRequest = (
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
+    // 日志：输出验证错误详情
+    console.log('='.repeat(80));
+    console.log('[验证错误] 请求路径:', req.path);
+    console.log('[验证错误] 请求体:', JSON.stringify(req.body, null, 2));
+    console.log('[验证错误] 错误详情:', JSON.stringify(errors.array(), null, 2));
+    console.log('='.repeat(80));
+    
     const errorMessages = errors.array().map((err) => err.msg).join(', ');
     throw new AppError(errorMessages, ErrorCode.VALIDATION_ERROR);
   }

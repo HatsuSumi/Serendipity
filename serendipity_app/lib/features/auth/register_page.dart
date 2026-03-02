@@ -8,6 +8,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/widgets/countdown_button.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
+import 'widgets/recovery_key_dialog.dart';
 import 'login_page.dart';
 
 /// 注册页
@@ -331,19 +332,31 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     });
     
     try {
-      // 调用 AuthProvider 注册
-      await ref.read(authProvider.notifier).signUpWithEmail(
+      // 调用 AuthProvider 注册，获取恢复密钥
+      final recoveryKey = await ref.read(authProvider.notifier).signUpWithEmail(
         _emailController.text.trim(),
         _passwordController.text,
       );
       
-      // 注册成功，跳转到主页并显示消息
+      // 注册成功
       if (mounted) {
-        NavigationHelper.navigateToMainPageWithMessage(
-          context,
-          ref,
-          '注册成功，欢迎使用！',
-        );
+        // 如果有恢复密钥，显示恢复密钥对话框
+        if (recoveryKey != null && recoveryKey.isNotEmpty) {
+          await showDialog<void>(
+            context: context,
+            barrierDismissible: false, // 禁止点击外部关闭
+            builder: (context) => RecoveryKeyDialog(recoveryKey: recoveryKey),
+          );
+        }
+        
+        // 跳转到主页并显示消息
+        if (mounted) {
+          NavigationHelper.navigateToMainPageWithMessage(
+            context,
+            ref,
+            '注册成功，欢迎使用！',
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -410,20 +423,32 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _phoneController.text,
       );
       
-      // 调用 AuthProvider 注册，传入 verificationId
-      await ref.read(authProvider.notifier).signUpWithPhone(
+      // 调用 AuthProvider 注册，获取恢复密钥
+      final recoveryKey = await ref.read(authProvider.notifier).signUpWithPhone(
         fullPhoneNumber,
         _verificationCodeController.text.trim(),
         _verificationId!,
       );
       
-      // 注册成功，跳转到主页并显示消息
+      // 注册成功
       if (mounted) {
-        NavigationHelper.navigateToMainPageWithMessage(
-          context,
-          ref,
-          '注册成功，欢迎使用！',
-        );
+        // 如果有恢复密钥，显示恢复密钥对话框
+        if (recoveryKey != null && recoveryKey.isNotEmpty) {
+          await showDialog<void>(
+            context: context,
+            barrierDismissible: false, // 禁止点击外部关闭
+            builder: (context) => RecoveryKeyDialog(recoveryKey: recoveryKey),
+          );
+        }
+        
+        // 跳转到主页并显示消息
+        if (mounted) {
+          NavigationHelper.navigateToMainPageWithMessage(
+            context,
+            ref,
+            '注册成功，欢迎使用！',
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

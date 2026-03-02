@@ -98,11 +98,13 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用者：RegisterPage._handleEmailRegister()
   /// 
+  /// 返回：恢复密钥（仅在注册时返回一次）
+  /// 
   /// Fail Fast：
   /// - 邮箱格式错误立即抛异常
   /// - 密码长度不足立即抛异常
   /// - 注册失败立即抛异常
-  Future<void> signUpWithEmail(String email, String password) async {
+  Future<String?> signUpWithEmail(String email, String password) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
     if (email.isEmpty) {
       throw ArgumentError('邮箱不能为空');
@@ -114,9 +116,9 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      await _repository.signUpWithEmail(email, password);
-      final user = await _repository.currentUser;
-      state = AsyncValue.data(user);
+      final result = await _repository.signUpWithEmail(email, password);
+      state = AsyncValue.data(result.user);
+      return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
@@ -193,12 +195,14 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用者：RegisterPage._handlePhoneRegister()
   /// 
+  /// 返回：恢复密钥（仅在注册时返回一次）
+  /// 
   /// Fail Fast：
   /// - 手机号格式错误立即抛异常
   /// - 验证码格式错误立即抛异常
   /// - verificationId 为空立即抛异常
   /// - 注册失败立即抛异常
-  Future<void> signUpWithPhone(
+  Future<String?> signUpWithPhone(
     String phoneNumber,
     String verificationCode,
     String verificationId,
@@ -217,13 +221,13 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      await _repository.signUpWithPhone(
+      final result = await _repository.signUpWithPhone(
         phoneNumber,
         verificationCode,
         verificationId,
       );
-      final user = await _repository.currentUser;
-      state = AsyncValue.data(user);
+      state = AsyncValue.data(result.user);
+      return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获

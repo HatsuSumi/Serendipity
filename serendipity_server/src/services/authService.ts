@@ -66,8 +66,14 @@ export class AuthService implements IAuthService {
       passwordHash,
     });
 
-    // 生成 Token
-    return this.generateAuthResponse(user);
+    // 自动生成恢复密钥
+    const recoveryKey = crypto.randomBytes(16).toString('hex');
+    const formattedKey = recoveryKey.match(/.{1,4}/g)?.join('-') || recoveryKey;
+    const recoveryKeyHash = await bcrypt.hash(formattedKey, this.SALT_ROUNDS);
+    await this.userRepository.updateRecoveryKey(user.id, recoveryKeyHash);
+
+    // 生成 Token 并附带恢复密钥
+    return this.generateAuthResponseWithRecoveryKey(user, formattedKey);
   }
 
   async registerPhone(data: RegisterPhoneDto): Promise<AuthResponseDto> {
@@ -89,8 +95,14 @@ export class AuthService implements IAuthService {
       passwordHash,
     });
 
-    // 生成 Token
-    return this.generateAuthResponse(user);
+    // 自动生成恢复密钥
+    const recoveryKey = crypto.randomBytes(16).toString('hex');
+    const formattedKey = recoveryKey.match(/.{1,4}/g)?.join('-') || recoveryKey;
+    const recoveryKeyHash = await bcrypt.hash(formattedKey, this.SALT_ROUNDS);
+    await this.userRepository.updateRecoveryKey(user.id, recoveryKeyHash);
+
+    // 生成 Token 并附带恢复密钥
+    return this.generateAuthResponseWithRecoveryKey(user, formattedKey);
   }
 
   async loginEmail(data: LoginEmailDto): Promise<AuthResponseDto> {
@@ -155,16 +167,38 @@ export class AuthService implements IAuthService {
       throw new AppError('新密码长度必须至少 6 位', ErrorCode.INVALID_CREDENTIALS);
     }
 
-    // 哈希恢复密钥
-    const recoveryKeyHash = await bcrypt.hash(data.recoveryKey, this.SALT_ROUNDS);
+    // 日志：输出特定邮箱的重置密码尝试
+    if (data.email === 'a19171548397a@163.com') {
+      console.log('='.repeat(80));
+      console.log(`[重置密码] 邮箱: ${data.email}`);
+      console.log(`[重置密码] 用户输入的恢复密钥: ${data.recoveryKey}`);
+      console.log('='.repeat(80));
+    }
 
-    // 查找用户并验证恢复密钥
-    const user = await this.userRepository.findByEmailAndRecoveryKey(
-      data.email,
-      recoveryKeyHash
+    // 查找用户
+    const user = await this.userRepository.findByEmail(data.email);
+    if (!user) {
+      throw new AppError('邮箱或恢复密钥错误', ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // 日志：输出数据库中的恢复密钥哈希
+    if (data.email === 'a19171548397a@163.com') {
+      console.log('='.repeat(80));
+      console.log(`[重置密码] 数据库中的恢复密钥哈希: ${user.recoveryKey || '未设置'}`);
+      console.log('='.repeat(80));
+    }
+
+    // 验证恢复密钥
+    if (!user.recoveryKey) {
+      throw new AppError('该账户未设置恢复密钥', ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    const isRecoveryKeyValid = await bcrypt.compare(
+      data.recoveryKey,
+      user.recoveryKey
     );
 
-    if (!user) {
+    if (!isRecoveryKeyValid) {
       throw new AppError('邮箱或恢复密钥错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
@@ -349,6 +383,16 @@ export class AuthService implements IAuthService {
     const recoveryKeyHash = await bcrypt.hash(formattedKey, this.SALT_ROUNDS);
     await this.userRepository.updateRecoveryKey(userId, recoveryKeyHash);
 
+    // 日志：输出特定邮箱的恢复密钥
+    if (user.email === 'a19171548397a@163.com') {
+      console.log('='.repeat(80));
+      console.log(`[恢复密钥生成] 邮箱: ${user.email}`);
+      console.log(`[恢复密钥生成] 用户ID: ${user.id}`);
+      console.log(`[恢复密钥生成] 恢复密钥: ${formattedKey}`);
+      console.log(`[恢复密钥生成] 密钥哈希: ${recoveryKeyHash}`);
+      console.log('='.repeat(80));
+    }
+
     return {
       recoveryKey: formattedKey,
       message: '请妥善保管恢复密钥，丢失后无法找回',
@@ -383,6 +427,41 @@ export class AuthService implements IAuthService {
         refreshToken,
         expiresIn: this.ACCESS_TOKEN_EXPIRY_SECONDS,
       },
+    };
+  }
+
+  private async generateAuthResponseWithRecoveryKey(
+    user: User,
+    recoveryKey: string
+  ): Promise<AuthResponseDto> {
+    const payload: JwtPayload = {
+      userId: user.id,
+      email: user.email || undefined,
+      phone: user.phoneNumber || undefined,
+    };
+
+    const accessToken = this.jwtService.generateToken(payload);
+    const refreshToken = this.jwtService.generateRefreshToken(payload);
+
+    // 保存刷新令牌
+    const expiresAt = new Date(
+      Date.now() + this.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
+    );
+    await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email || undefined,
+        phoneNumber: user.phoneNumber || undefined,
+        createdAt: user.createdAt,
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+        expiresIn: this.ACCESS_TOKEN_EXPIRY_SECONDS,
+      },
+      recoveryKey, // 仅在注册时返回一次
     };
   }
 }

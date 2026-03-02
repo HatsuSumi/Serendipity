@@ -1,4 +1,5 @@
 import '../../models/user.dart';
+import '../../models/register_result.dart';
 
 /// 认证仓库接口
 /// 
@@ -55,7 +56,7 @@ abstract class IAuthRepository {
   /// - [email]：用户邮箱
   /// - [password]：用户密码
   /// 
-  /// 返回：注册成功的用户对象
+  /// 返回：注册结果（包含用户对象和恢复密钥）
   /// 
   /// 调用者：
   /// - AuthProvider.signUpWithEmail()
@@ -65,7 +66,7 @@ abstract class IAuthRepository {
   /// - email 为空或格式不正确：抛出 ArgumentError
   /// - password 长度小于 6：抛出 ArgumentError
   /// - 邮箱已被注册：抛出具体的认证异常（由实现类定义）
-  Future<User> signUpWithEmail(String email, String password);
+  Future<RegisterResult> signUpWithEmail(String email, String password);
   
   /// 使用手机号和验证码登录
   /// 
@@ -114,7 +115,7 @@ abstract class IAuthRepository {
   /// - [verificationCode]：短信验证码
   /// - [verificationId]：验证 ID（由 sendPhoneVerificationCode 返回）
   /// 
-  /// 返回：注册成功的用户对象
+  /// 返回：注册结果（包含用户对象和恢复密钥）
   /// 
   /// 调用者：
   /// - AuthProvider.signUpWithPhone()
@@ -125,7 +126,7 @@ abstract class IAuthRepository {
   /// - verificationCode 为空：抛出 ArgumentError
   /// - verificationId 为空：抛出 ArgumentError
   /// - 手机号已被注册：抛出具体的认证异常（由实现类定义）
-  Future<User> signUpWithPhone(
+  Future<RegisterResult> signUpWithPhone(
     String phoneNumber,
     String verificationCode,
     String verificationId,

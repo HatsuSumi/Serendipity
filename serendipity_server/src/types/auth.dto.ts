@@ -83,6 +83,7 @@ export interface AuthResponseDto {
     refreshToken: string;
     expiresIn: number;
   };
+  recoveryKey?: string; // 仅在注册时返回一次
 }
 
 // 用户信息响应

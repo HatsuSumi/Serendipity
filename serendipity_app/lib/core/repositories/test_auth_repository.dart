@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/user.dart';
+import '../../models/register_result.dart';
 import '../../models/enums.dart';
 import '../../core/utils/validation_helper.dart';
 import 'i_auth_repository.dart';
@@ -217,7 +218,7 @@ class TestAuthRepository implements IAuthRepository {
   }
   
   @override
-  Future<User> signUpWithEmail(String email, String password) async {
+  Future<RegisterResult> signUpWithEmail(String email, String password) async {
     // Fail Fast：参数验证（使用统一的验证规则）
     ValidationHelper.validateEmailForRepository(email);
     ValidationHelper.validatePasswordForRepository(password);
@@ -248,6 +249,14 @@ class TestAuthRepository implements IAuthRepository {
     // 保存密码到 Hive（仅测试环境）
     await _savePassword(user.id, password);
     
+    // 生成恢复密钥
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final recoveryKey = 'test-${timestamp.toString().substring(timestamp.toString().length - 8)}';
+    final formattedKey = '${recoveryKey.substring(0, 4)}-${recoveryKey.substring(4, 8)}-${recoveryKey.substring(8)}';
+    
+    // 保存恢复密钥到 Hive
+    await _passwordsBox.put('recovery_key_${user.id}', formattedKey);
+    
     // 自动登录
     _currentUser = user;
     _authStateController.add(_currentUser);
@@ -255,7 +264,10 @@ class TestAuthRepository implements IAuthRepository {
     // 保存当前用户 ID 到 Hive
     await _saveCurrentUserId(user.id);
     
-    return user;
+    return RegisterResult(
+      user: user,
+      recoveryKey: formattedKey,
+    );
   }
   
   @override
@@ -319,7 +331,7 @@ class TestAuthRepository implements IAuthRepository {
   }
   
   @override
-  Future<User> signUpWithPhone(
+  Future<RegisterResult> signUpWithPhone(
     String phoneNumber,
     String verificationCode,
     String verificationId,
@@ -363,6 +375,14 @@ class TestAuthRepository implements IAuthRepository {
     // 保存到 Hive
     await _saveUser(user);
     
+    // 生成恢复密钥
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final recoveryKey = 'test-${timestamp.toString().substring(timestamp.toString().length - 8)}';
+    final formattedKey = '${recoveryKey.substring(0, 4)}-${recoveryKey.substring(4, 8)}-${recoveryKey.substring(8)}';
+    
+    // 保存恢复密钥到 Hive
+    await _passwordsBox.put('recovery_key_${user.id}', formattedKey);
+    
     // 自动登录
     _currentUser = user;
     _authStateController.add(_currentUser);
@@ -370,7 +390,10 @@ class TestAuthRepository implements IAuthRepository {
     // 保存当前用户 ID 到 Hive
     await _saveCurrentUserId(user.id);
     
-    return user;
+    return RegisterResult(
+      user: user,
+      recoveryKey: formattedKey,
+    );
   }
   
   @override
