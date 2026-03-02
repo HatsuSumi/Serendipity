@@ -4,62 +4,62 @@ import { body } from 'express-validator';
 export const createCommunityPostValidation = [
   body('id')
     .isUUID()
-    .withMessage('Invalid post ID format'),
+    .withMessage('帖子ID格式不正确'),
   
   body('recordId')
     .isUUID()
-    .withMessage('Invalid record ID format'),
+    .withMessage('记录ID格式不正确'),
   
   body('timestamp')
     .isISO8601()
-    .withMessage('Invalid timestamp format, must be ISO 8601'),
+    .withMessage('时间戳格式不正确，必须是ISO 8601格式'),
   
   body('address')
     .optional()
     .isString()
-    .withMessage('Address must be a string'),
+    .withMessage('地址必须是字符串'),
   
   body('placeName')
     .optional()
     .isString()
-    .withMessage('Place name must be a string'),
+    .withMessage('地点名称必须是字符串'),
   
   body('placeType')
     .optional()
     .isString()
-    .withMessage('Place type must be a string'),
+    .withMessage('地点类型必须是字符串'),
   
   body('cityName')
     .optional()
     .isString()
-    .withMessage('City name must be a string'),
+    .withMessage('城市名称必须是字符串'),
   
   body('description')
     .optional()
     .isString()
-    .withMessage('Description must be a string'),
+    .withMessage('描述必须是字符串'),
   
   body('tags')
     .isArray()
-    .withMessage('Tags must be an array'),
+    .withMessage('标签必须是数组'),
   
   body('tags.*.tag')
     .isString()
-    .withMessage('Tag must be a string'),
+    .withMessage('标签必须是字符串'),
   
   body('tags.*.note')
     .optional()
     .isString()
-    .withMessage('Tag note must be a string'),
+    .withMessage('标签备注必须是字符串'),
   
   body('status')
     .isString()
     .notEmpty()
-    .withMessage('Status is required'),
+    .withMessage('状态不能为空'),
   
   body('publishedAt')
     .optional()
     .isISO8601()
-    .withMessage('Invalid publishedAt format, must be ISO 8601'),
+    .withMessage('发布时间格式不正确，必须是ISO 8601格式'),
 ];
 

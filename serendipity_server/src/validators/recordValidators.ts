@@ -2,94 +2,94 @@ import { body, query } from 'express-validator';
 
 // 位置验证
 const locationValidation = [
-  body('location').isObject().withMessage('Location must be an object'),
+  body('location').isObject().withMessage('位置必须是对象'),
   body('location.latitude')
     .optional()
     .isFloat({ min: -90, max: 90 })
-    .withMessage('Latitude must be between -90 and 90'),
+    .withMessage('纬度必须在-90到90之间'),
   body('location.longitude')
     .optional()
     .isFloat({ min: -180, max: 180 })
-    .withMessage('Longitude must be between -180 and 180'),
+    .withMessage('经度必须在-180到180之间'),
   body('location.address')
     .optional()
     .isString()
-    .withMessage('Address must be a string'),
+    .withMessage('地址必须是字符串'),
   body('location.placeName')
     .optional()
     .isString()
-    .withMessage('Place name must be a string'),
+    .withMessage('地点名称必须是字符串'),
   body('location.placeType')
     .optional()
     .isString()
-    .withMessage('Place type must be a string'),
+    .withMessage('地点类型必须是字符串'),
 ];
 
 // 标签验证
 const tagsValidation = [
-  body('tags').isArray().withMessage('Tags must be an array'),
+  body('tags').isArray().withMessage('标签必须是数组'),
   body('tags.*.tag')
     .isString()
     .notEmpty()
-    .withMessage('Tag name is required'),
+    .withMessage('标签名称不能为空'),
   body('tags.*.note')
     .optional()
     .isString()
     .isLength({ max: 50 })
-    .withMessage('Tag note must be at most 50 characters'),
+    .withMessage('标签备注最多50个字符'),
 ];
 
 // 创建记录验证
 export const createRecordValidation = [
-  body('id').isUUID().withMessage('ID must be a valid UUID'),
-  body('timestamp').isISO8601().withMessage('Timestamp must be a valid date'),
+  body('id').isUUID().withMessage('ID必须是有效的UUID'),
+  body('timestamp').isISO8601().withMessage('时间戳必须是有效的日期'),
   ...locationValidation,
   body('description')
     .optional()
     .isString()
     .isLength({ max: 500 })
-    .withMessage('Description must be at most 500 characters'),
+    .withMessage('描述最多500个字符'),
   ...tagsValidation,
-  body('emotion').optional().isString().withMessage('Emotion must be a string'),
+  body('emotion').optional().isString().withMessage('情绪必须是字符串'),
   body('status')
     .isString()
     .notEmpty()
-    .withMessage('Status is required'),
+    .withMessage('状态不能为空'),
   body('storyLineId')
     .optional()
     .isUUID()
-    .withMessage('StoryLine ID must be a valid UUID'),
+    .withMessage('故事线ID必须是有效的UUID'),
   body('ifReencounter')
     .optional()
     .isString()
-    .withMessage('If reencounter must be a string'),
+    .withMessage('如果再遇必须是字符串'),
   body('conversationStarter')
     .optional()
     .isString()
     .isLength({ max: 500 })
-    .withMessage('Conversation starter must be at most 500 characters'),
+    .withMessage('对话开场白最多500个字符'),
   body('backgroundMusic')
     .optional()
     .isString()
-    .withMessage('Background music must be a string'),
-  body('weather').isArray().withMessage('Weather must be an array'),
-  body('weather.*').isString().withMessage('Weather item must be a string'),
-  body('isPinned').isBoolean().withMessage('Is pinned must be a boolean'),
-  body('createdAt').isISO8601().withMessage('Created at must be a valid date'),
-  body('updatedAt').isISO8601().withMessage('Updated at must be a valid date'),
+    .withMessage('背景音乐必须是字符串'),
+  body('weather').isArray().withMessage('天气必须是数组'),
+  body('weather.*').isString().withMessage('天气项必须是字符串'),
+  body('isPinned').isBoolean().withMessage('是否置顶必须是布尔值'),
+  body('createdAt').isISO8601().withMessage('创建时间必须是有效的日期'),
+  body('updatedAt').isISO8601().withMessage('更新时间必须是有效的日期'),
 ];
 
 // 批量创建记录验证
 export const batchCreateRecordsValidation = [
-  body('records').isArray().withMessage('Records must be an array'),
-  body('records.*.id').isUUID().withMessage('ID must be a valid UUID'),
+  body('records').isArray().withMessage('记录必须是数组'),
+  body('records.*.id').isUUID().withMessage('ID必须是有效的UUID'),
   body('records.*.timestamp')
     .isISO8601()
-    .withMessage('Timestamp must be a valid date'),
+    .withMessage('时间戳必须是有效的日期'),
   body('records.*.status')
     .isString()
     .notEmpty()
-    .withMessage('Status is required'),
+    .withMessage('状态不能为空'),
 ];
 
 // 更新记录验证
@@ -97,39 +97,39 @@ export const updateRecordValidation = [
   body('timestamp')
     .optional()
     .isISO8601()
-    .withMessage('Timestamp must be a valid date'),
-  body('location').optional().isObject().withMessage('Location must be an object'),
+    .withMessage('时间戳必须是有效的日期'),
+  body('location').optional().isObject().withMessage('位置必须是对象'),
   body('description')
     .optional()
     .isString()
     .isLength({ max: 500 })
-    .withMessage('Description must be at most 500 characters'),
-  body('tags').optional().isArray().withMessage('Tags must be an array'),
-  body('emotion').optional().isString().withMessage('Emotion must be a string'),
-  body('status').optional().isString().withMessage('Status must be a string'),
+    .withMessage('描述最多500个字符'),
+  body('tags').optional().isArray().withMessage('标签必须是数组'),
+  body('emotion').optional().isString().withMessage('情绪必须是字符串'),
+  body('status').optional().isString().withMessage('状态必须是字符串'),
   body('storyLineId')
     .optional()
     .isUUID()
-    .withMessage('StoryLine ID must be a valid UUID'),
+    .withMessage('故事线ID必须是有效的UUID'),
   body('ifReencounter')
     .optional()
     .isString()
-    .withMessage('If reencounter must be a string'),
+    .withMessage('如果再遇必须是字符串'),
   body('conversationStarter')
     .optional()
     .isString()
     .isLength({ max: 500 })
-    .withMessage('Conversation starter must be at most 500 characters'),
+    .withMessage('对话开场白最多500个字符'),
   body('backgroundMusic')
     .optional()
     .isString()
-    .withMessage('Background music must be a string'),
-  body('weather').optional().isArray().withMessage('Weather must be an array'),
+    .withMessage('背景音乐必须是字符串'),
+  body('weather').optional().isArray().withMessage('天气必须是数组'),
   body('isPinned')
     .optional()
     .isBoolean()
-    .withMessage('Is pinned must be a boolean'),
-  body('updatedAt').isISO8601().withMessage('Updated at must be a valid date'),
+    .withMessage('是否置顶必须是布尔值'),
+  body('updatedAt').isISO8601().withMessage('更新时间必须是有效的日期'),
 ];
 
 // 获取记录查询验证
@@ -137,14 +137,14 @@ export const getRecordsQueryValidation = [
   query('lastSyncTime')
     .optional()
     .isISO8601()
-    .withMessage('Last sync time must be a valid date'),
+    .withMessage('最后同步时间必须是有效的日期'),
   query('limit')
     .optional()
     .isInt({ min: 1, max: 1000 })
-    .withMessage('Limit must be between 1 and 1000'),
+    .withMessage('限制数量必须在1到1000之间'),
   query('offset')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Offset must be a non-negative integer'),
+    .withMessage('偏移量必须是非负整数'),
 ];
 

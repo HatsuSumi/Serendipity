@@ -11,15 +11,15 @@ import { PaymentMethod } from '../types/payment.dto';
 export const createPaymentSchema = [
   body('amount')
     .isNumeric()
-    .withMessage('Amount must be a number')
+    .withMessage('金额必须是数字')
     .isFloat({ min: 0, max: 648 })
-    .withMessage('Amount must be between ¥0 and ¥648'),
+    .withMessage('金额必须在¥0到¥648之间'),
   
   body('method')
     .isString()
-    .withMessage('Payment method must be a string')
+    .withMessage('支付方式必须是字符串')
     .isIn([PaymentMethod.FREE, PaymentMethod.WECHAT, PaymentMethod.ALIPAY])
-    .withMessage('Payment method must be one of: free, wechat, alipay'),
+    .withMessage('支付方式必须是以下之一：free、wechat、alipay'),
 ];
 
 /**
@@ -28,35 +28,35 @@ export const createPaymentSchema = [
 export const paymentCallbackSchema = [
   body('orderId')
     .isString()
-    .withMessage('Order ID must be a string')
+    .withMessage('订单ID必须是字符串')
     .notEmpty()
-    .withMessage('Order ID is required'),
+    .withMessage('订单ID不能为空'),
   
   body('transactionId')
     .isString()
-    .withMessage('Transaction ID must be a string')
+    .withMessage('交易ID必须是字符串')
     .notEmpty()
-    .withMessage('Transaction ID is required'),
+    .withMessage('交易ID不能为空'),
   
   body('amount')
     .isNumeric()
-    .withMessage('Amount must be a number')
+    .withMessage('金额必须是数字')
     .isFloat({ min: 0 })
-    .withMessage('Amount must be at least 0'),
+    .withMessage('金额必须至少为0'),
   
   body('status')
     .isString()
-    .withMessage('Status must be a string')
+    .withMessage('状态必须是字符串')
     .notEmpty()
-    .withMessage('Status is required'),
+    .withMessage('状态不能为空'),
   
   body('paidAt')
     .isISO8601()
-    .withMessage('Paid at must be a valid date'),
+    .withMessage('支付时间必须是有效的日期'),
   
   body('signature')
     .optional()
     .isString()
-    .withMessage('Signature must be a string'),
+    .withMessage('签名必须是字符串'),
 ];
 

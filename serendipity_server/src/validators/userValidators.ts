@@ -11,13 +11,13 @@ export const updateUserValidation = [
   body('displayName')
     .optional()
     .isString()
-    .withMessage('Display name must be a string')
+    .withMessage('显示名称必须是字符串')
     .isLength({ min: 1, max: 100 })
-    .withMessage('Display name must be between 1 and 100 characters'),
+    .withMessage('显示名称长度必须在1到100个字符之间'),
   body('avatarUrl')
     .optional()
     .isURL()
-    .withMessage('Avatar URL must be a valid URL'),
+    .withMessage('头像URL必须是有效的URL'),
 ];
 
 /**
@@ -27,44 +27,44 @@ export const updateUserSettingsValidation = [
   body('theme')
     .optional()
     .isString()
-    .withMessage('Theme must be a string')
+    .withMessage('主题必须是字符串')
     .isIn(['light', 'dark', 'system', 'misty', 'midnight', 'warm', 'autumn'])
-    .withMessage('Invalid theme value'),
+    .withMessage('主题值不正确'),
   body('pageTransition')
     .optional()
     .isString()
-    .withMessage('Page transition must be a string'),
+    .withMessage('页面跳转动画必须是字符串'),
   body('dialogAnimation')
     .optional()
     .isString()
-    .withMessage('Dialog animation must be a string'),
+    .withMessage('对话框动画必须是字符串'),
   body('notifications')
     .optional()
     .isObject()
-    .withMessage('Notifications must be an object'),
+    .withMessage('通知设置必须是对象'),
   body('notifications.checkInReminder')
     .optional()
     .isBoolean()
-    .withMessage('Check-in reminder must be a boolean'),
+    .withMessage('签到提醒必须是布尔值'),
   body('notifications.checkInReminderTime')
     .optional()
     .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
-    .withMessage('Check-in reminder time must be in HH:mm format'),
+    .withMessage('签到提醒时间必须是HH:mm格式'),
   body('notifications.achievementUnlocked')
     .optional()
     .isBoolean()
-    .withMessage('Achievement unlocked must be a boolean'),
+    .withMessage('成就解锁通知必须是布尔值'),
   body('checkIn')
     .optional()
     .isObject()
-    .withMessage('Check-in must be an object'),
+    .withMessage('签到设置必须是对象'),
   body('checkIn.vibrationEnabled')
     .optional()
     .isBoolean()
-    .withMessage('Vibration enabled must be a boolean'),
+    .withMessage('震动开关必须是布尔值'),
   body('checkIn.confettiEnabled')
     .optional()
     .isBoolean()
-    .withMessage('Confetti enabled must be a boolean'),
+    .withMessage('粒子特效开关必须是布尔值'),
 ];
 

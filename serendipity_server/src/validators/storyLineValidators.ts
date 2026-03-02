@@ -2,31 +2,31 @@ import { body, query } from 'express-validator';
 
 // 创建故事线验证
 export const createStoryLineValidation = [
-  body('id').isUUID().withMessage('ID must be a valid UUID'),
+  body('id').isUUID().withMessage('ID必须是有效的UUID'),
   body('name')
     .isString()
     .notEmpty()
     .isLength({ max: 255 })
-    .withMessage('Name is required and must be at most 255 characters'),
-  body('recordIds').isArray().withMessage('Record IDs must be an array'),
+    .withMessage('名称不能为空且最多255个字符'),
+  body('recordIds').isArray().withMessage('记录ID必须是数组'),
   body('recordIds.*')
     .isUUID()
-    .withMessage('Each record ID must be a valid UUID'),
-  body('createdAt').isISO8601().withMessage('Created at must be a valid date'),
-  body('updatedAt').isISO8601().withMessage('Updated at must be a valid date'),
+    .withMessage('每个记录ID必须是有效的UUID'),
+  body('createdAt').isISO8601().withMessage('创建时间必须是有效的日期'),
+  body('updatedAt').isISO8601().withMessage('更新时间必须是有效的日期'),
 ];
 
 // 批量创建故事线验证
 export const batchCreateStoryLinesValidation = [
-  body('storylines').isArray().withMessage('Storylines must be an array'),
-  body('storylines.*.id').isUUID().withMessage('ID must be a valid UUID'),
+  body('storylines').isArray().withMessage('故事线必须是数组'),
+  body('storylines.*.id').isUUID().withMessage('ID必须是有效的UUID'),
   body('storylines.*.name')
     .isString()
     .notEmpty()
-    .withMessage('Name is required'),
+    .withMessage('名称不能为空'),
   body('storylines.*.recordIds')
     .isArray()
-    .withMessage('Record IDs must be an array'),
+    .withMessage('记录ID必须是数组'),
 ];
 
 // 更新故事线验证
@@ -36,16 +36,16 @@ export const updateStoryLineValidation = [
     .isString()
     .notEmpty()
     .isLength({ max: 255 })
-    .withMessage('Name must be at most 255 characters'),
+    .withMessage('名称最多255个字符'),
   body('recordIds')
     .optional()
     .isArray()
-    .withMessage('Record IDs must be an array'),
+    .withMessage('记录ID必须是数组'),
   body('recordIds.*')
     .optional()
     .isUUID()
-    .withMessage('Each record ID must be a valid UUID'),
-  body('updatedAt').isISO8601().withMessage('Updated at must be a valid date'),
+    .withMessage('每个记录ID必须是有效的UUID'),
+  body('updatedAt').isISO8601().withMessage('更新时间必须是有效的日期'),
 ];
 
 // 获取故事线查询验证
@@ -53,14 +53,14 @@ export const getStoryLinesQueryValidation = [
   query('lastSyncTime')
     .optional()
     .isISO8601()
-    .withMessage('Last sync time must be a valid date'),
+    .withMessage('最后同步时间必须是有效的日期'),
   query('limit')
     .optional()
     .isInt({ min: 1, max: 1000 })
-    .withMessage('Limit must be between 1 and 1000'),
+    .withMessage('限制数量必须在1到1000之间'),
   query('offset')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Offset must be a non-negative integer'),
+    .withMessage('偏移量必须是非负整数'),
 ];
 
