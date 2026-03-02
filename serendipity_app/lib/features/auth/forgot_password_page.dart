@@ -24,6 +24,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   final _emailController = TextEditingController();
   final _recoveryKeyController = TextEditingController();
   final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   
   bool _isLoading = false;
   
@@ -32,6 +33,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     _emailController.dispose();
     _recoveryKeyController.dispose();
     _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -87,6 +89,17 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   enabled: !_isLoading,
                 ),
                 
+                const SizedBox(height: 16),
+                
+                // 确认新密码输入框
+                AuthTextField(
+                  type: AuthTextFieldType.password,
+                  controller: _confirmPasswordController,
+                  label: '确认新密码',
+                  hint: '请再次输入新密码',
+                  enabled: !_isLoading,
+                ),
+                
                 const SizedBox(height: 24),
                 
                 // 重置按钮
@@ -123,6 +136,12 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   Future<void> _handleResetPassword() async {
     // Fail Fast：表单验证
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    
+    // Fail Fast：密码一致性验证
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      MessageHelper.showError(context, '两次输入的密码不一致');
       return;
     }
     

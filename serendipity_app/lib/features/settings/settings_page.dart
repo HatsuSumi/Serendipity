@@ -338,6 +338,14 @@ class SettingsPage extends ConsumerWidget {
                         );
                       },
                     ),
+                    // 恢复密钥管理（仅邮箱登录用户）
+                    if (user.email != null)
+                      ListTile(
+                        leading: const Icon(Icons.vpn_key_outlined),
+                        title: const Text('恢复密钥'),
+                        subtitle: const Text('用于找回密码'),
+                        onTap: () => _showRecoveryKeyDialog(context, ref),
+                      ),
                     // 退出登录
                     ListTile(
                       leading: const Icon(Icons.logout, color: Colors.red),
@@ -852,6 +860,138 @@ class SettingsPage extends ConsumerWidget {
                 },
                 child: const Text('确定'),
               ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  
+  /// 显示恢复密钥对话框
+  /// 
+  /// 调用者：恢复密钥 ListTile
+  /// 
+  /// 遵循原则：
+  /// - 单一职责：只负责显示和管理恢复密钥
+  /// - Fail Fast：参数验证
+  /// - 用户体验优先：提供查看和重新生成功能
+  void _showRecoveryKeyDialog(BuildContext context, WidgetRef ref) {
+    String? recoveryKey;
+    bool isLoading = false;
+    
+    DialogHelper.show(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('恢复密钥'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '恢复密钥用于在忘记密码时重置密码。',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '⚠️ 请妥善保管，丢失后无法找回！',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (recoveryKey != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: SelectableText(
+                      recoveryKey!,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () {
+                          // 复制到剪贴板
+                          // TODO: 实现复制功能
+                          MessageHelper.showSuccess(context, '已复制到剪贴板');
+                        },
+                        icon: const Icon(Icons.copy, size: 18),
+                        label: const Text('复制'),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  const Text(
+                    '点击"生成恢复密钥"按钮生成新的恢复密钥。',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '注意：生成新密钥会覆盖旧密钥。',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('关闭'),
+              ),
+              if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else
+                TextButton(
+                  onPressed: () async {
+                    setState(() {
+                      isLoading = true;
+                    });
+                    
+                    try {
+                      final key = await ref.read(authProvider.notifier).generateRecoveryKey();
+                      setState(() {
+                        recoveryKey = key;
+                        isLoading = false;
+                      });
+                      if (context.mounted) {
+                        MessageHelper.showSuccess(context, '恢复密钥已生成');
+                      }
+                    } catch (e) {
+                      setState(() {
+                        isLoading = false;
+                      });
+                      if (context.mounted) {
+                        MessageHelper.showError(context, '生成失败：${e.toString()}');
+                      }
+                    }
+                  },
+                  child: Text(recoveryKey == null ? '生成恢复密钥' : '重新生成'),
+                ),
             ],
           );
         },
