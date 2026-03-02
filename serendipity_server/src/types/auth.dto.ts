@@ -36,8 +36,14 @@ export interface SendVerificationCodeDto {
 // 重置密码请求
 export interface ResetPasswordDto {
   email: string;
-  verificationCode: string;
+  recoveryKey: string;
   newPassword: string;
+}
+
+// 生成恢复密钥响应
+export interface GenerateRecoveryKeyResponseDto {
+  recoveryKey: string;
+  message: string;
 }
 
 // 刷新 Token 请求

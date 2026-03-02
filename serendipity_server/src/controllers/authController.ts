@@ -205,4 +205,18 @@ export class AuthController {
       next(error);
     }
   };
+
+  generateRecoveryKey = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const result = await this.authService.generateRecoveryKey(userId);
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

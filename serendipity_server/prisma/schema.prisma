@@ -11,6 +11,7 @@ model User {
   email          String?         @unique
   phoneNumber    String?         @unique @map("phone_number")
   passwordHash   String          @map("password_hash")
+  recoveryKey    String?         @map("recovery_key")
   displayName    String?         @map("display_name") @db.VarChar(100)
   avatarUrl      String?         @map("avatar_url")
   createdAt      DateTime        @default(now()) @map("created_at")

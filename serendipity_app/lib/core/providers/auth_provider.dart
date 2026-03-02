@@ -253,14 +253,31 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// Fail Fast：
   /// - 邮箱格式错误立即抛异常
-  /// - 发送失败立即抛异常
-  Future<void> resetPassword(String email) async {
+  /// - 恢复密钥为空立即抛异常
+  /// - 新密码格式错误立即抛异常
+  Future<void> resetPassword(String email, String recoveryKey, String newPassword) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
     if (email.isEmpty) {
       throw ArgumentError('邮箱不能为空');
     }
+    if (recoveryKey.isEmpty) {
+      throw ArgumentError('恢复密钥不能为空');
+    }
+    if (newPassword.isEmpty) {
+      throw ArgumentError('新密码不能为空');
+    }
     
-    await _repository.resetPassword(email);
+    await _repository.resetPassword(email, recoveryKey, newPassword);
+  }
+  
+  /// 生成恢复密钥
+  /// 
+  /// 调用者：SettingsPage（账号管理）
+  /// 
+  /// Fail Fast：
+  /// - 用户未登录立即抛异常
+  Future<String> generateRecoveryKey() async {
+    return await _repository.generateRecoveryKey();
   }
   
   /// 修改密码

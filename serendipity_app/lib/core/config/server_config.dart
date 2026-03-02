@@ -48,6 +48,7 @@ class ServerConfig {
   static const String authMe = '/auth/me';
   static const String authChangeEmail = '/auth/email';
   static const String authChangePhone = '/auth/phone';
+  static const String authGenerateRecoveryKey = '/auth/recovery-key';
   
   // 用户相关
   static const String usersMe = '/users/me';

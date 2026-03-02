@@ -97,5 +97,11 @@ export const createAuthRoutes = (authController: AuthController): Router => {
     authController.changePhone
   );
 
+  router.post(
+    '/recovery-key',
+    authMiddleware,
+    authController.generateRecoveryKey
+  );
+
   return router;
 };

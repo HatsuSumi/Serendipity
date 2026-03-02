@@ -218,20 +218,48 @@ class CustomServerAuthRepository implements IAuthRepository {
   }
   
   @override
-  Future<void> resetPassword(String email) async {
+  Future<void> resetPassword(String email, String recoveryKey, String newPassword) async {
     // Fail Fast：参数验证
     if (email.isEmpty) {
       throw ArgumentError('邮箱不能为空');
+    }
+    if (recoveryKey.isEmpty) {
+      throw ArgumentError('恢复密钥不能为空');
+    }
+    if (newPassword.isEmpty || newPassword.length < 6) {
+      throw ArgumentError('新密码长度必须至少 6 位');
     }
     
     try {
       await _httpClient.post(
         ServerConfig.authResetPassword,
-        body: {'email': email},
+        body: {
+          'email': email,
+          'recoveryKey': recoveryKey,
+          'newPassword': newPassword,
+        },
         skipAuth: true,
       );
     } on HttpException catch (e) {
-      throw Exception('发送重置邮件失败：${e.message}');
+      throw Exception('重置密码失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<String> generateRecoveryKey() async {
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    try {
+      final response = await _httpClient.post(
+        ServerConfig.authGenerateRecoveryKey,
+      );
+      
+      final data = response['data'] as Map<String, dynamic>;
+      return data['recoveryKey'] as String;
+    } on HttpException catch (e) {
+      throw Exception('生成恢复密钥失败：${e.message}');
     }
   }
   

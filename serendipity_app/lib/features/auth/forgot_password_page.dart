@@ -22,13 +22,16 @@ class ForgotPasswordPage extends ConsumerStatefulWidget {
 class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _recoveryKeyController = TextEditingController();
+  final _newPasswordController = TextEditingController();
   
   bool _isLoading = false;
-  bool _isEmailSent = false;
   
   @override
   void dispose() {
     _emailController.dispose();
+    _recoveryKeyController.dispose();
+    _newPasswordController.dispose();
     super.dispose();
   }
 
@@ -59,22 +62,39 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   controller: _emailController,
                   label: '邮箱',
                   hint: '请输入注册时使用的邮箱',
-                  enabled: !_isLoading && !_isEmailSent,
+                  enabled: !_isLoading,
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 恢复密钥输入框
+                AuthTextField(
+                  type: AuthTextFieldType.password,
+                  controller: _recoveryKeyController,
+                  label: '恢复密钥',
+                  hint: '请输入注册时保存的恢复密钥',
+                  enabled: !_isLoading,
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // 新密码输入框
+                AuthTextField(
+                  type: AuthTextFieldType.password,
+                  controller: _newPasswordController,
+                  label: '新密码',
+                  hint: '请输入新密码（至少6位）',
+                  enabled: !_isLoading,
                 ),
                 
                 const SizedBox(height: 24),
                 
-                // 发送按钮
+                // 重置按钮
                 AuthButton.primary(
-                  text: _isEmailSent ? '重新发送' : '发送重置邮件',
-                  onPressed: _handleSendResetEmail,
+                  text: '重置密码',
+                  onPressed: _handleResetPassword,
                   isLoading: _isLoading,
                 ),
-                
-                if (_isEmailSent) ...[
-                  const SizedBox(height: 24),
-                  _buildSuccessMessage(),
-                ],
               ],
             ),
           ),
@@ -88,7 +108,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   /// 调用者：build()
   Widget _buildDescription() {
     return Text(
-      '请输入邮箱地址，系统将发送密码重置链接。',
+      '请输入邮箱地址和恢复密钥，然后设置新密码。',
       style: TextStyle(
         fontSize: 16,
         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
@@ -97,44 +117,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     );
   }
   
-  /// 构建成功提示信息
+  /// 处理重置密码
   /// 
-  /// 调用者：build()
-  Widget _buildSuccessMessage() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.green.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            color: Colors.green,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '重置邮件已发送！\n请查收邮件并按照说明重置密码。',
-              style: TextStyle(
-                color: Colors.green.shade700,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  /// 处理发送重置邮件
-  /// 
-  /// 调用者：发送按钮的 onPressed
-  Future<void> _handleSendResetEmail() async {
+  /// 调用者：重置按钮的 onPressed
+  Future<void> _handleResetPassword() async {
     // Fail Fast：表单验证
     if (!_formKey.currentState!.validate()) {
       return;
@@ -145,17 +131,17 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     });
     
     try {
-      // 调用 AuthProvider 发送重置邮件
+      // 调用 AuthProvider 重置密码
       await ref.read(authProvider.notifier).resetPassword(
         _emailController.text.trim(),
+        _recoveryKeyController.text.trim(),
+        _newPasswordController.text,
       );
       
-      // 发送成功
+      // 重置成功，返回登录页
       if (mounted) {
-        setState(() {
-          _isEmailSent = true;
-        });
-        MessageHelper.showSuccess(context, '重置邮件已发送');
+        MessageHelper.showSuccess(context, '密码重置成功，请使用新密码登录');
+        Navigator.of(context).pop();
       }
     } catch (e) {
       // 显示错误信息

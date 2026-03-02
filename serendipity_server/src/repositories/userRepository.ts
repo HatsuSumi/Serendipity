@@ -27,6 +27,8 @@ export interface IUserRepository {
   bindEmail(id: string, email: string): Promise<User>;
   bindPhone(id: string, phoneNumber: string): Promise<User>;
   updatePassword(id: string, passwordHash: string): Promise<User>;
+  updateRecoveryKey(id: string, recoveryKeyHash: string): Promise<User>;
+  findByEmailAndRecoveryKey(email: string, recoveryKeyHash: string): Promise<User | null>;
 }
 
 // 用户仓储实现
@@ -118,6 +120,22 @@ export class UserRepository implements IUserRepository {
     return this.prisma.user.update({
       where: { id },
       data: { passwordHash },
+    });
+  }
+
+  async updateRecoveryKey(id: string, recoveryKeyHash: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { recoveryKey: recoveryKeyHash },
+    });
+  }
+
+  async findByEmailAndRecoveryKey(email: string, recoveryKeyHash: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        email,
+        recoveryKey: recoveryKeyHash,
+      },
     });
   }
 }

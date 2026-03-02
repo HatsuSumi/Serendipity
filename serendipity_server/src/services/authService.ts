@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { User } from '@prisma/client';
 import { IUserRepository } from '../repositories/userRepository';
 import { IRefreshTokenRepository } from '../repositories/refreshTokenRepository';
@@ -15,6 +16,7 @@ import {
   ChangePhoneDto,
   AuthResponseDto,
   UserMeDto,
+  GenerateRecoveryKeyResponseDto,
 } from '../types/auth.dto';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
@@ -32,6 +34,7 @@ export interface IAuthService {
   getMe(userId: string): Promise<UserMeDto>;
   refreshToken(refreshToken: string): Promise<AuthResponseDto>;
   logout(userId: string): Promise<void>;
+  generateRecoveryKey(userId: string): Promise<GenerateRecoveryKeyResponseDto>;
 }
 
 // 认证服务实现
@@ -141,18 +144,28 @@ export class AuthService implements IAuthService {
   }
 
   async resetPassword(data: ResetPasswordDto): Promise<void> {
-    // 验证验证码
-    await this.verificationService.verifyCode(
+    // Fail Fast：参数验证
+    if (!data.email) {
+      throw new AppError('邮箱不能为空', ErrorCode.INVALID_CREDENTIALS);
+    }
+    if (!data.recoveryKey) {
+      throw new AppError('恢复密钥不能为空', ErrorCode.INVALID_CREDENTIALS);
+    }
+    if (!data.newPassword || data.newPassword.length < 6) {
+      throw new AppError('新密码长度必须至少 6 位', ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // 哈希恢复密钥
+    const recoveryKeyHash = await bcrypt.hash(data.recoveryKey, this.SALT_ROUNDS);
+
+    // 查找用户并验证恢复密钥
+    const user = await this.userRepository.findByEmailAndRecoveryKey(
       data.email,
-      data.verificationCode,
-      'reset_password'
+      recoveryKeyHash
     );
 
-    // 查找用户
-    const user = await this.userRepository.findByEmail(data.email);
-
     if (!user) {
-      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
+      throw new AppError('邮箱或恢复密钥错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
     // 哈希新密码
@@ -314,6 +327,32 @@ export class AuthService implements IAuthService {
 
   async logout(userId: string): Promise<void> {
     await this.refreshTokenRepository.deleteByUserId(userId);
+  }
+
+  async generateRecoveryKey(userId: string): Promise<GenerateRecoveryKeyResponseDto> {
+    // Fail Fast：参数验证
+    if (!userId) {
+      throw new AppError('用户ID不能为空', ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // 查找用户
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
+    }
+
+    // 生成恢复密钥（32位随机字符串，格式：xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx）
+    const recoveryKey = crypto.randomBytes(16).toString('hex');
+    const formattedKey = recoveryKey.match(/.{1,4}/g)?.join('-') || recoveryKey;
+
+    // 哈希后存储
+    const recoveryKeyHash = await bcrypt.hash(formattedKey, this.SALT_ROUNDS);
+    await this.userRepository.updateRecoveryKey(userId, recoveryKeyHash);
+
+    return {
+      recoveryKey: formattedKey,
+      message: '请妥善保管恢复密钥，丢失后无法找回',
+    };
   }
 
   private async generateAuthResponse(user: User): Promise<AuthResponseDto> {

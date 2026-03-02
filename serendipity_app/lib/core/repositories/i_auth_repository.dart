@@ -145,6 +145,8 @@ abstract class IAuthRepository {
   /// 
   /// 参数：
   /// - [email]：用户邮箱
+  /// - [recoveryKey]：恢复密钥
+  /// - [newPassword]：新密码
   /// 
   /// 调用者：
   /// - AuthProvider.resetPassword()
@@ -152,8 +154,22 @@ abstract class IAuthRepository {
   /// 
   /// Fail Fast：
   /// - email 为空或格式不正确：抛出 ArgumentError
-  /// - 邮箱不存在：抛出具体的认证异常（由实现类定义）
-  Future<void> resetPassword(String email);
+  /// - recoveryKey 为空：抛出 ArgumentError
+  /// - newPassword 为空或长度小于 6：抛出 ArgumentError
+  /// - 邮箱或恢复密钥错误：抛出具体的认证异常（由实现类定义）
+  Future<void> resetPassword(String email, String recoveryKey, String newPassword);
+  
+  /// 生成恢复密钥
+  /// 
+  /// 返回：生成的恢复密钥字符串
+  /// 
+  /// 调用者：
+  /// - AuthProvider.generateRecoveryKey()
+  /// - SettingsPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - 用户未登录：抛出 StateError
+  Future<String> generateRecoveryKey();
   
   /// 修改密码
   /// 

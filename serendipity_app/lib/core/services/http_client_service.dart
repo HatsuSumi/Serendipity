@@ -228,9 +228,16 @@ class HttpClientService {
     } else {
       // 错误响应
       // 后端返回格式：{ "success": false, "error": { "code": "...", "message": "..." } }
-      final error = body['error'] as Map<String, dynamic>?;
-      final message = error?['message'] as String? ?? body['message'] as String? ?? '请求失败';
-      final errorCode = error?['code'] as String? ?? body['errorCode'] as String? ?? 'UNKNOWN_ERROR';
+      final error = body['error'];
+      
+      String message = '请求失败';
+      String errorCode = 'UNKNOWN_ERROR';
+      
+      if (error is Map<String, dynamic>) {
+        message = error['message']?.toString() ?? message;
+        errorCode = error['code']?.toString() ?? errorCode;
+      }
+      
       throw HttpException(
         message: message,
         statusCode: response.statusCode,

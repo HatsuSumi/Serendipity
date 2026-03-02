@@ -58,9 +58,9 @@ export const resetPasswordValidation = [
   body('email')
     .isEmail()
     .withMessage('Invalid email format'),
-  body('verificationCode')
-    .isLength({ min: 6, max: 6 })
-    .withMessage('Verification code must be 6 digits'),
+  body('recoveryKey')
+    .isLength({ min: 32, max: 64 })
+    .withMessage('Recovery key must be between 32 and 64 characters'),
   body('newPassword')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters'),
