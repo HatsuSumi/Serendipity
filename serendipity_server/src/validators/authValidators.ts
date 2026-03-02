@@ -4,104 +4,104 @@ import { body } from 'express-validator';
 export const registerEmailValidation = [
   body('email')
     .isEmail()
-    .withMessage('Invalid email format'),
+    .withMessage('邮箱格式不正确'),
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
+    .withMessage('密码长度必须至少6位'),
 ];
 
 // 手机号注册验证规则
 export const registerPhoneValidation = [
   body('phoneNumber')
     .matches(/^\+?[1-9]\d{1,14}$/)
-    .withMessage('Invalid phone number format'),
+    .withMessage('手机号格式不正确'),
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
+    .withMessage('密码长度必须至少6位'),
 ];
 
 // 邮箱登录验证规则
 export const loginEmailValidation = [
   body('email')
     .isEmail()
-    .withMessage('Invalid email format'),
+    .withMessage('邮箱格式不正确'),
   body('password')
     .notEmpty()
-    .withMessage('Password is required'),
+    .withMessage('密码不能为空'),
 ];
 
 // 手机号登录验证规则
 export const loginPhoneValidation = [
   body('phoneNumber')
     .matches(/^\+?[1-9]\d{1,14}$/)
-    .withMessage('Invalid phone number format'),
+    .withMessage('手机号格式不正确'),
   body('password')
     .notEmpty()
-    .withMessage('Password is required'),
+    .withMessage('密码不能为空'),
 ];
 
 // 发送验证码验证规则
 export const sendVerificationCodeValidation = [
   body('type')
     .isIn(['email', 'phone'])
-    .withMessage('Type must be email or phone'),
+    .withMessage('类型必须是邮箱或手机号'),
   body('target')
     .notEmpty()
-    .withMessage('Target is required'),
+    .withMessage('目标不能为空'),
   body('purpose')
     .isIn(['register', 'login', 'reset_password'])
-    .withMessage('Invalid purpose'),
+    .withMessage('用途不正确'),
 ];
 
 // 重置密码验证规则
 export const resetPasswordValidation = [
   body('email')
     .isEmail()
-    .withMessage('Invalid email format'),
+    .withMessage('邮箱格式不正确'),
   body('recoveryKey')
     .isLength({ min: 32, max: 64 })
-    .withMessage('Recovery key must be between 32 and 64 characters'),
+    .withMessage('恢复密钥长度必须在32到64个字符之间'),
   body('newPassword')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
+    .withMessage('密码长度必须至少6位'),
 ];
 
 // 刷新 Token 验证规则
 export const refreshTokenValidation = [
   body('refreshToken')
     .notEmpty()
-    .withMessage('Refresh token is required'),
+    .withMessage('刷新令牌不能为空'),
 ];
 
 // 修改密码验证规则
 export const changePasswordValidation = [
   body('currentPassword')
     .notEmpty()
-    .withMessage('Current password is required'),
+    .withMessage('当前密码不能为空'),
   body('newPassword')
     .isLength({ min: 6 })
-    .withMessage('New password must be at least 6 characters'),
+    .withMessage('新密码长度必须至少6位'),
 ];
 
 // 更换邮箱验证规则
 export const changeEmailValidation = [
   body('newEmail')
     .isEmail()
-    .withMessage('Invalid email format'),
+    .withMessage('邮箱格式不正确'),
   body('password')
     .notEmpty()
-    .withMessage('Password is required'),
+    .withMessage('密码不能为空'),
   body('verificationCode')
     .isLength({ min: 6, max: 6 })
-    .withMessage('Verification code must be 6 digits'),
+    .withMessage('验证码必须是6位数字'),
 ];
 
 // 更换手机号验证规则
 export const changePhoneValidation = [
   body('newPhoneNumber')
     .matches(/^\+?[1-9]\d{1,14}$/)
-    .withMessage('Invalid phone number format'),
+    .withMessage('手机号格式不正确'),
   body('verificationCode')
     .isLength({ min: 6, max: 6 })
-    .withMessage('Verification code must be 6 digits'),
+    .withMessage('验证码必须是6位数字'),
 ];
