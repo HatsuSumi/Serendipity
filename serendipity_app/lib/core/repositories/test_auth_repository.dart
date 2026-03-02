@@ -387,21 +387,54 @@ class TestAuthRepository implements IAuthRepository {
   }
   
   @override
-  Future<void> resetPassword(String email) async {
+  Future<void> resetPassword(String email, String recoveryKey, String newPassword) async {
     // Fail Fast：参数验证
     if (email.isEmpty) {
-      throw ArgumentError('Email cannot be empty');
+      throw ArgumentError('邮箱不能为空');
     }
+    if (recoveryKey.isEmpty) {
+      throw ArgumentError('恢复密钥不能为空');
+    }
+    ValidationHelper.validatePasswordForRepository(newPassword);
     
     // 模拟网络延迟
     await Future.delayed(const Duration(milliseconds: 500));
     
     // 检查邮箱是否存在
-    if (_getUserByEmail(email) == null) {
+    final user = _getUserByEmail(email);
+    if (user == null) {
       throw Exception('该邮箱不存在');
     }
     
-    // 测试环境：直接成功（不发送真实邮件）
+    // 测试环境：验证恢复密钥（从 Hive 获取）
+    final savedRecoveryKey = _passwordsBox.get('recovery_key_${user.id}') as String?;
+    if (savedRecoveryKey == null || savedRecoveryKey != recoveryKey) {
+      throw Exception('邮箱或恢复密钥错误');
+    }
+    
+    // 更新密码
+    await _savePassword(user.id, newPassword);
+  }
+  
+  @override
+  Future<String> generateRecoveryKey() async {
+    // Fail Fast：用户未登录
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // 生成恢复密钥（测试环境使用简单格式）
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final recoveryKey = 'test-${timestamp.toString().substring(timestamp.toString().length - 8)}';
+    final formattedKey = '${recoveryKey.substring(0, 4)}-${recoveryKey.substring(4, 8)}-${recoveryKey.substring(8)}';
+    
+    // 保存恢复密钥到 Hive（测试环境）
+    await _passwordsBox.put('recovery_key_${_currentUser!.id}', formattedKey);
+    
+    return formattedKey;
   }
   
   @override
