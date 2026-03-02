@@ -73,12 +73,13 @@ class CustomServerAuthRepository implements IAuthRepository {
       );
       
       final data = response['data'] as Map<String, dynamic>;
+      final tokens = data['tokens'] as Map<String, dynamic>;
       
       // 保存 Token
       await _httpClient.saveTokens(
-        accessToken: data['accessToken'] as String,
-        refreshToken: data['refreshToken'] as String,
-        expiresAt: DateTime.parse(data['expiresAt'] as String),
+        accessToken: tokens['accessToken'] as String,
+        refreshToken: tokens['refreshToken'] as String,
+        expiresAt: DateTime.now().add(Duration(seconds: tokens['expiresIn'] as int)),
       );
       
       // 保存用户信息
@@ -110,12 +111,13 @@ class CustomServerAuthRepository implements IAuthRepository {
       );
       
       final data = response['data'] as Map<String, dynamic>;
+      final tokens = data['tokens'] as Map<String, dynamic>;
       
       // 保存 Token
       await _httpClient.saveTokens(
-        accessToken: data['accessToken'] as String,
-        refreshToken: data['refreshToken'] as String,
-        expiresAt: DateTime.parse(data['expiresAt'] as String),
+        accessToken: tokens['accessToken'] as String,
+        refreshToken: tokens['refreshToken'] as String,
+        expiresAt: DateTime.now().add(Duration(seconds: tokens['expiresIn'] as int)),
       );
       
       // 保存用户信息
@@ -158,12 +160,13 @@ class CustomServerAuthRepository implements IAuthRepository {
       );
       
       final data = response['data'] as Map<String, dynamic>;
+      final tokens = data['tokens'] as Map<String, dynamic>;
       
       // 保存 Token
       await _httpClient.saveTokens(
-        accessToken: data['accessToken'] as String,
-        refreshToken: data['refreshToken'] as String,
-        expiresAt: DateTime.parse(data['expiresAt'] as String),
+        accessToken: tokens['accessToken'] as String,
+        refreshToken: tokens['refreshToken'] as String,
+        expiresAt: DateTime.now().add(Duration(seconds: tokens['expiresIn'] as int)),
       );
       
       // 保存用户信息
