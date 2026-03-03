@@ -27,7 +27,7 @@ class UserAdapter extends TypeAdapter<User> {
       isPhoneVerified: fields[7] as bool,
       lastLoginAt: fields[8] as DateTime?,
       createdAt: fields[9] as DateTime,
-      updatedAt: fields[10] as DateTime,
+      updatedAt: fields[10] as DateTime?,
     );
   }
 

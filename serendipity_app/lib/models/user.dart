@@ -37,7 +37,7 @@ class User extends HiveObject {
   final DateTime createdAt;
   
   @HiveField(10)
-  final DateTime updatedAt;
+  final DateTime? updatedAt;
 
   User({
     required String id,
@@ -50,8 +50,9 @@ class User extends HiveObject {
     required this.isPhoneVerified,
     this.lastLoginAt,
     required this.createdAt,
-    required this.updatedAt,
-  }) : id = id.trim() {
+    DateTime? updatedAt,
+  }) : id = id.trim(),
+       updatedAt = updatedAt ?? createdAt {  // 默认使用 createdAt
     // Fail Fast：参数验证
     if (this.id.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
@@ -62,6 +63,20 @@ class User extends HiveObject {
       throw ArgumentError('邮箱和手机号至少需要提供一个');
     }
   }
+  
+  /// 获取显示名称（优先使用 displayName，否则使用邮箱/手机号）
+  String get displayNameOrFallback {
+    if (displayName != null && displayName!.isNotEmpty) {
+      return displayName!;
+    }
+    return email ?? phoneNumber ?? 'Unknown User';
+  }
+
+  /// 是否已验证（邮箱或手机号至少验证一个）
+  bool get isVerified => isEmailVerified || isPhoneVerified;
+
+  /// 主要联系方式
+  String? get primaryContact => email ?? phoneNumber;
 
   /// 从 JSON 创建 User
   factory User.fromJson(Map<String, dynamic> json) {
@@ -79,7 +94,9 @@ class User extends HiveObject {
           ? DateTime.parse(json['lastLoginAt'] as String)
           : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,  // 如果没有 updatedAt，构造函数会使用 createdAt
     );
   }
 
@@ -96,7 +113,7 @@ class User extends HiveObject {
       'isPhoneVerified': isPhoneVerified,
       'lastLoginAt': lastLoginAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
@@ -129,7 +146,7 @@ class User extends HiveObject {
     bool? isPhoneVerified,
     DateTime? Function()? lastLoginAt,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    DateTime? Function()? updatedAt,
   }) {
     return User(
       id: id ?? this.id,
@@ -142,7 +159,7 @@ class User extends HiveObject {
       isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
       lastLoginAt: lastLoginAt != null ? lastLoginAt() : this.lastLoginAt,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      updatedAt: updatedAt != null ? updatedAt() : this.updatedAt,
     );
   }
 
