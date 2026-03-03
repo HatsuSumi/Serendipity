@@ -82,6 +82,7 @@ export interface AuthResponseDto {
     accessToken: string;
     refreshToken: string;
     expiresIn: number;
+    expiresAt: string; // ISO 8601 格式
   };
   recoveryKey?: string; // 仅在注册时返回一次
 }

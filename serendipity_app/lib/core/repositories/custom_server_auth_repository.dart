@@ -52,6 +52,18 @@ class CustomServerAuthRepository implements IAuthRepository {
     ).asyncMap((future) => future);
   }
   
+  /// 从响应中保存 Token
+  /// 
+  /// 遵循 DRY 原则：提取公共逻辑，避免重复代码
+  Future<void> _saveTokensFromResponse(Map<String, dynamic> data) async {
+    final tokens = data['tokens'] as Map<String, dynamic>;
+    await _httpClient.saveTokens(
+      accessToken: tokens['accessToken'] as String,
+      refreshToken: tokens['refreshToken'] as String,
+      expiresAt: DateTime.parse(tokens['expiresAt'] as String),
+    );
+  }
+  
   @override
   Future<User> signInWithEmail(String email, String password) async {
     // Fail Fast：参数验证
@@ -73,14 +85,9 @@ class CustomServerAuthRepository implements IAuthRepository {
       );
       
       final data = response['data'] as Map<String, dynamic>;
-      final tokens = data['tokens'] as Map<String, dynamic>;
       
       // 保存 Token
-      await _httpClient.saveTokens(
-        accessToken: tokens['accessToken'] as String,
-        refreshToken: tokens['refreshToken'] as String,
-        expiresAt: DateTime.now().add(Duration(seconds: tokens['expiresIn'] as int)),
-      );
+      await _saveTokensFromResponse(data);
       
       // 保存用户信息
       _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
@@ -111,14 +118,9 @@ class CustomServerAuthRepository implements IAuthRepository {
       );
       
       final data = response['data'] as Map<String, dynamic>;
-      final tokens = data['tokens'] as Map<String, dynamic>;
       
       // 保存 Token
-      await _httpClient.saveTokens(
-        accessToken: tokens['accessToken'] as String,
-        refreshToken: tokens['refreshToken'] as String,
-        expiresAt: DateTime.now().add(Duration(seconds: tokens['expiresIn'] as int)),
-      );
+      await _saveTokensFromResponse(data);
       
       // 保存用户信息
       _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
@@ -160,14 +162,9 @@ class CustomServerAuthRepository implements IAuthRepository {
       );
       
       final data = response['data'] as Map<String, dynamic>;
-      final tokens = data['tokens'] as Map<String, dynamic>;
       
       // 保存 Token
-      await _httpClient.saveTokens(
-        accessToken: tokens['accessToken'] as String,
-        refreshToken: tokens['refreshToken'] as String,
-        expiresAt: DateTime.now().add(Duration(seconds: tokens['expiresIn'] as int)),
-      );
+      await _saveTokensFromResponse(data);
       
       // 保存用户信息
       _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);

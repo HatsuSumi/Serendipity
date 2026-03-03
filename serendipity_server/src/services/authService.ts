@@ -426,6 +426,7 @@ export class AuthService implements IAuthService {
         accessToken,
         refreshToken,
         expiresIn: this.ACCESS_TOKEN_EXPIRY_SECONDS,
+        expiresAt: new Date(Date.now() + this.ACCESS_TOKEN_EXPIRY_SECONDS * 1000).toISOString(),
       },
     };
   }
@@ -460,6 +461,7 @@ export class AuthService implements IAuthService {
         accessToken,
         refreshToken,
         expiresIn: this.ACCESS_TOKEN_EXPIRY_SECONDS,
+        expiresAt: new Date(Date.now() + this.ACCESS_TOKEN_EXPIRY_SECONDS * 1000).toISOString(),
       },
       recoveryKey, // 仅在注册时返回一次
     };
