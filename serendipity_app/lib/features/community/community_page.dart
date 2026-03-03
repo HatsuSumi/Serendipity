@@ -260,11 +260,10 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
 
           // 帖子卡片
           final post = posts[index];
-          final canDelete = ref.read(communityProvider.notifier).canDeletePost(post.userId);
           
           return CommunityPostCard(
             post: post,
-            onDelete: canDelete ? () => _deletePost(post.id) : null,
+            onDelete: post.isOwner ? () => _deletePost(post.id) : null,
           );
         },
       ),

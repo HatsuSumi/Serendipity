@@ -43,10 +43,12 @@ export class CommunityPostController {
     try {
       const limit = getQueryAsInt(req.query.limit) || 20;
       const lastTimestamp = getQueryAsString(req.query.lastTimestamp);
+      const currentUserId = req.user?.userId; // 可选，用于判断 isOwner
 
       const result = await this.communityPostService.getRecentPosts(
         limit,
-        lastTimestamp
+        lastTimestamp,
+        currentUserId
       );
 
       sendSuccess(res, result);
@@ -109,7 +111,9 @@ export class CommunityPostController {
         limit: getQueryAsInt(req.query.limit),
       };
 
-      const result = await this.communityPostService.filterPosts(query);
+      const currentUserId = req.user?.userId; // 可选，用于判断 isOwner
+
+      const result = await this.communityPostService.filterPosts(query, currentUserId);
 
       sendSuccess(res, result);
     } catch (error) {

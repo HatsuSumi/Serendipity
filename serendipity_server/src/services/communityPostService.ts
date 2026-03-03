@@ -20,12 +20,14 @@ export interface ICommunityPostService {
   ): Promise<CommunityPostResponseDto>;
   getRecentPosts(
     limit: number,
-    lastTimestamp?: string
+    lastTimestamp?: string,
+    currentUserId?: string
   ): Promise<CommunityPostListResponseDto>;
   getMyPosts(userId: string): Promise<MyCommunityPostsResponseDto>;
   deletePost(postId: string, userId: string): Promise<void>;
   filterPosts(
-    query: FilterCommunityPostsQuery
+    query: FilterCommunityPostsQuery,
+    currentUserId?: string
   ): Promise<CommunityPostListResponseDto>;
 }
 
@@ -38,12 +40,13 @@ export class CommunityPostService implements ICommunityPostService {
     data: CreateCommunityPostDto
   ): Promise<CommunityPostResponseDto> {
     const post = await this.communityPostRepository.create(userId, data);
-    return this.toResponseDto(post);
+    return this.toResponseDto(post, userId);
   }
 
   async getRecentPosts(
     limit: number = 20,
-    lastTimestamp?: string
+    lastTimestamp?: string,
+    currentUserId?: string
   ): Promise<CommunityPostListResponseDto> {
     const lastDate = lastTimestamp ? new Date(lastTimestamp) : undefined;
 
@@ -57,7 +60,7 @@ export class CommunityPostService implements ICommunityPostService {
     const resultPosts = hasMore ? posts.slice(0, limit) : posts;
 
     return {
-      posts: resultPosts.map((post) => this.toResponseDto(post)),
+      posts: resultPosts.map((post) => this.toResponseDto(post, currentUserId)),
       hasMore,
     };
   }
@@ -66,7 +69,7 @@ export class CommunityPostService implements ICommunityPostService {
     const posts = await this.communityPostRepository.findByUserId(userId);
 
     return {
-      posts: posts.map((post) => this.toResponseDto(post)),
+      posts: posts.map((post) => this.toResponseDto(post, userId)),
       total: posts.length,
     };
   }
@@ -91,7 +94,8 @@ export class CommunityPostService implements ICommunityPostService {
   }
 
   async filterPosts(
-    query: FilterCommunityPostsQuery
+    query: FilterCommunityPostsQuery,
+    currentUserId?: string
   ): Promise<CommunityPostListResponseDto> {
     const limit = query.limit || 20;
 
@@ -143,13 +147,13 @@ export class CommunityPostService implements ICommunityPostService {
     const resultPosts = hasMore ? posts.slice(0, limit) : posts;
 
     return {
-      posts: resultPosts.map((post) => this.toResponseDto(post)),
+      posts: resultPosts.map((post) => this.toResponseDto(post, currentUserId)),
       hasMore,
     };
   }
 
   // 转换为响应 DTO
-  private toResponseDto(post: CommunityPost): CommunityPostResponseDto {
+  private toResponseDto(post: CommunityPost, currentUserId?: string): CommunityPostResponseDto {
     return {
       id: post.id,
       recordId: post.recordId,
@@ -163,6 +167,7 @@ export class CommunityPostService implements ICommunityPostService {
       description: post.description || undefined,
       tags: fromJsonValue<TagDto[]>(post.tags),
       status: post.status,
+      isOwner: currentUserId ? post.userId === currentUserId : undefined,
       publishedAt: post.publishedAt.toISOString(),
       createdAt: post.createdAt.toISOString(),
       updatedAt: post.updatedAt.toISOString(),

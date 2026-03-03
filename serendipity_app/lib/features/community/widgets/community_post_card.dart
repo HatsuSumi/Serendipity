@@ -38,7 +38,7 @@ class CommunityPostCard extends StatelessWidget {
             const SizedBox(height: 12),
             
             // 第三行：描述
-            if (post.description.isNotEmpty) ...[
+            if (post.description != null && post.description!.isNotEmpty) ...[
               _buildDescription(context),
               const SizedBox(height: 12),
             ],
@@ -155,7 +155,7 @@ class CommunityPostCard extends StatelessWidget {
     final theme = Theme.of(context);
     
     return Text(
-      post.description,
+      post.description ?? '',
       style: theme.textTheme.bodyLarge,
       maxLines: 10,
       overflow: TextOverflow.ellipsis,

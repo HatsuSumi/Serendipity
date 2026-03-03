@@ -1,4 +1,5 @@
 import 'enums.dart';
+import '../core/utils/iterable_extensions.dart';
 
 /// 支付记录
 class PaymentRecord {
@@ -35,10 +36,16 @@ class PaymentRecord {
       userId: json['userId'] as String,
       membershipId: json['membershipId'] as String,
       amount: (json['amount'] as num).toDouble(),
-      method: PaymentMethod.values
-          .firstWhere((e) => e.value == json['method'] as String),
-      status: PaymentStatus.values
-          .firstWhere((e) => e.value == json['status'] as int),
+      method: PaymentMethod.values.firstWhereOrThrow(
+        (e) => e.value == json['method'] as String,
+        message: 'PaymentRecord.fromJson: PaymentMethod with value="${json['method']}" not found. '
+            'Available values: ${PaymentMethod.values.map((e) => e.value).join(", ")}',
+      ),
+      status: PaymentStatus.values.firstWhereOrThrow(
+        (e) => e.value == json['status'] as int,
+        message: 'PaymentRecord.fromJson: PaymentStatus with value=${json['status']} not found. '
+            'Available values: ${PaymentStatus.values.map((e) => e.value).join(", ")}',
+      ),
       transactionId: json['transactionId'] as String?,
       receiptData: json['receiptData'] as String?,
       paidAt: json['paidAt'] != null

@@ -28,16 +28,12 @@ class CommunityRepository {
   /// - 不包含用户身份（完全匿名）
   /// - 不包含精确 GPS 坐标
   /// 
-  /// Fail Fast:
-  /// - 如果 userId 为空，抛出 ArgumentError
+  /// 注意：CommunityPost 模型不包含 userId 字段
+  /// - 后端不返回 userId（隐私保护）
+  /// - 使用 isOwner 字段判断是否可以删除
   /// 
   /// 调用者：publishPost()
   CommunityPost _createPostFromRecord(EncounterRecord record, String userId) {
-    // Fail Fast: 参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('userId cannot be empty');
-    }
-
     final now = DateTime.now();
     
     // 使用 AddressHelper 提取省市区信息
@@ -45,7 +41,6 @@ class CommunityRepository {
     
     return CommunityPost(
       id: '${record.id}_${now.millisecondsSinceEpoch}', // 使用记录ID + 时间戳作为帖子ID
-      userId: userId, // 后台记录，前台不显示
       recordId: record.id,
       timestamp: record.timestamp,
       address: record.location.address, // 标准地址（GPS获取）
@@ -54,10 +49,10 @@ class CommunityRepository {
       province: region.province, // 省份
       city: region.city, // 城市
       area: region.area, // 区县
-      description: record.description ?? '',
+      description: record.description,
       tags: record.tags,
       status: record.status,
-      isAnonymous: true, // 始终匿名
+      isOwner: true, // 自己创建的帖子
       publishedAt: now,
       createdAt: now,
       updatedAt: now,

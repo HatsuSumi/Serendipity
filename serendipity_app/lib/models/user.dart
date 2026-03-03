@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'enums.dart';
+import '../core/utils/iterable_extensions.dart';
 
 part 'user.g.dart';
 
@@ -86,8 +87,11 @@ class User extends HiveObject {
       phoneNumber: json['phoneNumber'] as String?,
       displayName: json['displayName'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
-      authProvider: AuthProvider.values
-          .firstWhere((e) => e.value == json['authProvider'] as String),
+      authProvider: AuthProvider.values.firstWhereOrThrow(
+        (e) => e.value == json['authProvider'] as String,
+        message: 'User.fromJson: AuthProvider with value="${json['authProvider']}" not found. '
+            'Available values: ${AuthProvider.values.map((e) => e.value).join(", ")}',
+      ),
       isEmailVerified: json['isEmailVerified'] as bool,
       isPhoneVerified: json['isPhoneVerified'] as bool,
       lastLoginAt: json['lastLoginAt'] != null

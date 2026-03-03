@@ -181,9 +181,10 @@ class _MyPostsPageState extends ConsumerState<MyPostsPage> {
         itemCount: _myPosts!.length,
         itemBuilder: (context, index) {
           final post = _myPosts![index];
+          // 我的帖子页面，所有帖子都应该 isOwner = true
           return CommunityPostCard(
             post: post,
-            onDelete: () => _deletePost(post.id),
+            onDelete: post.isOwner ? () => _deletePost(post.id) : null,
           );
         },
       ),

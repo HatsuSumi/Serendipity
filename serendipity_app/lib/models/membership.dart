@@ -1,4 +1,5 @@
 import 'enums.dart';
+import '../core/utils/iterable_extensions.dart';
 
 /// 会员状态
 class Membership {
@@ -33,10 +34,16 @@ class Membership {
     return Membership(
       id: json['id'] as String,
       userId: json['userId'] as String,
-      tier: MembershipTier.values
-          .firstWhere((e) => e.value == json['tier'] as int),
-      status: MembershipStatus.values
-          .firstWhere((e) => e.value == json['status'] as int),
+      tier: MembershipTier.values.firstWhereOrThrow(
+        (e) => e.value == json['tier'] as int,
+        message: 'Membership.fromJson: MembershipTier with value=${json['tier']} not found. '
+            'Available values: ${MembershipTier.values.map((e) => e.value).join(", ")}',
+      ),
+      status: MembershipStatus.values.firstWhereOrThrow(
+        (e) => e.value == json['status'] as int,
+        message: 'Membership.fromJson: MembershipStatus with value=${json['status']} not found. '
+            'Available values: ${MembershipStatus.values.map((e) => e.value).join(", ")}',
+      ),
       startedAt: json['startedAt'] != null
           ? DateTime.parse(json['startedAt'] as String)
           : null,

@@ -37,6 +37,7 @@ export interface CommunityPostResponseDto {
   description?: string;
   tags: TagDto[];
   status: string;
+  isOwner?: boolean;  // 是否是当前用户的帖子（用于显示删除按钮）
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
