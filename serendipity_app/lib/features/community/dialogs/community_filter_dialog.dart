@@ -253,22 +253,72 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
 
   /// 构建场所类型选择器
   Widget _buildPlaceTypeSelector() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: PlaceType.values.map((type) {
-        final isSelected = _selectedPlaceType == type;
-        return FilterChip(
-          label: Text('${type.icon} ${type.label}'),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              _selectedPlaceType = selected ? type : null;
-            });
-          },
-        );
-      }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: PlaceType.values.take(10).map((type) {
+            final isSelected = _selectedPlaceType == type;
+            return FilterChip(
+              label: Text('${type.icon} ${type.label}'),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  _selectedPlaceType = selected ? type : null;
+                });
+              },
+            );
+          }).toList(),
+        ),
+        if (PlaceType.values.length > 10)
+          TextButton(
+            onPressed: _showPlaceTypeDialog,
+            child: const Text('查看全部场所类型 →'),
+          ),
+      ],
     );
+  }
+
+  /// 显示场所类型选择对话框
+  Future<void> _showPlaceTypeDialog() async {
+    final selected = await DialogHelper.show<PlaceType>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('选择场所类型'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: PlaceType.values.map((type) {
+              return ListTile(
+                leading: Text(type.icon, style: const TextStyle(fontSize: 24)),
+                title: Text(type.label),
+                selected: _selectedPlaceType == type,
+                onTap: () => Navigator.of(context).pop(type),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: const Text('清除'),
+          ),
+        ],
+      ),
+    );
+    
+    if (selected != null || selected == null && _selectedPlaceType != null) {
+      setState(() {
+        _selectedPlaceType = selected;
+      });
+    }
   }
 
   /// 构建状态选择器
