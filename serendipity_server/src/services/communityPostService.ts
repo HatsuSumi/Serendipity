@@ -107,9 +107,19 @@ export class CommunityPostService implements ICommunityPostService {
       filters.endDate = new Date(query.endDate);
     }
 
+    // 省份
+    if (query.province) {
+      filters.province = query.province;
+    }
+
     // 城市
-    if (query.cityName) {
-      filters.cityName = query.cityName;
+    if (query.city) {
+      filters.city = query.city;
+    }
+
+    // 区县
+    if (query.area) {
+      filters.area = query.area;
     }
 
     // 场所类型
@@ -147,7 +157,9 @@ export class CommunityPostService implements ICommunityPostService {
       address: post.address || undefined,
       placeName: post.placeName || undefined,
       placeType: post.placeType || undefined,
-      cityName: post.cityName || undefined,
+      province: post.province || undefined,
+      city: post.city || undefined,
+      area: post.area || undefined,
       description: post.description || undefined,
       tags: fromJsonValue<TagDto[]>(post.tags),
       status: post.status,

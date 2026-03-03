@@ -84,7 +84,9 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   Future<List<CommunityPost>> filterCommunityPosts({
     DateTime? startDate,
     DateTime? endDate,
-    String? cityName,
+    String? province,
+    String? city,
+    String? area,
     String? placeType,
     String? tag,
     int? status,

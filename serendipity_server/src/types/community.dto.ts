@@ -14,7 +14,9 @@ export interface CreateCommunityPostDto {
   address?: string;
   placeName?: string;
   placeType?: string;
-  cityName?: string;
+  province?: string;  // 省份（如"广东省"）
+  city?: string;      // 城市（如"深圳市"）
+  area?: string;      // 区县（如"南山区"）
   description?: string;
   tags: TagDto[];
   status: string;
@@ -29,7 +31,9 @@ export interface CommunityPostResponseDto {
   address?: string;
   placeName?: string;
   placeType?: string;
-  cityName?: string;
+  province?: string;  // 省份（如"广东省"）
+  city?: string;      // 城市（如"深圳市"）
+  area?: string;      // 区县（如"南山区"）
   description?: string;
   tags: TagDto[];
   status: string;
@@ -54,7 +58,9 @@ export interface MyCommunityPostsResponseDto {
 export interface FilterCommunityPostsQuery {
   startDate?: string; // YYYY-MM-DD
   endDate?: string; // YYYY-MM-DD
-  cityName?: string;
+  province?: string;  // 省份（如"广东省"）
+  city?: string;      // 城市（如"深圳市"）
+  area?: string;      // 区县（如"南山区"）
   placeType?: string;
   tag?: string;
   status?: string; // 1=missed, 2=avoided

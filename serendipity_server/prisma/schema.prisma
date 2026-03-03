@@ -80,7 +80,9 @@ model CommunityPost {
   address     String?
   placeName   String?  @map("place_name")
   placeType   String?  @map("place_type") @db.VarChar(50)
-  cityName    String?  @map("city_name") @db.VarChar(100)
+  province    String?  @db.VarChar(50)
+  city        String?  @db.VarChar(100)
+  area        String?  @db.VarChar(100)
   description String?
   tags        Json     @default("[]")
   status      String   @db.VarChar(50)
@@ -91,7 +93,9 @@ model CommunityPost {
 
   @@index([publishedAt(sort: Desc)])
   @@index([userId])
-  @@index([cityName])
+  @@index([province])
+  @@index([city])
+  @@index([area])
   @@index([placeType])
   @@index([status])
   @@map("community_posts")

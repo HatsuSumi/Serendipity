@@ -718,7 +718,9 @@ Authorization: Bearer <access_token>
   "address": "北京市朝阳区建国门外大街1号",
   "placeName": "常去的咖啡馆",
   "placeType": "coffee_shop",
-  "cityName": "北京市",
+  "province": "北京市",
+  "city": "北京市",
+  "area": "朝阳区",
   "description": "她在读《百年孤独》...",
   "tags": [
     {
@@ -829,7 +831,9 @@ Authorization: Bearer <access_token>
 ```
 ?startDate=2026-02-01  // 开始日期（不传则不限制）
 &endDate=2026-02-28    // 结束日期（不传则不限制）
-&cityName=北京市       // 城市名称（不传则不限制）
+&province=北京市       // 省份（不传则不限制）
+&city=北京市           // 城市（不传则不限制）
+&area=朝阳区           // 区县（不传则不限制）
 &placeType=coffee_shop // 场所类型（不传则不限制）
 &tag=长发              // 标签名称（不传则不限制）
 &status=1              // 状态（1=错过，2=回避，不传则不限制）

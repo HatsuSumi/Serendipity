@@ -29,10 +29,20 @@ export const createCommunityPostValidation = [
     .isString()
     .withMessage('地点类型必须是字符串'),
   
-  body('cityName')
+  body('province')
     .optional()
     .isString()
-    .withMessage('城市名称必须是字符串'),
+    .withMessage('省份必须是字符串'),
+  
+  body('city')
+    .optional()
+    .isString()
+    .withMessage('城市必须是字符串'),
+  
+  body('area')
+    .optional()
+    .isString()
+    .withMessage('区县必须是字符串'),
   
   body('description')
     .optional()

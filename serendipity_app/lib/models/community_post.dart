@@ -10,7 +10,9 @@ class CommunityPost {
   final String? address;
   final String? placeName;
   final PlaceType? placeType;
-  final String? cityName;
+  final String? province;  // 省份（如"广东省"）
+  final String? city;      // 城市（如"深圳市"）
+  final String? area;      // 区县（如"南山区"）
   final String description;
   final List<TagWithNote> tags;
   final EncounterStatus status;
@@ -27,7 +29,9 @@ class CommunityPost {
     this.address,
     this.placeName,
     this.placeType,
-    this.cityName,
+    this.province,
+    this.city,
+    this.area,
     required this.description,
     required this.tags,
     required this.status,
@@ -50,7 +54,9 @@ class CommunityPost {
           ? PlaceType.values.firstWhere(
               (e) => e.value == json['placeType'] as String)
           : null,
-      cityName: json['cityName'] as String?,
+      province: json['province'] as String?,
+      city: json['city'] as String?,
+      area: json['area'] as String?,
       description: json['description'] as String,
       tags: (json['tags'] as List)
           .map((e) => TagWithNote.fromJson(e as Map<String, dynamic>))
@@ -74,7 +80,9 @@ class CommunityPost {
       'address': address,
       'placeName': placeName,
       'placeType': placeType?.value,
-      'cityName': cityName,
+      'province': province,
+      'city': city,
+      'area': area,
       'description': description,
       'tags': tags.map((e) => e.toJson()).toList(),
       'status': status.value,
@@ -94,7 +102,9 @@ class CommunityPost {
     String? address,
     String? placeName,
     PlaceType? placeType,
-    String? cityName,
+    String? province,
+    String? city,
+    String? area,
     String? description,
     List<TagWithNote>? tags,
     EncounterStatus? status,
@@ -111,7 +121,9 @@ class CommunityPost {
       address: address ?? this.address,
       placeName: placeName ?? this.placeName,
       placeType: placeType ?? this.placeType,
-      cityName: cityName ?? this.cityName,
+      province: province ?? this.province,
+      city: city ?? this.city,
+      area: area ?? this.area,
       description: description ?? this.description,
       tags: tags ?? this.tags,
       status: status ?? this.status,
@@ -139,7 +151,9 @@ class CommunityPost {
         other.address == address &&
         other.placeName == placeName &&
         other.placeType == placeType &&
-        other.cityName == cityName &&
+        other.province == province &&
+        other.city == city &&
+        other.area == area &&
         other.description == description &&
         other.tags.length == tags.length &&
         other.status == status &&
@@ -158,7 +172,9 @@ class CommunityPost {
         address.hashCode ^
         placeName.hashCode ^
         placeType.hashCode ^
-        cityName.hashCode ^
+        province.hashCode ^
+        city.hashCode ^
+        area.hashCode ^
         description.hashCode ^
         tags.length.hashCode ^
         status.hashCode ^

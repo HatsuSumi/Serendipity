@@ -3,6 +3,7 @@ import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../repositories/i_remote_data_repository.dart';
 import '../config/app_config.dart';
+import '../utils/address_helper.dart';
 
 /// 社区仓储
 /// 
@@ -28,8 +29,9 @@ class CommunityRepository {
   /// - 不包含精确 GPS 坐标
   /// 
   /// Fail Fast:
-  /// - 如果 record 为 null，抛出 ArgumentError
   /// - 如果 userId 为空，抛出 ArgumentError
+  /// 
+  /// 调用者：publishPost()
   CommunityPost _createPostFromRecord(EncounterRecord record, String userId) {
     // Fail Fast: 参数验证
     if (userId.isEmpty) {
@@ -37,6 +39,9 @@ class CommunityRepository {
     }
 
     final now = DateTime.now();
+    
+    // 使用 AddressHelper 提取省市区信息
+    final region = AddressHelper.extractRegion(record.location.address);
     
     return CommunityPost(
       id: '${record.id}_${now.millisecondsSinceEpoch}', // 使用记录ID + 时间戳作为帖子ID
@@ -46,7 +51,9 @@ class CommunityRepository {
       address: record.location.address, // 标准地址（GPS获取）
       placeName: record.location.placeName, // 用户输入的地点名称
       placeType: record.location.placeType, // 场所类型
-      cityName: _extractCityName(record.location.address), // 提取城市名称
+      province: region.province, // 省份
+      city: region.city, // 城市
+      area: region.area, // 区县
       description: record.description ?? '',
       tags: record.tags,
       status: record.status,
@@ -55,25 +62,6 @@ class CommunityRepository {
       createdAt: now,
       updatedAt: now,
     );
-  }
-
-  /// 从地址中提取城市名称
-  /// 
-  /// 示例：
-  /// - "北京市朝阳区建国门外大街1号" → "北京市"
-  /// - "上海市浦东新区世纪大道1号" → "上海市"
-  /// - null → null
-  String? _extractCityName(String? address) {
-    if (address == null || address.isEmpty) return null;
-
-    // 简单提取：查找"市"字
-    final cityIndex = address.indexOf('市');
-    if (cityIndex != -1) {
-      return address.substring(0, cityIndex + 1);
-    }
-
-    // 如果没有"市"，返回 null
-    return null;
   }
 
   /// 发布记录到社区
@@ -185,7 +173,9 @@ class CommunityRepository {
   /// 参数：
   /// - startDate: 开始日期（可选）
   /// - endDate: 结束日期（可选）
-  /// - cityName: 城市名称（可选）
+  /// - province: 省份（可选）
+  /// - city: 城市（可选）
+  /// - area: 区县（可选）
   /// - placeType: 场所类型（可选）
   /// - tag: 标签名称（可选）
   /// - status: 状态（可选）
@@ -197,7 +187,9 @@ class CommunityRepository {
   Future<List<CommunityPost>> filterPosts({
     DateTime? startDate,
     DateTime? endDate,
-    String? cityName,
+    String? province,
+    String? city,
+    String? area,
     PlaceType? placeType,
     String? tag,
     EncounterStatus? status,
@@ -220,7 +212,9 @@ class CommunityRepository {
     return await _remoteData.filterCommunityPosts(
       startDate: startDate,
       endDate: endDate,
-      cityName: cityName,
+      province: province,
+      city: city,
+      area: area,
       placeType: placeType?.value,
       tag: tag,
       status: status?.value,

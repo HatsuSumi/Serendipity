@@ -123,7 +123,9 @@ class CommunityPostCard extends StatelessWidget {
       placeTypeLabel: post.placeType?.label,
       address: post.address,
       placeName: post.placeName,
-      cityName: post.cityName,
+      province: post.province,
+      city: post.city,
+      area: post.area,
     );
 
     return Row(

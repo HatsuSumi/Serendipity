@@ -215,7 +215,9 @@ abstract class IRemoteDataRepository {
   /// 参数：
   /// - [startDate]：开始日期（可选）
   /// - [endDate]：结束日期（可选）
-  /// - [cityName]：城市名称（可选）
+  /// - [province]：省份（可选）
+  /// - [city]：城市（可选）
+  /// - [area]：区县（可选）
   /// - [placeType]：场所类型（可选）
   /// - [tag]：标签名称（可选）
   /// - [status]：状态（可选）
@@ -233,7 +235,9 @@ abstract class IRemoteDataRepository {
   Future<List<CommunityPost>> filterCommunityPosts({
     DateTime? startDate,
     DateTime? endDate,
-    String? cityName,
+    String? province,
+    String? city,
+    String? area,
     String? placeType,
     String? tag,
     int? status,

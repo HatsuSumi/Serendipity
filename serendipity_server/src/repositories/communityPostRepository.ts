@@ -11,7 +11,9 @@ export interface ICommunityPostRepository {
   findByFilters(filters: {
     startDate?: Date;
     endDate?: Date;
-    cityName?: string;
+    province?: string;
+    city?: string;
+    area?: string;
     placeType?: string;
     tag?: string;
     status?: string;
@@ -37,7 +39,9 @@ export class CommunityPostRepository implements ICommunityPostRepository {
         address: data.address,
         placeName: data.placeName,
         placeType: data.placeType,
-        cityName: data.cityName,
+        province: data.province,
+        city: data.city,
+        area: data.area,
         description: data.description,
         tags: toJsonValue(data.tags),
         status: data.status,
@@ -83,7 +87,9 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   async findByFilters(filters: {
     startDate?: Date;
     endDate?: Date;
-    cityName?: string;
+    province?: string;
+    city?: string;
+    area?: string;
     placeType?: string;
     tag?: string;
     status?: string;
@@ -91,7 +97,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   }): Promise<CommunityPost[]> {
     const where: any = {};
 
-    // 日期范围筛选
+    // 日期范围筛选（基于 timestamp 字段）
     if (filters.startDate || filters.endDate) {
       where.timestamp = {};
       if (filters.startDate) {
@@ -102,9 +108,19 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       }
     }
 
+    // 省份筛选
+    if (filters.province) {
+      where.province = filters.province;
+    }
+
     // 城市筛选
-    if (filters.cityName) {
-      where.cityName = filters.cityName;
+    if (filters.city) {
+      where.city = filters.city;
+    }
+
+    // 区县筛选
+    if (filters.area) {
+      where.area = filters.area;
     }
 
     // 场所类型筛选

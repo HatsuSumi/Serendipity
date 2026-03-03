@@ -100,7 +100,9 @@ export class CommunityPostController {
       const query: FilterCommunityPostsQuery = {
         startDate: getQueryAsString(req.query.startDate),
         endDate: getQueryAsString(req.query.endDate),
-        cityName: getQueryAsString(req.query.cityName),
+        province: getQueryAsString(req.query.province),
+        city: getQueryAsString(req.query.city),
+        area: getQueryAsString(req.query.area),
         placeType: getQueryAsString(req.query.placeType),
         tag: getQueryAsString(req.query.tag),
         status: getQueryAsString(req.query.status),

@@ -262,7 +262,9 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   Future<List<CommunityPost>> filterCommunityPosts({
     DateTime? startDate,
     DateTime? endDate,
-    String? cityName,
+    String? province,
+    String? city,
+    String? area,
     String? placeType,
     String? tag,
     int? status,
@@ -287,8 +289,14 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       if (endDate != null) {
         queryParams['endDate'] = endDate.toIso8601String();
       }
-      if (cityName != null && cityName.isNotEmpty) {
-        queryParams['cityName'] = cityName;
+      if (province != null && province.isNotEmpty) {
+        queryParams['province'] = province;
+      }
+      if (city != null && city.isNotEmpty) {
+        queryParams['city'] = city;
+      }
+      if (area != null && area.isNotEmpty) {
+        queryParams['area'] = area;
       }
       if (placeType != null && placeType.isNotEmpty) {
         queryParams['placeType'] = placeType;

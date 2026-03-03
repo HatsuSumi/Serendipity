@@ -274,7 +274,9 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
     await ref.read(communityProvider.notifier).filterPosts(
           startDate: _startDate,
           endDate: _endDate,
-          cityName: _selectedRegion?.city,
+          province: _selectedRegion?.province,
+          city: _selectedRegion?.city,
+          area: _selectedRegion?.area,
           placeType: _selectedPlaceType,
           status: _selectedStatus,
           tag: _tagController.text.trim().isEmpty ? null : _tagController.text.trim(),

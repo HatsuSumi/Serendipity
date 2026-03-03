@@ -147,13 +147,14 @@ class RecordHelper {
   /// 1. placeType + address（最标准）
   /// 2. address（标准地址）
   /// 3. placeName（用户输入，无 GPS 时）
-  /// 4. cityName 或 "未知地点"
+  /// 4. province/city/area 或 "未知地点"
   /// 
   /// 示例：
   /// - 有场所类型 + 地址：`地铁 · 北京市朝阳区建国门外大街1号`
   /// - 只有地址：`北京市朝阳区建国门外大街1号`
   /// - 只有场所类型：`地铁`
   /// - 只有 placeName：`常去的那家咖啡馆`
+  /// - 只有省市区：`广东省深圳市南山区`
   /// - 都没有：`未知地点`
   /// 
   /// 调用者：CommunityPostCard._buildLocation()
@@ -161,7 +162,9 @@ class RecordHelper {
     String? placeTypeLabel,
     String? address,
     String? placeName,
-    String? cityName,
+    String? province,
+    String? city,
+    String? area,
   }) {
     String result = '';
 
@@ -184,9 +187,21 @@ class RecordHelper {
       result = placeName; // 显示用户输入的地点名称
     }
 
-    // 第四部分：如果都没有，尝试城市名称
-    if (result.isEmpty && cityName != null && cityName.isNotEmpty) {
-      result = cityName;
+    // 第四部分：如果都没有，尝试拼接省市区
+    if (result.isEmpty) {
+      final regionParts = <String>[];
+      if (province != null && province.isNotEmpty) {
+        regionParts.add(province);
+      }
+      if (city != null && city.isNotEmpty) {
+        regionParts.add(city);
+      }
+      if (area != null && area.isNotEmpty) {
+        regionParts.add(area);
+      }
+      if (regionParts.isNotEmpty) {
+        result = regionParts.join('');
+      }
     }
 
     // 实在没有，显示默认文本

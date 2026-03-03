@@ -163,16 +163,20 @@ class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
   /// 参数：
   /// - startDate: 开始日期（可选）
   /// - endDate: 结束日期（可选）
-  /// - cityName: 城市名称（可选）
+  /// - province: 省份（可选）
+  /// - city: 城市（可选）
+  /// - area: 区县（可选）
   /// - placeType: 场所类型（可选）
   /// - tag: 标签名称（可选）
   /// - status: 状态（可选）
   /// 
-  /// 调用者：CommunityPage（筛选对话框）
+  /// 调用者：CommunityFilterDialog（筛选对话框）
   Future<void> filterPosts({
     DateTime? startDate,
     DateTime? endDate,
-    String? cityName,
+    String? province,
+    String? city,
+    String? area,
     PlaceType? placeType,
     String? tag,
     EncounterStatus? status,
@@ -185,7 +189,9 @@ class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
       return await _repository.filterPosts(
         startDate: startDate,
         endDate: endDate,
-        cityName: cityName,
+        province: province,
+        city: city,
+        area: area,
         placeType: placeType,
         tag: tag,
         status: status,
