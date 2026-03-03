@@ -373,9 +373,23 @@ class CustomServerAuthRepository implements IAuthRepository {
   }
   
   /// 将服务器返回的用户数据转换为应用的 User 模型
+  /// 
+  /// Fail Fast：必需字段缺失时抛出异常
+  /// 安全处理：可选字段使用 null-safe 操作符
   User _convertToAppUser(Map<String, dynamic> data) {
+    // Fail Fast：必需字段验证
+    final id = data['id'] as String?;
+    final createdAtStr = data['createdAt'] as String?;
+    
+    if (id == null || id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (createdAtStr == null || createdAtStr.isEmpty) {
+      throw ArgumentError('创建时间不能为空');
+    }
+    
     return User(
-      id: data['id'] as String,
+      id: id,
       email: data['email'] as String?,
       phoneNumber: data['phoneNumber'] as String?,
       displayName: data['displayName'] as String?,
@@ -383,8 +397,10 @@ class CustomServerAuthRepository implements IAuthRepository {
       authProvider: _parseAuthProvider(data['authProvider'] as String?),
       isEmailVerified: data['isEmailVerified'] as bool? ?? false,
       isPhoneVerified: data['isPhoneVerified'] as bool? ?? false,
-      createdAt: DateTime.parse(data['createdAt'] as String),
-      updatedAt: DateTime.parse(data['updatedAt'] as String),
+      createdAt: DateTime.parse(createdAtStr),
+      updatedAt: data['updatedAt'] != null 
+          ? DateTime.parse(data['updatedAt'] as String)
+          : DateTime.parse(createdAtStr), // 如果没有 updatedAt，使用 createdAt
     );
   }
   
