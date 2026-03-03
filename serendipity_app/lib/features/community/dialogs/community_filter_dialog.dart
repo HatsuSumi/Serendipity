@@ -400,7 +400,11 @@ class _PlaceTypeMultiSelectDialogState extends State<_PlaceTypeMultiSelectDialog
           child: const Text('取消'),
         ),
         TextButton(
-          onPressed: () => Navigator.of(context).pop(<PlaceType>{}),
+          onPressed: () {
+            setState(() {
+              _selectedTypes.clear();
+            });
+          },
           child: const Text('清除'),
         ),
         FilledButton(
