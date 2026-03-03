@@ -7,6 +7,7 @@ import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../models/community_post.dart';
+import '../record/create_record_page.dart';
 import 'widgets/community_post_card.dart';
 import 'dialogs/community_filter_dialog.dart';
 import 'dialogs/publish_to_community_dialog.dart';
@@ -138,15 +139,35 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     );
   }
 
-  /// 跳转到记录页面
+  /// 跳转到创建记录页面
   /// 
   /// 调用者：_showPublishOptionsDialog()
-  /// 
-  /// 遵循原则：
-  /// - 不依赖父组件的私有状态
-  /// - 使用简单的导航提示
-  void _navigateToRecordsPage() {
-    MessageHelper.showSuccess(context, '请在"TA"页面创建记录后发布');
+  Future<void> _navigateToRecordsPage() async {
+    await Navigator.of(context).push<bool>(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black54,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return const CreateRecordPage();
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOutCubic;
+          
+          var slideTween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+          
+          return SlideTransition(
+            position: animation.drive(slideTween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+        reverseTransitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
   }
 
   /// 显示发布对话框
