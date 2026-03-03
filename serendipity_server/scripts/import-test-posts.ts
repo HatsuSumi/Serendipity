@@ -4,21 +4,18 @@ import * as path from 'path';
 
 interface TestPost {
   id: string;
-  userId: string;
   recordId: string;
   timestamp: string;
-  province: string;
-  city: string;
-  district: string;
+  address?: string;
   placeName: string | null;
   placeType: string;
+  province?: string;
+  city?: string;
+  area?: string;
   status: string;
   description: string | null;
-  emotion: string | null;
-  weather: string[];
-  tags: Array<{ tag: string; note: string }>;
-  conversationStarter: string | null;
-  backgroundMusic: string | null;
+  tags: Array<{ tag: string; note?: string }>;
+  publishedAt: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,16 +73,16 @@ async function importTestPosts() {
             userId: testUserId, // 使用统一的测试用户ID
             recordId: post.recordId,
             timestamp: new Date(post.timestamp),
-            address: null, // 测试数据没有详细地址
+            address: post.address || null,
             placeName: post.placeName,
             placeType: post.placeType,
-            province: post.province,
-            city: post.city,
-            area: post.district,
+            province: post.province || null,
+            city: post.city || null,
+            area: post.area || null,
             description: post.description,
             tags: post.tags,
             status: post.status,
-            publishedAt: new Date(post.createdAt),
+            publishedAt: new Date(post.publishedAt),
             createdAt: new Date(post.createdAt),
             updatedAt: new Date(post.updatedAt),
           },

@@ -13,6 +13,31 @@ final communityRepositoryProvider = Provider<CommunityRepository>((ref) {
   return CommunityRepository(ref.read(remoteDataRepositoryProvider));
 });
 
+/// 社区状态
+class CommunityState {
+  final List<CommunityPost> posts;
+  final bool isFiltering;
+  final bool hasMore;
+  
+  const CommunityState({
+    required this.posts,
+    this.isFiltering = false,
+    this.hasMore = true,
+  });
+  
+  CommunityState copyWith({
+    List<CommunityPost>? posts,
+    bool? isFiltering,
+    bool? hasMore,
+  }) {
+    return CommunityState(
+      posts: posts ?? this.posts,
+      isFiltering: isFiltering ?? this.isFiltering,
+      hasMore: hasMore ?? this.hasMore,
+    );
+  }
+}
+
 /// 社区状态管理
 /// 
 /// 职责：
@@ -24,20 +49,22 @@ final communityRepositoryProvider = Provider<CommunityRepository>((ref) {
 /// 
 /// 调用者：
 /// - CommunityPage（UI 层）
-class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
+class CommunityNotifier extends AsyncNotifier<CommunityState> {
   late CommunityRepository _repository;
-  
-  /// 是否还有更多数据
-  bool _hasMore = true;
   
   /// 最后一条帖子的时间戳（用于分页）
   DateTime? _lastTimestamp;
 
   @override
-  Future<List<CommunityPost>> build() async {
+  Future<CommunityState> build() async {
     _repository = ref.read(communityRepositoryProvider);
     // 初始化时加载第一页
-    return await _loadPosts();
+    final posts = await _loadPosts();
+    return CommunityState(
+      posts: posts,
+      isFiltering: false,
+      hasMore: posts.length >= 20,
+    );
   }
 
   /// 获取成就检测服务
@@ -54,9 +81,6 @@ class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
     );
 
     // 更新分页状态
-    if (posts.length < limit) {
-      _hasMore = false;
-    }
     if (posts.isNotEmpty) {
       _lastTimestamp = posts.last.publishedAt;
     }
@@ -69,11 +93,15 @@ class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
   /// 调用者：CommunityPage（下拉刷新）
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    _hasMore = true;
     _lastTimestamp = null;
     
     state = await AsyncValue.guard(() async {
-      return await _loadPosts();
+      final posts = await _loadPosts();
+      return CommunityState(
+        posts: posts,
+        isFiltering: false,
+        hasMore: posts.length >= 20,
+      );
     });
   }
 
@@ -81,19 +109,26 @@ class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
   /// 
   /// 调用者：CommunityPage（滚动到底部）
   Future<void> loadMore() async {
+    final currentState = state.value;
+    if (currentState == null) return;
+    
     // 如果没有更多数据，直接返回
-    if (!_hasMore) return;
+    if (!currentState.hasMore) return;
+    
+    // 如果正在筛选，不支持加载更多
+    if (currentState.isFiltering) return;
 
     // 如果正在加载，直接返回
     if (state.isLoading) return;
-
-    final currentPosts = state.value ?? [];
     
     // 加载下一页
     final newPosts = await _loadPosts(lastTimestamp: _lastTimestamp);
     
     // 合并数据
-    state = AsyncValue.data([...currentPosts, ...newPosts]);
+    state = AsyncValue.data(currentState.copyWith(
+      posts: [...currentState.posts, ...newPosts],
+      hasMore: newPosts.length >= 20,
+    ));
   }
 
   /// 发布记录到社区
@@ -182,11 +217,10 @@ class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
     EncounterStatus? status,
   }) async {
     state = const AsyncValue.loading();
-    _hasMore = false; // 筛选结果不支持分页
     _lastTimestamp = null;
 
     state = await AsyncValue.guard(() async {
-      return await _repository.filterPosts(
+      final posts = await _repository.filterPosts(
         startDate: startDate,
         endDate: endDate,
         province: province,
@@ -195,6 +229,12 @@ class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
         placeType: placeType,
         tag: tag,
         status: status,
+      );
+      
+      return CommunityState(
+        posts: posts,
+        isFiltering: true,
+        hasMore: false, // 筛选结果不支持分页
       );
     });
   }
@@ -243,7 +283,7 @@ class CommunityNotifier extends AsyncNotifier<List<CommunityPost>> {
 }
 
 /// 社区帖子列表 Provider
-final communityProvider = AsyncNotifierProvider<CommunityNotifier, List<CommunityPost>>(() {
+final communityProvider = AsyncNotifierProvider<CommunityNotifier, CommunityState>(() {
   return CommunityNotifier();
 });
 

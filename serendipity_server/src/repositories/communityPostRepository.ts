@@ -136,7 +136,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     // 标签筛选（JSONB 查询）
     if (filters.tag) {
       where.tags = {
-        path: '$[*].tag',
+        path: ['$[*].tag'],
         array_contains: filters.tag,
       };
     }

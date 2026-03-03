@@ -6,7 +6,6 @@ import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
-import '../../models/community_post.dart';
 import '../record/create_record_page.dart';
 import 'widgets/community_post_card.dart';
 import 'dialogs/community_filter_dialog.dart';
@@ -184,7 +183,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
 
   @override
   Widget build(BuildContext context) {
-    final postsAsync = ref.watch(communityProvider);
+    final communityStateAsync = ref.watch(communityProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -198,8 +197,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
           ),
         ],
       ),
-      body: postsAsync.when(
-        data: (posts) => _buildPostsList(posts),
+      body: communityStateAsync.when(
+        data: (communityState) => _buildPostsList(communityState),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
@@ -226,19 +225,22 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   }
 
   /// 构建帖子列表
-  Widget _buildPostsList(List<CommunityPost> posts) {
+  Widget _buildPostsList(CommunityState communityState) {
+    final posts = communityState.posts;
+    final isFiltering = communityState.isFiltering;
+    
     // 空状态
     if (posts.isEmpty) {
       return RefreshIndicator(
         onRefresh: _onRefresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 100),
+          children: [
+            const SizedBox(height: 100),
             EmptyStateWidget(
-              icon: Icons.forest,
-              title: '还没有人发布到树洞',
-              description: '成为第一个分享者吧',
+              icon: isFiltering ? Icons.search_off : Icons.forest,
+              title: isFiltering ? '没有符合条件的帖子' : '还没有人发布到树洞',
+              description: isFiltering ? '试试调整筛选条件' : '成为第一个分享者吧',
             ),
           ],
         ),

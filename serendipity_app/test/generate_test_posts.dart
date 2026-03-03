@@ -118,18 +118,18 @@ Map<String, dynamic> generateRandomPost(
   final status = _randomStatus(random);
   final placeType = _randomPlaceType(random);
   final hasDescription = random.nextDouble() < 0.7; // 70% 概率有描述
-  final hasAddress = random.nextDouble() < 0.5; // 50% 概率有详细地址
+  final hasAddress = random.nextDouble() < 0.8; // 80% 概率有 GPS 地址
   
   return {
     'id': 'test_post_$index',
     'recordId': 'test_record_$index',
     'timestamp': timestamp.toIso8601String(),
     if (hasAddress) 'address': _randomAddress(region, random),
+    if (hasAddress) 'province': region['province'],
+    if (hasAddress) 'city': region['city'],
+    if (hasAddress) 'area': region['area'],
     'placeName': _randomPlaceName(placeType, random),
     'placeType': placeType,
-    'province': region['province'],
-    'city': region['city'],
-    'area': region['area'],
     if (hasDescription) 'description': _randomDescription(status, random),
     'tags': _randomTags(random),
     'status': status,
