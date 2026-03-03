@@ -148,7 +148,9 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         opaque: false,
         barrierColor: Colors.black54,
         pageBuilder: (context, animation, secondaryAnimation) {
-          return const CreateRecordPage();
+          return const CreateRecordPage(
+            initialPublishToCommunity: true,
+          );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(0.0, 1.0);

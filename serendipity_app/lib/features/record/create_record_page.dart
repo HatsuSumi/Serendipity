@@ -27,10 +27,14 @@ class CreateRecordPage extends ConsumerStatefulWidget {
   /// 初始故事线ID（创建记录时自动关联）
   final String? initialStoryLineId;
   
+  /// 初始是否发布到树洞（创建记录时自动勾选）
+  final bool initialPublishToCommunity;
+  
   const CreateRecordPage({
     super.key,
     this.recordToEdit,
     this.initialStoryLineId,
+    this.initialPublishToCommunity = false,
   });
   
   /// 是否为编辑模式
@@ -177,9 +181,14 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       
       // 预填充高级选项
       _selectedStoryLineId = record.storyLineId;
-    } else if (widget.initialStoryLineId != null) {
-      // 创建模式下，如果提供了初始故事线ID，则自动关联
-      _selectedStoryLineId = widget.initialStoryLineId;
+    } else {
+      // 创建模式：使用初始参数
+      if (widget.initialStoryLineId != null) {
+        _selectedStoryLineId = widget.initialStoryLineId;
+      }
+      if (widget.initialPublishToCommunity) {
+        _publishToCommunity = true;
+      }
     }
   }
 
