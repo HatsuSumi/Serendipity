@@ -57,8 +57,10 @@ export interface MyCommunityPostsResponseDto {
 
 // 筛选社区帖子查询参数
 export interface FilterCommunityPostsQuery {
-  startDate?: string; // YYYY-MM-DD
-  endDate?: string; // YYYY-MM-DD
+  startDate?: string; // YYYY-MM-DD 错过时间开始
+  endDate?: string; // YYYY-MM-DD 错过时间结束
+  publishStartDate?: string; // YYYY-MM-DD 发布时间开始
+  publishEndDate?: string; // YYYY-MM-DD 发布时间结束
   province?: string;  // 省份（如"广东省"）
   city?: string;      // 城市（如"深圳市"）
   area?: string;      // 区县（如"南山区"）

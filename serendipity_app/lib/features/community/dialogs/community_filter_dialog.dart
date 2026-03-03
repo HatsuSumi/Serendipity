@@ -35,6 +35,8 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   // 筛选条件
   DateTime? _startDate;
   DateTime? _endDate;
+  DateTime? _publishStartDate;
+  DateTime? _publishEndDate;
   PlaceType? _selectedPlaceType;
   EncounterStatus? _selectedStatus;
   final TextEditingController _tagController = TextEditingController();
@@ -61,7 +63,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
             Row(
               children: [
                 Text(
-                  '时间范围',
+                  '错过时间',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -82,7 +84,18 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
               ],
             ),
             const SizedBox(height: 8),
-            _buildTimeRangeSelector(),
+            _buildTimeRangeSelector(isPublishTime: false),
+            const SizedBox(height: 16),
+
+            // 发布时间范围
+            Text(
+              '发布时间',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildTimeRangeSelector(isPublishTime: true),
             const SizedBox(height: 16),
 
             // 场所类型
@@ -198,14 +211,17 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   }
 
   /// 构建时间范围选择器
-  Widget _buildTimeRangeSelector() {
+  Widget _buildTimeRangeSelector({required bool isPublishTime}) {
+    final startDate = isPublishTime ? _publishStartDate : _startDate;
+    final endDate = isPublishTime ? _publishEndDate : _endDate;
+    
     return Row(
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () => _selectDate(isStartDate: true),
-            child: Text(_startDate != null
-                ? '${_startDate!.month}-${_startDate!.day}'
+            onPressed: () => _selectDate(isStartDate: true, isPublishTime: isPublishTime),
+            child: Text(startDate != null
+                ? '${startDate.month}-${startDate.day}'
                 : '开始日期'),
           ),
         ),
@@ -214,9 +230,9 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
         const SizedBox(width: 8),
         Expanded(
           child: OutlinedButton(
-            onPressed: () => _selectDate(isStartDate: false),
-            child: Text(_endDate != null
-                ? '${_endDate!.month}-${_endDate!.day}'
+            onPressed: () => _selectDate(isStartDate: false, isPublishTime: isPublishTime),
+            child: Text(endDate != null
+                ? '${endDate.month}-${endDate.day}'
                 : '结束日期'),
           ),
         ),
@@ -225,7 +241,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   }
 
   /// 选择日期
-  Future<void> _selectDate({required bool isStartDate}) async {
+  Future<void> _selectDate({required bool isStartDate, required bool isPublishTime}) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -235,10 +251,18 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
 
     if (picked != null) {
       setState(() {
-        if (isStartDate) {
-          _startDate = picked;
+        if (isPublishTime) {
+          if (isStartDate) {
+            _publishStartDate = picked;
+          } else {
+            _publishEndDate = picked;
+          }
         } else {
-          _endDate = picked;
+          if (isStartDate) {
+            _startDate = picked;
+          } else {
+            _endDate = picked;
+          }
         }
       });
     }
@@ -291,6 +315,8 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
     await ref.read(communityProvider.notifier).filterPosts(
           startDate: _startDate,
           endDate: _endDate,
+          publishStartDate: _publishStartDate,
+          publishEndDate: _publishEndDate,
           province: _selectedRegion?.province,
           city: _selectedRegion?.city,
           area: _selectedRegion?.area,

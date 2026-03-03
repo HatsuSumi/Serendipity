@@ -262,6 +262,8 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   Future<List<CommunityPost>> filterCommunityPosts({
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? publishStartDate,
+    DateTime? publishEndDate,
     String? province,
     String? city,
     String? area,
@@ -275,7 +277,10 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       throw ArgumentError('limit 必须大于 0');
     }
     if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-      throw ArgumentError('开始日期不能晚于结束日期');
+      throw ArgumentError('错过时间开始日期不能晚于结束日期');
+    }
+    if (publishStartDate != null && publishEndDate != null && publishStartDate.isAfter(publishEndDate)) {
+      throw ArgumentError('发布时间开始日期不能晚于结束日期');
     }
     
     try {
@@ -288,6 +293,12 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       }
       if (endDate != null) {
         queryParams['endDate'] = endDate.toIso8601String();
+      }
+      if (publishStartDate != null) {
+        queryParams['publishStartDate'] = publishStartDate.toIso8601String();
+      }
+      if (publishEndDate != null) {
+        queryParams['publishEndDate'] = publishEndDate.toIso8601String();
       }
       if (province != null && province.isNotEmpty) {
         queryParams['province'] = province;

@@ -213,8 +213,10 @@ abstract class IRemoteDataRepository {
   /// 筛选社区帖子
   /// 
   /// 参数：
-  /// - [startDate]：开始日期（可选）
-  /// - [endDate]：结束日期（可选）
+  /// - [startDate]：错过时间开始日期（可选）
+  /// - [endDate]：错过时间结束日期（可选）
+  /// - [publishStartDate]：发布时间开始日期（可选）
+  /// - [publishEndDate]：发布时间结束日期（可选）
   /// - [province]：省份（可选）
   /// - [city]：城市（可选）
   /// - [area]：区县（可选）
@@ -231,10 +233,13 @@ abstract class IRemoteDataRepository {
   /// Fail Fast：
   /// - limit <= 0：抛出 ArgumentError
   /// - startDate > endDate：抛出 ArgumentError
+  /// - publishStartDate > publishEndDate：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<List<CommunityPost>> filterCommunityPosts({
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? publishStartDate,
+    DateTime? publishEndDate,
     String? province,
     String? city,
     String? area,

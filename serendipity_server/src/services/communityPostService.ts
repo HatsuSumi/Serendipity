@@ -103,12 +103,20 @@ export class CommunityPostService implements ICommunityPostService {
       limit: limit + 1, // 多查询一条，用于判断是否还有更多
     };
 
-    // 日期范围
+    // 错过时间范围
     if (query.startDate) {
       filters.startDate = new Date(query.startDate);
     }
     if (query.endDate) {
       filters.endDate = new Date(query.endDate);
+    }
+
+    // 发布时间范围
+    if (query.publishStartDate) {
+      filters.publishStartDate = new Date(query.publishStartDate);
+    }
+    if (query.publishEndDate) {
+      filters.publishEndDate = new Date(query.publishEndDate);
     }
 
     // 省份

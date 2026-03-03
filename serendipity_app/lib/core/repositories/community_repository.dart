@@ -166,8 +166,10 @@ class CommunityRepository {
   /// 筛选帖子
   /// 
   /// 参数：
-  /// - startDate: 开始日期（可选）
-  /// - endDate: 结束日期（可选）
+  /// - startDate: 错过时间开始日期（可选）
+  /// - endDate: 错过时间结束日期（可选）
+  /// - publishStartDate: 发布时间开始日期（可选）
+  /// - publishEndDate: 发布时间结束日期（可选）
   /// - province: 省份（可选）
   /// - city: 城市（可选）
   /// - area: 区县（可选）
@@ -182,6 +184,8 @@ class CommunityRepository {
   Future<List<CommunityPost>> filterPosts({
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? publishStartDate,
+    DateTime? publishEndDate,
     String? province,
     String? city,
     String? area,
@@ -197,6 +201,9 @@ class CommunityRepository {
     if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
       throw ArgumentError('startDate must be before endDate');
     }
+    if (publishStartDate != null && publishEndDate != null && publishStartDate.isAfter(publishEndDate)) {
+      throw ArgumentError('publishStartDate must be before publishEndDate');
+    }
 
     // 测试模式：返回空列表
     if (AppConfig.serverType == ServerType.test) {
@@ -207,6 +214,8 @@ class CommunityRepository {
     return await _remoteData.filterCommunityPosts(
       startDate: startDate,
       endDate: endDate,
+      publishStartDate: publishStartDate,
+      publishEndDate: publishEndDate,
       province: province,
       city: city,
       area: area,

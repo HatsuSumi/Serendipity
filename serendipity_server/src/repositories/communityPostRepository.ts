@@ -11,6 +11,8 @@ export interface ICommunityPostRepository {
   findByFilters(filters: {
     startDate?: Date;
     endDate?: Date;
+    publishStartDate?: Date;
+    publishEndDate?: Date;
     province?: string;
     city?: string;
     area?: string;
@@ -87,6 +89,8 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   async findByFilters(filters: {
     startDate?: Date;
     endDate?: Date;
+    publishStartDate?: Date;
+    publishEndDate?: Date;
     province?: string;
     city?: string;
     area?: string;
@@ -97,7 +101,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   }): Promise<CommunityPost[]> {
     const where: any = {};
 
-    // 日期范围筛选（基于 timestamp 字段）
+    // 错过时间范围筛选（基于 timestamp 字段）
     if (filters.startDate || filters.endDate) {
       where.timestamp = {};
       if (filters.startDate) {
@@ -105,6 +109,17 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       }
       if (filters.endDate) {
         where.timestamp.lte = filters.endDate;
+      }
+    }
+
+    // 发布时间范围筛选（基于 publishedAt 字段）
+    if (filters.publishStartDate || filters.publishEndDate) {
+      where.publishedAt = {};
+      if (filters.publishStartDate) {
+        where.publishedAt.gte = filters.publishStartDate;
+      }
+      if (filters.publishEndDate) {
+        where.publishedAt.lte = filters.publishEndDate;
       }
     }
 
