@@ -146,7 +146,6 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   /// - 不依赖父组件的私有状态
   /// - 使用简单的导航提示
   void _navigateToRecordsPage() {
-    Navigator.of(context).pop();
     MessageHelper.showSuccess(context, '请在"TA"页面创建记录后发布');
   }
 
@@ -195,10 +194,10 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _handlePublish,
-        tooltip: '发布到树洞',
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('发布到树洞'),
       ),
     );
   }
