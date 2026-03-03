@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/community_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/message_helper.dart';
+import '../../core/utils/dialog_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../models/community_post.dart';
 import 'widgets/community_post_card.dart';
 import 'dialogs/community_filter_dialog.dart';
+import 'dialogs/publish_to_community_dialog.dart';
 
 /// 社区页面（树洞）
 /// 
@@ -79,6 +83,83 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     await CommunityFilterDialog.show(context);
   }
 
+  /// 处理发布
+  /// 
+  /// 调用者：FloatingActionButton 的 onPressed
+  /// 
+  /// Fail Fast：
+  /// - 如果用户未登录，提示登录
+  Future<void> _handlePublish() async {
+    // Fail Fast：检查登录状态
+    final authState = ref.read(authProvider);
+    final currentUser = authState.value;
+    
+    if (currentUser == null) {
+      // 未登录，提示用户登录
+      if (!mounted) return;
+      MessageHelper.showError(context, '请先登录后再发布');
+      return;
+    }
+
+    // 已登录，显示选择对话框
+    await _showPublishOptionsDialog();
+  }
+
+  /// 显示发布选项对话框
+  /// 
+  /// 调用者：_handlePublish()
+  Future<void> _showPublishOptionsDialog() async {
+    await DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('发布到树洞'),
+        content: const Text('选择发布方式'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _navigateToRecordsPage();
+            },
+            child: const Text('创建新记录'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _showPublishDialog();
+            },
+            child: const Text('选择现有记录'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 跳转到记录页面
+  /// 
+  /// 调用者：_showPublishOptionsDialog()
+  /// 
+  /// 遵循原则：
+  /// - 不依赖父组件的私有状态
+  /// - 使用简单的导航提示
+  void _navigateToRecordsPage() {
+    Navigator.of(context).pop();
+    MessageHelper.showSuccess(context, '请在"TA"页面创建记录后发布');
+  }
+
+  /// 显示发布对话框
+  /// 
+  /// 调用者：_showPublishOptionsDialog()
+  Future<void> _showPublishDialog() async {
+    await DialogHelper.show(
+      context: context,
+      builder: (context) => const PublishToCommunityDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final postsAsync = ref.watch(communityProvider);
@@ -113,6 +194,11 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _handlePublish,
+        tooltip: '发布到树洞',
+        child: const Icon(Icons.add),
       ),
     );
   }
