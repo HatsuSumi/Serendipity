@@ -35,6 +35,7 @@ export interface IAuthService {
   refreshToken(refreshToken: string): Promise<AuthResponseDto>;
   logout(userId: string): Promise<void>;
   generateRecoveryKey(userId: string): Promise<GenerateRecoveryKeyResponseDto>;
+  getRecoveryKey(userId: string): Promise<string | null>;
 }
 
 // 认证服务实现
@@ -66,11 +67,10 @@ export class AuthService implements IAuthService {
       passwordHash,
     });
 
-    // 自动生成恢复密钥
+    // 自动生成恢复密钥（明文存储，不哈希）
     const recoveryKey = crypto.randomBytes(16).toString('hex');
     const formattedKey = recoveryKey.match(/.{1,4}/g)?.join('-') || recoveryKey;
-    const recoveryKeyHash = await bcrypt.hash(formattedKey, this.SALT_ROUNDS);
-    await this.userRepository.updateRecoveryKey(user.id, recoveryKeyHash);
+    await this.userRepository.updateRecoveryKey(user.id, formattedKey);
 
     // 生成 Token 并附带恢复密钥
     return this.generateAuthResponseWithRecoveryKey(user, formattedKey);
@@ -95,11 +95,10 @@ export class AuthService implements IAuthService {
       passwordHash,
     });
 
-    // 自动生成恢复密钥
+    // 自动生成恢复密钥（明文存储，不哈希）
     const recoveryKey = crypto.randomBytes(16).toString('hex');
     const formattedKey = recoveryKey.match(/.{1,4}/g)?.join('-') || recoveryKey;
-    const recoveryKeyHash = await bcrypt.hash(formattedKey, this.SALT_ROUNDS);
-    await this.userRepository.updateRecoveryKey(user.id, recoveryKeyHash);
+    await this.userRepository.updateRecoveryKey(user.id, formattedKey);
 
     // 生成 Token 并附带恢复密钥
     return this.generateAuthResponseWithRecoveryKey(user, formattedKey);
@@ -181,24 +180,19 @@ export class AuthService implements IAuthService {
       throw new AppError('邮箱或恢复密钥错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
-    // 日志：输出数据库中的恢复密钥哈希
+    // 日志：输出数据库中的恢复密钥
     if (data.email === 'a19171548397a@163.com') {
       console.log('='.repeat(80));
-      console.log(`[重置密码] 数据库中的恢复密钥哈希: ${user.recoveryKey || '未设置'}`);
+      console.log(`[重置密码] 数据库中的恢复密钥: ${user.recoveryKey || '未设置'}`);
       console.log('='.repeat(80));
     }
 
-    // 验证恢复密钥
+    // 验证恢复密钥（直接比对明文）
     if (!user.recoveryKey) {
       throw new AppError('该账户未设置恢复密钥', ErrorCode.INVALID_CREDENTIALS);
     }
 
-    const isRecoveryKeyValid = await bcrypt.compare(
-      data.recoveryKey,
-      user.recoveryKey
-    );
-
-    if (!isRecoveryKeyValid) {
+    if (data.recoveryKey !== user.recoveryKey) {
       throw new AppError('邮箱或恢复密钥错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
@@ -379,9 +373,8 @@ export class AuthService implements IAuthService {
     const recoveryKey = crypto.randomBytes(16).toString('hex');
     const formattedKey = recoveryKey.match(/.{1,4}/g)?.join('-') || recoveryKey;
 
-    // 哈希后存储
-    const recoveryKeyHash = await bcrypt.hash(formattedKey, this.SALT_ROUNDS);
-    await this.userRepository.updateRecoveryKey(userId, recoveryKeyHash);
+    // 直接存储明文（不哈希）
+    await this.userRepository.updateRecoveryKey(userId, formattedKey);
 
     // 日志：输出特定邮箱的恢复密钥
     if (user.email === 'a19171548397a@163.com') {
@@ -389,7 +382,6 @@ export class AuthService implements IAuthService {
       console.log(`[恢复密钥生成] 邮箱: ${user.email}`);
       console.log(`[恢复密钥生成] 用户ID: ${user.id}`);
       console.log(`[恢复密钥生成] 恢复密钥: ${formattedKey}`);
-      console.log(`[恢复密钥生成] 密钥哈希: ${recoveryKeyHash}`);
       console.log('='.repeat(80));
     }
 
@@ -397,6 +389,22 @@ export class AuthService implements IAuthService {
       recoveryKey: formattedKey,
       message: '请妥善保管恢复密钥，丢失后无法找回',
     };
+  }
+
+  async getRecoveryKey(userId: string): Promise<string | null> {
+    // Fail Fast：参数验证
+    if (!userId) {
+      throw new AppError('用户ID不能为空', ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // 查找用户
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
+    }
+
+    // 返回恢复密钥（可能为 null）
+    return user.recoveryKey;
   }
 
   private async generateAuthResponse(user: User): Promise<AuthResponseDto> {

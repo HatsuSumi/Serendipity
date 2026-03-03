@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/providers/dialog_animation_provider.dart';
@@ -875,9 +876,25 @@ class SettingsPage extends ConsumerWidget {
   /// - 单一职责：只负责显示和管理恢复密钥
   /// - Fail Fast：参数验证
   /// - 用户体验优先：提供查看和重新生成功能
-  void _showRecoveryKeyDialog(BuildContext context, WidgetRef ref) {
+  void _showRecoveryKeyDialog(BuildContext context, WidgetRef ref) async {
     String? recoveryKey;
-    bool isLoading = false;
+    bool isLoading = true;
+    bool isInitialLoad = true;
+    
+    // 先获取当前恢复密钥
+    try {
+      recoveryKey = await ref.read(authProvider.notifier).getRecoveryKey();
+      isLoading = false;
+      isInitialLoad = false;
+    } catch (e) {
+      isLoading = false;
+      isInitialLoad = false;
+      if (context.mounted) {
+        MessageHelper.showError(context, '获取恢复密钥失败：${e.toString()}');
+      }
+    }
+    
+    if (!context.mounted) return;
     
     DialogHelper.show(
       context: context,
@@ -903,20 +920,27 @@ class SettingsPage extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                if (recoveryKey != null) ...[
+                if (isLoading && isInitialLoad) ...[
+                  const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ] else if (recoveryKey != null) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: SelectableText(
                       recoveryKey!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -925,10 +949,11 @@ class SettingsPage extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton.icon(
-                        onPressed: () {
-                          // 复制到剪贴板
-                          // TODO: 实现复制功能
-                          MessageHelper.showSuccess(context, '已复制到剪贴板');
+                        onPressed: () async {
+                          await Clipboard.setData(ClipboardData(text: recoveryKey!));
+                          if (context.mounted) {
+                            MessageHelper.showSuccess(context, '已复制到剪贴板');
+                          }
                         },
                         icon: const Icon(Icons.copy, size: 18),
                         label: const Text('复制'),
@@ -937,12 +962,12 @@ class SettingsPage extends ConsumerWidget {
                   ),
                 ] else ...[
                   const Text(
-                    '点击"生成恢复密钥"按钮生成新的恢复密钥。',
+                    '尚未设置恢复密钥。',
                     style: TextStyle(fontSize: 14),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '注意：生成新密钥会覆盖旧密钥。',
+                    '点击"生成恢复密钥"按钮生成新的恢复密钥。',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -956,7 +981,7 @@ class SettingsPage extends ConsumerWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('关闭'),
               ),
-              if (isLoading)
+              if (isLoading && !isInitialLoad)
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: SizedBox(

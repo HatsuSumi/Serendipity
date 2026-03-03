@@ -284,6 +284,16 @@ class AuthNotifier extends StreamNotifier<User?> {
     return await _repository.generateRecoveryKey();
   }
   
+  /// 获取当前恢复密钥
+  /// 
+  /// 调用者：SettingsPage（账号管理）
+  /// 
+  /// Fail Fast：
+  /// - 用户未登录立即抛异常
+  Future<String?> getRecoveryKey() async {
+    return await _repository.getRecoveryKey();
+  }
+  
   /// 修改密码
   /// 
   /// 调用者：SettingsPage（账号管理）

@@ -172,6 +172,18 @@ abstract class IAuthRepository {
   /// - 用户未登录：抛出 StateError
   Future<String> generateRecoveryKey();
   
+  /// 获取当前恢复密钥
+  /// 
+  /// 返回：当前的恢复密钥字符串，如果未设置则返回 null
+  /// 
+  /// 调用者：
+  /// - AuthProvider.getRecoveryKey()
+  /// - SettingsPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - 用户未登录：抛出 StateError
+  Future<String?> getRecoveryKey();
+  
   /// 修改密码
   /// 
   /// 参数：

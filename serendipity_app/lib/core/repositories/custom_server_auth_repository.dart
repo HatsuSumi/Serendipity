@@ -280,6 +280,24 @@ class CustomServerAuthRepository implements IAuthRepository {
   }
   
   @override
+  Future<String?> getRecoveryKey() async {
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    try {
+      final response = await _httpClient.get(
+        ServerConfig.authGetRecoveryKey,
+      );
+      
+      final data = response['data'] as Map<String, dynamic>;
+      return data['recoveryKey'] as String?;
+    } on HttpException catch (e) {
+      throw Exception('获取恢复密钥失败：${e.message}');
+    }
+  }
+  
+  @override
   Future<void> updatePassword(String currentPassword, String newPassword) async {
     // Fail Fast：参数验证
     if (currentPassword.isEmpty) {

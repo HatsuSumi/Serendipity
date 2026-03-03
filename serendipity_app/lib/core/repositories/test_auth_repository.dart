@@ -461,6 +461,20 @@ class TestAuthRepository implements IAuthRepository {
   }
   
   @override
+  Future<String?> getRecoveryKey() async {
+    // Fail Fast：用户未登录
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+    
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // 从 Hive 获取恢复密钥
+    return _passwordsBox.get('recovery_key_${_currentUser!.id}') as String?;
+  }
+  
+  @override
   Future<void> updatePassword(String currentPassword, String newPassword) async {
     // Fail Fast：参数验证
     if (currentPassword.isEmpty) {

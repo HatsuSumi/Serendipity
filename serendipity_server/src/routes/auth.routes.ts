@@ -103,5 +103,11 @@ export const createAuthRoutes = (authController: AuthController): Router => {
     authController.generateRecoveryKey
   );
 
+  router.get(
+    '/recovery-key',
+    authMiddleware,
+    authController.getRecoveryKey
+  );
+
   return router;
 };

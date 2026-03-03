@@ -219,4 +219,18 @@ export class AuthController {
       next(error);
     }
   };
+
+  getRecoveryKey = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const recoveryKey = await this.authService.getRecoveryKey(userId);
+      sendSuccess(res, { recoveryKey });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
