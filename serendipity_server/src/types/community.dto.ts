@@ -64,7 +64,7 @@ export interface FilterCommunityPostsQuery {
   province?: string;  // 省份（如"广东省"）
   city?: string;      // 城市（如"深圳市"）
   area?: string;      // 区县（如"南山区"）
-  placeType?: string;
+  placeTypes?: string; // 场所类型（多个用逗号分隔，OR逻辑）
   tag?: string;
   status?: string; // 1=missed, 2=avoided
   limit?: number;

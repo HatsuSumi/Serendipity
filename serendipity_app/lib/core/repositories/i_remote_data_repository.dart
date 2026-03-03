@@ -220,7 +220,7 @@ abstract class IRemoteDataRepository {
   /// - [province]：省份（可选）
   /// - [city]：城市（可选）
   /// - [area]：区县（可选）
-  /// - [placeType]：场所类型（可选）
+  /// - [placeTypes]：场所类型列表（可选，多选OR逻辑）
   /// - [tag]：标签名称（可选）
   /// - [status]：状态（可选）
   /// - [limit]：每页数量
@@ -243,7 +243,7 @@ abstract class IRemoteDataRepository {
     String? province,
     String? city,
     String? area,
-    String? placeType,
+    List<String>? placeTypes,
     String? tag,
     int? status,
     int limit = 20,

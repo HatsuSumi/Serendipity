@@ -134,9 +134,12 @@ export class CommunityPostService implements ICommunityPostService {
       filters.area = query.area;
     }
 
-    // 场所类型
-    if (query.placeType) {
-      filters.placeType = query.placeType;
+    // 场所类型（支持多选，OR逻辑）
+    if (query.placeTypes) {
+      const types = query.placeTypes.split(',').map(t => t.trim()).filter(t => t);
+      if (types.length > 0) {
+        filters.placeTypes = types;
+      }
     }
 
     // 标签

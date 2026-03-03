@@ -16,7 +16,7 @@ export interface ICommunityPostRepository {
     province?: string;
     city?: string;
     area?: string;
-    placeType?: string;
+    placeTypes?: string[];
     tag?: string;
     status?: string;
     limit: number;
@@ -94,7 +94,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     province?: string;
     city?: string;
     area?: string;
-    placeType?: string;
+    placeTypes?: string[];
     tag?: string;
     status?: string;
     limit: number;
@@ -138,9 +138,11 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       where.area = filters.area;
     }
 
-    // 场所类型筛选
-    if (filters.placeType) {
-      where.placeType = filters.placeType;
+    // 场所类型筛选（多选，OR逻辑）
+    if (filters.placeTypes && filters.placeTypes.length > 0) {
+      where.placeType = {
+        in: filters.placeTypes,
+      };
     }
 
     // 状态筛选

@@ -173,7 +173,7 @@ class CommunityRepository {
   /// - province: 省份（可选）
   /// - city: 城市（可选）
   /// - area: 区县（可选）
-  /// - placeType: 场所类型（可选）
+  /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
   /// - tag: 标签名称（可选）
   /// - status: 状态（可选）
   /// - limit: 每页数量（默认 20）
@@ -189,7 +189,7 @@ class CommunityRepository {
     String? province,
     String? city,
     String? area,
-    PlaceType? placeType,
+    List<PlaceType>? placeTypes,
     String? tag,
     EncounterStatus? status,
     int limit = 20,
@@ -219,7 +219,7 @@ class CommunityRepository {
       province: province,
       city: city,
       area: area,
-      placeType: placeType?.value,
+      placeTypes: placeTypes?.map((t) => t.value).toList(),
       tag: tag,
       status: status?.value,
       limit: limit,

@@ -37,7 +37,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   DateTime? _endDate;
   DateTime? _publishStartDate;
   DateTime? _publishEndDate;
-  PlaceType? _selectedPlaceType;
+  Set<PlaceType> _selectedPlaceTypes = {};
   EncounterStatus? _selectedStatus;
   final TextEditingController _tagController = TextEditingController();
   SelectedRegion? _selectedRegion;
@@ -260,13 +260,17 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
           spacing: 8,
           runSpacing: 8,
           children: PlaceType.values.take(10).map((type) {
-            final isSelected = _selectedPlaceType == type;
+            final isSelected = _selectedPlaceTypes.contains(type);
             return FilterChip(
               label: Text('${type.icon} ${type.label}'),
               selected: isSelected,
               onSelected: (selected) {
                 setState(() {
-                  _selectedPlaceType = selected ? type : null;
+                  if (selected) {
+                    _selectedPlaceTypes.add(type);
+                  } else {
+                    _selectedPlaceTypes.remove(type);
+                  }
                 });
               },
             );
@@ -283,40 +287,16 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
 
   /// 显示场所类型选择对话框
   Future<void> _showPlaceTypeDialog() async {
-    final selected = await DialogHelper.show<PlaceType>(
+    final selected = await DialogHelper.show<Set<PlaceType>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择场所类型'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: PlaceType.values.map((type) {
-              return ListTile(
-                leading: Text(type.icon, style: const TextStyle(fontSize: 24)),
-                title: Text(type.label),
-                selected: _selectedPlaceType == type,
-                onTap: () => Navigator.of(context).pop(type),
-              );
-            }).toList(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(null),
-            child: const Text('清除'),
-          ),
-        ],
+      builder: (context) => _PlaceTypeMultiSelectDialog(
+        selectedTypes: _selectedPlaceTypes,
       ),
     );
     
-    if (selected != null || selected == null && _selectedPlaceType != null) {
+    if (selected != null) {
       setState(() {
-        _selectedPlaceType = selected;
+        _selectedPlaceTypes = selected;
       });
     }
   }
@@ -353,7 +333,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
           province: _selectedRegion?.province,
           city: _selectedRegion?.city,
           area: _selectedRegion?.area,
-          placeType: _selectedPlaceType,
+          placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
           status: _selectedStatus,
           tag: _tagController.text.trim().isEmpty ? null : _tagController.text.trim(),
         );
@@ -363,6 +343,72 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   Future<void> _clearFilter() async {
     Navigator.of(context).pop();
     await ref.read(communityProvider.notifier).clearFilter();
+  }
+}
+
+/// 场所类型多选对话框
+class _PlaceTypeMultiSelectDialog extends StatefulWidget {
+  final Set<PlaceType> selectedTypes;
+
+  const _PlaceTypeMultiSelectDialog({
+    required this.selectedTypes,
+  });
+
+  @override
+  State<_PlaceTypeMultiSelectDialog> createState() => _PlaceTypeMultiSelectDialogState();
+}
+
+class _PlaceTypeMultiSelectDialogState extends State<_PlaceTypeMultiSelectDialog> {
+  late Set<PlaceType> _selectedTypes;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTypes = Set.from(widget.selectedTypes);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('选择场所类型'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView(
+          shrinkWrap: true,
+          children: PlaceType.values.map((type) {
+            final isSelected = _selectedTypes.contains(type);
+            return CheckboxListTile(
+              secondary: Text(type.icon, style: const TextStyle(fontSize: 24)),
+              title: Text(type.label),
+              value: isSelected,
+              onChanged: (selected) {
+                setState(() {
+                  if (selected == true) {
+                    _selectedTypes.add(type);
+                  } else {
+                    _selectedTypes.remove(type);
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(<PlaceType>{}),
+          child: const Text('清除'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_selectedTypes),
+          child: Text('确定 (${_selectedTypes.length})'),
+        ),
+      ],
+    );
   }
 }
 

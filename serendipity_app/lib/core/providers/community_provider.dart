@@ -203,7 +203,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - province: 省份（可选）
   /// - city: 城市（可选）
   /// - area: 区县（可选）
-  /// - placeType: 场所类型（可选）
+  /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
   /// - tag: 标签名称（可选）
   /// - status: 状态（可选）
   /// 
@@ -216,7 +216,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     String? province,
     String? city,
     String? area,
-    PlaceType? placeType,
+    List<PlaceType>? placeTypes,
     String? tag,
     EncounterStatus? status,
   }) async {
@@ -232,7 +232,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         province: province,
         city: city,
         area: area,
-        placeType: placeType,
+        placeTypes: placeTypes,
         tag: tag,
         status: status,
       );

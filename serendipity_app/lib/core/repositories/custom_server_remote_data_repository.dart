@@ -267,7 +267,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     String? province,
     String? city,
     String? area,
-    String? placeType,
+    List<String>? placeTypes,
     String? tag,
     int? status,
     int limit = 20,
@@ -309,8 +309,8 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       if (area != null && area.isNotEmpty) {
         queryParams['area'] = area;
       }
-      if (placeType != null && placeType.isNotEmpty) {
-        queryParams['placeType'] = placeType;
+      if (placeTypes != null && placeTypes.isNotEmpty) {
+        queryParams['placeTypes'] = placeTypes.join(',');
       }
       if (tag != null && tag.isNotEmpty) {
         queryParams['tag'] = tag;

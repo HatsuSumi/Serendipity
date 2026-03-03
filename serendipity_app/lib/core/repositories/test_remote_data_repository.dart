@@ -89,7 +89,7 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
     String? province,
     String? city,
     String? area,
-    String? placeType,
+    List<String>? placeTypes,
     String? tag,
     int? status,
     int limit = 20,

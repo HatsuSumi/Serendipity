@@ -107,7 +107,7 @@ export class CommunityPostController {
         province: getQueryAsString(req.query.province),
         city: getQueryAsString(req.query.city),
         area: getQueryAsString(req.query.area),
-        placeType: getQueryAsString(req.query.placeType),
+        placeTypes: getQueryAsString(req.query.placeTypes),
         tag: getQueryAsString(req.query.tag),
         status: getQueryAsString(req.query.status),
         limit: getQueryAsInt(req.query.limit),
