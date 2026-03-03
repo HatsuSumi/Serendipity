@@ -119,26 +119,6 @@ class MyApp extends ConsumerWidget {
     // 监听首次启动状态
     final firstLaunchState = ref.watch(firstLaunchProvider);
     
-    // 监听认证状态变化，处理退出登录导航
-    // 遵循原则：不在 build 中产生副作用，使用 ref.listen
-    ref.listen<AsyncValue<app_user.User?>>(authProvider, (previous, next) {
-      // 只在从已登录变为未登录时跳转到欢迎页
-      // 注意：不清空导航栈，保留用户的浏览历史
-      final wasLoggedIn = previous?.value != null;
-      final isLoggedOut = next.value == null;
-      
-      if (wasLoggedIn && isLoggedOut) {
-        // 使用 Future.microtask 避免在 build 期间修改导航栈
-        // 遵循原则：异步操作必须处理异常
-        Future.microtask(() {
-          navigatorKey.currentState?.pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const WelcomePage()),
-            (route) => false,
-          );
-        });
-      }
-    });
-    
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Serendipity',

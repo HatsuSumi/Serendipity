@@ -172,7 +172,7 @@ class WelcomePage extends ConsumerWidget {
           child: AuthButton.primary(
             text: '先离线使用',
             prefixIcon: Icons.explore,
-            onPressed: () => _navigateToMainPage(context),
+            onPressed: () => _navigateToMainPage(context, ref),
           ),
         ),
         
@@ -228,12 +228,13 @@ class WelcomePage extends ConsumerWidget {
   /// 
   /// 遵循原则：
   /// - 单一职责：只负责导航
-  /// - 用户体验优先：使用 pushReplacement 避免返回到欢迎页
-  void _navigateToMainPage(BuildContext context) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const MainNavigationPage(),
-      ),
+  /// - 架构一致性：使用 NavigationHelper 统一导航逻辑
+  /// - 用户体验优先：显示友好的欢迎消息
+  void _navigateToMainPage(BuildContext context, WidgetRef ref) {
+    NavigationHelper.navigateToMainPageWithMessage(
+      context,
+      ref,
+      '欢迎使用 Serendipity！',
     );
   }
   
