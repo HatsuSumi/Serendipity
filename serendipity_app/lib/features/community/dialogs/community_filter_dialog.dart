@@ -38,7 +38,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   DateTime? _publishStartDate;
   DateTime? _publishEndDate;
   Set<PlaceType> _selectedPlaceTypes = {};
-  EncounterStatus? _selectedStatus;
+  Set<EncounterStatus> _selectedStatuses = {};
   final TextEditingController _tagController = TextEditingController();
   SelectedRegion? _selectedRegion;
 
@@ -60,7 +60,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
       _publishStartDate = criteria.publishStartDate;
       _publishEndDate = criteria.publishEndDate;
       _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
-      _selectedStatus = criteria.status;
+      _selectedStatuses = criteria.statuses?.toSet() ?? {};
       _tagController.text = criteria.tag ?? '';
       
       // 恢复地区选择
@@ -339,13 +339,17 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
       spacing: 8,
       runSpacing: 8,
       children: EncounterStatus.values.map((status) {
-        final isSelected = _selectedStatus == status;
+        final isSelected = _selectedStatuses.contains(status);
         return FilterChip(
           label: Text('${status.icon} ${status.label}'),
           selected: isSelected,
           onSelected: (selected) {
             setState(() {
-              _selectedStatus = selected ? status : null;
+              if (selected) {
+                _selectedStatuses.add(status);
+              } else {
+                _selectedStatuses.remove(status);
+              }
             });
           },
         );
@@ -366,7 +370,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
           city: _selectedRegion?.city,
           area: _selectedRegion?.area,
           placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
-          status: _selectedStatus,
+          statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
           tag: _tagController.text.trim().isEmpty ? null : _tagController.text.trim(),
         );
   }

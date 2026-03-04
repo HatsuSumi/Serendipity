@@ -54,7 +54,7 @@ class CommunityFilterCriteria {
   final String? area;
   final List<PlaceType>? placeTypes;
   final String? tag;
-  final EncounterStatus? status;
+  final List<EncounterStatus>? statuses;
   
   const CommunityFilterCriteria({
     this.startDate,
@@ -66,7 +66,7 @@ class CommunityFilterCriteria {
     this.area,
     this.placeTypes,
     this.tag,
-    this.status,
+    this.statuses,
   });
 }
 
@@ -238,7 +238,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - area: 区县（可选）
   /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
   /// - tag: 标签名称（可选）
-  /// - status: 状态（可选）
+  /// - statuses: 状态列表（可选，多选OR逻辑）
   /// 
   /// 调用者：CommunityFilterDialog（筛选对话框）
   Future<void> filterPosts({
@@ -251,7 +251,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     String? area,
     List<PlaceType>? placeTypes,
     String? tag,
-    EncounterStatus? status,
+    List<EncounterStatus>? statuses,
   }) async {
     state = const AsyncValue.loading();
     _lastTimestamp = null;
@@ -267,7 +267,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
       area: area,
       placeTypes: placeTypes,
       tag: tag,
-      status: status,
+      statuses: statuses,
     );
 
     state = await AsyncValue.guard(() async {
@@ -281,7 +281,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         area: area,
         placeTypes: placeTypes,
         tag: tag,
-        status: status,
+        statuses: statuses,
       );
       
       return CommunityState(

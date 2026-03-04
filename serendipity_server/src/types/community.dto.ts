@@ -66,7 +66,7 @@ export interface FilterCommunityPostsQuery {
   area?: string;      // 区县（如"南山区"）
   placeTypes?: string; // 场所类型（多个用逗号分隔，OR逻辑）
   tag?: string;
-  status?: string; // 1=missed, 2=avoided
+  statuses?: string; // 状态（多个用逗号分隔，OR逻辑）
   limit?: number;
 }
 

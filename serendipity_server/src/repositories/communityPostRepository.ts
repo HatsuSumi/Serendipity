@@ -18,7 +18,7 @@ export interface ICommunityPostRepository {
     area?: string;
     placeTypes?: string[];
     tag?: string;
-    status?: string;
+    statuses?: string[];
     limit: number;
   }): Promise<CommunityPost[]>;
   deleteById(id: string, userId: string): Promise<void>;
@@ -96,7 +96,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     area?: string;
     placeTypes?: string[];
     tag?: string;
-    status?: string;
+    statuses?: string[];
     limit: number;
   }): Promise<CommunityPost[]> {
     const where: any = {};
@@ -145,9 +145,11 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       };
     }
 
-    // 状态筛选
-    if (filters.status) {
-      where.status = filters.status;
+    // 状态筛选（多选，OR逻辑）
+    if (filters.statuses && filters.statuses.length > 0) {
+      where.status = {
+        in: filters.statuses,
+      };
     }
 
     // 标签筛选（JSONB 查询）

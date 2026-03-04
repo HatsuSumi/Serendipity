@@ -175,7 +175,7 @@ class CommunityRepository {
   /// - area: 区县（可选）
   /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
   /// - tag: 标签名称（可选）
-  /// - status: 状态（可选）
+  /// - statuses: 状态列表（可选，多选OR逻辑）
   /// - limit: 每页数量（默认 20）
   /// 
   /// 返回：符合条件的帖子列表
@@ -191,7 +191,7 @@ class CommunityRepository {
     String? area,
     List<PlaceType>? placeTypes,
     String? tag,
-    EncounterStatus? status,
+    List<EncounterStatus>? statuses,
     int limit = 20,
   }) async {
     // Fail Fast: 参数验证
@@ -221,7 +221,7 @@ class CommunityRepository {
       area: area,
       placeTypes: placeTypes?.map((t) => t.value).toList(),
       tag: tag,
-      status: status?.value,
+      statuses: statuses?.map((s) => s.value).toList(),
       limit: limit,
     );
   }

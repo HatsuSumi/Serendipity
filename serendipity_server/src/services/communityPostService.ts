@@ -147,9 +147,12 @@ export class CommunityPostService implements ICommunityPostService {
       filters.tag = query.tag;
     }
 
-    // 状态
-    if (query.status) {
-      filters.status = query.status;
+    // 状态（支持多选，OR逻辑）
+    if (query.statuses) {
+      const statuses = query.statuses.split(',').map(s => s.trim()).filter(s => s);
+      if (statuses.length > 0) {
+        filters.statuses = statuses;
+      }
     }
 
     const posts = await this.communityPostRepository.findByFilters(filters);

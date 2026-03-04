@@ -222,7 +222,7 @@ abstract class IRemoteDataRepository {
   /// - [area]：区县（可选）
   /// - [placeTypes]：场所类型列表（可选，多选OR逻辑）
   /// - [tag]：标签名称（可选）
-  /// - [status]：状态（可选）
+  /// - [statuses]：状态列表（可选，多选OR逻辑）
   /// - [limit]：每页数量
   /// 
   /// 返回：符合条件的帖子列表
@@ -245,7 +245,7 @@ abstract class IRemoteDataRepository {
     String? area,
     List<String>? placeTypes,
     String? tag,
-    int? status,
+    List<int>? statuses,
     int limit = 20,
   });
 }
