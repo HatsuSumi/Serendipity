@@ -33,31 +33,55 @@ class PublishWarningDialog extends StatelessWidget {
           const Text('发布前请注意'),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('你即将匿名发布这条记录到社区。'),
-          const SizedBox(height: 16),
-          Text(
-            '请确保不包含：',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('你即将匿名发布这条记录到社区。'),
+            const SizedBox(height: 16),
+            Text(
+              '社区帖子包含以下字段：',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          _buildWarningItem('手机号、微信号、QQ号'),
-          _buildWarningItem('真实姓名、地址'),
-          _buildWarningItem('其他隐私信息'),
-          const SizedBox(height: 16),
-          Text(
-            '发布后可以删除，但无法修改。',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 8),
+            const Text('错过时间、发布时间、地址、地点名称、场所类型、省市区、描述、标签、状态'),
+            const SizedBox(height: 16),
+            Text(
+              '社区帖子不包含以下字段：',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.secondary,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text('精确GPS坐标、情绪强度、对话契机、背景音乐、天气、"如果再遇"备忘'),
+            const SizedBox(height: 16),
+            Divider(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
+            const SizedBox(height: 16),
+            Text(
+              '请确保不包含：',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildWarningItem('手机号、微信号、QQ号'),
+            _buildWarningItem('真实姓名、地址'),
+            _buildWarningItem('其他隐私信息'),
+            const SizedBox(height: 16),
+            Text(
+              '发布后可以删除，但无法修改。',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(

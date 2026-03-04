@@ -80,17 +80,10 @@ class CommunityPost {
 
   /// 转换为 JSON
   Map<String, dynamic> toJson() {
-    return {
+    final json = <String, dynamic>{
       'id': id,
       'recordId': recordId,
       'timestamp': timestamp.toIso8601String(),
-      'address': address,
-      'placeName': placeName,
-      'placeType': placeType?.value,
-      'province': province,
-      'city': city,
-      'area': area,
-      'description': description,
       'tags': tags.map((e) => e.toJson()).toList(),
       'status': status.name,
       'isOwner': isOwner,
@@ -98,6 +91,17 @@ class CommunityPost {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
+    
+    // 只添加非 null 的可选字段
+    if (address != null) json['address'] = address;
+    if (placeName != null) json['placeName'] = placeName;
+    if (placeType != null) json['placeType'] = placeType!.value;
+    if (province != null) json['province'] = province;
+    if (city != null) json['city'] = city;
+    if (area != null) json['area'] = area;
+    if (description != null) json['description'] = description;
+    
+    return json;
   }
 
   /// 复制并修改部分字段

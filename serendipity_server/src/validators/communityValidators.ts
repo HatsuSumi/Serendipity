@@ -15,37 +15,37 @@ export const createCommunityPostValidation = [
     .withMessage('时间戳格式不正确，必须是ISO 8601格式'),
   
   body('address')
-    .optional()
+    .optional({ values: 'null' })
     .isString()
     .withMessage('地址必须是字符串'),
   
   body('placeName')
-    .optional()
+    .optional({ values: 'null' })
     .isString()
     .withMessage('地点名称必须是字符串'),
   
   body('placeType')
-    .optional()
+    .optional({ values: 'null' })
     .isString()
     .withMessage('地点类型必须是字符串'),
   
   body('province')
-    .optional()
+    .optional({ values: 'null' })
     .isString()
     .withMessage('省份必须是字符串'),
   
   body('city')
-    .optional()
+    .optional({ values: 'null' })
     .isString()
     .withMessage('城市必须是字符串'),
   
   body('area')
-    .optional()
+    .optional({ values: 'null' })
     .isString()
     .withMessage('区县必须是字符串'),
   
   body('description')
-    .optional()
+    .optional({ values: 'null' })
     .isString()
     .withMessage('描述必须是字符串'),
   
@@ -58,7 +58,7 @@ export const createCommunityPostValidation = [
     .withMessage('标签必须是字符串'),
   
   body('tags.*.note')
-    .optional()
+    .optional({ values: 'null' })
     .isString()
     .withMessage('标签备注必须是字符串'),
   
@@ -68,7 +68,7 @@ export const createCommunityPostValidation = [
     .withMessage('状态不能为空'),
   
   body('publishedAt')
-    .optional()
+    .optional({ values: 'null' })
     .isISO8601()
     .withMessage('发布时间格式不正确，必须是ISO 8601格式'),
 ];
