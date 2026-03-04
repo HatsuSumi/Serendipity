@@ -54,7 +54,7 @@ export const errorHandler = (
     success: false,
     error: {
       code: ErrorCode.INTERNAL_ERROR,
-      message: 'Internal server error',
+      message: '服务器内部错误',
     },
   });
 };
@@ -68,7 +68,7 @@ export const notFoundHandler = (
     success: false,
     error: {
       code: ErrorCode.NOT_FOUND,
-      message: `Route ${req.originalUrl} not found`,
+      message: `路由 ${req.originalUrl} 不存在`,
     },
   });
 };

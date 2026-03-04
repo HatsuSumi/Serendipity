@@ -5,6 +5,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../record/create_record_page.dart';
 import 'widgets/community_post_card.dart';
@@ -206,7 +207,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.grey),
               const SizedBox(height: 16),
-              Text('加载失败：$error'),
+              Text('加载失败：${AuthErrorHelper.extractErrorMessage(error)}'),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _onRefresh,
