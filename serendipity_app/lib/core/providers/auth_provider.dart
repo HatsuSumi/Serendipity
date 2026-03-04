@@ -5,6 +5,7 @@ import '../repositories/test_auth_repository.dart';
 import '../repositories/custom_server_auth_repository.dart';
 import '../services/http_client_service.dart';
 import '../services/i_storage_service.dart';
+import '../services/sync_service.dart';
 import '../config/app_config.dart';
 
 /// 存储服务 Provider
@@ -57,6 +58,21 @@ class AuthNotifier extends StreamNotifier<User?> {
     // 注意：TestAuthRepository 的 authStateChanges 会立即发送当前状态
     return _repository.authStateChanges;
   }
+  
+  /// 触发数据同步
+  /// 
+  /// 调用时机：用户登录成功后
+  /// 
+  /// 注意：同步失败不影响用户使用，用户可以稍后手动触发同步
+  Future<void> _triggerSync(User user) async {
+    try {
+      final syncService = ref.read(syncServiceProvider);
+      await syncService.syncAllData(user);
+    } catch (e) {
+      // 同步失败不影响用户使用
+      // 生产环境应记录错误日志
+    }
+  }
 
   /// 获取当前用户
   /// 
@@ -88,6 +104,11 @@ class AuthNotifier extends StreamNotifier<User?> {
       await _repository.signInWithEmail(email, password);
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
+      
+      // 登录成功后触发数据同步
+      if (user != null) {
+        await _triggerSync(user);
+      }
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
@@ -118,6 +139,12 @@ class AuthNotifier extends StreamNotifier<User?> {
     try {
       final result = await _repository.signUpWithEmail(email, password);
       state = AsyncValue.data(result.user);
+      
+      // 注册成功后触发数据同步
+      if (result.user != null) {
+        await _triggerSync(result.user!);
+      }
+      
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -185,6 +212,11 @@ class AuthNotifier extends StreamNotifier<User?> {
       );
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
+      
+      // 登录成功后触发数据同步
+      if (user != null) {
+        await _triggerSync(user);
+      }
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
@@ -227,6 +259,12 @@ class AuthNotifier extends StreamNotifier<User?> {
         verificationId,
       );
       state = AsyncValue.data(result.user);
+      
+      // 注册成功后触发数据同步
+      if (result.user != null) {
+        await _triggerSync(result.user!);
+      }
+      
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);

@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/services/storage_service.dart';
-import 'core/services/sync_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/repositories/check_in_repository.dart';
 import 'core/providers/theme_provider.dart';
@@ -155,8 +154,9 @@ class MyApp extends ConsumerWidget {
   /// 逻辑：
   /// 1. 首次启动 → 显示欢迎页（无论是否登录）
   /// 2. 非首次启动 → 显示主页（无论是否登录）
-  /// 3. 已登录 → 触发云端同步
-  /// 4. 加载中/错误 → 显示主页（不阻碍用户使用）
+  /// 3. 加载中/错误 → 显示主页（不阻碍用户使用）
+  /// 
+  /// 注意：数据同步由 AuthNotifier 自动处理，无需在此触发
   Widget _buildHome(
     AsyncValue<app_user.User?> authState,
     AsyncValue<bool> firstLaunchState,
@@ -171,25 +171,11 @@ class MyApp extends ConsumerWidget {
           return const WelcomePage();
         }
         
-        // 非首次启动，根据登录状态决定是否触发同步
+        // 非首次启动，显示主页（无论是否登录，支持离线模式）
         return authState.when(
-          data: (user) {
-            // 已登录，触发云端同步
-            if (user != null) {
-              _triggerSync(ref, user);
-            }
-            
-            // 无论是否登录，都显示主页（支持离线模式）
-            return const MainNavigationPage();
-          },
-          loading: () {
-            // 加载中也显示主页，不阻碍用户使用
-            return const MainNavigationPage();
-          },
-          error: (error, stack) {
-            // 错误时也显示主页，不阻碍用户使用
-            return const MainNavigationPage();
-          },
+          data: (user) => const MainNavigationPage(),
+          loading: () => const MainNavigationPage(),
+          error: (error, stack) => const MainNavigationPage(),
         );
       },
       loading: () {
@@ -201,23 +187,6 @@ class MyApp extends ConsumerWidget {
         return _ErrorPage(error: error);
       },
     );
-  }
-  
-  /// 触发数据同步
-  /// 
-  /// 调用者：build() - 用户登录后自动调用
-  /// 
-  /// 注意：使用 Future.microtask 避免在 build 中直接调用异步方法
-  void _triggerSync(WidgetRef ref, user) {
-    Future.microtask(() async {
-      try {
-        final syncService = ref.read(syncServiceProvider);
-        await syncService.syncAllData(user);
-      } catch (e) {
-        // 同步失败不影响用户使用
-        // 用户可以稍后手动触发同步
-      }
-    });
   }
   
   /// 根据主题选项确定主题模式
