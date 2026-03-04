@@ -99,6 +99,11 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     statuses?: string[];
     limit: number;
   }): Promise<CommunityPost[]> {
+    // 如果有标签筛选，使用原始 SQL 查询
+    if (filters.tag) {
+      return this.findByFiltersWithTag(filters);
+    }
+
     const where: any = {};
 
     // 错过时间范围筛选（基于 timestamp 字段）
@@ -152,20 +157,111 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       };
     }
 
-    // 标签筛选（JSONB 查询，精确匹配）
-    if (filters.tag) {
-      // 使用 Prisma 的 JSON 过滤器查询数组中是否有匹配的 tag
-      where.tags = {
-        path: ['$[*].tag'],
-        array_contains: [filters.tag],
-      };
-    }
-
     return this.prisma.communityPost.findMany({
       where,
       orderBy: { publishedAt: 'desc' },
       take: filters.limit,
     });
+  }
+
+  // 带标签筛选的查询（使用原始 SQL）
+  private async findByFiltersWithTag(filters: {
+    startDate?: Date;
+    endDate?: Date;
+    publishStartDate?: Date;
+    publishEndDate?: Date;
+    province?: string;
+    city?: string;
+    area?: string;
+    placeTypes?: string[];
+    tag?: string;
+    statuses?: string[];
+    limit: number;
+  }): Promise<CommunityPost[]> {
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    // 标签筛选（JSONB 查询）
+    if (filters.tag) {
+      conditions.push(
+        `EXISTS (SELECT 1 FROM jsonb_array_elements(tags) AS t WHERE t->>'tag' = $${paramIndex})`
+      );
+      params.push(filters.tag);
+      paramIndex++;
+    }
+
+    // 错过时间范围筛选
+    if (filters.startDate) {
+      conditions.push(`timestamp >= $${paramIndex}`);
+      params.push(filters.startDate);
+      paramIndex++;
+    }
+    if (filters.endDate) {
+      conditions.push(`timestamp <= $${paramIndex}`);
+      params.push(filters.endDate);
+      paramIndex++;
+    }
+
+    // 发布时间范围筛选
+    if (filters.publishStartDate) {
+      conditions.push(`"publishedAt" >= $${paramIndex}`);
+      params.push(filters.publishStartDate);
+      paramIndex++;
+    }
+    if (filters.publishEndDate) {
+      conditions.push(`"publishedAt" <= $${paramIndex}`);
+      params.push(filters.publishEndDate);
+      paramIndex++;
+    }
+
+    // 省份筛选
+    if (filters.province) {
+      conditions.push(`province = $${paramIndex}`);
+      params.push(filters.province);
+      paramIndex++;
+    }
+
+    // 城市筛选
+    if (filters.city) {
+      conditions.push(`city = $${paramIndex}`);
+      params.push(filters.city);
+      paramIndex++;
+    }
+
+    // 区县筛选
+    if (filters.area) {
+      conditions.push(`area = $${paramIndex}`);
+      params.push(filters.area);
+      paramIndex++;
+    }
+
+    // 场所类型筛选
+    if (filters.placeTypes && filters.placeTypes.length > 0) {
+      conditions.push(`"placeType" = ANY($${paramIndex})`);
+      params.push(filters.placeTypes);
+      paramIndex++;
+    }
+
+    // 状态筛选
+    if (filters.statuses && filters.statuses.length > 0) {
+      conditions.push(`status = ANY($${paramIndex})`);
+      params.push(filters.statuses);
+      paramIndex++;
+    }
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const query = `
+      SELECT * FROM "CommunityPost"
+      ${whereClause}
+      ORDER BY "publishedAt" DESC
+      LIMIT $${paramIndex}
+    `;
+    params.push(filters.limit);
+
+    return this.prisma.$queryRawUnsafe(query, ...params);
   }
 
   async deleteById(id: string, userId: string): Promise<void> {
