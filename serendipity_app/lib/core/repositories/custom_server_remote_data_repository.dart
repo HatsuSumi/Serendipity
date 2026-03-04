@@ -4,6 +4,7 @@ import '../../models/community_post.dart';
 import 'i_remote_data_repository.dart';
 import '../services/http_client_service.dart';
 import '../config/server_config.dart';
+import '../utils/address_helper.dart';
 
 /// 自建服务器远程数据仓库实现
 /// 
@@ -175,22 +176,72 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   // ==================== 社区相关操作 ====================
   
   @override
-  Future<bool> saveCommunityPost(CommunityPost post) async {
+  Future<bool> saveCommunityPost(CommunityPost post, {bool forceReplace = false}) async {
     try {
+      final body = post.toJson();
+      body['forceReplace'] = forceReplace;
+      
       final response = await _httpClient.post(
         ServerConfig.communityPosts,
-        body: post.toJson(),
+        body: body,
       );
       
       // 从响应中获取 replaced 字段
       final data = response['data'] as Map<String, dynamic>;
       return data['replaced'] as bool? ?? false;
     } on HttpException catch (e) {
-      // 如果是 CONFLICT 错误，说明记录内容未变化，不允许重复发布
+      // 如果是 CONFLICT 错误，说明记录内容未变化或需要用户确认
       if (e.errorCode == 'CONFLICT') {
-        throw Exception('该记录已发布且内容未变化，无需重复发布');
+        throw Exception(e.message);
       }
       throw Exception('发布社区帖子失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {
+    // Fail Fast：参数验证
+    if (records.isEmpty) {
+      throw ArgumentError('records 不能为空');
+    }
+    
+    try {
+      final body = {
+        'records': records.map((record) {
+          return {
+            'recordId': record.id,
+            'timestamp': record.timestamp.toIso8601String(),
+            'address': record.location.address,
+            'placeName': record.location.placeName,
+            'placeType': record.location.placeType?.value,
+            'province': AddressHelper.extractRegion(record.location.address ?? '').province,
+            'city': AddressHelper.extractRegion(record.location.address ?? '').city,
+            'area': AddressHelper.extractRegion(record.location.address ?? '').area,
+            'description': record.description,
+            'tags': record.tags.map((t) => {'tag': t.tag, 'note': t.note}).toList(),
+            'status': record.status.name,
+          };
+        }).toList(),
+      };
+      
+      final response = await _httpClient.post(
+        '${ServerConfig.communityPosts}/check-status',
+        body: body,
+      );
+      
+      final data = response['data'] as Map<String, dynamic>;
+      final statuses = data['statuses'] as List;
+      
+      final result = <String, String>{};
+      for (final item in statuses) {
+        final recordId = item['recordId'] as String;
+        final status = item['status'] as String;
+        result[recordId] = status;
+      }
+      
+      return result;
+    } on HttpException catch (e) {
+      throw Exception('检查发布状态失败：${e.message}');
     }
   }
   

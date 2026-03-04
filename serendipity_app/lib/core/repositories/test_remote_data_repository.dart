@@ -56,9 +56,17 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
-  Future<bool> saveCommunityPost(CommunityPost post) async {
+  Future<bool> saveCommunityPost(CommunityPost post, {bool forceReplace = false}) async {
     // 测试模式：不执行任何操作，返回未替换
     return false;
+  }
+
+  @override
+  Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {
+    // 测试模式：所有记录都可以发布
+    return {
+      for (var record in records) record.id: 'can_publish',
+    };
   }
 
   @override

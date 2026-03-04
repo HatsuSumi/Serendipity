@@ -150,6 +150,7 @@ abstract class IRemoteDataRepository {
   /// 
   /// 参数：
   /// - [post]：要保存的社区帖子
+  /// - [forceReplace]：是否强制替换（用户已确认）
   /// 
   /// 返回：
   /// - replaced: 是否替换了旧帖子
@@ -160,7 +161,23 @@ abstract class IRemoteDataRepository {
   /// Fail Fast：
   /// - post 为 null：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
-  Future<bool> saveCommunityPost(CommunityPost post);
+  Future<bool> saveCommunityPost(CommunityPost post, {bool forceReplace = false});
+  
+  /// 批量检查记录的发布状态
+  /// 
+  /// 参数：
+  /// - [records]：要检查的记录列表
+  /// 
+  /// 返回：
+  /// - Map<recordId, PublishStatus>：每条记录的发布状态
+  /// 
+  /// 调用者：
+  /// - CommunityRepository.checkPublishStatus()
+  /// 
+  /// Fail Fast：
+  /// - records 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records);
   
   /// 获取社区帖子列表（分页）
   /// 

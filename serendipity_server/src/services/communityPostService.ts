@@ -8,6 +8,10 @@ import {
   MyCommunityPostsResponseDto,
   FilterCommunityPostsQuery,
   TagDto,
+  CheckPublishStatusDto,
+  CheckPublishStatusResponseDto,
+  RecordPublishStatusDto,
+  PublishStatus,
 } from '../types/community.dto';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
@@ -19,6 +23,10 @@ export interface ICommunityPostService {
     userId: string,
     data: CreateCommunityPostDto
   ): Promise<CreateCommunityPostResponseDto>;
+  checkPublishStatus(
+    userId: string,
+    records: CheckPublishStatusDto[]
+  ): Promise<CheckPublishStatusResponseDto>;
   getRecentPosts(
     limit: number,
     lastTimestamp?: string,
@@ -60,7 +68,15 @@ export class CommunityPostService implements ICommunityPostService {
         );
       }
 
-      // 内容已变化，删除旧帖
+      // 内容已变化，但用户未确认替换
+      if (!data.forceReplace) {
+        throw new AppError(
+          'This record has already been published. Content has changed, please confirm to replace',
+          ErrorCode.CONFLICT
+        );
+      }
+
+      // 用户已确认，删除旧帖
       await this.communityPostRepository.deleteById(existingPost.id, userId);
       replaced = true;
     }
@@ -75,10 +91,61 @@ export class CommunityPostService implements ICommunityPostService {
     };
   }
 
+  // 批量检查发布状态
+  async checkPublishStatus(
+    userId: string,
+    records: CheckPublishStatusDto[]
+  ): Promise<CheckPublishStatusResponseDto> {
+    // Fail Fast: 参数验证
+    if (!userId) {
+      throw new AppError('userId is required', ErrorCode.VALIDATION_ERROR);
+    }
+    if (!records || records.length === 0) {
+      throw new AppError('records is required', ErrorCode.VALIDATION_ERROR);
+    }
+
+    const statuses: RecordPublishStatusDto[] = [];
+
+    for (const record of records) {
+      // 查询是否已发布
+      const existingPost = await this.communityPostRepository.findByUserAndRecord(
+        userId,
+        record.recordId
+      );
+
+      if (!existingPost) {
+        // 未发布过，可以发布
+        statuses.push({
+          recordId: record.recordId,
+          status: PublishStatus.CAN_PUBLISH,
+        });
+      } else {
+        // 已发布过，检查内容是否变化
+        const hasChanged = this.hasPostContentChanged(existingPost, record);
+        
+        if (hasChanged) {
+          // 内容已变化，需要用户确认
+          statuses.push({
+            recordId: record.recordId,
+            status: PublishStatus.NEED_CONFIRM,
+          });
+        } else {
+          // 内容未变化，不能发布
+          statuses.push({
+            recordId: record.recordId,
+            status: PublishStatus.CANNOT_PUBLISH,
+          });
+        }
+      }
+    }
+
+    return { statuses };
+  }
+
   // 检查帖子内容是否发生变化
   private hasPostContentChanged(
     existingPost: CommunityPost,
-    newData: CreateCommunityPostDto
+    newData: CreateCommunityPostDto | CheckPublishStatusDto
   ): boolean {
     // 辅助函数：统一处理 null 和 undefined
     const normalize = (value: any) => value ?? null;

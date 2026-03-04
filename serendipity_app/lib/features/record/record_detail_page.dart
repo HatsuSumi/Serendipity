@@ -667,7 +667,47 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   Future<void> _publishToCommunity(BuildContext context) async {
     await AsyncActionHelper.execute(
       context,
-      action: () => ref.read(communityProvider.notifier).publishPost(_currentRecord),
+      action: () async {
+        final communityNotifier = ref.read(communityProvider.notifier);
+        
+        // 检查发布状态
+        final statusMap = await communityNotifier.checkPublishStatus([_currentRecord]);
+        final status = statusMap[_currentRecord.id] ?? 'can_publish';
+        
+        if (status == 'cannot_publish') {
+          // 内容未变化，不允许发布
+          throw Exception('该记录已发布且内容未变化');
+        } else if (status == 'need_confirm') {
+          // 需要用户确认
+          if (!context.mounted) return;
+          
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('发布确认'),
+              content: const Text('该记录已发布到社区，重新发布会替换旧帖，是否继续？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('确认'),
+                ),
+              ],
+            ),
+          );
+          
+          if (confirmed != true) return;
+          
+          // 用户确认，强制替换
+          await communityNotifier.publishPost(_currentRecord, forceReplace: true);
+        } else {
+          // 可以直接发布
+          await communityNotifier.publishPost(_currentRecord);
+        }
+      },
       successMessage: '已发布到树洞',
       errorMessagePrefix: '发布失败',
     );

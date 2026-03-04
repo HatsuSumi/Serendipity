@@ -21,6 +21,7 @@ export interface CreateCommunityPostDto {
   tags: TagDto[];
   status: string;
   publishedAt?: string; // ISO 8601 格式，可选
+  forceReplace?: boolean; // 是否强制替换（用户已确认）
 }
 
 // 社区帖子响应
@@ -75,5 +76,38 @@ export interface FilterCommunityPostsQuery {
   tags?: string; // 标签（多个用逗号分隔，OR逻辑）
   statuses?: string; // 状态（多个用逗号分隔，OR逻辑）
   limit?: number;
+}
+
+// 检查发布状态请求
+export interface CheckPublishStatusDto {
+  recordId: string;
+  timestamp: string;
+  address?: string;
+  placeName?: string;
+  placeType?: string;
+  province?: string;
+  city?: string;
+  area?: string;
+  description?: string;
+  tags: TagDto[];
+  status: string;
+}
+
+// 发布状态枚举
+export enum PublishStatus {
+  CAN_PUBLISH = 'can_publish',           // 可以发布（未发布过）
+  NEED_CONFIRM = 'need_confirm',         // 需要确认（已发布，内容已变化）
+  CANNOT_PUBLISH = 'cannot_publish',     // 不能发布（已发布，内容未变化）
+}
+
+// 单条记录的发布状态响应
+export interface RecordPublishStatusDto {
+  recordId: string;
+  status: PublishStatus;
+}
+
+// 批量检查发布状态响应
+export interface CheckPublishStatusResponseDto {
+  statuses: RecordPublishStatusDto[];
 }
 

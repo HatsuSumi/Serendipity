@@ -170,6 +170,9 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - 如果用户未登录，抛出 StateError
   /// - 如果记录为 null，抛出 ArgumentError
   /// 
+  /// 参数：
+  /// - forceReplace: 是否强制替换（用户已确认）
+  /// 
   /// 返回：
   /// - replaced: 是否替换了旧帖子
   /// 
@@ -177,7 +180,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - RecordDetailPage（记录详情页菜单）
   /// - CreateRecordPage（创建记录时勾选"发布到树洞"）
   /// - TimelinePage（时间轴页面菜单）
-  Future<bool> publishPost(EncounterRecord record) async {
+  Future<bool> publishPost(EncounterRecord record, {bool forceReplace = false}) async {
     // Fail Fast: 用户必须登录
     final authState = ref.read(authProvider);
     final currentUser = authState.value;
@@ -187,7 +190,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     }
 
     // 发布到社区
-    final replaced = await _repository.publishPost(record, currentUser.id);
+    final replaced = await _repository.publishPost(record, currentUser.id, forceReplace: forceReplace);
 
     // 检测社区成就
     try {
@@ -206,6 +209,24 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     await refresh();
     
     return replaced;
+  }
+
+  /// 批量检查发布状态
+  /// 
+  /// Fail Fast:
+  /// - 如果 records 为空，抛出 ArgumentError
+  /// 
+  /// 返回：
+  /// - Map<recordId, PublishStatus>：每条记录的发布状态
+  /// 
+  /// 调用者：PublishToCommunityDialog._handleConfirm()
+  Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {
+    // Fail Fast: 参数验证
+    if (records.isEmpty) {
+      throw ArgumentError('records cannot be empty');
+    }
+
+    return await _repository.checkPublishStatus(records);
   }
 
   /// 删除帖子

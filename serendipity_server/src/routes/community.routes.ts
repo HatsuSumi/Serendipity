@@ -18,6 +18,13 @@ export function createCommunityRoutes(
     communityPostController.createPost
   );
 
+  // 批量检查发布状态（需要认证）
+  router.post(
+    '/posts/check-status',
+    authMiddleware,
+    communityPostController.checkPublishStatus
+  );
+
   // 获取社区帖子列表（公开，但支持可选认证以显示 isOwner）
   router.get('/posts', optionalAuthMiddleware, communityPostController.getRecentPosts);
 

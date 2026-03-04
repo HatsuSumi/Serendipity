@@ -8,6 +8,7 @@ import '../../../core/utils/record_helper.dart';
 import '../../../core/utils/date_time_helper.dart';
 import '../../../core/theme/status_color_extension.dart';
 import '../../../core/widgets/empty_state_widget.dart';
+import 'publish_confirm_dialog.dart';
 
 /// 可发布到树洞的记录列表 Provider
 /// 
@@ -258,45 +259,120 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     
-    navigator.pop();
+    final communityNotifier = ref.read(communityProvider.notifier);
+    final recordsAsync = ref.read(recordsProvider);
+    final allRecords = recordsAsync.value ?? [];
+    
+    // 获取选中的记录
+    final selectedRecords = _selectedRecordIds
+        .map((id) => allRecords.firstWhere(
+              (r) => r.id == id,
+              orElse: () => throw StateError('Record $id not found'),
+            ))
+        .toList();
+    
+    // 步骤1：检查发布状态
+    Map<String, String> statusMap;
+    try {
+      statusMap = await communityNotifier.checkPublishStatus(selectedRecords);
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('检查发布状态失败：$e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    
+    // 步骤2：按状态分组
+    final recordInfos = selectedRecords.map((record) {
+      final status = statusMap[record.id] ?? 'can_publish';
+      PublishStatus publishStatus;
+      
+      switch (status) {
+        case 'can_publish':
+          publishStatus = PublishStatus.canPublish;
+          break;
+        case 'need_confirm':
+          publishStatus = PublishStatus.needConfirm;
+          break;
+        case 'cannot_publish':
+          publishStatus = PublishStatus.cannotPublish;
+          break;
+        default:
+          publishStatus = PublishStatus.canPublish;
+      }
+      
+      return RecordPublishInfo(record: record, status: publishStatus);
+    }).toList();
+    
+    // 步骤3：显示确认对话框
+    if (!mounted) return;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => PublishConfirmDialog(records: recordInfos),
+    );
+    
+    if (confirmed != true) return;
+    
+    // 步骤4：关闭选择对话框
+    if (mounted) {
+      navigator.pop();
+    }
+    
+    // 步骤5：执行发布
+    if (!mounted) return;
     
     await AsyncActionHelper.execute(
       context,
       action: () async {
-        final communityNotifier = ref.read(communityProvider.notifier);
-        final recordsAsync = ref.read(recordsProvider);
-        final allRecords = recordsAsync.value ?? [];
-        
+        int successCount = 0;
         int replacedCount = 0;
         
-        // 批量发布记录
-        for (final recordId in _selectedRecordIds) {
-          final record = allRecords.firstWhere(
-            (r) => r.id == recordId,
-            orElse: () => throw StateError('Record $recordId not found'),
-          );
+        // 只发布可以发布和需要确认的记录
+        for (final info in recordInfos) {
+          if (info.status == PublishStatus.cannotPublish) {
+            continue; // 跳过不能发布的记录
+          }
           
-          final replaced = await communityNotifier.publishPost(record);
-          if (replaced) {
-            replacedCount++;
+          try {
+            final forceReplace = info.status == PublishStatus.needConfirm;
+            final replaced = await communityNotifier.publishPost(
+              info.record,
+              forceReplace: forceReplace,
+            );
+            
+            successCount++;
+            if (replaced) {
+              replacedCount++;
+            }
+          } catch (e) {
+            // 单条记录发布失败，继续发布其他记录
+            // 错误会在最后统一显示
           }
         }
         
-        // 根据是否有替换显示不同的成功消息
-        if (replacedCount > 0) {
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text('已发布 ${_selectedRecordIds.length} 条记录（其中 $replacedCount 条替换了旧帖）'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text('已发布 ${_selectedRecordIds.length} 条记录'),
-              backgroundColor: Colors.green,
-            ),
-          );
+        // 显示成功消息
+        if (successCount > 0) {
+          if (replacedCount > 0) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text('已发布 $successCount 条记录（其中 $replacedCount 条替换了旧帖）'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text('已发布 $successCount 条记录'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         }
       },
       errorMessagePrefix: '发布失败',

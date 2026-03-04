@@ -68,11 +68,14 @@ class CommunityRepository {
   /// - 如果 userId 为空，抛出 ArgumentError
   /// - 如果网络请求失败，抛出异常
   /// 
+  /// 参数：
+  /// - forceReplace: 是否强制替换（用户已确认）
+  /// 
   /// 返回：
   /// - replaced: 是否替换了旧帖子
   /// 
   /// 调用者：CommunityProvider.publishPost()
-  Future<bool> publishPost(EncounterRecord record, String userId) async {
+  Future<bool> publishPost(EncounterRecord record, String userId, {bool forceReplace = false}) async {
     // Fail Fast: 参数验证
     if (userId.isEmpty) {
       throw ArgumentError('userId cannot be empty');
@@ -88,7 +91,34 @@ class CommunityRepository {
     }
 
     // 上传到云端
-    return await _remoteData.saveCommunityPost(post);
+    return await _remoteData.saveCommunityPost(post, forceReplace: forceReplace);
+  }
+
+  /// 批量检查发布状态
+  /// 
+  /// Fail Fast:
+  /// - 如果 records 为空，抛出 ArgumentError
+  /// - 如果网络请求失败，抛出异常
+  /// 
+  /// 返回：
+  /// - Map<recordId, PublishStatus>：每条记录的发布状态
+  /// 
+  /// 调用者：PublishToCommunityDialog._handleConfirm()
+  Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {
+    // Fail Fast: 参数验证
+    if (records.isEmpty) {
+      throw ArgumentError('records cannot be empty');
+    }
+
+    // 测试模式：所有记录都可以发布
+    if (AppConfig.serverType == ServerType.test) {
+      return {
+        for (var record in records) record.id: 'can_publish',
+      };
+    }
+
+    // 从云端检查
+    return await _remoteData.checkPublishStatus(records);
   }
 
   /// 获取社区帖子列表（分页）

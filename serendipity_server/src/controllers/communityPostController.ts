@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ICommunityPostService } from '../services/communityPostService';
-import { CreateCommunityPostDto, FilterCommunityPostsQuery } from '../types/community.dto';
+import { CreateCommunityPostDto, FilterCommunityPostsQuery, CheckPublishStatusDto } from '../types/community.dto';
 import { sendSuccess } from '../utils/response';
 import { getQueryAsString, getQueryAsInt, getParamAsString } from '../utils/request';
 
@@ -26,6 +26,24 @@ export class CommunityPostController {
         'Post published successfully',
         201
       );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // 批量检查发布状态
+  checkPublishStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const records: CheckPublishStatusDto[] = req.body.records;
+
+      const result = await this.communityPostService.checkPublishStatus(userId, records);
+
+      sendSuccess(res, result);
     } catch (error) {
       next(error);
     }
