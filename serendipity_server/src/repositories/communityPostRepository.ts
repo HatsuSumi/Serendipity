@@ -152,11 +152,11 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       };
     }
 
-    // 标签筛选（JSONB 查询）
+    // 标签筛选（JSONB 查询，模糊匹配）
     if (filters.tag) {
       where.tags = {
         path: ['$[*].tag'],
-        array_contains: filters.tag,
+        string_contains: filters.tag,
       };
     }
 
