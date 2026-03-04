@@ -254,7 +254,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const query = `
-      SELECT * FROM "CommunityPost"
+      SELECT * FROM "community_posts"
       ${whereClause}
       ORDER BY "publishedAt" DESC
       LIMIT $${paramIndex}

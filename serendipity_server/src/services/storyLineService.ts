@@ -55,7 +55,7 @@ export class StoryLineService implements IStoryLineService {
     let succeeded = 0;
     let failed = 0;
 
-    for (const storylineData of data.storylines) {
+    for (const storylineData of data.storyLines) {
       try {
         await this.storyLineRepository.create(userId, storylineData);
         succeeded++;
@@ -66,7 +66,7 @@ export class StoryLineService implements IStoryLineService {
     }
 
     return {
-      total: data.storylines.length,
+      total: data.storyLines.length,
       succeeded,
       failed,
       syncedAt: new Date(),

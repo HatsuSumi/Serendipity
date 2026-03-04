@@ -11,7 +11,7 @@ export interface CreateStoryLineDto {
 
 // 批量上传故事线请求
 export interface BatchCreateStoryLinesDto {
-  storylines: CreateStoryLineDto[];
+  storyLines: CreateStoryLineDto[];
 }
 
 // 更新故事线请求
