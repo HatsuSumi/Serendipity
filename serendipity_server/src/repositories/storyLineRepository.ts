@@ -35,8 +35,8 @@ export class StoryLineRepository implements IStoryLineRepository {
         userId,
         name: data.name,
         recordIds: toJsonValue(data.recordIds),
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
       },
     });
   }
@@ -81,7 +81,7 @@ export class StoryLineRepository implements IStoryLineRepository {
       data: {
         ...(data.name && { name: data.name }),
         ...(data.recordIds && { recordIds: toJsonValue(data.recordIds) }),
-        updatedAt: data.updatedAt,
+        updatedAt: new Date(data.updatedAt),
       },
     });
   }

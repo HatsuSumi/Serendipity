@@ -26,7 +26,7 @@ export class RecordRepository implements IRecordRepository {
       data: {
         id: data.id,
         userId,
-        timestamp: data.timestamp,
+        timestamp: new Date(data.timestamp),
         location: toJsonValue(data.location),
         description: data.description,
         tags: toJsonValue(data.tags),
@@ -38,8 +38,8 @@ export class RecordRepository implements IRecordRepository {
         backgroundMusic: data.backgroundMusic,
         weather: toJsonValue(data.weather),
         isPinned: data.isPinned,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
       },
     });
   }
@@ -80,10 +80,10 @@ export class RecordRepository implements IRecordRepository {
     data: UpdateRecordDto
   ): Promise<Record> {
     const updateData: any = {
-      updatedAt: data.updatedAt,
+      updatedAt: new Date(data.updatedAt),
     };
 
-    if (data.timestamp) updateData.timestamp = data.timestamp;
+    if (data.timestamp) updateData.timestamp = new Date(data.timestamp);
     if (data.location) updateData.location = toJsonValue(data.location);
     if (data.description !== undefined) updateData.description = data.description;
     if (data.tags) updateData.tags = toJsonValue(data.tags);

@@ -18,13 +18,13 @@ export const createStoryLineValidation = [
 
 // 批量创建故事线验证
 export const batchCreateStoryLinesValidation = [
-  body('storylines').isArray().withMessage('故事线必须是数组'),
-  body('storylines.*.id').isUUID().withMessage('ID必须是有效的UUID'),
-  body('storylines.*.name')
+  body('storyLines').isArray().withMessage('故事线必须是数组'),
+  body('storyLines.*.id').isUUID().withMessage('ID必须是有效的UUID'),
+  body('storyLines.*.name')
     .isString()
     .notEmpty()
     .withMessage('名称不能为空'),
-  body('storylines.*.recordIds')
+  body('storyLines.*.recordIds')
     .isArray()
     .withMessage('记录ID必须是数组'),
 ];
