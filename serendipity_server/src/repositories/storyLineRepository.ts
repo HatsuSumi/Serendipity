@@ -29,8 +29,14 @@ export class StoryLineRepository implements IStoryLineRepository {
   constructor(private prisma: PrismaClient) {}
 
   async create(userId: string, data: CreateStoryLineDto): Promise<StoryLine> {
-    return this.prisma.storyLine.create({
-      data: {
+    return this.prisma.storyLine.upsert({
+      where: { id: data.id },
+      update: {
+        name: data.name,
+        recordIds: toJsonValue(data.recordIds),
+        updatedAt: new Date(data.updatedAt),
+      },
+      create: {
         id: data.id,
         userId,
         name: data.name,

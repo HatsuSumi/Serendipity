@@ -22,8 +22,24 @@ export class RecordRepository implements IRecordRepository {
   constructor(private prisma: PrismaClient) {}
 
   async create(userId: string, data: CreateRecordDto): Promise<Record> {
-    return this.prisma.record.create({
-      data: {
+    return this.prisma.record.upsert({
+      where: { id: data.id },
+      update: {
+        timestamp: new Date(data.timestamp),
+        location: toJsonValue(data.location),
+        description: data.description,
+        tags: toJsonValue(data.tags),
+        emotion: data.emotion,
+        status: data.status,
+        storyLineId: data.storyLineId,
+        ifReencounter: data.ifReencounter,
+        conversationStarter: data.conversationStarter,
+        backgroundMusic: data.backgroundMusic,
+        weather: toJsonValue(data.weather),
+        isPinned: data.isPinned,
+        updatedAt: new Date(data.updatedAt),
+      },
+      create: {
         id: data.id,
         userId,
         timestamp: new Date(data.timestamp),
