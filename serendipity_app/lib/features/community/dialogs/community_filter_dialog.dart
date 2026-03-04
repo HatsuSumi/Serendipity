@@ -61,7 +61,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
       _publishEndDate = criteria.publishEndDate;
       _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
       _selectedStatuses = criteria.statuses?.toSet() ?? {};
-      _tagController.text = criteria.tag ?? '';
+      _tagController.text = criteria.tags?.join(', ') ?? '';
       
       // 恢复地区选择
       if (criteria.province != null || criteria.city != null || criteria.area != null) {
@@ -146,10 +146,13 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
             TextField(
               controller: _tagController,
               decoration: const InputDecoration(
-                hintText: '输入标签名称',
+                hintText: '输入标签名称，多个标签用逗号分隔',
+                helperText: '支持中英文逗号（, 或 ，）',
+                helperMaxLines: 1,
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
+              maxLines: 2,
             ),
             const SizedBox(height: 16),
 
@@ -361,6 +364,20 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   Future<void> _applyFilter() async {
     Navigator.of(context).pop();
 
+    // 解析标签（支持中英文逗号分隔）
+    List<String>? tags;
+    final tagInput = _tagController.text.trim();
+    if (tagInput.isNotEmpty) {
+      // 先将中文逗号替换为英文逗号，然后分割
+      tags = tagInput
+          .replaceAll('，', ',')  // 中文逗号 → 英文逗号
+          .split(',')
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
+      if (tags.isEmpty) tags = null;
+    }
+
     await ref.read(communityProvider.notifier).filterPosts(
           startDate: _startDate,
           endDate: _endDate,
@@ -371,7 +388,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
           area: _selectedRegion?.area,
           placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
           statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
-          tag: _tagController.text.trim().isEmpty ? null : _tagController.text.trim(),
+          tags: tags,
         );
   }
 

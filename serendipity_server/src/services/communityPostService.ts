@@ -142,9 +142,12 @@ export class CommunityPostService implements ICommunityPostService {
       }
     }
 
-    // 标签
-    if (query.tag) {
-      filters.tag = query.tag;
+    // 标签（支持多选，OR逻辑）
+    if (query.tags) {
+      const tags = query.tags.split(',').map(t => t.trim()).filter(t => t);
+      if (tags.length > 0) {
+        filters.tags = tags;
+      }
     }
 
     // 状态（支持多选，OR逻辑）

@@ -17,7 +17,7 @@ export interface ICommunityPostRepository {
     city?: string;
     area?: string;
     placeTypes?: string[];
-    tag?: string;
+    tags?: string[];
     statuses?: string[];
     limit: number;
   }): Promise<CommunityPost[]>;
@@ -95,13 +95,13 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     city?: string;
     area?: string;
     placeTypes?: string[];
-    tag?: string;
+    tags?: string[];
     statuses?: string[];
     limit: number;
   }): Promise<CommunityPost[]> {
     // 如果有标签筛选，使用原始 SQL 查询
-    if (filters.tag) {
-      return this.findByFiltersWithTag(filters);
+    if (filters.tags && filters.tags.length > 0) {
+      return this.findByFiltersWithTags(filters);
     }
 
     const where: any = {};
@@ -165,7 +165,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   }
 
   // 带标签筛选的查询（使用原始 SQL）
-  private async findByFiltersWithTag(filters: {
+  private async findByFiltersWithTags(filters: {
     startDate?: Date;
     endDate?: Date;
     publishStartDate?: Date;
@@ -174,7 +174,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     city?: string;
     area?: string;
     placeTypes?: string[];
-    tag?: string;
+    tags?: string[];
     statuses?: string[];
     limit: number;
   }): Promise<CommunityPost[]> {
@@ -182,13 +182,15 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     const params: any[] = [];
     let paramIndex = 1;
 
-    // 标签筛选（JSONB 查询）
-    if (filters.tag) {
-      conditions.push(
-        `EXISTS (SELECT 1 FROM jsonb_array_elements(tags) AS t WHERE t->>'tag' = $${paramIndex})`
-      );
-      params.push(filters.tag);
-      paramIndex++;
+    // 标签筛选（JSONB 查询，OR 逻辑：匹配任意一个标签即可）
+    if (filters.tags && filters.tags.length > 0) {
+      const tagConditions = filters.tags.map(() => {
+        const condition = `EXISTS (SELECT 1 FROM jsonb_array_elements(tags) AS t WHERE t->>'tag' = $${paramIndex})`;
+        paramIndex++;
+        return condition;
+      });
+      conditions.push(`(${tagConditions.join(' OR ')})`);
+      params.push(...filters.tags);
     }
 
     // 错过时间范围筛选

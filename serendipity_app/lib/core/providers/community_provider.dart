@@ -53,7 +53,7 @@ class CommunityFilterCriteria {
   final String? city;
   final String? area;
   final List<PlaceType>? placeTypes;
-  final String? tag;
+  final List<String>? tags;  // 修改：支持多个标签
   final List<EncounterStatus>? statuses;
   
   const CommunityFilterCriteria({
@@ -65,7 +65,7 @@ class CommunityFilterCriteria {
     this.city,
     this.area,
     this.placeTypes,
-    this.tag,
+    this.tags,
     this.statuses,
   });
 }
@@ -237,7 +237,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - city: 城市（可选）
   /// - area: 区县（可选）
   /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
-  /// - tag: 标签名称（可选）
+  /// - tags: 标签名称列表（可选，多选OR逻辑）
   /// - statuses: 状态列表（可选，多选OR逻辑）
   /// 
   /// 调用者：CommunityFilterDialog（筛选对话框）
@@ -250,7 +250,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     String? city,
     String? area,
     List<PlaceType>? placeTypes,
-    String? tag,
+    List<String>? tags,
     List<EncounterStatus>? statuses,
   }) async {
     state = const AsyncValue.loading();
@@ -266,7 +266,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
       city: city,
       area: area,
       placeTypes: placeTypes,
-      tag: tag,
+      tags: tags,
       statuses: statuses,
     );
 
@@ -280,7 +280,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         city: city,
         area: area,
         placeTypes: placeTypes,
-        tag: tag,
+        tags: tags,
         statuses: statuses,
       );
       

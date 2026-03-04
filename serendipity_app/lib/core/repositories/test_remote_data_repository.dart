@@ -90,7 +90,7 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
     String? city,
     String? area,
     List<String>? placeTypes,
-    String? tag,
+    List<String>? tags,
     List<String>? statuses,
     int limit = 20,
   }) async {
