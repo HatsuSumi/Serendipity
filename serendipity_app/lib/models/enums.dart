@@ -6,26 +6,24 @@ part 'enums.g.dart';
 @HiveType(typeId: 10)
 enum EncounterStatus {
   @HiveField(0)
-  missed(1, 'missed', '错过', '🌫️'),
+  missed('错过', '🌫️'),
   @HiveField(1)
-  avoid(2, 'avoid', '回避', '🙈'),
+  avoid('回避', '🙈'),
   @HiveField(2)
-  reencounter(3, 'reencounter', '再遇', '🌟'),
+  reencounter('再遇', '🌟'),
   @HiveField(3)
-  met(4, 'met', '邂逅', '💫'),
+  met('邂逅', '💫'),
   @HiveField(4)
-  reunion(5, 'reunion', '重逢', '💝'),
+  reunion('重逢', '💝'),
   @HiveField(5)
-  farewell(6, 'farewell', '别离', '🥀'),
+  farewell('别离', '🥀'),
   @HiveField(6)
-  lost(7, 'lost', '失联', '🍂');
+  lost('失联', '🍂');
 
-  final int value;
-  final String name;
   final String label;
   final String icon;
   
-  const EncounterStatus(this.value, this.name, this.label, this.icon);
+  const EncounterStatus(this.label, this.icon);
 }
 
 /// 情绪强度

@@ -221,7 +221,7 @@ class CommunityRepository {
       area: area,
       placeTypes: placeTypes?.map((t) => t.value).toList(),
       tag: tag,
-      statuses: statuses?.map((s) => s.value).toList(),
+      statuses: statuses?.map((s) => s.name).toList(),
       limit: limit,
     );
   }

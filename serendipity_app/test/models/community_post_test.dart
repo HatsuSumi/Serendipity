@@ -102,7 +102,7 @@ void main() {
       expect(json['cityName'], '北京市');
       expect(json['description'], '她在读《百年孤独》');
       expect(json['tags'], isList);
-      expect(json['status'], EncounterStatus.missed.value);
+      expect(json['status'], EncounterStatus.missed.name);
       expect(json['isAnonymous'], true);
     });
 
@@ -146,7 +146,7 @@ void main() {
         'tags': [
           {'tag': '长发', 'note': '光线不好，可能是深棕色'}
         ],
-        'status': 1,
+        'status': 'missed',
         'isAnonymous': true,
         'publishedAt': '2026-02-12T10:00:00.000',
         'createdAt': '2026-02-12T10:00:00.000',

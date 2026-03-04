@@ -195,7 +195,7 @@ void main() {
       expect(json['tags'], isList);
       expect((json['tags'] as List).length, 1);
       expect(json['emotion'], EmotionIntensity.thoughtOnWayHome.value);
-      expect(json['status'], EncounterStatus.missed.value);
+      expect(json['status'], EncounterStatus.missed.name);
     });
 
     test('fromJson 转换', () {
@@ -215,7 +215,7 @@ void main() {
           {'tag': '戴眼镜', 'note': null},
         ],
         'emotion': 3,
-        'status': 1,
+        'status': 'missed',
         'storyLineId': 'story_1',
         'ifReencounter': null,
         'conversationStarter': null,
