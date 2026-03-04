@@ -43,6 +43,38 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   SelectedRegion? _selectedRegion;
 
   @override
+  void initState() {
+    super.initState();
+    // 从 Provider 读取当前筛选条件并初始化
+    _initializeFromProvider();
+  }
+
+  /// 从 Provider 读取筛选条件并初始化
+  void _initializeFromProvider() {
+    final communityState = ref.read(communityProvider).value;
+    final criteria = communityState?.filterCriteria;
+    
+    if (criteria != null) {
+      _startDate = criteria.startDate;
+      _endDate = criteria.endDate;
+      _publishStartDate = criteria.publishStartDate;
+      _publishEndDate = criteria.publishEndDate;
+      _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
+      _selectedStatus = criteria.status;
+      _tagController.text = criteria.tag ?? '';
+      
+      // 恢复地区选择
+      if (criteria.province != null || criteria.city != null || criteria.area != null) {
+        _selectedRegion = SelectedRegion(
+          province: criteria.province,
+          city: criteria.city,
+          area: criteria.area,
+        );
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _tagController.dispose();
     super.dispose();

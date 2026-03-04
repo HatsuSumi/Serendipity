@@ -18,24 +18,56 @@ class CommunityState {
   final List<CommunityPost> posts;
   final bool isFiltering;
   final bool hasMore;
+  final CommunityFilterCriteria? filterCriteria;
   
   const CommunityState({
     required this.posts,
     this.isFiltering = false,
     this.hasMore = true,
+    this.filterCriteria,
   });
   
   CommunityState copyWith({
     List<CommunityPost>? posts,
     bool? isFiltering,
     bool? hasMore,
+    CommunityFilterCriteria? filterCriteria,
+    bool clearFilterCriteria = false,
   }) {
     return CommunityState(
       posts: posts ?? this.posts,
       isFiltering: isFiltering ?? this.isFiltering,
       hasMore: hasMore ?? this.hasMore,
+      filterCriteria: clearFilterCriteria ? null : (filterCriteria ?? this.filterCriteria),
     );
   }
+}
+
+/// 社区筛选条件
+class CommunityFilterCriteria {
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final DateTime? publishStartDate;
+  final DateTime? publishEndDate;
+  final String? province;
+  final String? city;
+  final String? area;
+  final List<PlaceType>? placeTypes;
+  final String? tag;
+  final EncounterStatus? status;
+  
+  const CommunityFilterCriteria({
+    this.startDate,
+    this.endDate,
+    this.publishStartDate,
+    this.publishEndDate,
+    this.province,
+    this.city,
+    this.area,
+    this.placeTypes,
+    this.tag,
+    this.status,
+  });
 }
 
 /// 社区状态管理
@@ -101,6 +133,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         posts: posts,
         isFiltering: false,
         hasMore: posts.length >= 20,
+        filterCriteria: null, // 清除筛选条件
       );
     });
   }
@@ -223,6 +256,20 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     state = const AsyncValue.loading();
     _lastTimestamp = null;
 
+    // 保存筛选条件
+    final criteria = CommunityFilterCriteria(
+      startDate: startDate,
+      endDate: endDate,
+      publishStartDate: publishStartDate,
+      publishEndDate: publishEndDate,
+      province: province,
+      city: city,
+      area: area,
+      placeTypes: placeTypes,
+      tag: tag,
+      status: status,
+    );
+
     state = await AsyncValue.guard(() async {
       final posts = await _repository.filterPosts(
         startDate: startDate,
@@ -241,6 +288,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         posts: posts,
         isFiltering: true,
         hasMore: false, // 筛选结果不支持分页
+        filterCriteria: criteria, // 保存筛选条件
       );
     });
   }
