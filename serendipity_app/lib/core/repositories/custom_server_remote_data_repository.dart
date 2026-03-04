@@ -269,7 +269,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     String? area,
     List<String>? placeTypes,
     String? tag,
-    List<int>? statuses,
+    List<String>? statuses,
     int limit = 20,
   }) async {
     // Fail Fast：参数验证
@@ -316,7 +316,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
         queryParams['tag'] = tag;
       }
       if (statuses != null && statuses.isNotEmpty) {
-        queryParams['statuses'] = statuses.map((s) => s.toString()).join(',');
+        queryParams['statuses'] = statuses.join(',');
       }
       
       final response = await _httpClient.get(

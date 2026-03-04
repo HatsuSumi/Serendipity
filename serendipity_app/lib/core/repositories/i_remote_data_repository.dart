@@ -245,7 +245,7 @@ abstract class IRemoteDataRepository {
     String? area,
     List<String>? placeTypes,
     String? tag,
-    List<int>? statuses,
+    List<String>? statuses,
     int limit = 20,
   });
 }
