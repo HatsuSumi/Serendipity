@@ -91,7 +91,7 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
     String? area,
     List<String>? placeTypes,
     String? tag,
-    List<int>? statuses,
+    List<String>? statuses,
     int limit = 20,
   }) async {
     // 测试模式：返回空列表
