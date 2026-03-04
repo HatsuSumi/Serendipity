@@ -205,12 +205,12 @@ export class CommunityPostRepository implements ICommunityPostRepository {
 
     // 发布时间范围筛选
     if (filters.publishStartDate) {
-      conditions.push(`"publishedAt" >= $${paramIndex}`);
+      conditions.push(`published_at >= $${paramIndex}`);
       params.push(filters.publishStartDate);
       paramIndex++;
     }
     if (filters.publishEndDate) {
-      conditions.push(`"publishedAt" <= $${paramIndex}`);
+      conditions.push(`published_at <= $${paramIndex}`);
       params.push(filters.publishEndDate);
       paramIndex++;
     }
@@ -238,7 +238,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
 
     // 场所类型筛选
     if (filters.placeTypes && filters.placeTypes.length > 0) {
-      conditions.push(`"placeType" = ANY($${paramIndex})`);
+      conditions.push(`place_type = ANY($${paramIndex})`);
       params.push(filters.placeTypes);
       paramIndex++;
     }
@@ -254,9 +254,26 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const query = `
-      SELECT * FROM "community_posts"
+      SELECT 
+        id,
+        user_id as "userId",
+        record_id as "recordId",
+        timestamp,
+        address,
+        place_name as "placeName",
+        place_type as "placeType",
+        province,
+        city,
+        area,
+        description,
+        tags,
+        status,
+        published_at as "publishedAt",
+        created_at as "createdAt",
+        updated_at as "updatedAt"
+      FROM "community_posts"
       ${whereClause}
-      ORDER BY "publishedAt" DESC
+      ORDER BY published_at DESC
       LIMIT $${paramIndex}
     `;
     params.push(filters.limit);
