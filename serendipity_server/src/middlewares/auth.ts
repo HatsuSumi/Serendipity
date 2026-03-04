@@ -41,3 +41,33 @@ export const authMiddleware = (
   }
 };
 
+// 可选认证中间件（不强制要求登录，但如果有 token 则解析）
+export const optionalAuthMiddleware = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    // 如果没有 token，直接放行
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      next();
+      return;
+    }
+
+    const token = authHeader.substring(7);
+
+    try {
+      const decoded = jwtService.verify(token);
+      req.user = decoded;
+    } catch (error) {
+      // token 无效或过期，忽略错误，继续执行（不设置 req.user）
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+

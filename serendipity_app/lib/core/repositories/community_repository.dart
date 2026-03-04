@@ -1,3 +1,4 @@
+import 'package:uuid/uuid.dart';
 import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
@@ -19,6 +20,7 @@ import '../utils/address_helper.dart';
 /// - CommunityProvider（状态管理层）
 class CommunityRepository {
   final IRemoteDataRepository _remoteData;
+  final _uuid = const Uuid();
 
   CommunityRepository(this._remoteData);
 
@@ -40,7 +42,7 @@ class CommunityRepository {
     final region = AddressHelper.extractRegion(record.location.address);
     
     return CommunityPost(
-      id: '${record.id}_${now.millisecondsSinceEpoch}', // 使用记录ID + 时间戳作为帖子ID
+      id: _uuid.v5(Uuid.NAMESPACE_URL, '${record.id}_${now.millisecondsSinceEpoch}'), // 基于 recordId 和时间戳生成确定性 UUID
       recordId: record.id,
       timestamp: record.timestamp,
       address: record.location.address, // 标准地址（GPS获取）
