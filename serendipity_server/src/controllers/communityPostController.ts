@@ -22,10 +22,7 @@ export class CommunityPostController {
 
       sendSuccess(
         res,
-        {
-          id: result.id,
-          publishedAt: result.publishedAt,
-        },
+        result,
         'Post published successfully',
         201
       );

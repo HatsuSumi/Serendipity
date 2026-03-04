@@ -2,6 +2,7 @@ import { CommunityPost } from '@prisma/client';
 import { ICommunityPostRepository } from '../repositories/communityPostRepository';
 import {
   CreateCommunityPostDto,
+  CreateCommunityPostResponseDto,
   CommunityPostResponseDto,
   CommunityPostListResponseDto,
   MyCommunityPostsResponseDto,
@@ -17,7 +18,7 @@ export interface ICommunityPostService {
   createPost(
     userId: string,
     data: CreateCommunityPostDto
-  ): Promise<CommunityPostResponseDto>;
+  ): Promise<CreateCommunityPostResponseDto>;
   getRecentPosts(
     limit: number,
     lastTimestamp?: string,
@@ -38,9 +39,88 @@ export class CommunityPostService implements ICommunityPostService {
   async createPost(
     userId: string,
     data: CreateCommunityPostDto
-  ): Promise<CommunityPostResponseDto> {
+  ): Promise<CreateCommunityPostResponseDto> {
+    // 查询该用户是否已发布过该 recordId 的帖子
+    const existingPost = await this.communityPostRepository.findByUserAndRecord(
+      userId,
+      data.recordId
+    );
+
+    let replaced = false;
+
+    // 如果已存在，检查内容是否发生变化
+    if (existingPost) {
+      const hasChanged = this.hasPostContentChanged(existingPost, data);
+      
+      if (!hasChanged) {
+        // 内容未变化，不允许重复发布
+        throw new AppError(
+          'This record has already been published with the same content',
+          ErrorCode.CONFLICT
+        );
+      }
+
+      // 内容已变化，删除旧帖
+      await this.communityPostRepository.deleteById(existingPost.id, userId);
+      replaced = true;
+    }
+
+    // 创建新帖子
     const post = await this.communityPostRepository.create(userId, data);
-    return this.toResponseDto(post, userId);
+
+    return {
+      id: post.id,
+      publishedAt: post.publishedAt.toISOString(),
+      replaced,
+    };
+  }
+
+  // 检查帖子内容是否发生变化
+  private hasPostContentChanged(
+    existingPost: CommunityPost,
+    newData: CreateCommunityPostDto
+  ): boolean {
+    // 辅助函数：统一处理 null 和 undefined
+    const normalize = (value: any) => value ?? null;
+    
+    // 比较关键字段
+    if (existingPost.timestamp.toISOString() !== new Date(newData.timestamp).toISOString()) {
+      return true;
+    }
+    if (normalize(existingPost.address) !== normalize(newData.address)) {
+      return true;
+    }
+    if (normalize(existingPost.placeName) !== normalize(newData.placeName)) {
+      return true;
+    }
+    if (normalize(existingPost.placeType) !== normalize(newData.placeType)) {
+      return true;
+    }
+    if (normalize(existingPost.province) !== normalize(newData.province)) {
+      return true;
+    }
+    if (normalize(existingPost.city) !== normalize(newData.city)) {
+      return true;
+    }
+    if (normalize(existingPost.area) !== normalize(newData.area)) {
+      return true;
+    }
+    if (normalize(existingPost.description) !== normalize(newData.description)) {
+      return true;
+    }
+    if (existingPost.status !== newData.status) {
+      return true;
+    }
+
+    // 比较标签（需要深度比较）
+    const existingTags = fromJsonValue(existingPost.tags);
+    const newTags = newData.tags;
+    
+    if (JSON.stringify(existingTags) !== JSON.stringify(newTags)) {
+      return true;
+    }
+
+    return false;
   }
 
   async getRecentPosts(

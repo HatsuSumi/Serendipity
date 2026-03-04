@@ -56,8 +56,9 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
-  Future<void> saveCommunityPost(CommunityPost post) async {
-    // 测试模式：不执行任何操作
+  Future<bool> saveCommunityPost(CommunityPost post) async {
+    // 测试模式：不执行任何操作，返回未替换
+    return false;
   }
 
   @override

@@ -175,13 +175,21 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   // ==================== 社区相关操作 ====================
   
   @override
-  Future<void> saveCommunityPost(CommunityPost post) async {
+  Future<bool> saveCommunityPost(CommunityPost post) async {
     try {
-      await _httpClient.post(
+      final response = await _httpClient.post(
         ServerConfig.communityPosts,
         body: post.toJson(),
       );
+      
+      // 从响应中获取 replaced 字段
+      final data = response['data'] as Map<String, dynamic>;
+      return data['replaced'] as bool? ?? false;
     } on HttpException catch (e) {
+      // 如果是 CONFLICT 错误，说明记录内容未变化，不允许重复发布
+      if (e.errorCode == 'CONFLICT') {
+        throw Exception('该记录已发布且内容未变化，无需重复发布');
+      }
       throw Exception('发布社区帖子失败：${e.message}');
     }
   }

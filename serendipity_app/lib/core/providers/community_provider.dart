@@ -170,11 +170,14 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - 如果用户未登录，抛出 StateError
   /// - 如果记录为 null，抛出 ArgumentError
   /// 
+  /// 返回：
+  /// - replaced: 是否替换了旧帖子
+  /// 
   /// 调用者：
   /// - RecordDetailPage（记录详情页菜单）
   /// - CreateRecordPage（创建记录时勾选"发布到树洞"）
   /// - TimelinePage（时间轴页面菜单）
-  Future<void> publishPost(EncounterRecord record) async {
+  Future<bool> publishPost(EncounterRecord record) async {
     // Fail Fast: 用户必须登录
     final authState = ref.read(authProvider);
     final currentUser = authState.value;
@@ -184,7 +187,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     }
 
     // 发布到社区
-    await _repository.publishPost(record, currentUser.id);
+    final replaced = await _repository.publishPost(record, currentUser.id);
 
     // 检测社区成就
     try {
@@ -201,6 +204,8 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
 
     // 刷新帖子列表
     await refresh();
+    
+    return replaced;
   }
 
   /// 删除帖子

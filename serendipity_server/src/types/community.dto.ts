@@ -43,6 +43,13 @@ export interface CommunityPostResponseDto {
   updatedAt: string;
 }
 
+// 发布社区帖子响应
+export interface CreateCommunityPostResponseDto {
+  id: string;
+  publishedAt: string;
+  replaced: boolean;  // 是否替换了旧帖子
+}
+
 // 社区帖子列表响应
 export interface CommunityPostListResponseDto {
   posts: CommunityPostResponseDto[];

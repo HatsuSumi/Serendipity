@@ -151,13 +151,16 @@ abstract class IRemoteDataRepository {
   /// 参数：
   /// - [post]：要保存的社区帖子
   /// 
+  /// 返回：
+  /// - replaced: 是否替换了旧帖子
+  /// 
   /// 调用者：
   /// - CommunityRepository.publishPost()
   /// 
   /// Fail Fast：
   /// - post 为 null：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
-  Future<void> saveCommunityPost(CommunityPost post);
+  Future<bool> saveCommunityPost(CommunityPost post);
   
   /// 获取社区帖子列表（分页）
   /// 

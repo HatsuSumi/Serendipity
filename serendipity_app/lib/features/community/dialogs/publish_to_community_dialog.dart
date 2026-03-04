@@ -254,7 +254,11 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
     // Fail Fast：未选择记录
     if (_selectedRecordIds.isEmpty) return;
 
-    Navigator.of(context).pop();
+    // 保存 context 引用
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    
+    navigator.pop();
     
     await AsyncActionHelper.execute(
       context,
@@ -263,16 +267,38 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
         final recordsAsync = ref.read(recordsProvider);
         final allRecords = recordsAsync.value ?? [];
         
+        int replacedCount = 0;
+        
         // 批量发布记录
         for (final recordId in _selectedRecordIds) {
           final record = allRecords.firstWhere(
             (r) => r.id == recordId,
             orElse: () => throw StateError('Record $recordId not found'),
           );
-          await communityNotifier.publishPost(record);
+          
+          final replaced = await communityNotifier.publishPost(record);
+          if (replaced) {
+            replacedCount++;
+          }
+        }
+        
+        // 根据是否有替换显示不同的成功消息
+        if (replacedCount > 0) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text('已发布 ${_selectedRecordIds.length} 条记录（其中 $replacedCount 条替换了旧帖）'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text('已发布 ${_selectedRecordIds.length} 条记录'),
+              backgroundColor: Colors.green,
+            ),
+          );
         }
       },
-      successMessage: '已发布 ${_selectedRecordIds.length} 条记录',
       errorMessagePrefix: '发布失败',
     );
   }

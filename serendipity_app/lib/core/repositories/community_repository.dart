@@ -68,8 +68,11 @@ class CommunityRepository {
   /// - 如果 userId 为空，抛出 ArgumentError
   /// - 如果网络请求失败，抛出异常
   /// 
+  /// 返回：
+  /// - replaced: 是否替换了旧帖子
+  /// 
   /// 调用者：CommunityProvider.publishPost()
-  Future<void> publishPost(EncounterRecord record, String userId) async {
+  Future<bool> publishPost(EncounterRecord record, String userId) async {
     // Fail Fast: 参数验证
     if (userId.isEmpty) {
       throw ArgumentError('userId cannot be empty');
@@ -80,12 +83,12 @@ class CommunityRepository {
 
     // 测试模式：不上传到云端
     if (AppConfig.serverType == ServerType.test) {
-      // 测试模式下，直接返回成功
-      return;
+      // 测试模式下，直接返回成功（未替换）
+      return false;
     }
 
     // 上传到云端
-    await _remoteData.saveCommunityPost(post);
+    return await _remoteData.saveCommunityPost(post);
   }
 
   /// 获取社区帖子列表（分页）

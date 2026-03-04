@@ -7,6 +7,7 @@ export interface ICommunityPostRepository {
   create(userId: string, data: CreateCommunityPostDto): Promise<CommunityPost>;
   findById(id: string): Promise<CommunityPost | null>;
   findByUserId(userId: string): Promise<CommunityPost[]>;
+  findByUserAndRecord(userId: string, recordId: string): Promise<CommunityPost | null>;
   findRecent(limit: number, lastTimestamp?: Date): Promise<CommunityPost[]>;
   findByFilters(filters: {
     startDate?: Date;
@@ -66,6 +67,15 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     return this.prisma.communityPost.findMany({
       where: { userId },
       orderBy: { publishedAt: 'desc' },
+    });
+  }
+
+  async findByUserAndRecord(userId: string, recordId: string): Promise<CommunityPost | null> {
+    return this.prisma.communityPost.findFirst({
+      where: {
+        userId,
+        recordId,
+      },
     });
   }
 
