@@ -152,11 +152,12 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       };
     }
 
-    // 标签筛选（JSONB 查询，模糊匹配）
+    // 标签筛选（JSONB 查询，精确匹配）
     if (filters.tag) {
+      // 使用 Prisma 的 JSON 过滤器查询数组中是否有匹配的 tag
       where.tags = {
         path: ['$[*].tag'],
-        string_contains: filters.tag,
+        array_contains: [filters.tag],
       };
     }
 
