@@ -4,6 +4,7 @@ import '../../../models/encounter_record.dart';
 import '../../../core/providers/community_provider.dart';
 import '../../../core/providers/records_provider.dart';
 import '../../../core/utils/async_action_helper.dart';
+import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/record_helper.dart';
 import '../../../core/utils/date_time_helper.dart';
 import '../../../core/theme/status_color_extension.dart';
@@ -312,7 +313,7 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
     // 步骤3：显示确认对话框
     if (!mounted) return;
     
-    final confirmed = await showDialog<bool>(
+    final confirmed = await DialogHelper.show<bool>(
       context: context,
       builder: (context) => PublishConfirmDialog(records: recordInfos),
     );

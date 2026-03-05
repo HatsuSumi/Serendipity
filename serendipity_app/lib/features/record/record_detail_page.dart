@@ -682,7 +682,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         // 需要用户确认
         if (!context.mounted) return;
         
-        final confirmed = await showDialog<bool>(
+        final confirmed = await DialogHelper.show<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('发布确认'),
