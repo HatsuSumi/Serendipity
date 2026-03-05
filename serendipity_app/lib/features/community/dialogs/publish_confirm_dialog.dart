@@ -174,6 +174,8 @@ class PublishConfirmDialog extends StatelessWidget {
 
   /// 底部按钮栏
   Widget _buildBottomBar(BuildContext context, int willPublishCount, int newCount, int replaceCount) {
+    final skipCount = records.length - willPublishCount;
+    
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -181,7 +183,9 @@ class PublishConfirmDialog extends StatelessWidget {
         children: [
           // 说明文字
           Text(
-            '将发布 $willPublishCount 条记录（$newCount条新发布，$replaceCount条替换旧帖）',
+            skipCount > 0
+                ? '将发布 $willPublishCount 条记录（$newCount条新发布，$replaceCount条替换旧帖），跳过 $skipCount 条'
+                : '将发布 $willPublishCount 条记录（$newCount条新发布，$replaceCount条替换旧帖）',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
