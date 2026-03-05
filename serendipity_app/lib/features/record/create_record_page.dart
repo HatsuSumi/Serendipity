@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -71,6 +72,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   // 发布状态（编辑模式下使用）
   String? _publishStatus; // null: 未检查, 'can_publish': 未发布, 'need_confirm': 已发布, 'cannot_publish': 已发布且无变化
   
+  // 表单变化通知器（编辑模式下使用，用于实时更新发布状态UI）
+  final _formChangedNotifier = ValueNotifier<int>(0);
+  Timer? _debounceTimer;
+  
   // 是否正在保存
   bool _isSaving = false;
   
@@ -106,11 +111,21 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   }
   
   /// 表单内容变化时触发（编辑模式下使用）
+  /// 
+  /// 使用防抖优化性能：
+  /// - 不是每次输入都立即更新UI
+  /// - 停止输入300ms后才触发更新
   void _onFormChanged() {
-    // 触发重建，更新发布状态UI
-    if (mounted) {
-      setState(() {});
-    }
+    // 取消之前的定时器
+    _debounceTimer?.cancel();
+    
+    // 设置新的定时器
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        // 通知 ValueListenableBuilder 重建
+        _formChangedNotifier.value++;
+      }
+    });
   }
   
   /// 请求 GPS 定位
@@ -242,6 +257,22 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
 
   @override
   void dispose() {
+    // 清理监听器
+    if (widget.isEditMode) {
+      _placeNameController.removeListener(_onFormChanged);
+      _descriptionController.removeListener(_onFormChanged);
+      _conversationStarterController.removeListener(_onFormChanged);
+      _backgroundMusicController.removeListener(_onFormChanged);
+      _ifReencounterController.removeListener(_onFormChanged);
+    }
+    
+    // 清理定时器
+    _debounceTimer?.cancel();
+    
+    // 清理通知器
+    _formChangedNotifier.dispose();
+    
+    // 清理控制器
     _placeNameController.dispose();
     _descriptionController.dispose();
     _conversationStarterController.dispose();
@@ -2179,6 +2210,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   /// - 编辑模式 + 未发布：显示"发布到树洞"复选框
   /// - 编辑模式 + 已发布 + 无修改：显示"已发布到社区，内容无变化，无法再次发布"
   /// - 编辑模式 + 已发布 + 有修改：显示"重新发布到社区"复选框
+  /// 
+  /// 性能优化：
+  /// - 使用 ValueListenableBuilder 只重建此区域
+  /// - 使用防抖减少频繁更新
   Widget _buildPublishToCommunitySection() {
     // 创建模式：显示普通复选框
     if (!widget.isEditMode) {
@@ -2201,109 +2236,113 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       );
     }
     
-    // 编辑模式：根据发布状态和是否有修改动态显示
-    
-    // 还在检查发布状态
-    if (_publishStatus == null) {
-      return ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        title: const Text('检查发布状态...'),
-      );
-    }
-    
-    // 未发布：显示普通复选框
-    if (_publishStatus == 'can_publish') {
-      return CheckboxListTile(
-        value: _publishToCommunity,
-        onChanged: (value) {
-          setState(() {
-            _publishToCommunity = value ?? false;
-          });
-        },
-        title: const Text('发布到树洞'),
-        subtitle: Text(
-          '匿名分享到社区，其他用户可以看到',
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        contentPadding: EdgeInsets.zero,
-      );
-    }
-    
-    // 已发布：检查是否有修改
-    final hasChanges = _hasUnsavedChanges();
-    
-    // 已发布 + 无修改：显示灰色提示
-    if (!hasChanges) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.cloud_done,
-              size: 20,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+    // 编辑模式：使用 ValueListenableBuilder 监听表单变化
+    return ValueListenableBuilder<int>(
+      valueListenable: _formChangedNotifier,
+      builder: (context, _, __) {
+        // 还在检查发布状态
+        if (_publishStatus == null) {
+          return ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '已发布到社区',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '内容无变化，无法再次发布',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+            title: const Text('检查发布状态...'),
+          );
+        }
+        
+        // 未发布：显示普通复选框
+        if (_publishStatus == 'can_publish') {
+          return CheckboxListTile(
+            value: _publishToCommunity,
+            onChanged: (value) {
+              setState(() {
+                _publishToCommunity = value ?? false;
+              });
+            },
+            title: const Text('发布到树洞'),
+            subtitle: Text(
+              '匿名分享到社区，其他用户可以看到',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-          ],
-        ),
-      );
-    }
-    
-    // 已发布 + 有修改：显示"重新发布到社区"复选框
-    return CheckboxListTile(
-      value: _publishToCommunity,
-      onChanged: (value) {
-        setState(() {
-          _publishToCommunity = value ?? false;
-        });
+            contentPadding: EdgeInsets.zero,
+          );
+        }
+        
+        // 已发布：检查是否有修改
+        final hasChanges = _hasUnsavedChanges();
+        
+        // 已发布 + 无修改：显示灰色提示
+        if (!hasChanges) {
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.cloud_done,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '已发布到社区',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '内容无变化，无法再次发布',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        // 已发布 + 有修改：显示"重新发布到社区"复选框
+        return CheckboxListTile(
+          value: _publishToCommunity,
+          onChanged: (value) {
+            setState(() {
+              _publishToCommunity = value ?? false;
+            });
+          },
+          title: const Text('重新发布到社区'),
+          subtitle: Text(
+            '内容已修改，勾选后将替换旧帖',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          contentPadding: EdgeInsets.zero,
+        );
       },
-      title: const Text('重新发布到社区'),
-      subtitle: Text(
-        '内容已修改，勾选后将替换旧帖',
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-      contentPadding: EdgeInsets.zero,
     );
   }
   
