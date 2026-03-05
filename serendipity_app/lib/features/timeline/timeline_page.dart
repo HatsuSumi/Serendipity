@@ -553,53 +553,65 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   /// 发布到社区
   /// 
   /// 调用者：_handleMenuAction()
-  void _showPublishToCommunityDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
-    AsyncActionHelper.execute(
-      context,
-      action: () async {
-        final communityNotifier = ref.read(communityProvider.notifier);
-        
-        // 检查发布状态
-        final statusMap = await communityNotifier.checkPublishStatus([record]);
-        final status = statusMap[record.id] ?? 'can_publish';
-        
-        if (status == 'cannot_publish') {
-          // 内容未变化，不允许发布
-          throw Exception('该记录已发布且内容未变化');
-        } else if (status == 'need_confirm') {
-          // 需要用户确认
-          if (!context.mounted) return;
-          
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('发布确认'),
-              content: const Text('该记录已发布到社区，重新发布会替换旧帖，是否继续？'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('取消'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('确认'),
-                ),
-              ],
-            ),
-          );
-          
-          if (confirmed != true) return;
-          
-          // 用户确认，强制替换
-          await communityNotifier.publishPost(record, forceReplace: true);
-        } else {
-          // 可以直接发布
-          await communityNotifier.publishPost(record);
+  void _showPublishToCommunityDialog(BuildContext context, WidgetRef ref, EncounterRecord record) async {
+    final communityNotifier = ref.read(communityProvider.notifier);
+    
+    try {
+      // 检查发布状态
+      final statusMap = await communityNotifier.checkPublishStatus([record]);
+      final status = statusMap[record.id] ?? 'can_publish';
+      
+      if (status == 'cannot_publish') {
+        // 内容未变化，不允许发布
+        if (context.mounted) {
+          MessageHelper.showError(context, '该记录已发布且内容未变化');
         }
-      },
-      successMessage: '已发布到树洞',
-      errorMessagePrefix: '发布失败',
-    );
+        return;
+      } else if (status == 'need_confirm') {
+        // 需要用户确认
+        if (!context.mounted) return;
+        
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('发布确认'),
+            content: const Text('该记录已发布到社区，重新发布会替换旧帖，是否继续？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('确认'),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirmed != true) return; // 用户取消，静默退出
+        
+        // 用户确认，强制替换
+        await AsyncActionHelper.execute(
+          context,
+          action: () => communityNotifier.publishPost(record, forceReplace: true),
+          successMessage: '已发布到树洞',
+          errorMessagePrefix: '发布失败',
+        );
+      } else {
+        // 可以直接发布
+        await AsyncActionHelper.execute(
+          context,
+          action: () => communityNotifier.publishPost(record),
+          successMessage: '已发布到树洞',
+          errorMessagePrefix: '发布失败',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        MessageHelper.showError(context, '检查发布状态失败：$e');
+      }
+    }
   }
 
   /// 显示删除确认对话框
