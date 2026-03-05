@@ -5,6 +5,7 @@ import '../../../core/providers/community_provider.dart';
 import '../../../core/providers/records_provider.dart';
 import '../../../core/utils/async_action_helper.dart';
 import '../../../core/utils/dialog_helper.dart';
+import '../../../core/utils/message_helper.dart';
 import '../../../core/utils/record_helper.dart';
 import '../../../core/utils/date_time_helper.dart';
 import '../../../core/theme/status_color_extension.dart';
@@ -258,7 +259,6 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
 
     // 保存 context 引用
     final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
     
     final communityNotifier = ref.read(communityProvider.notifier);
     final recordsAsync = ref.read(recordsProvider);
@@ -278,12 +278,7 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
       statusMap = await communityNotifier.checkPublishStatus(selectedRecords);
     } catch (e) {
       if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('检查发布状态失败：$e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        MessageHelper.showError(context, '检查发布状态失败：$e');
       }
       return;
     }
@@ -360,18 +355,14 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
         // 显示成功消息
         if (successCount > 0) {
           if (replacedCount > 0) {
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text('已发布 $successCount 条记录（其中 $replacedCount 条替换了旧帖）'),
-                backgroundColor: Colors.green,
-              ),
+            MessageHelper.showSuccess(
+              context,
+              '已发布 $successCount 条记录（其中 $replacedCount 条替换了旧帖）',
             );
           } else {
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text('已发布 $successCount 条记录'),
-                backgroundColor: Colors.green,
-              ),
+            MessageHelper.showSuccess(
+              context,
+              '已发布 $successCount 条记录',
             );
           }
         }
