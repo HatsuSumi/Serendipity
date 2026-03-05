@@ -68,6 +68,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   bool _publishToCommunity = false;
   String? _selectedStoryLineId;
   
+  // 发布状态（编辑模式下使用）
+  String? _publishStatus; // null: 未检查, 'can_publish': 未发布, 'need_confirm': 已发布, 'cannot_publish': 已发布且无变化
+  
   // 是否正在保存
   bool _isSaving = false;
   
@@ -87,6 +90,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     if (!widget.isEditMode) {
       // 使用 Future.microtask 延迟调用，避免在 build 期间修改 provider
       Future.microtask(() => _requestLocation());
+    } else {
+      // 编辑模式下检查发布状态
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkPublishStatus();
+      });
     }
   }
   
@@ -117,6 +125,30 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       await ref.read(locationProvider.notifier).getCurrentLocation();
     } catch (e) {
       // 错误已经在 Provider 中处理，这里不需要额外处理
+    }
+  }
+  
+  /// 检查发布状态（编辑模式下使用）
+  Future<void> _checkPublishStatus() async {
+    if (!widget.isEditMode || widget.recordToEdit == null) return;
+    
+    try {
+      final communityNotifier = ref.read(communityProvider.notifier);
+      final statusMap = await communityNotifier.checkPublishStatus([widget.recordToEdit!]);
+      final status = statusMap[widget.recordToEdit!.id] ?? 'can_publish';
+      
+      if (mounted) {
+        setState(() {
+          _publishStatus = status;
+        });
+      }
+    } catch (e) {
+      // 检查失败，默认为未发布
+      if (mounted) {
+        setState(() {
+          _publishStatus = 'can_publish';
+        });
+      }
     }
   }
   
@@ -300,7 +332,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
 
       // 如果勾选了"发布到树洞"，发布到社区
       if (_publishToCommunity) {
-        await ref.read(communityProvider.notifier).publishPost(record);
+        // 编辑模式下，根据发布状态决定是否需要 forceReplace
+        final forceReplace = widget.isEditMode && _publishStatus == 'need_confirm';
+        await ref.read(communityProvider.notifier).publishPost(record, forceReplace: forceReplace);
       }
 
       if (mounted) {
@@ -2067,24 +2101,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         ),
         const SizedBox(height: 12),
         
-        // 发布到树洞
-        CheckboxListTile(
-          value: _publishToCommunity,
-          onChanged: (value) {
-            setState(() {
-              _publishToCommunity = value ?? false;
-            });
-          },
-          title: const Text('发布到树洞'),
-          subtitle: Text(
-            '匿名分享到社区，其他用户可以看到',
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          contentPadding: EdgeInsets.zero,
-        ),
+        // 发布到树洞（根据模式和状态动态显示）
+        _buildPublishToCommunitySection(),
         
         const SizedBox(height: 8),
         
@@ -2136,6 +2154,141 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           ),
         ),
       ],
+    );
+  }
+  
+  /// 构建发布到树洞区域
+  /// 
+  /// 根据模式和状态动态显示：
+  /// - 创建模式：显示"发布到树洞"复选框
+  /// - 编辑模式 + 未发布：显示"发布到树洞"复选框
+  /// - 编辑模式 + 已发布 + 无修改：显示"已发布到社区，内容无变化，无法再次发布"
+  /// - 编辑模式 + 已发布 + 有修改：显示"重新发布到社区"复选框
+  Widget _buildPublishToCommunitySection() {
+    // 创建模式：显示普通复选框
+    if (!widget.isEditMode) {
+      return CheckboxListTile(
+        value: _publishToCommunity,
+        onChanged: (value) {
+          setState(() {
+            _publishToCommunity = value ?? false;
+          });
+        },
+        title: const Text('发布到树洞'),
+        subtitle: Text(
+          '匿名分享到社区，其他用户可以看到',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        contentPadding: EdgeInsets.zero,
+      );
+    }
+    
+    // 编辑模式：根据发布状态和是否有修改动态显示
+    
+    // 还在检查发布状态
+    if (_publishStatus == null) {
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        title: const Text('检查发布状态...'),
+      );
+    }
+    
+    // 未发布：显示普通复选框
+    if (_publishStatus == 'can_publish') {
+      return CheckboxListTile(
+        value: _publishToCommunity,
+        onChanged: (value) {
+          setState(() {
+            _publishToCommunity = value ?? false;
+          });
+        },
+        title: const Text('发布到树洞'),
+        subtitle: Text(
+          '匿名分享到社区，其他用户可以看到',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        contentPadding: EdgeInsets.zero,
+      );
+    }
+    
+    // 已发布：检查是否有修改
+    final hasChanges = _hasUnsavedChanges();
+    
+    // 已发布 + 无修改：显示灰色提示
+    if (!hasChanges) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.cloud_done,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '已发布到社区',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '内容无变化，无法再次发布',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // 已发布 + 有修改：显示"重新发布到社区"复选框
+    return CheckboxListTile(
+      value: _publishToCommunity,
+      onChanged: (value) {
+        setState(() {
+          _publishToCommunity = value ?? false;
+        });
+      },
+      title: const Text('重新发布到社区'),
+      subtitle: Text(
+        '内容已修改，勾选后将替换旧帖',
+        style: TextStyle(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      contentPadding: EdgeInsets.zero,
     );
   }
   
