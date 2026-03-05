@@ -17,6 +17,7 @@ import '../../models/encounter_record.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import '../story_line/link_to_story_line_dialog.dart';
+import '../community/dialogs/publish_warning_dialog.dart';
 import '../check_in/widgets/check_in_card.dart';
 
 /// 排序方式
@@ -554,10 +555,19 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   /// 
   /// 调用者：_handleMenuAction()
   void _showPublishToCommunityDialog(BuildContext context, WidgetRef ref, EncounterRecord record) async {
+    // 步骤1：显示警告对话框
+    await PublishWarningDialog.show(
+      context,
+      onConfirm: () => _publishToCommunityAfterWarning(context, ref, record),
+    );
+  }
+
+  /// 警告确认后的发布流程
+  void _publishToCommunityAfterWarning(BuildContext context, WidgetRef ref, EncounterRecord record) async {
     final communityNotifier = ref.read(communityProvider.notifier);
     
     try {
-      // 检查发布状态
+      // 步骤2：检查发布状态
       final statusMap = await communityNotifier.checkPublishStatus([record]);
       final status = statusMap[record.id] ?? 'can_publish';
       
@@ -568,7 +578,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         }
         return;
       } else if (status == 'need_confirm') {
-        // 需要用户确认
+        // 步骤3：需要用户确认替换
         if (!context.mounted) return;
         
         final confirmed = await DialogHelper.show<bool>(
@@ -591,7 +601,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         
         if (confirmed != true) return; // 用户取消，静默退出
         
-        // 用户确认，强制替换
+        // 步骤4：用户确认，强制替换
         await AsyncActionHelper.execute(
           context,
           action: () => communityNotifier.publishPost(record, forceReplace: true),
@@ -599,7 +609,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           errorMessagePrefix: '发布失败',
         );
       } else {
-        // 可以直接发布
+        // 步骤3：可以直接发布
         await AsyncActionHelper.execute(
           context,
           action: () => communityNotifier.publishPost(record),
