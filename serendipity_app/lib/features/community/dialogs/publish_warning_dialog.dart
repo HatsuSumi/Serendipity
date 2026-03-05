@@ -72,7 +72,7 @@ class PublishWarningDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _buildWarningItem('手机号、微信号、QQ号'),
-            _buildWarningItem('真实姓名、地址'),
+            _buildWarningItem('真实姓名、家庭住址'),
             _buildWarningItem('其他隐私信息'),
             const SizedBox(height: 16),
             Text(
