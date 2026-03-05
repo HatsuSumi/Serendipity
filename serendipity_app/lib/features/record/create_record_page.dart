@@ -618,11 +618,16 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             time.minute,
           );
         });
+        
+        // 编辑模式下通知表单变化
+        if (widget.isEditMode) {
+          _onFormChanged();
+        }
       }
     }
   }
 
-  /// 检查是否有未保存的修改
+  /// 检查是否有未保存的修改（用于返回拦截）
   /// 
   /// 遵循架构原则：
   /// - 编辑模式：对比当前值与原始值，检测是否真的有修改
@@ -732,6 +737,72 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         _ifReencounterController.text.trim().isNotEmpty ||  // 输入了"如果再遇"
         _publishToCommunity ||  // 勾选了发布到树洞
         _selectedStoryLineId != null;  // 选择了故事线
+  }
+  
+  /// 检查记录内容是否有修改（仅检查会显示在社区的字段）
+  /// 
+  /// 用于判断是否需要重新发布到社区
+  /// 
+  /// 根据 PublishWarningDialog 的说明，社区帖子包含以下字段：
+  /// - 错过时间、发布时间、地址、地点名称、场所类型、省市区、描述、标签、状态
+  /// 
+  /// 社区帖子不包含以下字段（不检查）：
+  /// - 精确GPS坐标、情绪强度、对话契机、背景音乐、天气、"如果再遇"备忘、故事线
+  bool _hasContentChanges() {
+    if (!widget.isEditMode) return false;
+    
+    final original = widget.recordToEdit!;
+    
+    // 检查时间是否修改（错过时间）
+    if (_selectedTime != original.timestamp) {
+      return true;
+    }
+    
+    // 检查状态是否修改
+    if (_selectedStatus != original.status) {
+      return true;
+    }
+    
+    // 检查地点名称是否修改
+    final currentPlaceName = _placeNameController.text.trim();
+    final originalPlaceName = original.location.placeName ?? '';
+    if (currentPlaceName != originalPlaceName) {
+      return true;
+    }
+    
+    // 检查场所类型是否修改
+    if (_selectedPlaceType != original.location.placeType) {
+      return true;
+    }
+    
+    // 检查描述是否修改
+    final currentDescription = _descriptionController.text.trim();
+    final originalDescription = original.description ?? '';
+    if (currentDescription != originalDescription) {
+      return true;
+    }
+    
+    // 检查标签是否修改（比较数量和内容）
+    if (_tags.length != original.tags.length) {
+      return true;
+    }
+    for (int i = 0; i < _tags.length; i++) {
+      if (_tags[i].tag != original.tags[i].tag || 
+          _tags[i].note != original.tags[i].note) {
+        return true;
+      }
+    }
+    
+    // 注意：以下字段不会显示在社区，不检查
+    // - 对话契机（conversationStarter）
+    // - 背景音乐（backgroundMusic）
+    // - "如果再遇"备忘（ifReencounter）
+    // - 情绪强度（emotion）
+    // - 天气（weather）
+    // - 故事线（storyLineId）
+    // - 精确GPS坐标（latitude/longitude）
+    
+    return false;
   }
   
   /// 显示未保存修改确认对话框
@@ -980,6 +1051,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                   setState(() {
                     _ignoreGPS = value ?? false;
                   });
+                  
+                  // 编辑模式下通知表单变化
+                  if (widget.isEditMode) {
+                    _onFormChanged();
+                  }
                 },
                 title: const Text('忽略 GPS 定位'),
                 subtitle: Text(
@@ -1082,6 +1158,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 setState(() {
                   _selectedPlaceType = selected ? type : null;
                 });
+                
+                // 编辑模式下通知表单变化
+                if (widget.isEditMode) {
+                  _onFormChanged();
+                }
               },
             );
           }).toList(),
@@ -1362,6 +1443,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       setState(() {
         _placeNameController.text = selected;
       });
+      
+      // 编辑模式下通知表单变化
+      if (widget.isEditMode) {
+        _onFormChanged();
+      }
     }
   } 
   
@@ -1402,6 +1488,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       setState(() {
         _selectedPlaceType = selected;
       });
+      
+      // 编辑模式下通知表单变化
+      if (widget.isEditMode) {
+        _onFormChanged();
+      }
     }
   }
 
@@ -1459,6 +1550,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                   setState(() {
                     _selectedStatus = status;
                   });
+                  
+                  // 编辑模式下通知表单变化
+                  if (widget.isEditMode) {
+                    _onFormChanged();
+                  }
                 }
               },
             );
@@ -1940,6 +2036,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         setState(() {
           _tags = updatedTags;
         });
+        
+        // 编辑模式下通知表单变化
+        if (widget.isEditMode) {
+          _onFormChanged();
+        }
       },
     );
   }
@@ -2021,6 +2122,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 setState(() {
                   _selectedEmotion = selected ? emotion : null;
                 });
+                
+                // 编辑模式下通知表单变化
+                if (widget.isEditMode) {
+                  _onFormChanged();
+                }
               },
             );
           }).toList(),
@@ -2076,6 +2182,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         setState(() {
           _selectedWeather = updatedWeather;
         });
+        
+        // 编辑模式下通知表单变化
+        if (widget.isEditMode) {
+          _onFormChanged();
+        }
       },
     );
   }
@@ -2189,6 +2300,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                     setState(() {
                       _selectedStoryLineId = null;
                     });
+                    
+                    // 编辑模式下通知表单变化
+                    if (widget.isEditMode) {
+                      _onFormChanged();
+                    }
                   },
                   tooltip: '清除',
                 ),
@@ -2274,11 +2390,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           );
         }
         
-        // 已发布：检查是否有修改
-        final hasChanges = _hasUnsavedChanges();
+        // 已发布：检查记录内容是否有修改（排除故事线）
+        final hasContentChanges = _hasContentChanges();
         
-        // 已发布 + 无修改：显示灰色提示
-        if (!hasChanges) {
+        // 已发布 + 无内容修改：显示灰色提示
+        if (!hasContentChanges) {
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -2371,6 +2487,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       setState(() {
         _selectedStoryLineId = result;
       });
+      
+      // 编辑模式下通知表单变化
+      if (widget.isEditMode) {
+        _onFormChanged();
+      }
     }
   }
 }
