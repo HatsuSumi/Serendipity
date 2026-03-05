@@ -172,6 +172,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// 
   /// 参数：
   /// - forceReplace: 是否强制替换（用户已确认）
+  /// - skipRefresh: 是否跳过刷新（批量发布时使用）
   /// 
   /// 返回：
   /// - replaced: 是否替换了旧帖子
@@ -180,7 +181,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - RecordDetailPage（记录详情页菜单）
   /// - CreateRecordPage（创建记录时勾选"发布到树洞"）
   /// - TimelinePage（时间轴页面菜单）
-  Future<bool> publishPost(EncounterRecord record, {bool forceReplace = false}) async {
+  Future<bool> publishPost(EncounterRecord record, {bool forceReplace = false, bool skipRefresh = false}) async {
     // Fail Fast: 用户必须登录
     final authState = ref.read(authProvider);
     final currentUser = authState.value;
@@ -192,23 +193,87 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     // 发布到社区
     final replaced = await _repository.publishPost(record, currentUser.id, forceReplace: forceReplace);
 
-    // 检测社区成就
-    try {
-      final unlockedAchievements = await _achievementDetector.checkCommunityAchievements(currentUser.id);
-      if (unlockedAchievements.isNotEmpty) {
-        // 通知UI层显示成就解锁通知
-        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-        // 刷新成就列表
-        ref.invalidate(achievementsProvider);
+    // 检测社区成就（只在非批量发布时检测）
+    if (!skipRefresh) {
+      try {
+        final unlockedAchievements = await _achievementDetector.checkCommunityAchievements(currentUser.id);
+        if (unlockedAchievements.isNotEmpty) {
+          // 通知UI层显示成就解锁通知
+          ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+          // 刷新成就列表
+          ref.invalidate(achievementsProvider);
+        }
+      } catch (e) {
+        // 成就检测失败不影响发布
       }
-    } catch (e) {
-      // 成就检测失败不影响发布
-    }
 
-    // 刷新帖子列表
-    await refresh();
+      // 刷新帖子列表
+      await refresh();
+    }
     
     return replaced;
+  }
+
+  /// 批量发布记录到社区
+  /// 
+  /// Fail Fast:
+  /// - 如果用户未登录，抛出 StateError
+  /// - 如果 records 为空，抛出 ArgumentError
+  /// 
+  /// 返回：
+  /// - successCount: 成功发布的数量
+  /// - replacedCount: 替换旧帖的数量
+  /// 
+  /// 调用者：PublishToCommunityDialog._handleConfirm()
+  Future<({int successCount, int replacedCount})> publishPosts(
+    List<({EncounterRecord record, bool forceReplace})> records,
+  ) async {
+    // Fail Fast: 参数验证
+    if (records.isEmpty) {
+      throw ArgumentError('records cannot be empty');
+    }
+
+    int successCount = 0;
+    int replacedCount = 0;
+
+    // 批量发布，跳过每次刷新
+    for (final item in records) {
+      try {
+        final replaced = await publishPost(
+          item.record,
+          forceReplace: item.forceReplace,
+          skipRefresh: true,
+        );
+
+        successCount++;
+        if (replaced) {
+          replacedCount++;
+        }
+      } catch (e) {
+        // 单条记录发布失败，继续发布其他记录
+      }
+    }
+
+    // 批量发布完成后，统一检测成就并刷新
+    final authState = ref.read(authProvider);
+    final currentUser = authState.value;
+    
+    if (currentUser != null) {
+      try {
+        final unlockedAchievements = await _achievementDetector.checkCommunityAchievements(currentUser.id);
+        if (unlockedAchievements.isNotEmpty) {
+          ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+          ref.invalidate(achievementsProvider);
+        }
+      } catch (e) {
+        // 成就检测失败不影响发布
+      }
+    }
+
+    // 统一刷新一次
+    await refresh();
+
+    return (successCount: successCount, replacedCount: replacedCount);
   }
 
   /// 批量检查发布状态

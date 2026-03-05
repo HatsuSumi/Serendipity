@@ -326,43 +326,29 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
     await AsyncActionHelper.execute(
       context,
       action: () async {
-        int successCount = 0;
-        int replacedCount = 0;
-        
-        // 只发布可以发布和需要确认的记录
-        for (final info in recordInfos) {
-          if (info.status == PublishStatus.cannotPublish) {
-            continue; // 跳过不能发布的记录
-          }
-          
-          try {
-            final forceReplace = info.status == PublishStatus.needConfirm;
-            final replaced = await communityNotifier.publishPost(
-              info.record,
-              forceReplace: forceReplace,
-            );
-            
-            successCount++;
-            if (replaced) {
-              replacedCount++;
-            }
-          } catch (e) {
-            // 单条记录发布失败，继续发布其他记录
-            // 错误会在最后统一显示
-          }
-        }
-        
+        // 准备批量发布的数据
+        final publishItems = recordInfos
+            .where((info) => info.status != PublishStatus.cannotPublish)
+            .map((info) => (
+                  record: info.record,
+                  forceReplace: info.status == PublishStatus.needConfirm,
+                ))
+            .toList();
+
+        // 批量发布（只刷新一次）
+        final result = await communityNotifier.publishPosts(publishItems);
+
         // 显示成功消息
-        if (successCount > 0) {
-          if (replacedCount > 0) {
+        if (result.successCount > 0) {
+          if (result.replacedCount > 0) {
             MessageHelper.showSuccess(
               context,
-              '已发布 $successCount 条记录（其中 $replacedCount 条替换了旧帖）',
+              '已发布 ${result.successCount} 条记录（其中 ${result.replacedCount} 条替换了旧帖）',
             );
           } else {
             MessageHelper.showSuccess(
               context,
-              '已发布 $successCount 条记录',
+              '已发布 ${result.successCount} 条记录',
             );
           }
         }
