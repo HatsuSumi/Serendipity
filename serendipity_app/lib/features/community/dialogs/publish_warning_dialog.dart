@@ -8,7 +8,9 @@ import '../../../core/utils/dialog_helper.dart';
 /// - 说明发布后可以删除但无法修改
 /// 
 /// 调用者：
-/// - RecordDetailPage（发布到社区菜单）
+/// - RecordDetailPage（单条发布）
+/// - TimelinePage（单条发布）
+/// - PublishToCommunityDialog（批量发布）
 /// - CreateRecordPage（勾选"发布到树洞"时）
 class PublishWarningDialog extends StatelessWidget {
   final VoidCallback onConfirm;
@@ -111,6 +113,8 @@ class PublishWarningDialog extends StatelessWidget {
   /// 
   /// 调用者：
   /// - RecordDetailPage._publishToCommunity()
+  /// - TimelinePage._showPublishToCommunityDialog()
+  /// - PublishToCommunityDialog._showWarningBeforePublish()
   /// - CreateRecordPage._saveRecord()
   static Future<void> show(
     BuildContext context, {
