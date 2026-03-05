@@ -4,6 +4,7 @@ import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../repositories/community_repository.dart';
 import '../services/sync_service.dart';
+import '../utils/auth_error_helper.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
 import '../services/achievement_detector.dart';
@@ -187,31 +188,36 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     final currentUser = authState.value;
     
     if (currentUser == null) {
-      throw StateError('必须登录后才可发布');
+      throw Exception('必须登录后才可发布');
     }
 
-    // 发布到社区
-    final replaced = await _repository.publishPost(record, currentUser.id, forceReplace: forceReplace);
+    try {
+      // 发布到社区
+      final replaced = await _repository.publishPost(record, currentUser.id, forceReplace: forceReplace);
 
-    // 检测社区成就（只在非批量发布时检测）
-    if (!skipRefresh) {
-      try {
-        final unlockedAchievements = await _achievementDetector.checkCommunityAchievements(currentUser.id);
-        if (unlockedAchievements.isNotEmpty) {
-          // 通知UI层显示成就解锁通知
-          ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-          // 刷新成就列表
-          ref.invalidate(achievementsProvider);
+      // 检测社区成就（只在非批量发布时检测）
+      if (!skipRefresh) {
+        try {
+          final unlockedAchievements = await _achievementDetector.checkCommunityAchievements(currentUser.id);
+          if (unlockedAchievements.isNotEmpty) {
+            // 通知UI层显示成就解锁通知
+            ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+            // 刷新成就列表
+            ref.invalidate(achievementsProvider);
+          }
+        } catch (e) {
+          // 成就检测失败不影响发布
         }
-      } catch (e) {
-        // 成就检测失败不影响发布
-      }
 
-      // 刷新帖子列表
-      await refresh();
+        // 刷新帖子列表
+        await refresh();
+      }
+      
+      return replaced;
+    } catch (e) {
+      // 使用 AuthErrorHelper 清理异常前缀
+      throw Exception(AuthErrorHelper.extractErrorMessage(e));
     }
-    
-    return replaced;
   }
 
   /// 批量发布记录到社区
@@ -288,10 +294,15 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {
     // Fail Fast: 参数验证
     if (records.isEmpty) {
-      throw ArgumentError('records cannot be empty');
+      throw Exception('记录列表不能为空');
     }
 
-    return await _repository.checkPublishStatus(records);
+    try {
+      return await _repository.checkPublishStatus(records);
+    } catch (e) {
+      // 使用 AuthErrorHelper 清理异常前缀
+      throw Exception(AuthErrorHelper.extractErrorMessage(e));
+    }
   }
 
   /// 删除帖子
@@ -307,14 +318,19 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     final currentUser = authState.value;
     
     if (currentUser == null) {
-      throw StateError('必须登录后才可删除');
+      throw Exception('必须登录后才可删除');
     }
 
-    // 删除帖子
-    await _repository.deletePost(postId, currentUser.id);
+    try {
+      // 删除帖子
+      await _repository.deletePost(postId, currentUser.id);
 
-    // 刷新帖子列表
-    await refresh();
+      // 刷新帖子列表
+      await refresh();
+    } catch (e) {
+      // 使用 AuthErrorHelper 清理异常前缀
+      throw Exception(AuthErrorHelper.extractErrorMessage(e));
+    }
   }
 
   /// 筛选帖子
@@ -420,10 +436,15 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     final currentUser = authState.value;
     
     if (currentUser == null) {
-      throw StateError('必须登录后才可查看我的发布');
+      throw Exception('必须登录后才可查看我的发布');
     }
 
-    return await _repository.getMyPosts(currentUser.id);
+    try {
+      return await _repository.getMyPosts(currentUser.id);
+    } catch (e) {
+      // 使用 AuthErrorHelper 清理异常前缀
+      throw Exception(AuthErrorHelper.extractErrorMessage(e));
+    }
   }
 }
 

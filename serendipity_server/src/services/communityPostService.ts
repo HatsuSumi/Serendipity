@@ -63,7 +63,7 @@ export class CommunityPostService implements ICommunityPostService {
       if (!hasChanged) {
         // 内容未变化，不允许重复发布
         throw new AppError(
-          'This record has already been published with the same content',
+          '该记录已发布过，且内容无变化',
           ErrorCode.CONFLICT
         );
       }
@@ -71,7 +71,7 @@ export class CommunityPostService implements ICommunityPostService {
       // 内容已变化，但用户未确认替换
       if (!data.forceReplace) {
         throw new AppError(
-          'This record has already been published. Content has changed, please confirm to replace',
+          '该记录已发布过，内容已变化，请确认是否替换',
           ErrorCode.CONFLICT
         );
       }

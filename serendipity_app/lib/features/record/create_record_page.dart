@@ -378,8 +378,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
 
       // 如果勾选了"发布到树洞"，发布到社区
       if (_publishToCommunity) {
-        // 编辑模式下，根据发布状态决定是否需要 forceReplace
-        final forceReplace = widget.isEditMode && _publishStatus == 'need_confirm';
+        // 编辑模式下，如果之前已发布过（_publishStatus 不是 'can_publish'），则需要 forceReplace
+        final forceReplace = widget.isEditMode && _publishStatus != 'can_publish';
         await ref.read(communityProvider.notifier).publishPost(record, forceReplace: forceReplace);
       }
 
@@ -411,7 +411,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       if (mounted) {
         MessageHelper.showError(
           context, 
-          '${widget.isEditMode ? "更新" : "保存"}失败：$e',
+          '${widget.isEditMode ? "更新" : "保存"}失败：${AuthErrorHelper.extractErrorMessage(e)}',
         );
       }
     } finally {
