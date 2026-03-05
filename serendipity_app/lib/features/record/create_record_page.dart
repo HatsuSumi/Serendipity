@@ -95,6 +95,21 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _checkPublishStatus();
       });
+      
+      // 编辑模式下监听输入框变化，实时更新发布状态UI
+      _placeNameController.addListener(_onFormChanged);
+      _descriptionController.addListener(_onFormChanged);
+      _conversationStarterController.addListener(_onFormChanged);
+      _backgroundMusicController.addListener(_onFormChanged);
+      _ifReencounterController.addListener(_onFormChanged);
+    }
+  }
+  
+  /// 表单内容变化时触发（编辑模式下使用）
+  void _onFormChanged() {
+    // 触发重建，更新发布状态UI
+    if (mounted) {
+      setState(() {});
     }
   }
   
