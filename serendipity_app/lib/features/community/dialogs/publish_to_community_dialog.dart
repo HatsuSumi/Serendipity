@@ -11,6 +11,7 @@ import '../../../core/utils/date_time_helper.dart';
 import '../../../core/theme/status_color_extension.dart';
 import '../../../core/widgets/empty_state_widget.dart';
 import 'publish_confirm_dialog.dart';
+import 'publish_warning_dialog.dart';
 
 /// 可发布到树洞的记录列表 Provider
 /// 
@@ -110,7 +111,7 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
-                    onPressed: _selectedRecordIds.isEmpty ? null : _handleConfirm,
+                    onPressed: _selectedRecordIds.isEmpty ? null : _showWarningBeforePublish,
                     child: Text('发布 (${_selectedRecordIds.length})'),
                   ),
                 ],
@@ -246,9 +247,19 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
     );
   }
 
-  /// 处理确认
+  /// 显示警告对话框
   /// 
   /// 调用者：发布按钮的 onPressed
+  Future<void> _showWarningBeforePublish() async {
+    await PublishWarningDialog.show(
+      context,
+      onConfirm: _handleConfirm,
+    );
+  }
+
+  /// 处理确认
+  /// 
+  /// 调用者：PublishWarningDialog.onConfirm
   /// 
   /// Fail Fast：
   /// - 如果未选择记录，按钮已禁用（不会调用此方法）
