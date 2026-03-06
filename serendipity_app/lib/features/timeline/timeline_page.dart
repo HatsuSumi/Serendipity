@@ -185,27 +185,23 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   List<EncounterRecord> _sortRecords(List<EncounterRecord> records) {
     final sorted = List<EncounterRecord>.from(records);
     
-    // 先按照选择的排序方式排序
-    switch (_currentSort) {
-      case RecordSortType.createdDesc:
-        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        break;
-      case RecordSortType.createdAsc:
-        sorted.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-        break;
-      case RecordSortType.updatedDesc:
-        sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        break;
-      case RecordSortType.updatedAsc:
-        sorted.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
-        break;
-    }
-    
-    // 置顶记录排在最前面（稳定排序）
+    // 一次性排序：先按置顶状态，再按选择的排序方式
     sorted.sort((a, b) {
+      // 1. 置顶记录优先
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      return 0;
+      
+      // 2. 都是置顶或都不是置顶，按照选择的排序方式
+      switch (_currentSort) {
+        case RecordSortType.createdDesc:
+          return b.createdAt.compareTo(a.createdAt);
+        case RecordSortType.createdAsc:
+          return a.createdAt.compareTo(b.createdAt);
+        case RecordSortType.updatedDesc:
+          return b.updatedAt.compareTo(a.updatedAt);
+        case RecordSortType.updatedAsc:
+          return a.updatedAt.compareTo(b.updatedAt);
+      }
     });
     
     return sorted;
