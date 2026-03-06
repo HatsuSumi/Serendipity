@@ -553,15 +553,40 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
   /// 
   /// 优化说明：
   /// - 删除成功后自动刷新列表
-  /// - 使用 AsyncValue.guard 自动处理错误
+  /// - 使用静默刷新避免页面闪烁
   Future<void> deletePost(String postId) async {
     final communityNotifier = ref.read(communityProvider.notifier);
     
     // 删除帖子
     await communityNotifier.deletePost(postId);
     
-    // 删除成功后刷新列表
-    await refresh();
+    // 删除成功后静默刷新列表（避免页面闪烁）
+    await _refreshSilently();
+  }
+
+  /// 静默刷新我的帖子列表（不显示 loading 状态）
+  /// 
+  /// 用于删除帖子后的刷新，避免页面闪烁
+  /// 
+  /// 调用者：deletePost
+  Future<void> _refreshSilently() async {
+    final currentState = state.value;
+    if (currentState == null) {
+      // 如果当前没有数据，使用普通刷新
+      await refresh();
+      return;
+    }
+
+    // 使用 AsyncValue.guard，它会自动捕获错误
+    final result = await AsyncValue.guard(() async {
+      final communityNotifier = ref.read(communityProvider.notifier);
+      return await communityNotifier.getMyPosts();
+    });
+    
+    // 只在成功时更新状态，失败时保持当前状态不变
+    if (result.hasValue) {
+      state = result;
+    }
   }
 }
 
