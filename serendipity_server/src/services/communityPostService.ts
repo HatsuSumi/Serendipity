@@ -216,7 +216,15 @@ export class CommunityPostService implements ICommunityPostService {
     const posts = await this.communityPostRepository.findByUserId(userId);
 
     return {
-      posts: posts.map((post) => this.toResponseDto(post, userId)),
+      posts: posts.map((post) => {
+        const dto = this.toResponseDto(post, userId);
+        // 明确保证：getMyPosts 返回的帖子一定是用户自己的
+        // 避免前端需要额外判断 isOwner
+        return {
+          ...dto,
+          isOwner: true,
+        };
+      }),
       total: posts.length,
     };
   }

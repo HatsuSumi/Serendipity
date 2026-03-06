@@ -115,10 +115,11 @@ class MyPostsPage extends ConsumerWidget {
         itemCount: posts.length,
         itemBuilder: (context, index) {
           final post = posts[index];
-          // 我的帖子页面，所有帖子都应该 isOwner = true
+          // 我的帖子页面：后端保证所有帖子都是 isOwner = true
+          // 直接传递 onDelete，不需要判断
           return CommunityPostCard(
             post: post,
-            onDelete: post.isOwner ? () => _deletePost(context, ref, post.id) : null,
+            onDelete: () => _deletePost(context, ref, post.id),
           );
         },
       ),
