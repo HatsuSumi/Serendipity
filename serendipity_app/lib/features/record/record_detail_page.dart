@@ -666,31 +666,29 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   /// 
   /// 调用者：_handleMenuAction()
   Future<void> _publishToCommunity(BuildContext context) async {
-    // 步骤1：显示警告对话框
-    final shouldPublish = await PublishWarningDialog.show(context, ref);
-    
-    if (shouldPublish) {
-      await _publishToCommunityAfterWarning(context);
-    }
-  }
-
-  /// 警告确认后的发布流程
-  Future<void> _publishToCommunityAfterWarning(BuildContext context) async {
     final communityNotifier = ref.read(communityProvider.notifier);
     
     try {
-      // 步骤2：检查发布状态
+      // 步骤1：先检查发布状态
       final statusMap = await communityNotifier.checkPublishStatus([_currentRecord]);
       final status = statusMap[_currentRecord.id] ?? 'can_publish';
       
       if (status == 'cannot_publish') {
-        // 内容未变化，不允许发布
+        // 内容未变化，不允许发布，直接提示错误
         if (context.mounted) {
           MessageHelper.showError(context, '该记录已发布且内容未变化');
         }
         return;
-      } else if (status == 'need_confirm') {
-        // 步骤3：需要用户确认替换
+      }
+      
+      // 步骤2：显示警告对话框
+      final shouldPublish = await PublishWarningDialog.show(context, ref);
+      
+      if (!shouldPublish) return;
+      
+      // 步骤3：根据状态执行发布
+      if (status == 'need_confirm') {
+        // 需要用户确认替换
         if (!context.mounted) return;
         
         final confirmed = await DialogHelper.show<bool>(
@@ -711,9 +709,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           ),
         );
         
-        if (confirmed != true) return; // 用户取消，静默退出
+        if (confirmed != true) return;
         
-        // 步骤4：用户确认，强制替换
+        // 用户确认，强制替换
         await AsyncActionHelper.execute(
           context,
           action: () => communityNotifier.publishPost(_currentRecord, forceReplace: true),
@@ -721,7 +719,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           errorMessagePrefix: '发布失败',
         );
       } else {
-        // 步骤3：可以直接发布
+        // 可以直接发布
         await AsyncActionHelper.execute(
           context,
           action: () => communityNotifier.publishPost(_currentRecord),
