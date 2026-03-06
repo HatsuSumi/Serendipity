@@ -268,17 +268,30 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   }
 
   /// 构建加载更多指示器
+  /// 
+  /// 优化说明：
+  /// - 使用 Provider 的状态判断，遵循"单一数据源"原则
+  /// - 移除本地 _isLoadingMore 状态，避免状态重复
   Widget _buildLoadingIndicator() {
-    if (!_isLoadingMore) {
+    final communityStateAsync = ref.read(communityProvider);
+    final communityState = communityStateAsync.value;
+    
+    // 如果没有更多数据或正在加载，不显示加载指示器
+    if (communityState == null || !communityState.hasMore) {
       return const SizedBox(height: 80);
     }
 
-    return const Padding(
-      padding: EdgeInsets.all(16.0),
-      child: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    // 如果正在加载，显示加载指示器
+    if (communityStateAsync.isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    return const SizedBox(height: 80);
   }
 
   /// 删除帖子

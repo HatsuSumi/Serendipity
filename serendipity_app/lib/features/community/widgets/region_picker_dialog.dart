@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/region_data.dart';
@@ -46,6 +47,7 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
   final TextEditingController _searchController = TextEditingController();
   String _searchKeyword = '';
   SelectedRegion _selectedRegion = const SelectedRegion();
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -56,6 +58,7 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
   @override
   void dispose() {
     _searchController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 

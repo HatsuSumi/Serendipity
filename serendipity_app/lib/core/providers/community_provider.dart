@@ -182,6 +182,11 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// 加载更多帖子
   /// 
   /// 调用者：CommunityPage（滚动到底部）
+  /// 
+  /// 优化说明：
+  /// - 使用 AsyncValue.guard 自动处理错误
+  /// - 失败时保持当前状态，用户仍可看到已加载的数据
+  /// - 遵循"用户体验优先"原则
   Future<void> loadMore() async {
     final currentState = state.value;
     if (currentState == null) return;
@@ -195,14 +200,21 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     // 如果正在加载，直接返回
     if (state.isLoading) return;
     
-    // 加载下一页
-    final newPosts = await _loadPosts(lastTimestamp: _lastTimestamp);
+    // 使用 AsyncValue.guard 自动处理错误
+    final result = await AsyncValue.guard(() async {
+      final newPosts = await _loadPosts(lastTimestamp: _lastTimestamp);
+      return currentState.copyWith(
+        posts: [...currentState.posts, ...newPosts],
+        hasMore: newPosts.length >= 20,
+      );
+    });
     
-    // 合并数据
-    state = AsyncValue.data(currentState.copyWith(
-      posts: [...currentState.posts, ...newPosts],
-      hasMore: newPosts.length >= 20,
-    ));
+    // 只在成功时更新状态
+    if (result.hasValue) {
+      state = result;
+    }
+    // 失败时保持当前状态，用户仍可看到已加载的数据
+    // 不显示错误提示，避免打扰用户（用户可以下拉刷新重试）
   }
 
   /// 发布记录到社区
@@ -492,4 +504,64 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
 final communityProvider = AsyncNotifierProvider<CommunityNotifier, CommunityState>(() {
   return CommunityNotifier();
 });
+
+/// 我的帖子列表 Provider
+/// 
+/// 职责：
+/// - 管理当前用户发布的帖子列表状态
+/// - 支持刷新
+/// 
+/// 调用者：MyPostsPage
+/// 
+/// 遵循原则：
+/// - 单一数据源（Single Source of Truth）
+/// - 状态管理规则：UI层不维护业务状态
+/// - 分层约束：状态管理层负责业务逻辑
+final myPostsProvider = AsyncNotifierProvider<MyPostsNotifier, List<CommunityPost>>(() {
+  return MyPostsNotifier();
+});
+
+/// 我的帖子状态管理
+/// 
+/// 职责：
+/// - 加载当前用户的帖子列表
+/// - 刷新帖子列表
+/// - 删除帖子后自动刷新
+/// 
+/// 调用者：MyPostsPage
+class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
+  @override
+  Future<List<CommunityPost>> build() async {
+    final communityNotifier = ref.read(communityProvider.notifier);
+    return await communityNotifier.getMyPosts();
+  }
+
+  /// 刷新我的帖子列表
+  /// 
+  /// 调用者：MyPostsPage（下拉刷新）
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final communityNotifier = ref.read(communityProvider.notifier);
+      return await communityNotifier.getMyPosts();
+    });
+  }
+
+  /// 删除帖子
+  /// 
+  /// 调用者：MyPostsPage（删除按钮）
+  /// 
+  /// 优化说明：
+  /// - 删除成功后自动刷新列表
+  /// - 使用 AsyncValue.guard 自动处理错误
+  Future<void> deletePost(String postId) async {
+    final communityNotifier = ref.read(communityProvider.notifier);
+    
+    // 删除帖子
+    await communityNotifier.deletePost(postId);
+    
+    // 删除成功后刷新列表
+    await refresh();
+  }
+}
 

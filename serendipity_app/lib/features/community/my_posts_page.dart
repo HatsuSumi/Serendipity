@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
-import '../../models/community_post.dart';
 import 'widgets/community_post_card.dart';
 
 /// 我的发布页面
@@ -18,71 +18,23 @@ import 'widgets/community_post_card.dart';
 /// 设计原则：
 /// - 单一职责（SRP）：只负责展示我的帖子列表
 /// - 分层约束：UI层不包含业务逻辑，通过Provider调用
+/// - 状态管理规则：使用 myPostsProvider 管理状态（单一数据源）
 /// - DRY：复用 CommunityPostCard 组件
 /// - Fail Fast：依赖 Provider 层的参数校验
-class MyPostsPage extends ConsumerStatefulWidget {
+class MyPostsPage extends ConsumerWidget {
   const MyPostsPage({super.key});
-
-  @override
-  ConsumerState<MyPostsPage> createState() => _MyPostsPageState();
-}
-
-class _MyPostsPageState extends ConsumerState<MyPostsPage> {
-  /// 我的帖子列表（本地状态）
-  List<CommunityPost>? _myPosts;
-  
-  /// 是否正在加载
-  bool _isLoading = false;
-  
-  /// 错误信息
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMyPosts();
-  }
-
-  /// 加载我的帖子
-  /// 
-  /// 调用者：
-  /// - initState()（初始化时）
-  /// - _onRefresh()（下拉刷新时）
-  Future<void> _loadMyPosts() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final posts = await ref.read(communityProvider.notifier).getMyPosts();
-      if (mounted) {
-        setState(() {
-          _myPosts = posts;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isLoading = false;
-        });
-      }
-    }
-  }
 
   /// 下拉刷新
   /// 
   /// 调用者：RefreshIndicator
-  Future<void> _onRefresh() async {
-    await _loadMyPosts();
+  Future<void> _onRefresh(WidgetRef ref) async {
+    await ref.read(myPostsProvider.notifier).refresh();
   }
 
   /// 删除帖子
   /// 
   /// 调用者：CommunityPostCard（长按菜单）
-  Future<void> _deletePost(String postId) async {
+  Future<void> _deletePost(BuildContext context, WidgetRef ref, String postId) async {
     // 确认对话框
     final confirmed = await showDialog<bool>(
       context: context,
@@ -102,63 +54,41 @@ class _MyPostsPageState extends ConsumerState<MyPostsPage> {
       ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !context.mounted) return;
 
-    // 删除帖子
+    // 删除帖子（自动刷新列表）
     await AsyncActionHelper.execute(
       context,
-      action: () => ref.read(communityProvider.notifier).deletePost(postId),
+      action: () => ref.read(myPostsProvider.notifier).deletePost(postId),
       successMessage: '帖子已删除',
       errorMessagePrefix: '删除失败',
-      onSuccess: () {
-        // 刷新列表
-        _loadMyPosts();
-      },
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final myPostsAsync = ref.watch(myPostsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的发布'),
       ),
-      body: _buildBody(),
+      body: myPostsAsync.when(
+        data: (posts) => _buildPostsList(context, ref, posts),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => _buildError(context, ref, error),
+      ),
     );
   }
 
-  /// 构建页面主体
+  /// 构建帖子列表
   /// 
   /// 调用者：build()
-  Widget _buildBody() {
-    // 加载中
-    if (_isLoading && _myPosts == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    // 加载失败
-    if (_errorMessage != null && _myPosts == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text('加载失败：$_errorMessage'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadMyPosts,
-              child: const Text('重试'),
-            ),
-          ],
-        ),
-      );
-    }
-
+  Widget _buildPostsList(BuildContext context, WidgetRef ref, List<dynamic> posts) {
     // 空状态
-    if (_myPosts == null || _myPosts!.isEmpty) {
+    if (posts.isEmpty) {
       return RefreshIndicator(
-        onRefresh: _onRefresh,
+        onRefresh: () => _onRefresh(ref),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: const [
@@ -175,18 +105,39 @@ class _MyPostsPageState extends ConsumerState<MyPostsPage> {
 
     // 帖子列表
     return RefreshIndicator(
-      onRefresh: _onRefresh,
+      onRefresh: () => _onRefresh(ref),
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: _myPosts!.length,
+        itemCount: posts.length,
         itemBuilder: (context, index) {
-          final post = _myPosts![index];
+          final post = posts[index];
           // 我的帖子页面，所有帖子都应该 isOwner = true
           return CommunityPostCard(
             post: post,
-            onDelete: post.isOwner ? () => _deletePost(post.id) : null,
+            onDelete: post.isOwner ? () => _deletePost(context, ref, post.id) : null,
           );
         },
+      ),
+    );
+  }
+
+  /// 构建错误状态
+  /// 
+  /// 调用者：build()
+  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text('加载失败：${AuthErrorHelper.extractErrorMessage(error)}'),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => ref.read(myPostsProvider.notifier).refresh(),
+            child: const Text('重试'),
+          ),
+        ],
       ),
     );
   }
