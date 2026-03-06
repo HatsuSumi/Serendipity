@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/encounter_record.dart';
 import '../../../core/providers/community_provider.dart';
 import '../../../core/providers/records_provider.dart';
+import '../../../core/utils/async_action_helper.dart';
 import '../../../core/utils/dialog_helper.dart';
+import '../../../core/utils/message_helper.dart';
 import '../../../core/utils/record_helper.dart';
 import '../../../core/utils/date_time_helper.dart';
 import '../../../core/theme/status_color_extension.dart';
@@ -304,16 +306,13 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
     final confirmed = await _showPublishConfirmDialog(recordInfos);
     if (!confirmed) return;
     
-    // 步骤3：保存父页面的 context（在关闭对话框之前）
+    // 步骤3：关闭选择对话框并保存父页面的 context
     if (!mounted) return;
-    final navigator = Navigator.of(context);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final parentContext = context;
+    Navigator.of(context).pop();
     
-    // 步骤4：关闭选择对话框
-    navigator.pop();
-    
-    // 步骤5：执行发布（使用 ScaffoldMessenger 显示消息）
-    await _executePublish(recordInfos, scaffoldMessenger);
+    // 步骤4：执行发布（使用保存的 context）
+    await _executePublish(recordInfos, parentContext);
   }
 
   /// 检查选中记录的发布状态
@@ -338,12 +337,7 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
       statusMap = await communityNotifier.checkPublishStatus(selectedRecords);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('检查发布状态失败：$e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        MessageHelper.showError(context, '检查发布状态失败：$e');
       }
       return null;
     }
@@ -403,37 +397,35 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
   /// 
   /// 参数：
   /// - recordInfos: 记录发布信息列表
-  /// - scaffoldMessenger: ScaffoldMessenger（用于显示成功消息）
+  /// - parentContext: 父页面的 context（对话框关闭前保存）
   /// 
   /// 优化说明：
-  /// - 使用 ScaffoldMessenger 显示成功消息，避免对话框关闭后 context 失效
-  Future<void> _executePublish(List<RecordPublishInfo> recordInfos, ScaffoldMessengerState scaffoldMessenger) async {
-    try {
-      final communityNotifier = ref.read(communityProvider.notifier);
-      
-      // 准备批量发布的数据
-      final publishItems = recordInfos
-          .where((info) => info.status != PublishStatus.cannotPublish)
-          .map((info) => (
-                record: info.record,
-                forceReplace: info.status == PublishStatus.needConfirm,
-              ))
-          .toList();
+  /// - 使用父页面的 context 显示成功消息，避免对话框关闭后 context 失效
+  Future<void> _executePublish(List<RecordPublishInfo> recordInfos, BuildContext parentContext) async {
+    // ignore: use_build_context_synchronously
+    await AsyncActionHelper.execute(
+      parentContext,
+      action: () async {
+        final communityNotifier = ref.read(communityProvider.notifier);
+        
+        // 准备批量发布的数据
+        final publishItems = recordInfos
+            .where((info) => info.status != PublishStatus.cannotPublish)
+            .map((info) => (
+                  record: info.record,
+                  forceReplace: info.status == PublishStatus.needConfirm,
+                ))
+            .toList();
 
-      // 批量发布（只刷新一次）
-      final result = await communityNotifier.publishPosts(publishItems);
+        // 批量发布（只刷新一次）
+        final result = await communityNotifier.publishPosts(publishItems);
 
-      // 显示成功消息
-      _showPublishSuccessMessage(result.successCount, result.replacedCount, scaffoldMessenger);
-    } catch (e) {
-      // 显示错误消息
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('发布失败：$e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+        // 显示成功消息
+        // ignore: use_build_context_synchronously
+        _showPublishSuccessMessage(result.successCount, result.replacedCount, parentContext);
+      },
+      errorMessagePrefix: '发布失败',
+    );
   }
 
   /// 显示发布成功消息
@@ -441,19 +433,20 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
   /// 参数：
   /// - successCount: 成功发布的数量
   /// - replacedCount: 替换旧帖的数量
-  /// - scaffoldMessenger: ScaffoldMessenger
-  void _showPublishSuccessMessage(int successCount, int replacedCount, ScaffoldMessengerState scaffoldMessenger) {
+  /// - parentContext: 父页面的 context
+  void _showPublishSuccessMessage(int successCount, int replacedCount, BuildContext parentContext) {
     if (successCount > 0) {
-      final message = replacedCount > 0
-          ? '已发布 $successCount 条记录（其中 $replacedCount 条替换了旧帖）'
-          : '已发布 $successCount 条记录';
-      
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (replacedCount > 0) {
+        MessageHelper.showSuccess(
+          parentContext,
+          '已发布 $successCount 条记录（其中 $replacedCount 条替换了旧帖）',
+        );
+      } else {
+        MessageHelper.showSuccess(
+          parentContext,
+          '已发布 $successCount 条记录',
+        );
+      }
     }
   }
 }
