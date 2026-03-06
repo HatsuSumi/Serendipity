@@ -42,7 +42,7 @@ class CommunityRepository {
     final region = AddressHelper.extractRegion(record.location.address);
     
     return CommunityPost(
-      id: _uuid.v5(Uuid.NAMESPACE_URL, '${record.id}_${now.millisecondsSinceEpoch}'), // 基于 recordId 和时间戳生成确定性 UUID
+      id: _uuid.v4(), // 使用随机 UUID，postId 只是数据库主键，业务逻辑通过 recordId 判断
       recordId: record.id,
       timestamp: record.timestamp,
       address: record.location.address, // 标准地址（GPS获取）

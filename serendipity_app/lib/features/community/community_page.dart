@@ -30,7 +30,6 @@ class CommunityPage extends ConsumerStatefulWidget {
 
 class _CommunityPageState extends ConsumerState<CommunityPage> {
   final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
 
   @override
   void initState() {
@@ -46,31 +45,26 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   }
 
   /// 滚动监听（加载更多）
+  /// 
+  /// 优化说明：
+  /// - 移除本地 _isLoadingMore 状态
+  /// - 直接使用 Provider 的 isLoading 状态
+  /// - 遵循"单一数据源"原则
   void _onScroll() {
-    if (_isLoadingMore) return;
+    final communityStateAsync = ref.read(communityProvider);
+    
+    // 使用 Provider 的状态判断
+    if (communityStateAsync.isLoading) return;
+    
+    final communityState = communityStateAsync.value;
+    if (communityState == null) return;
+    
+    // 如果没有更多数据，不触发加载
+    if (!communityState.hasMore) return;
 
     // 滚动到底部时加载更多
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      _loadMore();
-    }
-  }
-
-  /// 加载更多
-  Future<void> _loadMore() async {
-    if (_isLoadingMore) return;
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
-    try {
-      await ref.read(communityProvider.notifier).loadMore();
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingMore = false;
-        });
-      }
+      ref.read(communityProvider.notifier).loadMore();
     }
   }
 

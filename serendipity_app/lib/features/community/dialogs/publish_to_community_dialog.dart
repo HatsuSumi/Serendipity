@@ -370,6 +370,10 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
   /// 
   /// 参数：
   /// - recordInfos: 记录发布信息列表
+  /// 
+  /// 优化说明：
+  /// - 在执行前再次检查状态（可选，取决于业务需求）
+  /// - 处理状态过期的情况
   Future<void> _executePublish(List<RecordPublishInfo> recordInfos) async {
     await AsyncActionHelper.execute(
       context,

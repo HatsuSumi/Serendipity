@@ -130,6 +130,10 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
   }
 
   /// 构建搜索框
+  /// 
+  /// 优化说明：
+  /// - 添加防抖优化，避免频繁重建
+  /// - 提升输入体验
   Widget _buildSearchBar(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -142,6 +146,7 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
               ? IconButton(
                   icon: const Icon(Icons.clear),
                   onPressed: () {
+                    _debounceTimer?.cancel();
                     setState(() {
                       _searchController.clear();
                       _searchKeyword = '';
@@ -153,8 +158,16 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
           isDense: true,
         ),
         onChanged: (value) {
-          setState(() {
-            _searchKeyword = value;
+          // 取消之前的定时器
+          _debounceTimer?.cancel();
+          
+          // 设置新的定时器（300ms 防抖）
+          _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              setState(() {
+                _searchKeyword = value;
+              });
+            }
           });
         },
       ),
