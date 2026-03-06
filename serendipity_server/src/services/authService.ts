@@ -166,25 +166,10 @@ export class AuthService implements IAuthService {
       throw new AppError('新密码长度必须至少 6 位', ErrorCode.INVALID_CREDENTIALS);
     }
 
-    // 日志：输出特定邮箱的重置密码尝试
-    if (data.email === 'a19171548397a@163.com') {
-      console.log('='.repeat(80));
-      console.log(`[重置密码] 邮箱: ${data.email}`);
-      console.log(`[重置密码] 用户输入的恢复密钥: ${data.recoveryKey}`);
-      console.log('='.repeat(80));
-    }
-
     // 查找用户
     const user = await this.userRepository.findByEmail(data.email);
     if (!user) {
       throw new AppError('邮箱或恢复密钥错误', ErrorCode.INVALID_CREDENTIALS);
-    }
-
-    // 日志：输出数据库中的恢复密钥
-    if (data.email === 'a19171548397a@163.com') {
-      console.log('='.repeat(80));
-      console.log(`[重置密码] 数据库中的恢复密钥: ${user.recoveryKey || '未设置'}`);
-      console.log('='.repeat(80));
     }
 
     // 验证恢复密钥（直接比对明文）
@@ -375,15 +360,6 @@ export class AuthService implements IAuthService {
 
     // 直接存储明文（不哈希）
     await this.userRepository.updateRecoveryKey(userId, formattedKey);
-
-    // 日志：输出特定邮箱的恢复密钥
-    if (user.email === 'a19171548397a@163.com') {
-      console.log('='.repeat(80));
-      console.log(`[恢复密钥生成] 邮箱: ${user.email}`);
-      console.log(`[恢复密钥生成] 用户ID: ${user.id}`);
-      console.log(`[恢复密钥生成] 恢复密钥: ${formattedKey}`);
-      console.log('='.repeat(80));
-    }
 
     return {
       recoveryKey: formattedKey,
