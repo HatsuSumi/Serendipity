@@ -75,7 +75,13 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
   @override
   void initState() {
     super.initState();
-    _startCountdown();
+    // 检查用户是否已看过警告，如果已看过则跳过倒计时
+    final hasSeenWarning = ref.read(userSettingsProvider).hasSeenPublishWarning;
+    if (hasSeenWarning) {
+      _countdownFinished = true;
+    } else {
+      _startCountdown();
+    }
   }
 
   @override
@@ -97,6 +103,8 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
         if (_countdown <= 0) {
           _countdownFinished = true;
           timer.cancel();
+          // 倒计时结束，标记用户已看过警告
+          ref.read(userSettingsProvider.notifier).markPublishWarningSeen();
         }
       });
     });
@@ -196,8 +204,11 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
 
   /// 构建"不再提示"选项
   Widget _buildHideWarningOption(BuildContext context) {
-    if (!_countdownFinished) {
-      // 倒计时中，显示提示文本
+    // 检查用户是否已看过警告
+    final hasSeenWarning = ref.read(userSettingsProvider).hasSeenPublishWarning;
+    
+    if (!_countdownFinished && !hasSeenWarning) {
+      // 首次打开且倒计时中，显示提示文本
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
@@ -225,7 +236,7 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
       );
     }
 
-    // 倒计时结束，显示复选框
+    // 倒计时结束或已看过警告，显示复选框
     return CheckboxListTile(
       value: _hideWarning,
       onChanged: (value) {

@@ -1282,7 +1282,7 @@ class SettingsPage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('重置对话框提醒'),
-        content: const Text('确定要重置"发布到社区"警告对话框的"不再提示"设置吗？\n\n重置后，下次发布时将重新显示警告对话框。'),
+        content: const Text('确定要重置"发布到社区"警告对话框的"不再提示"设置吗？\n\n重置后，下次发布时将重新显示警告对话框和倒计时。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -1294,7 +1294,11 @@ class SettingsPage extends ConsumerWidget {
               
               await AsyncActionHelper.execute(
                 context,
-                action: () => ref.read(userSettingsProvider.notifier).updateHidePublishWarning(false),
+                action: () async {
+                  // 同时重置两个标记
+                  await ref.read(userSettingsProvider.notifier).updateHidePublishWarning(false);
+                  await ref.read(userSettingsProvider.notifier).markPublishWarningSeen(false);
+                },
                 successMessage: '对话框提醒已重置',
                 errorMessagePrefix: '重置失败',
               );

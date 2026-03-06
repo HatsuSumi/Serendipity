@@ -27,6 +27,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -65,6 +67,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -100,6 +104,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -143,6 +149,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -180,6 +188,8 @@ void main() {
         'checkInVibrationEnabled': true,
         'checkInConfettiEnabled': true,
         'autoPublishToCommunity': false,
+        'hidePublishWarning': false,
+        'hasSeenPublishWarning': false,
         'createdAt': '2026-02-12T10:00:00.000',
         'updatedAt': '2026-02-12T10:00:00.000',
       };
@@ -224,6 +234,8 @@ void main() {
         'checkInVibrationEnabled': true,
         'checkInConfettiEnabled': true,
         'autoPublishToCommunity': false,
+        'hidePublishWarning': false,
+        'hasSeenPublishWarning': false,
         'createdAt': '2026-02-12T10:00:00.000',
         'updatedAt': '2026-02-12T10:00:00.000',
       };
@@ -259,6 +271,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -298,6 +312,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -342,6 +358,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -363,6 +381,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -384,6 +404,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -412,6 +434,8 @@ void main() {
         checkInVibrationEnabled: true,
         checkInConfettiEnabled: true,
         autoPublishToCommunity: false,
+        hidePublishWarning: false,
+        hasSeenPublishWarning: false,
         createdAt: now,
         updatedAt: now,
       );

@@ -58,6 +58,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       checkInConfettiEnabled: true,
       autoPublishToCommunity: false,
       hidePublishWarning: false,
+      hasSeenPublishWarning: false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -191,6 +192,23 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   Future<void> updateHidePublishWarning(bool hide) async {
     final updated = state.copyWith(
       hidePublishWarning: hide,
+      updatedAt: DateTime.now(),
+    );
+
+    await _storageService.saveUserSettings(updated);
+    state = updated;
+  }
+
+  /// 标记用户已看过发布警告
+  /// 
+  /// [seen] 是否已看过（默认 true）
+  /// 
+  /// 调用者：
+  /// - PublishWarningDialog（倒计时结束时）
+  /// - SettingsPage（重置对话框提醒时）
+  Future<void> markPublishWarningSeen([bool seen = true]) async {
+    final updated = state.copyWith(
+      hasSeenPublishWarning: seen,
       updatedAt: DateTime.now(),
     );
 

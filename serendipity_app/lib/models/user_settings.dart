@@ -33,6 +33,7 @@ class UserSettings {
   // 社区设置
   final bool autoPublishToCommunity;
   final bool hidePublishWarning;
+  final bool hasSeenPublishWarning;
   
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -57,6 +58,7 @@ class UserSettings {
     required this.checkInConfettiEnabled,
     required this.autoPublishToCommunity,
     required this.hidePublishWarning,
+    required this.hasSeenPublishWarning,
     required this.createdAt,
     required this.updatedAt,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
@@ -114,6 +116,7 @@ class UserSettings {
       checkInConfettiEnabled: json['checkInConfettiEnabled'] as bool? ?? true,
       autoPublishToCommunity: json['autoPublishToCommunity'] as bool,
       hidePublishWarning: json['hidePublishWarning'] as bool? ?? false,
+      hasSeenPublishWarning: json['hasSeenPublishWarning'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -144,6 +147,7 @@ class UserSettings {
       'checkInConfettiEnabled': checkInConfettiEnabled,
       'autoPublishToCommunity': autoPublishToCommunity,
       'hidePublishWarning': hidePublishWarning,
+      'hasSeenPublishWarning': hasSeenPublishWarning,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -187,6 +191,7 @@ class UserSettings {
     bool? checkInConfettiEnabled,
     bool? autoPublishToCommunity,
     bool? hidePublishWarning,
+    bool? hasSeenPublishWarning,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -210,6 +215,7 @@ class UserSettings {
       checkInConfettiEnabled: checkInConfettiEnabled ?? this.checkInConfettiEnabled,
       autoPublishToCommunity: autoPublishToCommunity ?? this.autoPublishToCommunity,
       hidePublishWarning: hidePublishWarning ?? this.hidePublishWarning,
+      hasSeenPublishWarning: hasSeenPublishWarning ?? this.hasSeenPublishWarning,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -244,6 +250,7 @@ class UserSettings {
         other.checkInConfettiEnabled == checkInConfettiEnabled &&
         other.autoPublishToCommunity == autoPublishToCommunity &&
         other.hidePublishWarning == hidePublishWarning &&
+        other.hasSeenPublishWarning == hasSeenPublishWarning &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -269,6 +276,7 @@ class UserSettings {
         checkInConfettiEnabled.hashCode ^
         autoPublishToCommunity.hashCode ^
         hidePublishWarning.hashCode ^
+        hasSeenPublishWarning.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }
