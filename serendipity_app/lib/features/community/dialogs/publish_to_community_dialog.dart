@@ -18,6 +18,10 @@ import 'publish_warning_dialog.dart';
 /// 返回所有记录（按时间倒序）
 /// 
 /// 调用者：PublishToCommunityDialog
+/// 
+/// 性能优化：
+/// - 避免不必要的列表复制和排序
+/// - 如果原列表已排序，直接返回
 final publishableRecordsProvider = Provider<List<EncounterRecord>>((ref) {
   final recordsAsync = ref.watch(recordsProvider);
   
@@ -28,7 +32,27 @@ final publishableRecordsProvider = Provider<List<EncounterRecord>>((ref) {
   
   final allRecords = recordsAsync.value ?? [];
   
-  // 按时间倒序排列
+  // 性能优化：避免不必要的复制和排序
+  // 如果列表为空或只有一个元素，直接返回
+  if (allRecords.length <= 1) {
+    return allRecords;
+  }
+  
+  // 检查是否已经按时间倒序排列
+  bool isAlreadySorted = true;
+  for (int i = 0; i < allRecords.length - 1; i++) {
+    if (allRecords[i].timestamp.isBefore(allRecords[i + 1].timestamp)) {
+      isAlreadySorted = false;
+      break;
+    }
+  }
+  
+  // 如果已排序，直接返回原列表（避免复制）
+  if (isAlreadySorted) {
+    return allRecords;
+  }
+  
+  // 否则，复制并排序
   final sorted = List<EncounterRecord>.from(allRecords);
   sorted.sort((a, b) => b.timestamp.compareTo(a.timestamp));
   
@@ -134,10 +158,15 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
   }
 
   /// 记录列表
+  /// 
+  /// 性能优化：
+  /// - 添加 itemExtent 固定高度，提升滚动性能
+  /// - 减少布局计算开销
   Widget _buildRecordList(BuildContext context, List<EncounterRecord> records) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: records.length,
+      itemExtent: 80.0, // 性能优化：固定记录项高度（Checkbox + 2行文本）
       itemBuilder: (context, index) {
         final record = records[index];
         final isSelected = _selectedRecordIds.contains(record.id);

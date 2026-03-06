@@ -58,6 +58,10 @@ class CommunityPostCard extends StatelessWidget {
   }
 
   /// 构建头部（时间 + 状态 + 菜单按钮）
+  /// 
+  /// 性能优化：
+  /// - 提取为独立方法，提高代码可读性
+  /// - 使用 const 优化固定 Widget
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
     
@@ -98,8 +102,8 @@ class CommunityPostCard extends StatelessWidget {
                 onDelete?.call();
               }
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
+            itemBuilder: (context) => const [
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
@@ -116,6 +120,9 @@ class CommunityPostCard extends StatelessWidget {
   }
 
   /// 构建地点
+  /// 
+  /// 性能优化：
+  /// - 使用 const 优化固定 Widget
   Widget _buildLocation(BuildContext context) {
     final theme = Theme.of(context);
     

@@ -220,6 +220,10 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   }
 
   /// 构建帖子列表
+  /// 
+  /// 性能优化：
+  /// - 虽然 CommunityPostCard 高度不固定，但可以估算平均高度
+  /// - 使用 itemExtent 可以显著提升滚动性能
   Widget _buildPostsList(CommunityState communityState) {
     final posts = communityState.posts;
     final isFiltering = communityState.isFiltering;
@@ -249,6 +253,10 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: posts.length + 1, // +1 for loading indicator
+        // 性能优化：估算平均高度（根据实际内容调整）
+        // 基础高度：时间(24) + 地点(20) + padding(32) ≈ 76
+        // 加上描述、标签等，平均约 150-200
+        itemExtent: 180.0,
         itemBuilder: (context, index) {
           // 加载更多指示器
           if (index == posts.length) {

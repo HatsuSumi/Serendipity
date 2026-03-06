@@ -28,6 +28,10 @@ class RecordPublishInfo {
 /// - 用户确认后返回 true，取消返回 false
 /// 
 /// 调用者：PublishToCommunityDialog._handleConfirm()
+/// 
+/// 性能优化：
+/// - 使用 ListView.builder 替代 spread 操作符
+/// - 避免每次 build 都创建所有 Widget
 class PublishConfirmDialog extends StatelessWidget {
   final List<RecordPublishInfo> records;
 
@@ -66,56 +70,11 @@ class PublishConfirmDialog extends StatelessWidget {
 
             // 可滚动内容区域
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 总结
-                    _buildSummary(context, canPublish.length, needConfirm.length, cannotPublish.length),
-
-                    const SizedBox(height: 16),
-
-                    // 新发布分组
-                    if (canPublish.isNotEmpty) ...[
-                      _buildSectionHeader(context, '✅ 新发布', canPublish.length),
-                      const SizedBox(height: 8),
-                      ...canPublish.map((info) => RecordPreviewCard(record: info.record)),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // 替换旧帖分组
-                    if (needConfirm.isNotEmpty) ...[
-                      _buildSectionHeader(context, '⚠️ 替换旧帖', needConfirm.length),
-                      const SizedBox(height: 8),
-                      ...needConfirm.map((info) => RecordPreviewCard(record: info.record)),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // 跳过分组
-                    if (cannotPublish.isNotEmpty) ...[
-                      _buildSectionHeader(context, '❌ 跳过', cannotPublish.length),
-                      const SizedBox(height: 8),
-                      ...cannotPublish.map((info) => RecordPreviewCard(
-                            record: info.record,
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.errorContainer,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '内容未变化',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Theme.of(context).colorScheme.onErrorContainer,
-                                ),
-                              ),
-                            ),
-                          )),
-                    ],
-                  ],
-                ),
+              child: _buildRecordsList(
+                context,
+                canPublish,
+                needConfirm,
+                cannotPublish,
               ),
             ),
 
@@ -127,6 +86,130 @@ class PublishConfirmDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 构建记录列表
+  /// 
+  /// 性能优化：
+  /// - 使用 ListView.builder 替代 spread 操作符
+  /// - 只在需要时创建 Widget，避免一次性创建所有 Widget
+  Widget _buildRecordsList(
+    BuildContext context,
+    List<RecordPublishInfo> canPublish,
+    List<RecordPublishInfo> needConfirm,
+    List<RecordPublishInfo> cannotPublish,
+  ) {
+    // 计算各分组的起始索引
+    final sections = <_RecordSection>[];
+    
+    if (canPublish.isNotEmpty) {
+      sections.add(_RecordSection(
+        title: '✅ 新发布',
+        count: canPublish.length,
+        records: canPublish,
+        showWarning: false,
+      ));
+    }
+    
+    if (needConfirm.isNotEmpty) {
+      sections.add(_RecordSection(
+        title: '⚠️ 替换旧帖',
+        count: needConfirm.length,
+        records: needConfirm,
+        showWarning: false,
+      ));
+    }
+    
+    if (cannotPublish.isNotEmpty) {
+      sections.add(_RecordSection(
+        title: '❌ 跳过',
+        count: cannotPublish.length,
+        records: cannotPublish,
+        showWarning: true,
+      ));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _calculateTotalItems(sections),
+      itemBuilder: (context, index) {
+        return _buildItem(context, sections, index);
+      },
+    );
+  }
+
+  /// 计算总项数（包括标题、记录、间距）
+  int _calculateTotalItems(List<_RecordSection> sections) {
+    int count = 1; // 总结
+    
+    for (final section in sections) {
+      count += 1; // 分组标题
+      count += section.records.length; // 记录
+      count += 1; // 间距
+    }
+    
+    return count;
+  }
+
+  /// 构建列表项
+  Widget _buildItem(BuildContext context, List<_RecordSection> sections, int index) {
+    int currentIndex = 0;
+    
+    // 总结
+    if (index == currentIndex) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: _buildSummary(context),
+      );
+    }
+    currentIndex++;
+    
+    // 遍历各分组
+    for (final section in sections) {
+      // 分组标题
+      if (index == currentIndex) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _buildSectionHeader(context, section.title, section.count),
+        );
+      }
+      currentIndex++;
+      
+      // 记录列表
+      for (int i = 0; i < section.records.length; i++) {
+        if (index == currentIndex) {
+          final info = section.records[i];
+          return RecordPreviewCard(
+            record: info.record,
+            trailing: section.showWarning
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '内容未变化',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  )
+                : null,
+          );
+        }
+        currentIndex++;
+      }
+      
+      // 间距
+      if (index == currentIndex) {
+        return const SizedBox(height: 16);
+      }
+      currentIndex++;
+    }
+    
+    return const SizedBox.shrink();
   }
 
   /// 标题栏
@@ -153,7 +236,7 @@ class PublishConfirmDialog extends StatelessWidget {
   }
 
   /// 总结
-  Widget _buildSummary(BuildContext context, int newCount, int replaceCount, int skipCount) {
+  Widget _buildSummary(BuildContext context) {
     return Text(
       '共选择 ${records.length} 条记录',
       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -213,5 +296,22 @@ class PublishConfirmDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 记录分组
+/// 
+/// 性能优化：用于 ListView.builder 的数据结构
+class _RecordSection {
+  final String title;
+  final int count;
+  final List<RecordPublishInfo> records;
+  final bool showWarning;
+
+  _RecordSection({
+    required this.title,
+    required this.count,
+    required this.records,
+    required this.showWarning,
+  });
 }
 

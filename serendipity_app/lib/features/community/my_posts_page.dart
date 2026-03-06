@@ -84,6 +84,10 @@ class MyPostsPage extends ConsumerWidget {
   /// 构建帖子列表
   /// 
   /// 调用者：build()
+  /// 
+  /// 性能优化：
+  /// - 添加 itemExtent 固定高度，提升滚动性能
+  /// - 减少布局计算开销
   Widget _buildPostsList(BuildContext context, WidgetRef ref, List<dynamic> posts) {
     // 空状态
     if (posts.isEmpty) {
@@ -109,6 +113,7 @@ class MyPostsPage extends ConsumerWidget {
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: posts.length,
+        itemExtent: 180.0, // 性能优化：估算平均高度
         itemBuilder: (context, index) {
           final post = posts[index];
           // 我的帖子页面，所有帖子都应该 isOwner = true
