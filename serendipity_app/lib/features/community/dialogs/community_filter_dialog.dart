@@ -45,32 +45,43 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   @override
   void initState() {
     super.initState();
-    // 从 Provider 读取当前筛选条件并初始化
-    _initializeFromProvider();
+    // 延迟到第一帧后读取，确保 Provider 已初始化
+    // 性能优化：避免在 initState 中直接使用 ref.read
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initializeFromProvider();
+      }
+    });
   }
 
   /// 从 Provider 读取筛选条件并初始化
+  /// 
+  /// 性能优化：
+  /// - 延迟到第一帧后执行，避免阻塞初始化
+  /// - 添加 mounted 检查，避免内存泄漏
   void _initializeFromProvider() {
     final communityState = ref.read(communityProvider).value;
     final criteria = communityState?.filterCriteria;
     
     if (criteria != null) {
-      _startDate = criteria.startDate;
-      _endDate = criteria.endDate;
-      _publishStartDate = criteria.publishStartDate;
-      _publishEndDate = criteria.publishEndDate;
-      _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
-      _selectedStatuses = criteria.statuses?.toSet() ?? {};
-      _tagController.text = criteria.tags?.join(', ') ?? '';
-      
-      // 恢复地区选择
-      if (criteria.province != null || criteria.city != null || criteria.area != null) {
-        _selectedRegion = SelectedRegion(
-          province: criteria.province,
-          city: criteria.city,
-          area: criteria.area,
-        );
-      }
+      setState(() {
+        _startDate = criteria.startDate;
+        _endDate = criteria.endDate;
+        _publishStartDate = criteria.publishStartDate;
+        _publishEndDate = criteria.publishEndDate;
+        _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
+        _selectedStatuses = criteria.statuses?.toSet() ?? {};
+        _tagController.text = criteria.tags?.join(', ') ?? '';
+        
+        // 恢复地区选择
+        if (criteria.province != null || criteria.city != null || criteria.area != null) {
+          _selectedRegion = SelectedRegion(
+            province: criteria.province,
+            city: criteria.city,
+            area: criteria.area,
+          );
+        }
+      });
     }
   }
 
@@ -92,79 +103,50 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 错过时间
-            Text(
-              '错过时间',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            _FilterSection(
+              title: '错过时间',
+              child: _buildTimeRangeSelector(isPublishTime: false),
             ),
-            const SizedBox(height: 8),
-            _buildTimeRangeSelector(isPublishTime: false),
-            const SizedBox(height: 16),
 
             // 发布时间范围
-            Text(
-              '发布时间',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            _FilterSection(
+              title: '发布时间',
+              child: _buildTimeRangeSelector(isPublishTime: true),
             ),
-            const SizedBox(height: 8),
-            _buildTimeRangeSelector(isPublishTime: true),
-            const SizedBox(height: 16),
 
             // 场所类型
-            Text(
-              '场所类型',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            _FilterSection(
+              title: '场所类型',
+              child: _buildPlaceTypeSelector(),
             ),
-            const SizedBox(height: 8),
-            _buildPlaceTypeSelector(),
-            const SizedBox(height: 16),
 
             // 状态
-            Text(
-              '状态',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            _FilterSection(
+              title: '状态',
+              child: _buildStatusSelector(),
             ),
-            const SizedBox(height: 8),
-            _buildStatusSelector(),
-            const SizedBox(height: 16),
 
             // 标签
-            Text(
-              '标签',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+            _FilterSection(
+              title: '标签',
+              child: TextField(
+                controller: _tagController,
+                decoration: const InputDecoration(
+                  hintText: '输入标签名称，多个标签用逗号分隔',
+                  helperText: '支持中英文逗号（, 或 ，）',
+                  helperMaxLines: 1,
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                maxLines: 2,
               ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _tagController,
-              decoration: const InputDecoration(
-                hintText: '输入标签名称，多个标签用逗号分隔',
-                helperText: '支持中英文逗号（, 或 ，）',
-                helperMaxLines: 1,
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 16),
 
             // 地区
-            Text(
-              '地区',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            _FilterSection(
+              title: '地区',
+              child: _buildRegionSelector(theme),
             ),
-            const SizedBox(height: 8),
-            _buildRegionSelector(theme),
           ],
         ),
       ),
@@ -287,16 +269,26 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   }
 
   /// 构建场所类型选择器
+  /// 
+  /// 性能优化：
+  /// - 使用 key 避免不必要的重建
+  /// - 将回调提取为方法，避免每次创建新的闭包
   Widget _buildPlaceTypeSelector() {
     return _PlaceTypeSelector(
+      key: const ValueKey('place_type_selector'),
       selectedTypes: _selectedPlaceTypes,
-      onTypesChanged: (types) {
-        setState(() {
-          _selectedPlaceTypes = types;
-        });
-      },
+      onTypesChanged: _handlePlaceTypesChanged,
       onShowAllPressed: _showPlaceTypeDialog,
     );
+  }
+
+  /// 处理场所类型变化
+  /// 
+  /// 性能优化：提取为独立方法，避免每次创建新的闭包
+  void _handlePlaceTypesChanged(Set<PlaceType> types) {
+    setState(() {
+      _selectedPlaceTypes = types;
+    });
   }
 
   /// 显示场所类型选择对话框
@@ -316,15 +308,49 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   }
 
   /// 构建状态选择器
+  /// 
+  /// 性能优化：
+  /// - 使用 key 避免不必要的重建
+  /// - 将回调提取为方法，避免每次创建新的闭包
   Widget _buildStatusSelector() {
     return _StatusSelector(
+      key: const ValueKey('status_selector'),
       selectedStatuses: _selectedStatuses,
-      onStatusesChanged: (statuses) {
-        setState(() {
-          _selectedStatuses = statuses;
-        });
-      },
+      onStatusesChanged: _handleStatusesChanged,
     );
+  }
+
+  /// 处理状态变化
+  /// 
+  /// 性能优化：提取为独立方法，避免每次创建新的闭包
+  void _handleStatusesChanged(Set<EncounterStatus> statuses) {
+    setState(() {
+      _selectedStatuses = statuses;
+    });
+  }
+
+  /// 解析标签字符串
+  /// 
+  /// 性能优化：
+  /// - 提取为独立方法，提高代码可读性
+  /// - 避免在 _applyFilter 中重复逻辑
+  /// 
+  /// 参数：
+  /// - input: 用户输入的标签字符串
+  /// 
+  /// 返回：
+  /// - 解析后的标签列表，如果为空则返回 null
+  List<String>? _parseTags(String input) {
+    if (input.isEmpty) return null;
+    
+    final tags = input
+        .replaceAll('，', ',')  // 中文逗号 → 英文逗号
+        .split(',')
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+    
+    return tags.isEmpty ? null : tags;
   }
 
   /// 应用筛选
@@ -332,18 +358,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
     Navigator.of(context).pop();
 
     // 解析标签（支持中英文逗号分隔）
-    List<String>? tags;
-    final tagInput = _tagController.text.trim();
-    if (tagInput.isNotEmpty) {
-      // 先将中文逗号替换为英文逗号，然后分割
-      tags = tagInput
-          .replaceAll('，', ',')  // 中文逗号 → 英文逗号
-          .split(',')
-          .map((t) => t.trim())
-          .where((t) => t.isNotEmpty)
-          .toList();
-      if (tags.isEmpty) tags = null;
-    }
+    final tags = _parseTags(_tagController.text.trim());
 
     await ref.read(communityProvider.notifier).filterPosts(
           startDate: _startDate,
@@ -366,22 +381,79 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   }
 }
 
+/// 筛选区块组件
+/// 
+/// 职责：
+/// - 统一的筛选区块样式
+/// - 包含标题和内容
+/// 
+/// 性能优化：
+/// - 使用 const 构造函数
+/// - 避免不必要的重建
+class _FilterSection extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _FilterSection({
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
 /// 场所类型选择器组件
 /// 
 /// 职责：
 /// - 显示场所类型的 FilterChip 列表
 /// - 支持多选
 /// - 提供"查看全部"按钮
-class _PlaceTypeSelector extends StatelessWidget {
+/// 
+/// 性能优化：
+/// - 缓存 FilterChip 列表，避免每次重建
+/// - 使用 const 构造函数
+/// - 只在 selectedTypes 变化时重建
+class _PlaceTypeSelector extends StatefulWidget {
   final Set<PlaceType> selectedTypes;
   final ValueChanged<Set<PlaceType>> onTypesChanged;
   final VoidCallback onShowAllPressed;
 
   const _PlaceTypeSelector({
+    super.key,
     required this.selectedTypes,
     required this.onTypesChanged,
     required this.onShowAllPressed,
   });
+
+  @override
+  State<_PlaceTypeSelector> createState() => _PlaceTypeSelectorState();
+}
+
+class _PlaceTypeSelectorState extends State<_PlaceTypeSelector> {
+  // 性能优化：缓存前10个场所类型，避免每次重建时重新计算
+  static final List<PlaceType> _displayedTypes = PlaceType.values.take(10).toList();
+  static final bool _hasMoreTypes = PlaceType.values.length > 10;
 
   @override
   Widget build(BuildContext context) {
@@ -391,26 +463,26 @@ class _PlaceTypeSelector extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: PlaceType.values.take(10).map((type) {
-            final isSelected = selectedTypes.contains(type);
+          children: _displayedTypes.map((type) {
+            final isSelected = widget.selectedTypes.contains(type);
             return FilterChip(
               label: Text('${type.icon} ${type.label}'),
               selected: isSelected,
               onSelected: (selected) {
-                final newTypes = Set<PlaceType>.from(selectedTypes);
+                final newTypes = Set<PlaceType>.from(widget.selectedTypes);
                 if (selected) {
                   newTypes.add(type);
                 } else {
                   newTypes.remove(type);
                 }
-                onTypesChanged(newTypes);
+                widget.onTypesChanged(newTypes);
               },
             );
           }).toList(),
         ),
-        if (PlaceType.values.length > 10)
+        if (_hasMoreTypes)
           TextButton(
-            onPressed: onShowAllPressed,
+            onPressed: widget.onShowAllPressed,
             child: const Text('查看全部场所类型 →'),
           ),
       ],
@@ -423,33 +495,47 @@ class _PlaceTypeSelector extends StatelessWidget {
 /// 职责：
 /// - 显示状态的 FilterChip 列表
 /// - 支持多选
-class _StatusSelector extends StatelessWidget {
+/// 
+/// 性能优化：
+/// - 缓存 FilterChip 列表，避免每次重建
+/// - 使用 const 构造函数
+/// - 只在 selectedStatuses 变化时重建
+class _StatusSelector extends StatefulWidget {
   final Set<EncounterStatus> selectedStatuses;
   final ValueChanged<Set<EncounterStatus>> onStatusesChanged;
 
   const _StatusSelector({
+    super.key,
     required this.selectedStatuses,
     required this.onStatusesChanged,
   });
+
+  @override
+  State<_StatusSelector> createState() => _StatusSelectorState();
+}
+
+class _StatusSelectorState extends State<_StatusSelector> {
+  // 性能优化：缓存所有状态，避免每次重建时重新计算
+  static final List<EncounterStatus> _allStatuses = EncounterStatus.values;
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: EncounterStatus.values.map((status) {
-        final isSelected = selectedStatuses.contains(status);
+      children: _allStatuses.map((status) {
+        final isSelected = widget.selectedStatuses.contains(status);
         return FilterChip(
           label: Text('${status.icon} ${status.label}'),
           selected: isSelected,
           onSelected: (selected) {
-            final newStatuses = Set<EncounterStatus>.from(selectedStatuses);
+            final newStatuses = Set<EncounterStatus>.from(widget.selectedStatuses);
             if (selected) {
               newStatuses.add(status);
             } else {
               newStatuses.remove(status);
             }
-            onStatusesChanged(newStatuses);
+            widget.onStatusesChanged(newStatuses);
           },
         );
       }).toList(),

@@ -189,6 +189,10 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
   }
 
   /// 构建搜索结果
+  /// 
+  /// 性能优化：
+  /// - 添加 itemExtent 固定高度，提升滚动性能
+  /// - 减少布局计算开销
   Widget _buildSearchResults(ThemeData theme) {
     final searchResults = ref.watch(regionSearchProvider(_searchKeyword));
 
@@ -205,6 +209,7 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
 
     return ListView.builder(
       itemCount: searchResults.length,
+      itemExtent: 56.0, // 性能优化：固定 ListTile 高度（带 trailing 的 ListTile 稍高）
       itemBuilder: (context, index) {
         final region = searchResults[index];
         return ListTile(
@@ -247,6 +252,10 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
   }
 
   /// 构建省份列表
+  /// 
+  /// 性能优化：
+  /// - 添加 itemExtent 固定高度，提升滚动性能
+  /// - 减少布局计算开销
   Widget _buildProvinceList(ThemeData theme) {
     final provinces = ref.watch(provincesProvider);
 
@@ -258,6 +267,7 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
       ),
       child: ListView.builder(
         itemCount: provinces.length,
+        itemExtent: 48.0, // 性能优化：固定 ListTile 高度
         itemBuilder: (context, index) {
           final province = provinces[index];
           final isSelected = _selectedRegion.province == province.name;
@@ -285,6 +295,10 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
   }
 
   /// 构建城市列表
+  /// 
+  /// 性能优化：
+  /// - 添加 itemExtent 固定高度，提升滚动性能
+  /// - 减少布局计算开销
   Widget _buildCityList(ThemeData theme) {
     final cities = ref.watch(citiesProvider(_selectedRegion.province));
 
@@ -296,6 +310,7 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
       ),
       child: ListView.builder(
         itemCount: cities.length,
+        itemExtent: 48.0, // 性能优化：固定 ListTile 高度
         itemBuilder: (context, index) {
           final city = cities[index];
           final isSelected = _selectedRegion.city == city.name;
@@ -326,6 +341,10 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
   }
 
   /// 构建区县列表
+  /// 
+  /// 性能优化：
+  /// - 添加 itemExtent 固定高度，提升滚动性能
+  /// - 减少布局计算开销
   Widget _buildAreaList(ThemeData theme) {
     final areas = ref.watch(areasProvider((
       province: _selectedRegion.province!,
@@ -334,6 +353,7 @@ class _RegionPickerDialogState extends ConsumerState<RegionPickerDialog> {
 
     return ListView.builder(
       itemCount: areas.length,
+      itemExtent: 48.0, // 性能优化：固定 ListTile 高度
       itemBuilder: (context, index) {
         final area = areas[index];
         final isSelected = _selectedRegion.area == area;
