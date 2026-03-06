@@ -173,14 +173,16 @@ class CommunityPostCard extends StatelessWidget {
   Widget _buildTags(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: post.tags.map((tagWithNote) {
-            return Container(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: post.tags.map((tagWithNote) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 标签名称
+            Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface.withValues(alpha: 0.5),
@@ -190,24 +192,23 @@ class CommunityPostCard extends StatelessWidget {
                 tagWithNote.tag,
                 style: theme.textTheme.bodySmall,
               ),
-            );
-          }).toList(),
-        ),
-        
-        // 标签备注（如果有）
-        ...post.tags.where((tag) => tag.note != null && tag.note!.isNotEmpty).map((tagWithNote) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              '${tagWithNote.tag}：${tagWithNote.note}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
-                fontStyle: FontStyle.italic,
-              ),
             ),
-          );
-        }),
-      ],
+            
+            // 标签备注（如果有）
+            if (tagWithNote.note != null && tagWithNote.note!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(left: 12, top: 4),
+                child: Text(
+                  '备注：${tagWithNote.note}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+          ],
+        );
+      }).toList(),
     );
   }
 
