@@ -57,7 +57,7 @@ class CommunityPostCard extends StatelessWidget {
     );
   }
 
-  /// 构建头部（时间 + 状态 + 菜单按钮）
+  /// 构建头部（时间 + 状态 + 删除按钮）
   /// 
   /// 性能优化：
   /// - 提取为独立方法，提高代码可读性
@@ -93,27 +93,13 @@ class CommunityPostCard extends StatelessWidget {
           ],
         ),
         
-        // 菜单按钮（仅自己的帖子显示）
+        // 删除按钮（仅自己的帖子显示）
         if (onDelete != null)
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'delete') {
-                onDelete?.call();
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('删除', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            color: theme.colorScheme.error,
+            tooltip: '删除',
+            onPressed: onDelete,
           ),
       ],
     );
