@@ -139,6 +139,37 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     });
   }
 
+  /// 静默刷新帖子列表（不显示 loading 状态）
+  /// 
+  /// 用于发布/删除帖子后的刷新，避免页面闪烁
+  /// 
+  /// 调用者：
+  /// - publishPost（发布后刷新）
+  /// - deletePost（删除后刷新）
+  Future<void> refreshSilently() async {
+    final currentState = state.value;
+    if (currentState == null) {
+      // 如果当前没有数据，使用普通刷新
+      await refresh();
+      return;
+    }
+
+    _lastTimestamp = null;
+    
+    try {
+      final posts = await _loadPosts();
+      state = AsyncValue.data(CommunityState(
+        posts: posts,
+        isFiltering: false,
+        hasMore: posts.length >= 20,
+        filterCriteria: null,
+      ));
+    } catch (e) {
+      // 静默刷新失败，保持当前状态不变（不影响用户体验）
+      // 生产环境应记录错误日志
+    }
+  }
+
   /// 加载更多帖子
   /// 
   /// 调用者：CommunityPage（滚动到底部）
@@ -209,8 +240,8 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
           // 成就检测失败不影响发布
         }
 
-        // 刷新帖子列表
-        await refresh();
+        // 静默刷新帖子列表（避免页面闪烁）
+        await refreshSilently();
       }
       
       return replaced;
@@ -276,8 +307,8 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
       }
     }
 
-    // 统一刷新一次
-    await refresh();
+    // 统一静默刷新一次（避免页面闪烁）
+    await refreshSilently();
 
     return (successCount: successCount, replacedCount: replacedCount);
   }
@@ -325,8 +356,8 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
       // 删除帖子
       await _repository.deletePost(postId, currentUser.id);
 
-      // 刷新帖子列表
-      await refresh();
+      // 静默刷新帖子列表（避免页面闪烁）
+      await refreshSilently();
     } catch (e) {
       // 使用 AuthErrorHelper 清理异常前缀
       throw Exception(AuthErrorHelper.extractErrorMessage(e));
