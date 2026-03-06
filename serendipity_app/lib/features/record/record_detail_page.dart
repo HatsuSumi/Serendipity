@@ -667,10 +667,11 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   /// 调用者：_handleMenuAction()
   Future<void> _publishToCommunity(BuildContext context) async {
     // 步骤1：显示警告对话框
-    await PublishWarningDialog.show(
-      context,
-      onConfirm: () => _publishToCommunityAfterWarning(context),
-    );
+    final shouldPublish = await PublishWarningDialog.show(context, ref);
+    
+    if (shouldPublish) {
+      await _publishToCommunityAfterWarning(context);
+    }
   }
 
   /// 警告确认后的发布流程

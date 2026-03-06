@@ -32,6 +32,7 @@ class UserSettings {
   
   // 社区设置
   final bool autoPublishToCommunity;
+  final bool hidePublishWarning;
   
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -55,6 +56,7 @@ class UserSettings {
     required this.checkInVibrationEnabled,
     required this.checkInConfettiEnabled,
     required this.autoPublishToCommunity,
+    required this.hidePublishWarning,
     required this.createdAt,
     required this.updatedAt,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
@@ -111,6 +113,7 @@ class UserSettings {
       checkInVibrationEnabled: json['checkInVibrationEnabled'] as bool? ?? true,
       checkInConfettiEnabled: json['checkInConfettiEnabled'] as bool? ?? true,
       autoPublishToCommunity: json['autoPublishToCommunity'] as bool,
+      hidePublishWarning: json['hidePublishWarning'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -140,6 +143,7 @@ class UserSettings {
       'checkInVibrationEnabled': checkInVibrationEnabled,
       'checkInConfettiEnabled': checkInConfettiEnabled,
       'autoPublishToCommunity': autoPublishToCommunity,
+      'hidePublishWarning': hidePublishWarning,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -182,6 +186,7 @@ class UserSettings {
     bool? checkInVibrationEnabled,
     bool? checkInConfettiEnabled,
     bool? autoPublishToCommunity,
+    bool? hidePublishWarning,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -204,6 +209,7 @@ class UserSettings {
       checkInVibrationEnabled: checkInVibrationEnabled ?? this.checkInVibrationEnabled,
       checkInConfettiEnabled: checkInConfettiEnabled ?? this.checkInConfettiEnabled,
       autoPublishToCommunity: autoPublishToCommunity ?? this.autoPublishToCommunity,
+      hidePublishWarning: hidePublishWarning ?? this.hidePublishWarning,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -237,6 +243,7 @@ class UserSettings {
         other.checkInVibrationEnabled == checkInVibrationEnabled &&
         other.checkInConfettiEnabled == checkInConfettiEnabled &&
         other.autoPublishToCommunity == autoPublishToCommunity &&
+        other.hidePublishWarning == hidePublishWarning &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -261,6 +268,7 @@ class UserSettings {
         checkInVibrationEnabled.hashCode ^
         checkInConfettiEnabled.hashCode ^
         autoPublishToCommunity.hashCode ^
+        hidePublishWarning.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }

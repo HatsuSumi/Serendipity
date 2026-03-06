@@ -251,10 +251,11 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
   /// 
   /// 调用者：发布按钮的 onPressed
   Future<void> _showWarningBeforePublish() async {
-    await PublishWarningDialog.show(
-      context,
-      onConfirm: _handleConfirm,
-    );
+    final shouldPublish = await PublishWarningDialog.show(context, ref);
+    
+    if (shouldPublish) {
+      await _handleConfirm();
+    }
   }
 
   /// 处理确认

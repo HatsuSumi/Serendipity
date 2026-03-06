@@ -20,6 +20,7 @@ import 'widgets/place_history_dialog.dart';
 import 'widgets/tags_section.dart';
 import 'widgets/weather_selection_section.dart';
 import 'widgets/location_permission_dialog.dart';
+import '../community/dialogs/publish_warning_dialog.dart';
 
 /// 创建/编辑记录页面
 class CreateRecordPage extends ConsumerStatefulWidget {
@@ -293,13 +294,24 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       return;
     }
 
-    // Fail Fast: 如果勾选了"发布到社区"，检查登录状态
+    // Fail Fast: 如果勾选了"发布到社区"，先显示警告对话框
     if (_publishToCommunity) {
       final authState = ref.read(authProvider);
       final currentUser = authState.value;
       
       if (currentUser == null) {
         MessageHelper.showError(context, '请先登录后再发布到树洞');
+        return;
+      }
+      
+      // 显示警告对话框，用户确认后才继续保存
+      final shouldPublish = await PublishWarningDialog.show(context, ref);
+      
+      if (!shouldPublish) {
+        // 用户取消发布，取消勾选
+        setState(() {
+          _publishToCommunity = false;
+        });
         return;
       }
     }
@@ -376,8 +388,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         await ref.read(recordsProvider.notifier).saveRecord(record);
       }
 
-      // 如果勾选了"发布到树洞"，发布到社区
-      if (_publishToCommunity) {
+      // 如果勾选了"发布到树洞"，发布到社区（已经通过警告对话框确认）
+      if (_publishToCommunity && mounted) {
         // 编辑模式下，如果之前已发布过（_publishStatus 不是 'can_publish'），则需要 forceReplace
         final forceReplace = widget.isEditMode && _publishStatus != 'can_publish';
         await ref.read(communityProvider.notifier).publishPost(record, forceReplace: forceReplace);

@@ -393,6 +393,12 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.notifications_off_outlined, color: Colors.blue),
+            title: const Text('重置对话框提醒'),
+            subtitle: const Text('重新显示"发布到社区"警告对话框'),
+            onTap: () => _showResetDialogWarningDialog(context, ref),
+          ),
+          ListTile(
             leading: const Icon(Icons.refresh, color: Colors.orange),
             title: const Text('重置所有成就'),
             subtitle: const Text('清空所有已解锁的成就和进度'),
@@ -1259,6 +1265,39 @@ class SettingsPage extends ConsumerWidget {
                   (route) => false,
                 );
               }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue,
+            ),
+            child: const Text('确定重置'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示重置对话框警告确认对话框
+  void _showResetDialogWarningDialog(BuildContext context, WidgetRef ref) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重置对话框提醒'),
+        content: const Text('确定要重置"发布到社区"警告对话框的"不再提示"设置吗？\n\n重置后，下次发布时将重新显示警告对话框。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(userSettingsProvider.notifier).updateHidePublishWarning(false),
+                successMessage: '对话框提醒已重置',
+                errorMessagePrefix: '重置失败',
+              );
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.blue,

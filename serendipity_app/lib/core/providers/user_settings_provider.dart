@@ -57,6 +57,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       checkInVibrationEnabled: true,
       checkInConfettiEnabled: true,
       autoPublishToCommunity: false,
+      hidePublishWarning: false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -174,6 +175,22 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   Future<void> updateCheckInConfettiEnabled(bool enabled) async {
     final updated = state.copyWith(
       checkInConfettiEnabled: enabled,
+      updatedAt: DateTime.now(),
+    );
+
+    await _storageService.saveUserSettings(updated);
+    state = updated;
+  }
+
+  /// 更新发布警告隐藏开关
+  /// 
+  /// [hide] 是否隐藏发布警告对话框
+  /// 
+  /// 调用者：
+  /// - PublishWarningDialog（用户勾选"不再提示"时）
+  Future<void> updateHidePublishWarning(bool hide) async {
+    final updated = state.copyWith(
+      hidePublishWarning: hide,
       updatedAt: DateTime.now(),
     );
 

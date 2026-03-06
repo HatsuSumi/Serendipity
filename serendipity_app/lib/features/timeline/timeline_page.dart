@@ -556,14 +556,15 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   /// 调用者：_handleMenuAction()
   void _showPublishToCommunityDialog(BuildContext context, WidgetRef ref, EncounterRecord record) async {
     // 步骤1：显示警告对话框
-    await PublishWarningDialog.show(
-      context,
-      onConfirm: () => _publishToCommunityAfterWarning(context, ref, record),
-    );
+    final shouldPublish = await PublishWarningDialog.show(context, ref);
+    
+    if (shouldPublish) {
+      await _publishToCommunityAfterWarning(context, ref, record);
+    }
   }
 
   /// 警告确认后的发布流程
-  void _publishToCommunityAfterWarning(BuildContext context, WidgetRef ref, EncounterRecord record) async {
+  Future<void> _publishToCommunityAfterWarning(BuildContext context, WidgetRef ref, EncounterRecord record) async {
     final communityNotifier = ref.read(communityProvider.notifier);
     
     try {
