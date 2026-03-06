@@ -143,6 +143,11 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// 
   /// 用于发布/删除帖子后的刷新，避免页面闪烁
   /// 
+  /// 优化说明：
+  /// - 使用 AsyncValue.guard 自动捕获错误
+  /// - 失败时保持当前状态不变
+  /// - 利用 Riverpod 的内置错误处理机制
+  /// 
   /// 调用者：
   /// - publishPost（发布后刷新）
   /// - deletePost（删除后刷新）
@@ -156,18 +161,22 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
 
     _lastTimestamp = null;
     
-    try {
+    // 使用 AsyncValue.guard，它会自动捕获错误
+    final result = await AsyncValue.guard(() async {
       final posts = await _loadPosts();
-      state = AsyncValue.data(CommunityState(
+      return CommunityState(
         posts: posts,
         isFiltering: false,
         hasMore: posts.length >= 20,
         filterCriteria: null,
-      ));
-    } catch (e) {
-      // 静默刷新失败，保持当前状态不变（不影响用户体验）
-      // 生产环境应记录错误日志
+      );
+    });
+    
+    // 只在成功时更新状态，失败时保持当前状态不变
+    if (result.hasValue) {
+      state = result;
     }
+    // 失败时什么都不做，保持当前状态，用户仍可看到旧数据
   }
 
   /// 加载更多帖子
