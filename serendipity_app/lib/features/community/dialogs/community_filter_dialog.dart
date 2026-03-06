@@ -288,35 +288,14 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
 
   /// 构建场所类型选择器
   Widget _buildPlaceTypeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: PlaceType.values.take(10).map((type) {
-            final isSelected = _selectedPlaceTypes.contains(type);
-            return FilterChip(
-              label: Text('${type.icon} ${type.label}'),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedPlaceTypes.add(type);
-                  } else {
-                    _selectedPlaceTypes.remove(type);
-                  }
-                });
-              },
-            );
-          }).toList(),
-        ),
-        if (PlaceType.values.length > 10)
-          TextButton(
-            onPressed: _showPlaceTypeDialog,
-            child: const Text('查看全部场所类型 →'),
-          ),
-      ],
+    return _PlaceTypeSelector(
+      selectedTypes: _selectedPlaceTypes,
+      onTypesChanged: (types) {
+        setState(() {
+          _selectedPlaceTypes = types;
+        });
+      },
+      onShowAllPressed: _showPlaceTypeDialog,
     );
   }
 
@@ -338,25 +317,13 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
 
   /// 构建状态选择器
   Widget _buildStatusSelector() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: EncounterStatus.values.map((status) {
-        final isSelected = _selectedStatuses.contains(status);
-        return FilterChip(
-          label: Text('${status.icon} ${status.label}'),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                _selectedStatuses.add(status);
-              } else {
-                _selectedStatuses.remove(status);
-              }
-            });
-          },
-        );
-      }).toList(),
+    return _StatusSelector(
+      selectedStatuses: _selectedStatuses,
+      onStatusesChanged: (statuses) {
+        setState(() {
+          _selectedStatuses = statuses;
+        });
+      },
     );
   }
 
@@ -396,6 +363,97 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   Future<void> _clearFilter() async {
     Navigator.of(context).pop();
     await ref.read(communityProvider.notifier).clearFilter();
+  }
+}
+
+/// 场所类型选择器组件
+/// 
+/// 职责：
+/// - 显示场所类型的 FilterChip 列表
+/// - 支持多选
+/// - 提供"查看全部"按钮
+class _PlaceTypeSelector extends StatelessWidget {
+  final Set<PlaceType> selectedTypes;
+  final ValueChanged<Set<PlaceType>> onTypesChanged;
+  final VoidCallback onShowAllPressed;
+
+  const _PlaceTypeSelector({
+    required this.selectedTypes,
+    required this.onTypesChanged,
+    required this.onShowAllPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: PlaceType.values.take(10).map((type) {
+            final isSelected = selectedTypes.contains(type);
+            return FilterChip(
+              label: Text('${type.icon} ${type.label}'),
+              selected: isSelected,
+              onSelected: (selected) {
+                final newTypes = Set<PlaceType>.from(selectedTypes);
+                if (selected) {
+                  newTypes.add(type);
+                } else {
+                  newTypes.remove(type);
+                }
+                onTypesChanged(newTypes);
+              },
+            );
+          }).toList(),
+        ),
+        if (PlaceType.values.length > 10)
+          TextButton(
+            onPressed: onShowAllPressed,
+            child: const Text('查看全部场所类型 →'),
+          ),
+      ],
+    );
+  }
+}
+
+/// 状态选择器组件
+/// 
+/// 职责：
+/// - 显示状态的 FilterChip 列表
+/// - 支持多选
+class _StatusSelector extends StatelessWidget {
+  final Set<EncounterStatus> selectedStatuses;
+  final ValueChanged<Set<EncounterStatus>> onStatusesChanged;
+
+  const _StatusSelector({
+    required this.selectedStatuses,
+    required this.onStatusesChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: EncounterStatus.values.map((status) {
+        final isSelected = selectedStatuses.contains(status);
+        return FilterChip(
+          label: Text('${status.icon} ${status.label}'),
+          selected: isSelected,
+          onSelected: (selected) {
+            final newStatuses = Set<EncounterStatus>.from(selectedStatuses);
+            if (selected) {
+              newStatuses.add(status);
+            } else {
+              newStatuses.remove(status);
+            }
+            onStatusesChanged(newStatuses);
+          },
+        );
+      }).toList(),
+    );
   }
 }
 

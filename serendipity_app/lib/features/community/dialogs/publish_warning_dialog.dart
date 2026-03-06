@@ -93,6 +93,7 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
   /// 启动倒计时
   void _startCountdown() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      // Fail Fast: 如果 Widget 已 dispose，立即取消 Timer
       if (!mounted) {
         timer.cancel();
         return;
@@ -103,8 +104,11 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
         if (_countdown <= 0) {
           _countdownFinished = true;
           timer.cancel();
-          // 倒计时结束，标记用户已看过警告
-          ref.read(userSettingsProvider.notifier).markPublishWarningSeen();
+          
+          // 异步操作前再次检查 mounted（更保险）
+          if (mounted) {
+            ref.read(userSettingsProvider.notifier).markPublishWarningSeen();
+          }
         }
       });
     });
