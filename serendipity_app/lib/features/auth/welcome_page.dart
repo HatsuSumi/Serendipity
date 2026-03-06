@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/navigation_helper.dart';
-import '../home/main_navigation_page.dart';
 import 'widgets/auth_button.dart';
 import 'login_page.dart';
 import 'register_page.dart';

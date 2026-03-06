@@ -169,7 +169,7 @@ abstract class IRemoteDataRepository {
   /// - [records]：要检查的记录列表
   /// 
   /// 返回：
-  /// - Map<recordId, PublishStatus>：每条记录的发布状态
+  /// - `Map<recordId, PublishStatus>`：每条记录的发布状态
   /// 
   /// 调用者：
   /// - CommunityRepository.checkPublishStatus()

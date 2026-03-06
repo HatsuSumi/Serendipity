@@ -340,7 +340,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - 如果 records 为空，抛出 ArgumentError
   /// 
   /// 返回：
-  /// - Map<recordId, PublishStatus>：每条记录的发布状态
+  /// - `Map<recordId, PublishStatus>`：每条记录的发布状态
   /// 
   /// 调用者：PublishToCommunityDialog._handleConfirm()
   Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {

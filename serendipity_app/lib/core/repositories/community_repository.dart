@@ -101,7 +101,7 @@ class CommunityRepository {
   /// - 如果网络请求失败，抛出异常
   /// 
   /// 返回：
-  /// - Map<recordId, PublishStatus>：每条记录的发布状态
+  /// - `Map<recordId, PublishStatus>`：每条记录的发布状态
   /// 
   /// 调用者：PublishToCommunityDialog._handleConfirm()
   Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {

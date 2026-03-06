@@ -141,9 +141,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       state = AsyncValue.data(result.user);
       
       // 注册成功后触发数据同步
-      if (result.user != null) {
-        await _triggerSync(result.user!);
-      }
+      await _triggerSync(result.user);
       
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
@@ -261,9 +259,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       state = AsyncValue.data(result.user);
       
       // 注册成功后触发数据同步
-      if (result.user != null) {
-        await _triggerSync(result.user!);
-      }
+      await _triggerSync(result.user);
       
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {

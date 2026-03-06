@@ -478,6 +478,8 @@ void main() {
           checkInVibrationEnabled: true,
           checkInConfettiEnabled: true,
           autoPublishToCommunity: false,
+          hidePublishWarning: false,
+          hasSeenPublishWarning: false,
           createdAt: now,
           updatedAt: now,
         );

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
@@ -567,6 +569,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       }
       
       // 步骤2：显示警告对话框
+      if (!mounted) return;
       final shouldPublish = await PublishWarningDialog.show(context, ref);
       
       if (!shouldPublish) return;
@@ -574,7 +577,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       // 步骤3：根据状态执行发布
       if (status == 'need_confirm') {
         // 需要用户确认替换
-        if (!context.mounted) return;
+        if (!mounted) return;
         
         final confirmed = await DialogHelper.show<bool>(
           context: context,
@@ -597,16 +600,20 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         if (confirmed != true) return;
         
         // 用户确认，强制替换
+        if (!mounted) return;
+        final localContext = context;
         await AsyncActionHelper.execute(
-          context,
+          localContext,
           action: () => communityNotifier.publishPost(record, forceReplace: true),
           successMessage: '已发布到树洞',
           errorMessagePrefix: '发布失败',
         );
       } else {
         // 可以直接发布
+        if (!mounted) return;
+        final localContext = context;
         await AsyncActionHelper.execute(
-          context,
+          localContext,
           action: () => communityNotifier.publishPost(record),
           successMessage: '已发布到树洞',
           errorMessagePrefix: '发布失败',

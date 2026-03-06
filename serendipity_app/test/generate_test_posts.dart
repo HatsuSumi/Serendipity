@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -125,9 +127,9 @@ Map<String, dynamic> generateRandomPost(
     'recordId': 'test_record_$index',
     'timestamp': timestamp.toIso8601String(),
     if (hasAddress) 'address': _randomAddress(region, random),
-    if (hasAddress) 'province': region['province'],
-    if (hasAddress) 'city': region['city'],
-    if (hasAddress) 'area': region['area'],
+    if (hasAddress) 'province': region['province'] as String,
+    if (hasAddress) 'city': region['city'] as String,
+    if (hasAddress) 'area': region['area'] as String,
     'placeName': _randomPlaceName(placeType, random),
     'placeType': placeType,
     if (hasDescription) 'description': _randomDescription(status, random),
@@ -164,7 +166,7 @@ String _randomAddress(Map<String, dynamic> region, Random random) {
   final street = streets[random.nextInt(streets.length)];
   final number = random.nextInt(999) + 1;
   
-  return '${region['province']}${region['city']}${region['area']}${street}${number}号';
+  return '${region['province']}${region['city']}${region['area']}$street$number号';
 }
 
 /// 随机地点名称

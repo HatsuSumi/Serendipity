@@ -14,33 +14,35 @@ void main() {
 
       final post = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         address: '北京市朝阳区建国门外大街1号',
         placeName: '常去的那家咖啡馆',
         placeType: PlaceType.subway,
-        cityName: '北京市',
+        province: '北京市',
+        city: '北京市',
+        area: '朝阳区',
         description: '她在读《百年孤独》',
         tags: tags,
         status: EncounterStatus.missed,
-        isAnonymous: true,
+        isOwner: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
       );
 
       expect(post.id, 'post001');
-      expect(post.userId, 'user123');
       expect(post.recordId, 'record123');
       expect(post.address, '北京市朝阳区建国门外大街1号');
       expect(post.placeName, '常去的那家咖啡馆');
       expect(post.placeType, PlaceType.subway);
-      expect(post.cityName, '北京市');
+      expect(post.province, '北京市');
+      expect(post.city, '北京市');
+      expect(post.area, '朝阳区');
       expect(post.description, '她在读《百年孤独》');
       expect(post.tags.length, 2);
       expect(post.status, EncounterStatus.missed);
-      expect(post.isAnonymous, true);
+      expect(post.isOwner, true);
     });
 
     test('创建 CommunityPost 对象（最小信息）', () {
@@ -48,13 +50,11 @@ void main() {
 
       final post = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         description: '她在读《百年孤独》',
         tags: [],
         status: EncounterStatus.missed,
-        isAnonymous: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -63,8 +63,11 @@ void main() {
       expect(post.address, isNull);
       expect(post.placeName, isNull);
       expect(post.placeType, isNull);
-      expect(post.cityName, isNull);
+      expect(post.province, isNull);
+      expect(post.city, isNull);
+      expect(post.area, isNull);
       expect(post.tags.length, 0);
+      expect(post.isOwner, false);
     });
 
     test('toJson 转换（完整信息）', () {
@@ -75,17 +78,18 @@ void main() {
 
       final post = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         address: '北京市朝阳区建国门外大街1号',
         placeName: '常去的那家咖啡馆',
         placeType: PlaceType.subway,
-        cityName: '北京市',
+        province: '北京市',
+        city: '北京市',
+        area: '朝阳区',
         description: '她在读《百年孤独》',
         tags: tags,
         status: EncounterStatus.missed,
-        isAnonymous: true,
+        isOwner: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -94,16 +98,17 @@ void main() {
       final json = post.toJson();
 
       expect(json['id'], 'post001');
-      expect(json['userId'], 'user123');
       expect(json['recordId'], 'record123');
       expect(json['address'], '北京市朝阳区建国门外大街1号');
       expect(json['placeName'], '常去的那家咖啡馆');
       expect(json['placeType'], 'subway');
-      expect(json['cityName'], '北京市');
+      expect(json['province'], '北京市');
+      expect(json['city'], '北京市');
+      expect(json['area'], '朝阳区');
       expect(json['description'], '她在读《百年孤独》');
       expect(json['tags'], isList);
       expect(json['status'], EncounterStatus.missed.name);
-      expect(json['isAnonymous'], true);
+      expect(json['isOwner'], true);
     });
 
     test('toJson 转换（最小信息）', () {
@@ -111,13 +116,11 @@ void main() {
 
       final post = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         description: '她在读《百年孤独》',
         tags: [],
         status: EncounterStatus.missed,
-        isAnonymous: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -128,26 +131,29 @@ void main() {
       expect(json['address'], isNull);
       expect(json['placeName'], isNull);
       expect(json['placeType'], isNull);
-      expect(json['cityName'], isNull);
+      expect(json['province'], isNull);
+      expect(json['city'], isNull);
+      expect(json['area'], isNull);
       expect(json['tags'], isEmpty);
     });
 
     test('fromJson 转换（完整信息）', () {
       final json = {
         'id': 'post001',
-        'userId': 'user123',
         'recordId': 'record123',
         'timestamp': '2026-02-12T10:00:00.000',
         'address': '北京市朝阳区建国门外大街1号',
         'placeName': '常去的那家咖啡馆',
         'placeType': 'subway',
-        'cityName': '北京市',
+        'province': '北京市',
+        'city': '北京市',
+        'area': '朝阳区',
         'description': '她在读《百年孤独》',
         'tags': [
           {'tag': '长发', 'note': '光线不好，可能是深棕色'}
         ],
         'status': 'missed',
-        'isAnonymous': true,
+        'isOwner': true,
         'publishedAt': '2026-02-12T10:00:00.000',
         'createdAt': '2026-02-12T10:00:00.000',
         'updatedAt': '2026-02-12T10:00:00.000',
@@ -156,28 +162,31 @@ void main() {
       final post = CommunityPost.fromJson(json);
 
       expect(post.id, 'post001');
-      expect(post.userId, 'user123');
+      expect(post.recordId, 'record123');
       expect(post.address, '北京市朝阳区建国门外大街1号');
       expect(post.placeType, PlaceType.subway);
+      expect(post.province, '北京市');
+      expect(post.city, '北京市');
+      expect(post.area, '朝阳区');
       expect(post.tags.length, 1);
       expect(post.status, EncounterStatus.missed);
-      expect(post.isAnonymous, true);
+      expect(post.isOwner, true);
     });
 
     test('fromJson 转换（最小信息）', () {
       final json = {
         'id': 'post001',
-        'userId': 'user123',
         'recordId': 'record123',
         'timestamp': '2026-02-12T10:00:00.000',
         'address': null,
         'placeName': null,
         'placeType': null,
-        'cityName': null,
+        'province': null,
+        'city': null,
+        'area': null,
         'description': '她在读《百年孤独》',
         'tags': [],
-        'status': 1,
-        'isAnonymous': true,
+        'status': 'missed',
         'publishedAt': '2026-02-12T10:00:00.000',
         'createdAt': '2026-02-12T10:00:00.000',
         'updatedAt': '2026-02-12T10:00:00.000',
@@ -188,8 +197,11 @@ void main() {
       expect(post.address, isNull);
       expect(post.placeName, isNull);
       expect(post.placeType, isNull);
-      expect(post.cityName, isNull);
+      expect(post.province, isNull);
+      expect(post.city, isNull);
+      expect(post.area, isNull);
       expect(post.tags.length, 0);
+      expect(post.isOwner, false);
     });
 
     test('toJson 和 fromJson 往返转换', () {
@@ -200,15 +212,17 @@ void main() {
 
       final original = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         address: '北京市朝阳区建国门外大街1号',
         placeType: PlaceType.subway,
+        province: '北京市',
+        city: '北京市',
+        area: '朝阳区',
         description: '她在读《百年孤独》',
         tags: tags,
         status: EncounterStatus.missed,
-        isAnonymous: true,
+        isOwner: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -218,13 +232,15 @@ void main() {
       final restored = CommunityPost.fromJson(json);
 
       expect(restored.id, original.id);
-      expect(restored.userId, original.userId);
       expect(restored.recordId, original.recordId);
       expect(restored.address, original.address);
       expect(restored.placeType, original.placeType);
+      expect(restored.province, original.province);
+      expect(restored.city, original.city);
+      expect(restored.area, original.area);
       expect(restored.description, original.description);
       expect(restored.status, original.status);
-      expect(restored.isAnonymous, original.isAnonymous);
+      expect(restored.isOwner, original.isOwner);
     });
 
     test('copyWith 修改字段', () {
@@ -232,13 +248,11 @@ void main() {
 
       final original = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         description: '她在读《百年孤独》',
         tags: [],
         status: EncounterStatus.missed,
-        isAnonymous: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -247,11 +261,13 @@ void main() {
       final updated = original.copyWith(
         address: '北京市朝阳区建国门外大街1号',
         placeType: PlaceType.subway,
+        isOwner: true,
       );
 
       expect(updated.id, original.id);
       expect(updated.address, '北京市朝阳区建国门外大街1号');
       expect(updated.placeType, PlaceType.subway);
+      expect(updated.isOwner, true);
     });
 
     test('相等性比较', () {
@@ -259,13 +275,11 @@ void main() {
 
       final post1 = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         description: '她在读《百年孤独》',
         tags: [],
         status: EncounterStatus.missed,
-        isAnonymous: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -273,13 +287,11 @@ void main() {
 
       final post2 = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         description: '她在读《百年孤独》',
         tags: [],
         status: EncounterStatus.missed,
-        isAnonymous: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -287,13 +299,11 @@ void main() {
 
       final post3 = CommunityPost(
         id: 'post002',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         description: '她在读《百年孤独》',
         tags: [],
         status: EncounterStatus.missed,
-        isAnonymous: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -308,13 +318,12 @@ void main() {
 
       final post = CommunityPost(
         id: 'post001',
-        userId: 'user123',
         recordId: 'record123',
         timestamp: now,
         description: '她在读《百年孤独》',
         tags: [],
         status: EncounterStatus.missed,
-        isAnonymous: true,
+        isOwner: true,
         publishedAt: now,
         createdAt: now,
         updatedAt: now,

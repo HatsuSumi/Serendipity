@@ -2367,7 +2367,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     // 编辑模式：使用 ValueListenableBuilder 监听表单变化
     return ValueListenableBuilder<int>(
       valueListenable: _formChangedNotifier,
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         // 还在检查发布状态
         if (_publishStatus == null) {
           return ListTile(
