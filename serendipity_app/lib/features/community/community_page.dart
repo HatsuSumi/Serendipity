@@ -253,10 +253,6 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: posts.length + 1, // +1 for loading indicator
-        // 性能优化：估算平均高度（根据实际内容调整）
-        // 基础高度：时间(24) + 地点(20) + padding(32) ≈ 76
-        // 加上描述、标签等，平均约 150-200
-        itemExtent: 180.0,
         itemBuilder: (context, index) {
           // 加载更多指示器
           if (index == posts.length) {
