@@ -306,13 +306,14 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
     final confirmed = await _showPublishConfirmDialog(recordInfos);
     if (!confirmed) return;
     
-    // 步骤3：关闭选择对话框并保存父页面的 context
+    // 步骤3：执行发布（在关闭对话框之前）
     if (!mounted) return;
-    final parentContext = context;
-    Navigator.of(context).pop();
+    await _executePublish(recordInfos);
     
-    // 步骤4：执行发布（使用保存的 context）
-    await _executePublish(recordInfos, parentContext);
+    // 步骤4：发布成功后关闭选择对话框
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   /// 检查选中记录的发布状态
@@ -397,14 +398,12 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
   /// 
   /// 参数：
   /// - recordInfos: 记录发布信息列表
-  /// - parentContext: 父页面的 context（对话框关闭前保存）
   /// 
   /// 优化说明：
-  /// - 使用父页面的 context 显示成功消息，避免对话框关闭后 context 失效
-  Future<void> _executePublish(List<RecordPublishInfo> recordInfos, BuildContext parentContext) async {
-    // ignore: use_build_context_synchronously
+  /// - 在关闭对话框之前执行发布，context 始终有效
+  Future<void> _executePublish(List<RecordPublishInfo> recordInfos) async {
     await AsyncActionHelper.execute(
-      parentContext,
+      context,
       action: () async {
         final communityNotifier = ref.read(communityProvider.notifier);
         
@@ -421,8 +420,7 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
         final result = await communityNotifier.publishPosts(publishItems);
 
         // 显示成功消息
-        // ignore: use_build_context_synchronously
-        _showPublishSuccessMessage(result.successCount, result.replacedCount, parentContext);
+        _showPublishSuccessMessage(result.successCount, result.replacedCount);
       },
       errorMessagePrefix: '发布失败',
     );
@@ -433,17 +431,16 @@ class _PublishToCommunityDialogState extends ConsumerState<PublishToCommunityDia
   /// 参数：
   /// - successCount: 成功发布的数量
   /// - replacedCount: 替换旧帖的数量
-  /// - parentContext: 父页面的 context
-  void _showPublishSuccessMessage(int successCount, int replacedCount, BuildContext parentContext) {
+  void _showPublishSuccessMessage(int successCount, int replacedCount) {
     if (successCount > 0) {
       if (replacedCount > 0) {
         MessageHelper.showSuccess(
-          parentContext,
+          context,
           '已发布 $successCount 条记录（其中 $replacedCount 条替换了旧帖）',
         );
       } else {
         MessageHelper.showSuccess(
-          parentContext,
+          context,
           '已发布 $successCount 条记录',
         );
       }
