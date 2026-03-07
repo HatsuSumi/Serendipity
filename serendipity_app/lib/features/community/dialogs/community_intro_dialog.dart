@@ -98,6 +98,8 @@ class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> wit
             const SizedBox(height: 16),
             const Text('这种"也许"的不确定性，\n才是最美的遗憾。'),
             const SizedBox(height: 16),
+            const Text('双方都发布到树洞，\n但是双方都取不到联系。'),
+            const SizedBox(height: 16),
             const Text('有人说这个设计很"刀"，\n但这就是错过的本质——\n有些遗憾，\n注定无法弥补。'),
             const SizedBox(height: 16),
             const Text('有些错过，\n注定只能是错过。'),
