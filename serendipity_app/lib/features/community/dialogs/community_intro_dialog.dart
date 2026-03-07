@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/providers/user_settings_provider.dart';
+import '../../../core/mixins/countdown_mixin.dart';
 
 /// 社区介绍对话框
 /// 
@@ -20,40 +20,17 @@ class CommunityIntroDialog extends ConsumerStatefulWidget {
   ConsumerState<CommunityIntroDialog> createState() => _CommunityIntroDialogState();
 }
 
-class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> {
-  int _countdown = 5;
-  bool _countdownFinished = false;
-  Timer? _timer;
-
+class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> with CountdownMixin {
   @override
   void initState() {
     super.initState();
-    _startCountdown();
+    startCountdown();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    disposeCountdown();
     super.dispose();
-  }
-
-  /// 启动倒计时
-  void _startCountdown() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      // Fail Fast: 如果 Widget 已 dispose，立即取消 Timer
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      
-      setState(() {
-        _countdown--;
-        if (_countdown <= 0) {
-          _countdownFinished = true;
-          timer.cancel();
-        }
-      });
-    });
   }
 
   @override
@@ -105,7 +82,7 @@ class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> {
       ),
       actions: [
         FilledButton(
-          onPressed: _countdownFinished ? () async {
+          onPressed: countdownFinished ? () async {
             // 标记用户已看过介绍
             await ref.read(userSettingsProvider.notifier).markCommunityIntroSeen();
             
@@ -114,7 +91,7 @@ class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> {
             
             Navigator.of(context).pop();
           } : null,
-          child: Text(_countdownFinished ? '我知道了' : '我知道了 ($_countdown)'),
+          child: Text(countdownFinished ? '我知道了' : '我知道了 ($countdown)'),
         ),
       ],
     );

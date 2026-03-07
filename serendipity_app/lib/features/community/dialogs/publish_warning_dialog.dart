@@ -1,8 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/providers/user_settings_provider.dart';
+import '../../../core/mixins/countdown_mixin.dart';
 
 /// 发布警告对话框
 /// 
@@ -66,52 +66,29 @@ class PublishWarningDialog extends ConsumerStatefulWidget {
   }
 }
 
-class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
+class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> with CountdownMixin {
   bool _hideWarning = false;
-  int _countdown = 5;
-  bool _countdownFinished = false;
-  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     // 检查用户是否已看过警告，如果已看过则跳过倒计时
     final hasSeenWarning = ref.read(userSettingsProvider).hasSeenPublishWarning;
-    if (hasSeenWarning) {
-      _countdownFinished = true;
-    } else {
-      _startCountdown();
-    }
+    startCountdown(
+      skipCountdown: hasSeenWarning,
+      onFinished: () {
+        // 倒计时完成时标记用户已看过警告
+        if (mounted) {
+          ref.read(userSettingsProvider.notifier).markPublishWarningSeen();
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    disposeCountdown();
     super.dispose();
-  }
-
-  /// 启动倒计时
-  void _startCountdown() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      // Fail Fast: 如果 Widget 已 dispose，立即取消 Timer
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      
-      setState(() {
-        _countdown--;
-        if (_countdown <= 0) {
-          _countdownFinished = true;
-          timer.cancel();
-          
-          // 异步操作前再次检查 mounted（更保险）
-          if (mounted) {
-            ref.read(userSettingsProvider.notifier).markPublishWarningSeen();
-          }
-        }
-      });
-    });
   }
 
   @override
@@ -189,7 +166,7 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
           child: const Text('取消'),
         ),
         FilledButton(
-          onPressed: _countdownFinished ? () async {
+          onPressed: countdownFinished ? () async {
             // 如果勾选了"不再提示"，保存设置
             if (_hideWarning) {
               await ref.read(userSettingsProvider.notifier).updateHidePublishWarning(true);
@@ -200,7 +177,7 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
               widget.onConfirm();
             }
           } : null,
-          child: Text(_countdownFinished ? '确认发布' : '确认发布 ($_countdown)'),
+          child: Text(countdownFinished ? '确认发布' : '确认发布 ($countdown)'),
         ),
       ],
     );
@@ -211,7 +188,7 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
     // 检查用户是否已看过警告
     final hasSeenWarning = ref.read(userSettingsProvider).hasSeenPublishWarning;
     
-    if (!_countdownFinished && !hasSeenWarning) {
+    if (!countdownFinished && !hasSeenWarning) {
       // 首次打开且倒计时中，显示提示文本
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -229,7 +206,7 @@ class _PublishWarningDialogState extends ConsumerState<PublishWarningDialog> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                '请仔细阅读警告内容 ($_countdown 秒)',
+                '请仔细阅读警告内容 ($countdown 秒)',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
