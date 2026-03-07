@@ -1,4 +1,4 @@
-import { PrismaClient, CommunityPost } from '@prisma/client';
+import { PrismaClient, CommunityPost, Prisma } from '@prisma/client';
 import { CreateCommunityPostDto } from '../types/community.dto';
 import { toJsonValue } from '../utils/prisma-json';
 
@@ -174,7 +174,12 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     });
   }
 
-  // 带标签筛选的查询（使用原始 SQL）
+  // 带标签筛选的查询（使用 Prisma.sql 模板标签）
+  // 
+  // 设计原则：
+  // - 安全性优先：使用 Prisma.sql 防止 SQL 注入
+  // - 类型安全：利用 TypeScript 类型检查
+  // - 符合最佳实践：遵循 Prisma 官方推荐
   private async findByFiltersWithTags(filters: {
     startDate?: Date;
     endDate?: Date;
@@ -188,84 +193,64 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     statuses?: string[];
     limit: number;
   }): Promise<CommunityPost[]> {
-    const conditions: string[] = [];
-    const params: any[] = [];
-    let paramIndex = 1;
+    const conditions: Prisma.Sql[] = [];
 
     // 标签筛选（JSONB 查询，OR 逻辑：匹配任意一个标签即可）
     if (filters.tags && filters.tags.length > 0) {
-      const tagConditions = filters.tags.map(() => {
-        const condition = `EXISTS (SELECT 1 FROM jsonb_array_elements(tags) AS t WHERE t->>'tag' = $${paramIndex})`;
-        paramIndex++;
-        return condition;
-      });
-      conditions.push(`(${tagConditions.join(' OR ')})`);
-      params.push(...filters.tags);
+      const tagConditions = filters.tags.map(tag => 
+        Prisma.sql`EXISTS (SELECT 1 FROM jsonb_array_elements(tags) AS t WHERE t->>'tag' = ${tag})`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(tagConditions, ' OR ')})`);
     }
 
     // 错过时间范围筛选
     if (filters.startDate) {
-      conditions.push(`timestamp >= $${paramIndex}`);
-      params.push(filters.startDate);
-      paramIndex++;
+      conditions.push(Prisma.sql`timestamp >= ${filters.startDate}`);
     }
     if (filters.endDate) {
-      conditions.push(`timestamp <= $${paramIndex}`);
-      params.push(filters.endDate);
-      paramIndex++;
+      conditions.push(Prisma.sql`timestamp <= ${filters.endDate}`);
     }
 
     // 发布时间范围筛选
     if (filters.publishStartDate) {
-      conditions.push(`published_at >= $${paramIndex}`);
-      params.push(filters.publishStartDate);
-      paramIndex++;
+      conditions.push(Prisma.sql`published_at >= ${filters.publishStartDate}`);
     }
     if (filters.publishEndDate) {
-      conditions.push(`published_at <= $${paramIndex}`);
-      params.push(filters.publishEndDate);
-      paramIndex++;
+      conditions.push(Prisma.sql`published_at <= ${filters.publishEndDate}`);
     }
 
     // 省份筛选
     if (filters.province) {
-      conditions.push(`province = $${paramIndex}`);
-      params.push(filters.province);
-      paramIndex++;
+      conditions.push(Prisma.sql`province = ${filters.province}`);
     }
 
     // 城市筛选
     if (filters.city) {
-      conditions.push(`city = $${paramIndex}`);
-      params.push(filters.city);
-      paramIndex++;
+      conditions.push(Prisma.sql`city = ${filters.city}`);
     }
 
     // 区县筛选
     if (filters.area) {
-      conditions.push(`area = $${paramIndex}`);
-      params.push(filters.area);
-      paramIndex++;
+      conditions.push(Prisma.sql`area = ${filters.area}`);
     }
 
-    // 场所类型筛选
+    // 场所类型筛选（多选，OR 逻辑）
     if (filters.placeTypes && filters.placeTypes.length > 0) {
-      conditions.push(`place_type = ANY($${paramIndex})`);
-      params.push(filters.placeTypes);
-      paramIndex++;
+      conditions.push(Prisma.sql`place_type = ANY(${filters.placeTypes})`);
     }
 
-    // 状态筛选
+    // 状态筛选（多选，OR 逻辑）
     if (filters.statuses && filters.statuses.length > 0) {
-      conditions.push(`status = ANY($${paramIndex})`);
-      params.push(filters.statuses);
-      paramIndex++;
+      conditions.push(Prisma.sql`status = ANY(${filters.statuses})`);
     }
 
-    const whereClause =
-      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    // 构建 WHERE 子句
+    const whereClause = conditions.length > 0 
+      ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+      : Prisma.empty;
 
-    const query = `
+    // 构建完整查询（使用 Prisma.sql 模板标签）
+    const query = Prisma.sql`
       SELECT 
         id,
         user_id as "userId",
@@ -286,11 +271,10 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       FROM "community_posts"
       ${whereClause}
       ORDER BY published_at DESC
-      LIMIT $${paramIndex}
+      LIMIT ${filters.limit}
     `;
-    params.push(filters.limit);
 
-    return this.prisma.$queryRawUnsafe(query, ...params);
+    return this.prisma.$queryRaw<CommunityPost[]>(query);
   }
 
   async deleteById(id: string, userId: string): Promise<void> {
