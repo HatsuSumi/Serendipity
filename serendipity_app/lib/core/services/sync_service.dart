@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
+import '../../models/check_in_record.dart';
 import '../../models/user.dart';
 import '../config/app_config.dart';
 import '../repositories/i_remote_data_repository.dart';
@@ -85,6 +86,24 @@ class SyncService {
     await _remoteRepository.uploadStoryLine(user.id, storyLine);
   }
   
+  /// 上传单条签到记录到云端
+  /// 
+  /// 调用者：
+  /// - CheckInProvider.checkIn()
+  /// 
+  /// Fail Fast：
+  /// - user 为 null：抛出 ArgumentError
+  /// - checkIn 为 null：抛出 ArgumentError
+  /// - 网络错误：向上抛出异常
+  Future<void> uploadCheckIn(User user, CheckInRecord checkIn) async {
+    // Fail Fast：参数验证
+    if (user.id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    await _remoteRepository.uploadCheckIn(user.id, checkIn);
+  }
+  
   /// 删除云端记录
   /// 
   /// 调用者：RecordsProvider.deleteRecord()
@@ -123,6 +142,26 @@ class SyncService {
     }
     
     await _remoteRepository.deleteStoryLine(user.id, storyLineId);
+  }
+  
+  /// 删除云端签到记录
+  /// 
+  /// 调用者：CheckInProvider.resetAllCheckIns()（开发者功能）
+  /// 
+  /// Fail Fast：
+  /// - user 为 null：抛出 ArgumentError
+  /// - checkInId 为空：抛出 ArgumentError
+  /// - 网络错误：向上抛出异常
+  Future<void> deleteCheckIn(User user, String checkInId) async {
+    // Fail Fast：参数验证
+    if (user.id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (checkInId.isEmpty) {
+      throw ArgumentError('签到记录 ID 不能为空');
+    }
+    
+    await _remoteRepository.deleteCheckIn(user.id, checkInId);
   }
   
   /// 全量同步：上传本地数据到云端，下载云端数据到本地
@@ -171,6 +210,14 @@ class SyncService {
     if (localStoryLines.isNotEmpty) {
       await _remoteRepository.uploadStoryLines(user.id, localStoryLines);
     }
+    
+    // 获取本地所有签到记录
+    final localCheckIns = _storageService.getAllCheckIns();
+    
+    // 批量上传签到记录
+    if (localCheckIns.isNotEmpty) {
+      await _remoteRepository.uploadCheckIns(user.id, localCheckIns);
+    }
   }
   
   /// 下载云端数据到本地
@@ -202,6 +249,20 @@ class SyncService {
       if (localStoryLine == null || 
           remoteStoryLine.updatedAt.isAfter(localStoryLine.updatedAt)) {
         _storageService.saveStoryLine(remoteStoryLine);
+      }
+    }
+    
+    // 下载云端签到记录
+    final remoteCheckIns = await _remoteRepository.downloadCheckIns(user.id);
+    
+    // 合并到本地（最后更新时间优先）
+    for (final remoteCheckIn in remoteCheckIns) {
+      final localCheckIn = _storageService.getCheckIn(remoteCheckIn.id);
+      
+      // 如果本地不存在，或云端数据更新
+      if (localCheckIn == null || 
+          remoteCheckIn.updatedAt.isAfter(localCheckIn.updatedAt)) {
+        _storageService.saveCheckIn(remoteCheckIn);
       }
     }
   }

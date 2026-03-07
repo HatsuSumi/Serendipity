@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/check_in_record.dart';
 import '../repositories/check_in_repository.dart';
+import '../services/sync_service.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
 
@@ -60,12 +61,19 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
   }
 
   /// 签到
+  /// 
+  /// 调用者：UI 层（CheckInButton、CheckInCard 等）
   Future<void> checkIn() async {
     if (state.hasCheckedInToday) {
       throw StateError('Already checked in today');
     }
 
-    await _repository.checkIn();
+    // 获取当前用户（可选）
+    final authState = _ref.read(authProvider);
+    final currentUser = authState.value;
+    
+    // 签到（传入 userId，未登录时为 null）
+    final checkIn = await _repository.checkIn(userId: currentUser?.id);
     _refresh();
     
     // 检测成就
@@ -81,6 +89,17 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
     } catch (e) {
       // 成就检测失败不影响签到
       // 但需要记录错误日志（生产环境）
+    }
+    
+    // 如果用户已登录，上传到云端
+    if (currentUser != null) {
+      try {
+        final syncService = _ref.read(syncServiceProvider);
+        await syncService.uploadCheckIn(currentUser, checkIn);
+      } catch (e) {
+        // 云端同步失败不影响本地签到
+        // 用户可以稍后手动触发全量同步
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/community_post.dart';
+import '../../models/check_in_record.dart';
 import 'i_remote_data_repository.dart';
 
 /// 测试远程数据仓库
@@ -105,6 +106,27 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }) async {
     // 测试模式：返回空列表
     return [];
+  }
+  
+  @override
+  Future<void> uploadCheckIn(String userId, CheckInRecord checkIn) async {
+    // 测试模式：不执行任何操作
+  }
+  
+  @override
+  Future<void> uploadCheckIns(String userId, List<CheckInRecord> checkIns) async {
+    // 测试模式：不执行任何操作
+  }
+  
+  @override
+  Future<List<CheckInRecord>> downloadCheckIns(String userId) async {
+    // 测试模式：返回空列表
+    return [];
+  }
+  
+  @override
+  Future<void> deleteCheckIn(String userId, String checkInId) async {
+    // 测试模式：不执行任何操作
   }
 }
 

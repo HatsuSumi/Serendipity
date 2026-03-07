@@ -70,6 +70,11 @@ class ServerConfig {
   static const String communityMyPosts = '/community/my-posts';
   static String communityPostById(String id) => '/community/posts/$id';
   
+  // 签到相关
+  static const String checkIns = '/check-ins';
+  static const String checkInsBatch = '/check-ins/batch';
+  static String checkInById(String id) => '/check-ins/$id';
+  
   // 支付相关
   static const String paymentCreate = '/payment/create';
   static const String paymentStatus = '/payment/status';

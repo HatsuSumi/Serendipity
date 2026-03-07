@@ -20,19 +20,28 @@ class CheckInRecordAdapter extends TypeAdapter<CheckInRecord> {
       id: fields[0] as String,
       date: fields[1] as DateTime,
       checkedAt: fields[2] as DateTime,
+      userId: fields[3] as String?,
+      createdAt: fields[4] as DateTime,
+      updatedAt: fields[5] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, CheckInRecord obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.date)
       ..writeByte(2)
-      ..write(obj.checkedAt);
+      ..write(obj.checkedAt)
+      ..writeByte(3)
+      ..write(obj.userId)
+      ..writeByte(4)
+      ..write(obj.createdAt)
+      ..writeByte(5)
+      ..write(obj.updatedAt);
   }
 
   @override

@@ -6,6 +6,7 @@ import { createStoryLineRoutes } from './storyline.routes';
 import { createCommunityRoutes } from './community.routes';
 import { createPaymentRoutes, createMembershipRoutes } from './payment.routes';
 import { createUserRoutes } from './user.routes';
+import { createCheckInRoutes } from './checkIn.routes';
 import Container from '../config/container';
 import { AuthController } from '../controllers/authController';
 import { RecordController } from '../controllers/recordController';
@@ -13,6 +14,7 @@ import { StoryLineController } from '../controllers/storyLineController';
 import { CommunityPostController } from '../controllers/communityPostController';
 import { PaymentController } from '../controllers/paymentController';
 import { UserController } from '../controllers/userController';
+import { CheckInController } from '../controllers/checkInController';
 
 /**
  * 创建主路由
@@ -36,6 +38,7 @@ export const createMainRoutes = (): Router => {
   const communityPostController = container.get<CommunityPostController>('communityPostController');
   const paymentController = container.get<PaymentController>('paymentController');
   const userController = container.get<UserController>('userController');
+  const checkInController = container.get<CheckInController>('checkInController');
 
   // 注册子路由
   router.use('/auth', createAuthRoutes(authController));
@@ -45,6 +48,7 @@ export const createMainRoutes = (): Router => {
   router.use('/payment', createPaymentRoutes(paymentController));
   router.use('/membership', createMembershipRoutes(paymentController));
   router.use('/users', createUserRoutes(userController));
+  router.use('/check-ins', createCheckInRoutes(checkInController));
 
   return router;
 };

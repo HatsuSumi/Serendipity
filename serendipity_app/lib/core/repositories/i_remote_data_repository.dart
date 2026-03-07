@@ -1,6 +1,7 @@
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/community_post.dart';
+import '../../models/check_in_record.dart';
 
 /// 远程数据仓库接口
 /// 
@@ -268,5 +269,71 @@ abstract class IRemoteDataRepository {
     List<String>? statuses,
     int limit = 20,
   });
+  
+  // ==================== 签到相关操作 ====================
+  
+  /// 上传单条签到记录到云端
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [checkIn]：要上传的签到记录
+  /// 
+  /// 调用者：
+  /// - SyncService.uploadCheckIn()
+  /// - CheckInProvider.checkIn() 通过 SyncService 调用
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - checkIn 为 null：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<void> uploadCheckIn(String userId, CheckInRecord checkIn);
+  
+  /// 批量上传签到记录到云端
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [checkIns]：要上传的签到记录列表
+  /// 
+  /// 调用者：
+  /// - SyncService.syncAllCheckIns()
+  /// - 用户首次登录时，将本地数据批量上传
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - checkIns 为空列表：直接返回，不抛异常（允许空列表）
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<void> uploadCheckIns(String userId, List<CheckInRecord> checkIns);
+  
+  /// 下载用户所有签到记录
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// 
+  /// 返回：用户的所有签到记录列表
+  /// 
+  /// 调用者：
+  /// - SyncService.downloadData()
+  /// - 用户登录后，下载云端数据到本地
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<CheckInRecord>> downloadCheckIns(String userId);
+  
+  /// 删除云端签到记录
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [checkInId]：签到记录 ID
+  /// 
+  /// 调用者：
+  /// - SyncService.deleteCheckIn()
+  /// - CheckInProvider.resetAllCheckIns() 通过 SyncService 调用
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - checkInId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<void> deleteCheckIn(String userId, String checkInId);
 }
 

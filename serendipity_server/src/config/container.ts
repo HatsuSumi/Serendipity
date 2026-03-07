@@ -23,8 +23,11 @@ import { CommunityPostService } from '../services/communityPostService';
 import { UserService } from '../services/userService';
 import { PaymentOrderRepository } from '../repositories/paymentOrderRepository';
 import { MembershipRepository } from '../repositories/membershipRepository';
+import { CheckInRepository } from '../repositories/checkInRepository';
 import { PaymentService } from '../services/paymentService';
+import { CheckInService } from '../services/checkInService';
 import { PaymentController } from '../controllers/paymentController';
+import { CheckInController } from '../controllers/checkInController';
 import { config } from '../config';
 import path from 'path';
 
@@ -155,6 +158,7 @@ export const initializeContainer = (): Container => {
   const paymentOrderRepository = new PaymentOrderRepository(prisma);
   const membershipRepository = new MembershipRepository(prisma);
   const userSettingsRepository = new UserSettingsRepository(prisma);
+  const checkInRepository = new CheckInRepository(prisma);
 
   container.register('userRepository', userRepository);
   container.register('refreshTokenRepository', refreshTokenRepository);
@@ -165,6 +169,7 @@ export const initializeContainer = (): Container => {
   container.register('paymentOrderRepository', paymentOrderRepository);
   container.register('membershipRepository', membershipRepository);
   container.register('userSettingsRepository', userSettingsRepository);
+  container.register('checkInRepository', checkInRepository);
 
   // 初始化 Services
   const verificationService = new VerificationService(verificationCodeRepository);
@@ -183,6 +188,7 @@ export const initializeContainer = (): Container => {
     logger
   );
   const userService = new UserService(userRepository, userSettingsRepository);
+  const checkInService = new CheckInService(checkInRepository);
 
   container.register('verificationService', verificationService);
   container.register('authService', authService);
@@ -191,6 +197,7 @@ export const initializeContainer = (): Container => {
   container.register('communityPostService', communityPostService);
   container.register('paymentService', paymentService);
   container.register('userService', userService);
+  container.register('checkInService', checkInService);
 
   // 初始化 Controllers
   const authController = new AuthController(authService, verificationService);
@@ -199,6 +206,7 @@ export const initializeContainer = (): Container => {
   const communityPostController = new CommunityPostController(communityPostService);
   const paymentController = new PaymentController(paymentService, logger);
   const userController = new UserController(userService);
+  const checkInController = new CheckInController(checkInService);
 
   container.register('authController', authController);
   container.register('recordController', recordController);
@@ -206,6 +214,7 @@ export const initializeContainer = (): Container => {
   container.register('communityPostController', communityPostController);
   container.register('paymentController', paymentController);
   container.register('userController', userController);
+  container.register('checkInController', checkInController);
 
   return container;
 };

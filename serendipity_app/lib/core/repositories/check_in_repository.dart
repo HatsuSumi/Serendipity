@@ -18,8 +18,13 @@ class CheckInRepository {
 
   /// 签到（创建今天的签到记录）
   /// 
+  /// 参数：
+  /// - userId: 用户ID（可选，未登录时为 null）
+  /// 
   /// 如果今天已经签到，抛出异常
-  Future<CheckInRecord> checkIn() async {
+  /// 
+  /// 调用者：CheckInProvider.checkIn()
+  Future<CheckInRecord> checkIn({String? userId}) async {
     final today = _getTodayDate();
     final todayId = today.millisecondsSinceEpoch.toString();
     
@@ -29,8 +34,8 @@ class CheckInRepository {
       throw StateError('Already checked in today');
     }
     
-    // 创建签到记录
-    final checkIn = CheckInRecord.create();
+    // 创建签到记录（传入 userId）
+    final checkIn = CheckInRecord.create(userId: userId);
     await _storageService.saveCheckIn(checkIn);
     
     return checkIn;

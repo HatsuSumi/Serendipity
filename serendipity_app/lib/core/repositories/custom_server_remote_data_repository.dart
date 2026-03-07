@@ -1,6 +1,7 @@
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/community_post.dart';
+import '../../models/check_in_record.dart';
 import 'i_remote_data_repository.dart';
 import '../services/http_client_service.dart';
 import '../config/server_config.dart';
@@ -391,6 +392,85 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
           .toList();
     } on HttpException catch (e) {
       throw Exception('筛选社区帖子失败：${e.message}');
+    }
+  }
+  
+  // ==================== 签到相关操作 ====================
+  
+  @override
+  Future<void> uploadCheckIn(String userId, CheckInRecord checkIn) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      await _httpClient.post(
+        ServerConfig.checkIns,
+        body: checkIn.toJson(),
+      );
+    } on HttpException catch (e) {
+      throw Exception('上传签到记录失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<void> uploadCheckIns(String userId, List<CheckInRecord> checkIns) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    if (checkIns.isEmpty) {
+      return; // 允许空列表
+    }
+    
+    try {
+      await _httpClient.post(
+        ServerConfig.checkInsBatch,
+        body: {
+          'checkIns': checkIns.map((c) => c.toJson()).toList(),
+        },
+      );
+    } on HttpException catch (e) {
+      throw Exception('批量上传签到记录失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<List<CheckInRecord>> downloadCheckIns(String userId) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      final response = await _httpClient.get(ServerConfig.checkIns);
+      final data = response['data'] as Map<String, dynamic>;
+      final checkInsJson = data['checkIns'] as List;
+      
+      return checkInsJson
+          .map((json) => CheckInRecord.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on HttpException catch (e) {
+      throw Exception('下载签到记录失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<void> deleteCheckIn(String userId, String checkInId) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (checkInId.isEmpty) {
+      throw ArgumentError('签到记录 ID 不能为空');
+    }
+    
+    try {
+      await _httpClient.delete(ServerConfig.checkInById(checkInId));
+    } on HttpException catch (e) {
+      throw Exception('删除签到记录失败：${e.message}');
     }
   }
 }

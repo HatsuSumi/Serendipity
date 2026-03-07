@@ -17,6 +17,7 @@ model User {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
   lastLoginAt    DateTime?       @map("last_login_at")
+  checkIns       CheckIn[]
   communityPosts CommunityPost[]
   membership     Membership?
   paymentOrders  PaymentOrder[]
@@ -185,4 +186,19 @@ model UserSettings {
 
   @@index([userId])
   @@map("user_settings")
+}
+
+model CheckIn {
+  id        String   @id
+  userId    String   @map("user_id")
+  date      DateTime @db.Date
+  checkedAt DateTime @map("checked_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("check_ins")
 }
