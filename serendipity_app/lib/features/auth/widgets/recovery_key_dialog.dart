@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/utils/message_helper.dart';
 
 /// 恢复密钥对话框
 /// 
@@ -52,11 +53,6 @@ class _RecoveryKeyDialogState extends State<RecoveryKeyDialog> {
               
               // 恢复密钥显示
               _buildRecoveryKeyCard(context),
-              
-              const SizedBox(height: 16),
-              
-              // 使用说明
-              _buildInstructions(context),
               
               const SizedBox(height: 16),
               
@@ -139,51 +135,6 @@ class _RecoveryKeyDialogState extends State<RecoveryKeyDialog> {
     );
   }
   
-  /// 构建使用说明
-  Widget _buildInstructions(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '保存方式：',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 8),
-        _buildInstructionItem(context, '截图保存到相册'),
-        _buildInstructionItem(context, '复制到密码管理器'),
-        _buildInstructionItem(context, '手写记录在安全的地方'),
-      ],
-    );
-  }
-  
-  /// 构建说明项
-  Widget _buildInstructionItem(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Icon(
-            Icons.circle,
-            size: 6,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 13,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
   /// 构建确认复选框
   Widget _buildConfirmationCheckbox(BuildContext context) {
     return CheckboxListTile(
@@ -221,13 +172,8 @@ class _RecoveryKeyDialogState extends State<RecoveryKeyDialog> {
         }
       });
       
-      // 显示提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('恢复密钥已复制到剪贴板'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // 使用 MessageHelper 显示提示
+      MessageHelper.showSuccess(context, '恢复密钥已复制到剪贴板');
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/enums.dart';
 import '../providers/dialog_animation_provider.dart';
+import 'message_helper.dart';
 
 /// 内部动画类型（用于实际动画实现）
 enum _InternalAnimationType {
@@ -291,13 +292,8 @@ class DialogHelper {
             onPressed: () {
               final name = nameController.text.trim();
               if (name.isEmpty) {
-                // 显示警告但不关闭对话框
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(emptyWarning),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+                // 使用 MessageHelper 显示警告
+                MessageHelper.showError(context, emptyWarning);
                 return;
               }
               Navigator.of(context).pop(name);
