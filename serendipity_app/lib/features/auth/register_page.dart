@@ -8,6 +8,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/widgets/countdown_button.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
+import 'widgets/agreement_notice.dart';
 import 'widgets/recovery_key_dialog.dart';
 import 'login_page.dart';
 
@@ -75,6 +76,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   onPressed: _handleRegister,
                   isLoading: _isLoading,
                 ),
+                const SizedBox(height: 16),
+                
+                // 协议提示
+                const AgreementNotice(actionText: '注册'),
+                
                 const SizedBox(height: 32),
                 _buildLoginLink(),
               ],

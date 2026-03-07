@@ -9,9 +9,6 @@ class Membership {
   final MembershipStatus status;
   final DateTime? startedAt;
   final DateTime? expiresAt;
-  final bool autoRenew;
-  final double? monthlyAmount;
-  final List<String> paymentHistory;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -22,9 +19,6 @@ class Membership {
     required this.status,
     this.startedAt,
     this.expiresAt,
-    required this.autoRenew,
-    this.monthlyAmount,
-    required this.paymentHistory,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -50,13 +44,6 @@ class Membership {
       expiresAt: json['expiresAt'] != null
           ? DateTime.parse(json['expiresAt'] as String)
           : null,
-      autoRenew: json['autoRenew'] as bool,
-      monthlyAmount: json['monthlyAmount'] != null
-          ? (json['monthlyAmount'] as num).toDouble()
-          : null,
-      paymentHistory: (json['paymentHistory'] as List)
-          .map((e) => e as String)
-          .toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -71,9 +58,6 @@ class Membership {
       'status': status.value,
       'startedAt': startedAt?.toIso8601String(),
       'expiresAt': expiresAt?.toIso8601String(),
-      'autoRenew': autoRenew,
-      'monthlyAmount': monthlyAmount,
-      'paymentHistory': paymentHistory,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -87,9 +71,6 @@ class Membership {
     MembershipStatus? status,
     DateTime? startedAt,
     DateTime? expiresAt,
-    bool? autoRenew,
-    double? monthlyAmount,
-    List<String>? paymentHistory,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -100,9 +81,6 @@ class Membership {
       status: status ?? this.status,
       startedAt: startedAt ?? this.startedAt,
       expiresAt: expiresAt ?? this.expiresAt,
-      autoRenew: autoRenew ?? this.autoRenew,
-      monthlyAmount: monthlyAmount ?? this.monthlyAmount,
-      paymentHistory: paymentHistory ?? this.paymentHistory,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -124,9 +102,6 @@ class Membership {
         other.status == status &&
         other.startedAt == startedAt &&
         other.expiresAt == expiresAt &&
-        other.autoRenew == autoRenew &&
-        other.monthlyAmount == monthlyAmount &&
-        other.paymentHistory.length == paymentHistory.length &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -139,9 +114,6 @@ class Membership {
         status.hashCode ^
         startedAt.hashCode ^
         expiresAt.hashCode ^
-        autoRenew.hashCode ^
-        monthlyAmount.hashCode ^
-        paymentHistory.length.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }

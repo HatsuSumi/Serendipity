@@ -75,11 +75,6 @@ class ServerConfig {
   static const String checkInsBatch = '/check-ins/batch';
   static String checkInById(String id) => '/check-ins/$id';
   
-  // 支付相关
-  static const String paymentCreate = '/payment/create';
-  static const String paymentStatus = '/payment/status';
-  static const String membershipStatus = '/membership/status';
-  
   /// 构建完整的 API URL
   static String buildUrl(String endpoint) {
     return '$apiUrl$endpoint';

@@ -4,7 +4,6 @@ import { createAuthRoutes } from './auth.routes';
 import { createRecordRoutes } from './record.routes';
 import { createStoryLineRoutes } from './storyline.routes';
 import { createCommunityRoutes } from './community.routes';
-import { createPaymentRoutes, createMembershipRoutes } from './payment.routes';
 import { createUserRoutes } from './user.routes';
 import { createCheckInRoutes } from './checkIn.routes';
 import Container from '../config/container';
@@ -12,7 +11,6 @@ import { AuthController } from '../controllers/authController';
 import { RecordController } from '../controllers/recordController';
 import { StoryLineController } from '../controllers/storyLineController';
 import { CommunityPostController } from '../controllers/communityPostController';
-import { PaymentController } from '../controllers/paymentController';
 import { UserController } from '../controllers/userController';
 import { CheckInController } from '../controllers/checkInController';
 
@@ -36,7 +34,6 @@ export const createMainRoutes = (): Router => {
   const recordController = container.get<RecordController>('recordController');
   const storyLineController = container.get<StoryLineController>('storyLineController');
   const communityPostController = container.get<CommunityPostController>('communityPostController');
-  const paymentController = container.get<PaymentController>('paymentController');
   const userController = container.get<UserController>('userController');
   const checkInController = container.get<CheckInController>('checkInController');
 
@@ -45,8 +42,6 @@ export const createMainRoutes = (): Router => {
   router.use('/records', createRecordRoutes(recordController));
   router.use('/storylines', createStoryLineRoutes(storyLineController));
   router.use('/community', createCommunityRoutes(communityPostController));
-  router.use('/payment', createPaymentRoutes(paymentController));
-  router.use('/membership', createMembershipRoutes(paymentController));
   router.use('/users', createUserRoutes(userController));
   router.use('/check-ins', createCheckInRoutes(checkInController));
 

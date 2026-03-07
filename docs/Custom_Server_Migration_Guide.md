@@ -442,61 +442,9 @@
 
 ---
 
-**任务**：Phase 1.7 - Mock 支付功能实现
+~~**任务**：Phase 1.7 - Mock 支付功能实现~~ ❌ 已删除
 
-**完成内容**：
-- ✅ 实现 5 个 Mock 支付接口
-- ✅ 支持 Mock 模式和真实模式切换（环境变量 `PAYMENT_MOCK_MODE`）
-- ✅ 创建完整的分层架构（DTO → Repository → Service → Controller → Routes）
-- ✅ 实现 PaymentOrderRepository（支付订单数据访问层）
-- ✅ 实现 MembershipRepository（会员数据访问层）
-- ✅ 实现 PaymentService（支付业务逻辑层，包含 Mock 和真实支付切换）
-- ✅ 实现 PaymentController（支付控制器层）
-- ✅ 实现请求验证（Joi 验证器）
-- ✅ Mock 模式自动模拟支付成功（3 秒延迟）
-- ✅ 支付成功自动激活 30 天会员
-- ✅ 编写 10 个单元测试（100% 通过）
-
-**API 端点（5 个）：**
-- POST /api/v1/payment/create - 创建支付订单（支持免费、微信、支付宝）
-- POST /api/v1/payment/wechat/callback - 微信支付回调
-- POST /api/v1/payment/alipay/callback - 支付宝回调
-- GET /api/v1/payment/status/:orderId - 查询支付状态
-- GET /api/v1/membership/status - 查询会员状态
-
-**代码质量**：
-- ✅ 100% 符合 SOLID 原则
-- ✅ 100% 符合 DRY、KISS、YAGNI 原则
-- ✅ 完整的分层架构
-- ✅ 依赖注入（DI 容器管理）
-- ✅ 类型安全（TypeScript）
-- ✅ 单元测试覆盖率 100%
-
-**新增文件（8 个）：**
-- src/types/payment.dto.ts（91 行）
-- src/repositories/paymentOrderRepository.ts（57 行）
-- src/repositories/membershipRepository.ts（72 行）
-- src/services/paymentService.ts（294 行）
-- src/controllers/paymentController.ts（112 行）
-- src/routes/payment.routes.ts（72 行）
-- src/validators/payment.validator.ts（70 行）
-- tests/unit/services/paymentService.test.ts（202 行）
-- serendipity_server/docs/Phase_1.7_Mock_Payment.md（220 行）
-
-**修改文件（3 个）：**
-- src/config/index.ts - 添加支付配置（PAYMENT_MOCK_MODE、YunGouOS 配置）
-- src/config/container.ts - 注册支付服务（PaymentOrderRepository、MembershipRepository、PaymentService、PaymentController）
-- src/routes/index.ts - 注册支付路由（/api/v1/payment、/api/v1/membership）
-- .env.example - 添加支付配置示例
-
-**测试结果**：
-- ✅ 10/10 支付服务测试通过
-- ✅ 49/49 总测试通过（包括之前的 39 个测试）
-- ✅ 测试套件：7 个，全部通过
-
-**Mock 支付工作流程**：
-1. 创建订单 → 返回订单信息（pending 状态）
-2. 3 秒后自动模拟支付成功
+支付SDK集成已移除，但保留自愿付费UI设计（¥0-648滑块）。用户可选择任意金额，点击后直接激活会员，不调用实际支付接口。
 3. 更新订单状态为 success
 4. 激活 30 天会员
 5. 客户端轮询查询支付状态
@@ -827,10 +775,12 @@
 3. story_lines - 故事线表（名称、记录 ID 列表）
 4. community_posts - 社区帖子表（匿名发布、城市筛选）
 5. memberships - 会员表（会员等级、状态、过期时间）
-6. payment_orders - 支付订单表（金额、支付方式、交易 ID）
+6. ~~payment_orders - 支付订单表~~ ❌ 已删除
 7. refresh_tokens - 刷新令牌表（Token、过期时间）
 8. verification_codes - 验证码表（邮箱/手机号、验证码、用途）
 9. user_settings - 用户设置表（主题、动画、通知等，支持 JSONB）
+
+**说明**：支付功能已移除，payment_orders 表已删除。
 
 **索引优化：**
 - 用户表：email、phone_number 索引（登录查询）

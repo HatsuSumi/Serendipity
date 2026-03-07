@@ -271,46 +271,6 @@ enum MembershipStatus {
   const MembershipStatus(this.value, this.label);
 }
 
-/// 支付方式
-@HiveType(typeId: 20)
-enum PaymentMethod {
-  @HiveField(0)
-  free('free', '免费解锁'),
-  @HiveField(1)
-  applePay('apple_pay', 'Apple Pay'),
-  @HiveField(2)
-  googlePay('google_pay', 'Google Pay'),
-  @HiveField(3)
-  alipay('alipay', '支付宝'),
-  @HiveField(4)
-  wechatPay('wechat_pay', '微信支付');
-
-  final String value;
-  final String label;
-  
-  const PaymentMethod(this.value, this.label);
-}
-
-/// 支付状态
-@HiveType(typeId: 21)
-enum PaymentStatus {
-  @HiveField(0)
-  pending(1, '待支付'),
-  @HiveField(1)
-  processing(2, '处理中'),
-  @HiveField(2)
-  success(3, '支付成功'),
-  @HiveField(3)
-  failed(4, '支付失败'),
-  @HiveField(4)
-  refunded(5, '已退款');
-
-  final int value;
-  final String label;
-  
-  const PaymentStatus(this.value, this.label);
-}
-
 /// 应用主题选项（用户偏好设置）
 @HiveType(typeId: 22)
 enum ThemeOption {

@@ -1666,9 +1666,6 @@ class Membership {
   MembershipStatus status;      // 会员状态
   DateTime? startedAt;          // 开通时间
   DateTime? expiresAt;          // 到期时间
-  bool autoRenew;               // 是否自动续费
-  double? monthlyAmount;        // 月付金额（用户自定义）
-  List<PaymentRecord> paymentHistory;  // 支付历史
   DateTime createdAt;           // 创建时间
   DateTime updatedAt;           // 更新时间
 }
@@ -1700,52 +1697,11 @@ enum MembershipStatus {
 }
 ```
 
-### PaymentRecord（支付记录）
-```dart
-class PaymentRecord {
-  String id;                    // 支付记录ID
-  String userId;                // 用户ID
-  String membershipId;          // 会员记录ID
-  double amount;                // 支付金额（¥0-648）
-  PaymentMethod method;         // 支付方式
-  PaymentStatus status;         // 支付状态
-  String? transactionId;        // 第三方支付平台的交易ID
-  String? receiptData;          // 支付凭证数据（iOS IAP）
-  DateTime? paidAt;             // 支付完成时间
-  DateTime createdAt;           // 创建时间
-  DateTime updatedAt;           // 更新时间
-}
-```
+### ~~PaymentRecord（支付记录）~~ ❌ 已删除
+### ~~PaymentMethod（支付方式枚举）~~ ❌ 已删除
+### ~~PaymentStatus（支付状态枚举）~~ ❌ 已删除
 
-### PaymentMethod（支付方式枚举）
-```dart
-enum PaymentMethod {
-  free(1, '免费解锁'),           // 用户选择¥0
-  applePay(2, 'Apple Pay'),
-  googlePay(3, 'Google Pay'),
-  alipay(4, '支付宝'),
-  wechatPay(5, '微信支付');
-
-  final int value;
-  final String label;
-  const PaymentMethod(this.value, this.label);
-}
-```
-
-### PaymentStatus（支付状态枚举）
-```dart
-enum PaymentStatus {
-  pending(1, '待支付'),
-  processing(2, '处理中'),
-  success(3, '支付成功'),
-  failed(4, '支付失败'),
-  refunded(5, '已退款');
-
-  final int value;
-  final String label;
-  const PaymentStatus(this.value, this.label);
-}
-```
+支付功能已移除，但保留自愿付费UI设计。
 
 ### UserSettings（用户设置）
 ```dart

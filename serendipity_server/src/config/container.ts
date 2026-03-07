@@ -12,22 +12,19 @@ import { RecordRepository } from '../repositories/recordRepository';
 import { StoryLineRepository } from '../repositories/storyLineRepository';
 import { CommunityPostRepository } from '../repositories/communityPostRepository';
 import { UserSettingsRepository } from '../repositories/userSettingsRepository';
+import { MembershipRepository } from '../repositories/membershipRepository';
+import { CheckInRepository } from '../repositories/checkInRepository';
 import { AuthController } from '../controllers/authController';
 import { RecordController } from '../controllers/recordController';
 import { StoryLineController } from '../controllers/storyLineController';
 import { CommunityPostController } from '../controllers/communityPostController';
 import { UserController } from '../controllers/userController';
+import { CheckInController } from '../controllers/checkInController';
 import { RecordService } from '../services/recordService';
 import { StoryLineService } from '../services/storyLineService';
 import { CommunityPostService } from '../services/communityPostService';
 import { UserService } from '../services/userService';
-import { PaymentOrderRepository } from '../repositories/paymentOrderRepository';
-import { MembershipRepository } from '../repositories/membershipRepository';
-import { CheckInRepository } from '../repositories/checkInRepository';
-import { PaymentService } from '../services/paymentService';
 import { CheckInService } from '../services/checkInService';
-import { PaymentController } from '../controllers/paymentController';
-import { CheckInController } from '../controllers/checkInController';
 import { config } from '../config';
 import path from 'path';
 
@@ -155,7 +152,6 @@ export const initializeContainer = (): Container => {
   const recordRepository = new RecordRepository(prisma);
   const storyLineRepository = new StoryLineRepository(prisma);
   const communityPostRepository = new CommunityPostRepository(prisma);
-  const paymentOrderRepository = new PaymentOrderRepository(prisma);
   const membershipRepository = new MembershipRepository(prisma);
   const userSettingsRepository = new UserSettingsRepository(prisma);
   const checkInRepository = new CheckInRepository(prisma);
@@ -166,7 +162,6 @@ export const initializeContainer = (): Container => {
   container.register('recordRepository', recordRepository);
   container.register('storyLineRepository', storyLineRepository);
   container.register('communityPostRepository', communityPostRepository);
-  container.register('paymentOrderRepository', paymentOrderRepository);
   container.register('membershipRepository', membershipRepository);
   container.register('userSettingsRepository', userSettingsRepository);
   container.register('checkInRepository', checkInRepository);
@@ -182,11 +177,6 @@ export const initializeContainer = (): Container => {
   const recordService = new RecordService(recordRepository);
   const storyLineService = new StoryLineService(storyLineRepository);
   const communityPostService = new CommunityPostService(communityPostRepository);
-  const paymentService = new PaymentService(
-    paymentOrderRepository,
-    membershipRepository,
-    logger
-  );
   const userService = new UserService(userRepository, userSettingsRepository);
   const checkInService = new CheckInService(checkInRepository);
 
@@ -195,7 +185,6 @@ export const initializeContainer = (): Container => {
   container.register('recordService', recordService);
   container.register('storyLineService', storyLineService);
   container.register('communityPostService', communityPostService);
-  container.register('paymentService', paymentService);
   container.register('userService', userService);
   container.register('checkInService', checkInService);
 
@@ -204,7 +193,6 @@ export const initializeContainer = (): Container => {
   const recordController = new RecordController(recordService);
   const storyLineController = new StoryLineController(storyLineService);
   const communityPostController = new CommunityPostController(communityPostService);
-  const paymentController = new PaymentController(paymentService, logger);
   const userController = new UserController(userService);
   const checkInController = new CheckInController(checkInService);
 
@@ -212,7 +200,6 @@ export const initializeContainer = (): Container => {
   container.register('recordController', recordController);
   container.register('storyLineController', storyLineController);
   container.register('communityPostController', communityPostController);
-  container.register('paymentController', paymentController);
   container.register('userController', userController);
   container.register('checkInController', checkInController);
 

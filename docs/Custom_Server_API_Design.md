@@ -17,9 +17,9 @@
 | 认证相关 | 12 个 | 注册、登录、Token 管理、密码/邮箱/手机号修改 |
 | 数据同步 | 10 个 | 记录、故事线同步 |
 | 社区相关 | 5 个 | 社区帖子发布、浏览、筛选 |
-| 支付相关 | 5 个 | 支付订单、回调、会员状态 |
+| ~~支付相关~~ | ~~5 个~~ | ~~支付订单、回调、会员状态~~ ❌ 已删除 |
 | 用户相关 | 3 个 | 用户信息、设置 |
-| **总计** | **35 个** | - |
+| **总计** | **30 个** | - |
 
 ---
 
@@ -856,121 +856,9 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 💳 支付相关 API
-
-### 28. 创建支付订单
-
-**接口**：`POST /api/v1/payment/create`
-
-**请求参数**：
-```json
-{
-  "amount": 100,  // 单位：分
-  "paymentMethod": "wechat",  // wechat | alipay
-  "membershipTier": "premium",
-  "duration": 1  // 月数
-}
-```
-
-**响应**：
-```json
-{
-  "success": true,
-  "data": {
-    "orderId": "uuid",
-    "amount": 100,
-    "membershipTier": "premium",
-    "duration": 1,
-    "paymentUrl": "weixin://wxpay/...",  // 微信支付链接（wechat）、支付宝支付链接（alipay）
-    "qrCode": "data:image/png;base64,...",  // 支付二维码（Base64 编码）
-    "expiresAt": "2026-02-25T10:30:00Z"
-  }
-}
-```
-
----
-
-### 29. 微信支付回调
-
-**接口**：`POST /api/v1/payment/wechat/callback`
-
-**说明**：此接口由微信支付平台调用，不需要客户端调用
-
-**请求参数**：微信支付回调参数（加密）
-
-**响应**：
-```json
-{
-  "code": "SUCCESS",
-  "message": "成功"
-}
-```
-
----
-
-### 30. 支付宝回调
-
-**接口**：`POST /api/v1/payment/alipay/callback`
-
-**说明**：此接口由支付宝平台调用，不需要客户端调用
-
-**请求参数**：支付宝回调参数（签名验证）
-
-**响应**：
-```
-success
-```
-
----
-
-### 31. 查询支付状态
-
-**接口**：`GET /api/v1/payment/status/:orderId`
-
-**响应**：
-```json
-{
-  "success": true,
-  "data": {
-    "orderId": "uuid",
-    "status": "paid",  // pending | paid | failed | cancelled
-    "amount": 100,
-    "paidAt": "2026-02-25T10:00:00Z"
-  }
-}
-```
-
----
-
-### 32. 查询会员状态
-
-**接口**：`GET /api/v1/membership/status`
-
-**请求头**：
-```http
-Authorization: Bearer <access_token>
-```
-
-**响应**：
-```json
-{
-  "success": true,
-  "data": {
-    "tier": "premium",  // free | premium
-    "status": "active",  // inactive | active | expired | cancelled
-    "startedAt": "2026-02-25T10:00:00Z",
-    "expiresAt": "2026-03-25T10:00:00Z",
-    "autoRenew": false,
-    "monthlyAmount": 100
-  }
-}
-```
-
----
-
 ## 👤 用户相关 API
 
-### 33. 更新用户信息
+### 28. 更新用户信息
 
 **接口**：`PUT /api/v1/users/me`
 
@@ -1001,7 +889,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 34. 获取用户设置
+### 29. 获取用户设置
 
 **接口**：`GET /api/v1/users/settings`
 
@@ -1033,7 +921,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 35. 更新用户设置
+### 30. 更新用户设置
 
 **接口**：`PUT /api/v1/users/settings`
 
@@ -1089,11 +977,11 @@ Signature = HMAC-SHA256(timestamp + method + path + body, secret)
 | 登录/注册 | 5 次/分钟 |
 | 发送验证码 | 1 次/分钟 |
 | 数据同步 | 100 次/分钟 |
-| 支付相关 | 10 次/分钟 |
+| ~~支付相关~~ | ~~10 次/分钟~~ ❌ 已删除 |
 
-### 3. IP 白名单
+### 3. ~~IP 白名单~~ ❌ 已删除
 
-支付回调接口只允许微信/支付宝的 IP 访问。
+~~支付回调接口只允许微信/支付宝的 IP 访问。~~
 
 ---
 
@@ -1105,7 +993,7 @@ Signature = HMAC-SHA256(timestamp + method + path + body, secret)
 |---------|-------------|
 | 认证相关 | < 200ms |
 | 数据同步 | < 500ms |
-| 支付相关 | < 1000ms |
+| ~~支付相关~~ | ~~< 1000ms~~ ❌ 已删除 |
 
 ### 并发能力
 
@@ -1124,8 +1012,10 @@ Signature = HMAC-SHA256(timestamp + method + path + body, secret)
 
 ### 沙箱环境
 
-- 微信支付沙箱：`https://pay.weixin.qq.com/wiki/doc/api/sandbox.php`
-- 支付宝沙箱：`https://openhome.alipay.com/platform/appDaily.htm`
+~~- 微信支付沙箱：`https://pay.weixin.qq.com/wiki/doc/api/sandbox.php`~~
+~~- 支付宝沙箱：`https://openhome.alipay.com/platform/appDaily.htm`~~
+
+❌ 支付功能已删除，不再需要沙箱环境
 
 ---
 
@@ -1242,8 +1132,6 @@ CREATE TABLE memberships (
   status VARCHAR(50) NOT NULL DEFAULT 'inactive',  -- inactive | active | expired | cancelled
   started_at TIMESTAMP,
   expires_at TIMESTAMP,
-  auto_renew BOOLEAN DEFAULT FALSE,
-  monthly_amount INTEGER DEFAULT 0,  -- 单位：分
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -1254,27 +1142,9 @@ CREATE INDEX idx_memberships_expires_at ON memberships(expires_at);
 
 ---
 
-### payment_orders 表
+### ~~payment_orders 表~~ ❌ 已删除
 
-```sql
-CREATE TABLE payment_orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  membership_id UUID NOT NULL REFERENCES memberships(id) ON DELETE CASCADE,
-  amount INTEGER NOT NULL,  -- 单位：分
-  payment_method VARCHAR(50) NOT NULL,  -- wechat | alipay
-  status VARCHAR(50) NOT NULL DEFAULT 'pending',  -- pending | paid | failed | cancelled
-  transaction_id VARCHAR(255),  -- 第三方支付平台的交易ID
-  paid_at TIMESTAMP,
-  expires_at TIMESTAMP NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_payment_orders_user_id ON payment_orders(user_id);
-CREATE INDEX idx_payment_orders_status ON payment_orders(status);
-CREATE INDEX idx_payment_orders_transaction_id ON payment_orders(transaction_id);
-```
+~~支付功能已移除，不再需要此表~~
 
 ---
 
@@ -1337,7 +1207,7 @@ CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 ---
 
 **最后更新**：2026-02-25（修正版）  
-**文档版本**：v2.0  
+**文档版本**：v3.0  
 **维护者**：AI Assistant + 开发者
 
 **修正内容**：
@@ -1349,5 +1219,9 @@ CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 - ✅ 完善支付订单响应（补充缺失字段）
 - ✅ 新增用户设置更新 API
 - ✅ 补充完整的数据库表设计
-- ✅ 接口总数从 26 个增加到 35 个
+- ✅ ~~接口总数从 26 个增加到 35 个~~
+- ✅ **删除所有支付相关 API（5个）**
+- ✅ **删除 payment_orders 表**
+- ✅ **简化 memberships 表（移除 auto_renew 和 monthly_amount）**
+- ✅ **接口总数从 35 个减少到 30 个**
 

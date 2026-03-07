@@ -8,6 +8,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/widgets/countdown_button.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
+import 'widgets/agreement_notice.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 
@@ -90,6 +91,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 
                 // 忘记密码（仅邮箱登录显示）
                 if (_isEmailLogin) _buildForgotPasswordLink(),
+                
+                const SizedBox(height: 16),
+                
+                // 协议提示
+                const AgreementNotice(actionText: '登录'),
                 
                 const SizedBox(height: 32),
                 
