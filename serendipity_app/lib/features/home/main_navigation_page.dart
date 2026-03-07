@@ -115,12 +115,12 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          TimelinePage(), // 时间轴
-          StoryLinesPage(), // 故事线
-          Center(child: Text('地图')), // TODO: 地图页面
-          CommunityPage(), // 社区页面
-          SettingsPage(), // 我的
+        children: [
+          const TimelinePage(), // 时间轴
+          const StoryLinesPage(), // 故事线
+          const Center(child: Text('地图')), // TODO: 地图页面
+          CommunityPage(isVisible: _currentIndex == 3), // 社区页面
+          const SettingsPage(), // 我的
         ],
       ),
       bottomNavigationBar: NavigationBar(

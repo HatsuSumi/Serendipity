@@ -24,15 +24,19 @@ import 'dialogs/publish_to_community_dialog.dart';
 /// 
 /// 调用者：MainNavigationPage（底部导航第3个标签）
 class CommunityPage extends ConsumerStatefulWidget {
-  const CommunityPage({super.key});
+  final bool isVisible;
+  
+  const CommunityPage({
+    super.key,
+    this.isVisible = true,
+  });
 
   @override
   ConsumerState<CommunityPage> createState() => _CommunityPageState();
 }
 
-class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
-  bool _isPageVisible = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -41,47 +45,47 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didUpdateWidget(CommunityPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // 当页面从不可见变为可见时，检查是否需要显示对话框
+    if (!oldWidget.isVisible && widget.isVisible) {
+      _checkAndShowIntroDialog();
+    }
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // 当应用恢复到前台时，检查是否需要显示对话框
-    if (state == AppLifecycleState.resumed && _isPageVisible) {
-      _checkAndShowIntroDialog();
-    }
   }
 
   /// 检查并显示介绍对话框
   /// 
   /// 职责：
   /// - 检查用户是否已看过介绍
-  /// - 如果未看过且页面可见，显示介绍对话框
+  /// - 如果未看过，显示介绍对话框
   /// 
   /// 调用者：
-  /// - build()（每次构建时检查）
+  /// - didUpdateWidget()（当页面变为可见时）
   /// 
   /// 说明：
   /// - 使用 userSettingsProvider 的状态作为唯一数据源
-  /// - 不使用本地标记，避免状态不同步
+  /// - 通过 isVisible 参数判断页面是否真正可见
   void _checkAndShowIntroDialog() {
     // 读取最新的设置状态
     final hasSeenIntro = ref.read(userSettingsProvider).hasSeenCommunityIntro;
     
-    // 如果已看过或页面不可见，不显示
-    if (hasSeenIntro || !_isPageVisible) return;
+    // 如果已看过，不显示
+    if (hasSeenIntro) return;
     
     // 延迟到下一帧显示，避免在 build 期间显示对话框
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_isPageVisible) return;
+      if (!mounted) return;
       
       // 再次检查状态（防止在延迟期间状态已改变）
       final currentHasSeenIntro = ref.read(userSettingsProvider).hasSeenCommunityIntro;
@@ -228,20 +232,6 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
     super.build(context); // 必须调用，因为使用了 AutomaticKeepAliveClientMixin
     
     final communityStateAsync = ref.watch(communityProvider);
-    
-    // 检测页面是否可见（通过 ModalRoute 判断）
-    final route = ModalRoute.of(context);
-    final isCurrentRoute = route?.isCurrent ?? false;
-    
-    // 更新页面可见状态
-    if (isCurrentRoute != _isPageVisible) {
-      _isPageVisible = isCurrentRoute;
-      
-      // 如果页面变为可见，检查是否需要显示对话框
-      if (_isPageVisible) {
-        _checkAndShowIntroDialog();
-      }
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -280,6 +270,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
         label: const Text('发布到树洞'),
       ),
     );
+  }
+  }
   }
 
   /// 构建帖子列表
