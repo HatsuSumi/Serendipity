@@ -29,6 +29,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -69,6 +70,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -106,6 +108,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -151,6 +154,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -273,6 +277,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -314,6 +319,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -360,6 +366,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -383,6 +390,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -406,6 +414,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -436,6 +445,7 @@ void main() {
         autoPublishToCommunity: false,
         hidePublishWarning: false,
         hasSeenPublishWarning: false,
+        hasSeenCommunityIntro: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -480,6 +490,7 @@ void main() {
           autoPublishToCommunity: false,
           hidePublishWarning: false,
           hasSeenPublishWarning: false,
+          hasSeenCommunityIntro: false,
           createdAt: now,
           updatedAt: now,
         );
