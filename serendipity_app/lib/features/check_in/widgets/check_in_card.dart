@@ -149,18 +149,23 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
         return Padding(
           padding: const EdgeInsets.only(right: 4),
           child: Container(
-            width: 8,
-            height: 8,
+            width: 20,
+            height: 20,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isFilled
-                  ? (state.hasCheckedInToday
-                      ? colorScheme.onSurface.withValues(alpha: 0.3)
-                      : colorScheme.primary)
+                  ? Colors.green
                   : (state.hasCheckedInToday
                       ? colorScheme.onSurface.withValues(alpha: 0.1)
-                      : colorScheme.onPrimaryContainer.withValues(alpha: 0.3)),
+                      : colorScheme.onPrimaryContainer.withValues(alpha: 0.2)),
             ),
+            child: isFilled
+                ? const Icon(
+                    Icons.check,
+                    size: 12,
+                    color: Colors.white,
+                  )
+                : null,
           ),
         );
       }),

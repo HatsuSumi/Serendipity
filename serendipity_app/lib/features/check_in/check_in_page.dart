@@ -112,12 +112,22 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
       ),
       child: Column(
         children: [
-          Icon(
-            state.hasCheckedInToday ? Icons.check_circle : Icons.cancel,
-            size: 48,
-            color: state.hasCheckedInToday
-                ? colorScheme.onSurface.withValues(alpha: 0.6)
-                : colorScheme.onPrimaryContainer,
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: state.hasCheckedInToday
+                  ? Colors.green
+                  : colorScheme.onPrimaryContainer.withValues(alpha: 0.2),
+            ),
+            child: Icon(
+              state.hasCheckedInToday ? Icons.check : Icons.event_available,
+              size: 32,
+              color: state.hasCheckedInToday
+                  ? Colors.white
+                  : colorScheme.onPrimaryContainer,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
