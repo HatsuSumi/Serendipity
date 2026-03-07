@@ -26,7 +26,9 @@ export function createCommunityRoutes(
   );
 
   // 获取社区帖子列表（公开，但支持可选认证以显示 isOwner）
-  router.get('/posts', optionalAuthMiddleware, communityPostController.getRecentPosts);
+  // 支持筛选参数：startDate, endDate, province, city, area, placeTypes, tags, statuses
+  // 如果没有筛选参数，返回最近的帖子列表
+  router.get('/posts', optionalAuthMiddleware, communityPostController.getPosts);
 
   // 获取我的社区帖子（需要认证）
   router.get(
@@ -41,9 +43,6 @@ export function createCommunityRoutes(
     authMiddleware,
     communityPostController.deletePost
   );
-
-  // 筛选社区帖子（公开，但支持可选认证以显示 isOwner）
-  router.get('/posts/filter', optionalAuthMiddleware, communityPostController.filterPosts);
 
   return router;
 }

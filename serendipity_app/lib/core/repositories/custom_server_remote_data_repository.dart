@@ -379,7 +379,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       }
       
       final response = await _httpClient.get(
-        ServerConfig.communityPostsFilter,
+        ServerConfig.communityPosts,
         queryParams: queryParams,
       );
       

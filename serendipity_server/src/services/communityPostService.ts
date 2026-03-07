@@ -143,6 +143,8 @@ export class CommunityPostService implements ICommunityPostService {
   }
 
   // 检查帖子内容是否发生变化
+  // 
+  // 使用字段映射表驱动的比较逻辑，避免重复代码
   private hasPostContentChanged(
     existingPost: CommunityPost,
     newData: CreateCommunityPostDto | CheckPublishStatusDto
@@ -150,36 +152,39 @@ export class CommunityPostService implements ICommunityPostService {
     // 辅助函数：统一处理 null 和 undefined
     const normalize = (value: any) => value ?? null;
     
-    // 比较关键字段
-    if (existingPost.timestamp.toISOString() !== new Date(newData.timestamp).toISOString()) {
-      return true;
-    }
-    if (normalize(existingPost.address) !== normalize(newData.address)) {
-      return true;
-    }
-    if (normalize(existingPost.placeName) !== normalize(newData.placeName)) {
-      return true;
-    }
-    if (normalize(existingPost.placeType) !== normalize(newData.placeType)) {
-      return true;
-    }
-    if (normalize(existingPost.province) !== normalize(newData.province)) {
-      return true;
-    }
-    if (normalize(existingPost.city) !== normalize(newData.city)) {
-      return true;
-    }
-    if (normalize(existingPost.area) !== normalize(newData.area)) {
-      return true;
-    }
-    if (normalize(existingPost.description) !== normalize(newData.description)) {
-      return true;
-    }
-    if (existingPost.status !== newData.status) {
-      return true;
+    // 定义需要比较的字段映射表
+    // key: 字段名, value: 转换函数（可选）
+    const fieldComparisons: Array<{
+      field: keyof CommunityPost;
+      transform?: (value: any) => any;
+    }> = [
+      { field: 'timestamp', transform: (v) => new Date(v).toISOString() },
+      { field: 'address' },
+      { field: 'placeName' },
+      { field: 'placeType' },
+      { field: 'province' },
+      { field: 'city' },
+      { field: 'area' },
+      { field: 'description' },
+      { field: 'status' },
+    ];
+
+    // 遍历字段进行比较
+    for (const { field, transform } of fieldComparisons) {
+      const existingValue = transform 
+        ? transform(existingPost[field])
+        : normalize(existingPost[field]);
+      
+      const newValue = transform
+        ? transform((newData as any)[field])
+        : normalize((newData as any)[field]);
+
+      if (existingValue !== newValue) {
+        return true;
+      }
     }
 
-    // 比较标签（需要深度比较）
+    // 比较标签（深度比较）
     const existingTags = fromJsonValue(existingPost.tags);
     const newTags = newData.tags;
     

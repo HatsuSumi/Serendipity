@@ -68,7 +68,6 @@ class ServerConfig {
   // 社区相关
   static const String communityPosts = '/community/posts';
   static const String communityMyPosts = '/community/my-posts';
-  static const String communityPostsFilter = '/community/posts/filter';
   static String communityPostById(String id) => '/community/posts/$id';
   
   // 支付相关

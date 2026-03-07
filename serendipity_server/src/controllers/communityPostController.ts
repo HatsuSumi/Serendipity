@@ -49,24 +49,60 @@ export class CommunityPostController {
     }
   };
 
-  // 获取社区帖子列表
-  getRecentPosts = async (
+  // 获取社区帖子列表（支持筛选）
+  // 如果没有筛选参数，返回最近的帖子列表
+  // 如果有筛选参数，返回筛选后的帖子列表
+  getPosts = async (
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
     try {
-      const limit = getQueryAsInt(req.query.limit) || 20;
-      const lastTimestamp = getQueryAsString(req.query.lastTimestamp);
       const currentUserId = req.user?.userId; // 可选，用于判断 isOwner
 
-      const result = await this.communityPostService.getRecentPosts(
-        limit,
-        lastTimestamp,
-        currentUserId
-      );
+      // 检查是否有筛选参数
+      const hasFilterParams = 
+        req.query.startDate ||
+        req.query.endDate ||
+        req.query.publishStartDate ||
+        req.query.publishEndDate ||
+        req.query.province ||
+        req.query.city ||
+        req.query.area ||
+        req.query.placeTypes ||
+        req.query.tags ||
+        req.query.statuses;
 
-      sendSuccess(res, result);
+      // 如果有筛选参数，使用筛选逻辑
+      if (hasFilterParams) {
+        const query: FilterCommunityPostsQuery = {
+          startDate: getQueryAsString(req.query.startDate),
+          endDate: getQueryAsString(req.query.endDate),
+          publishStartDate: getQueryAsString(req.query.publishStartDate),
+          publishEndDate: getQueryAsString(req.query.publishEndDate),
+          province: getQueryAsString(req.query.province),
+          city: getQueryAsString(req.query.city),
+          area: getQueryAsString(req.query.area),
+          placeTypes: getQueryAsString(req.query.placeTypes),
+          tags: getQueryAsString(req.query.tags),
+          statuses: getQueryAsString(req.query.statuses),
+          limit: getQueryAsInt(req.query.limit),
+        };
+
+        const result = await this.communityPostService.filterPosts(query, currentUserId);
+        sendSuccess(res, result);
+      } else {
+        // 否则，返回最近的帖子列表
+        const limit = getQueryAsInt(req.query.limit) || 20;
+        const lastTimestamp = getQueryAsString(req.query.lastTimestamp);
+
+        const result = await this.communityPostService.getRecentPosts(
+          limit,
+          lastTimestamp,
+          currentUserId
+        );
+        sendSuccess(res, result);
+      }
     } catch (error) {
       next(error);
     }
@@ -102,37 +138,6 @@ export class CommunityPostController {
       await this.communityPostService.deletePost(postId, userId);
 
       sendSuccess(res, { message: 'Post deleted successfully' });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  // 筛选社区帖子
-  filterPosts = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    try {
-      const query: FilterCommunityPostsQuery = {
-        startDate: getQueryAsString(req.query.startDate),
-        endDate: getQueryAsString(req.query.endDate),
-        publishStartDate: getQueryAsString(req.query.publishStartDate),
-        publishEndDate: getQueryAsString(req.query.publishEndDate),
-        province: getQueryAsString(req.query.province),
-        city: getQueryAsString(req.query.city),
-        area: getQueryAsString(req.query.area),
-        placeTypes: getQueryAsString(req.query.placeTypes),
-        tags: getQueryAsString(req.query.tags),
-        statuses: getQueryAsString(req.query.statuses),
-        limit: getQueryAsInt(req.query.limit),
-      };
-
-      const currentUserId = req.user?.userId; // 可选，用于判断 isOwner
-
-      const result = await this.communityPostService.filterPosts(query, currentUserId);
-
-      sendSuccess(res, result);
     } catch (error) {
       next(error);
     }
