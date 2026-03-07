@@ -271,8 +271,6 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
       ),
     );
   }
-  }
-  }
 
   /// 构建帖子列表
   /// 
