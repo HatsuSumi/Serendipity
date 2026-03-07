@@ -18,6 +18,32 @@ class CommunityIntroDialog extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<CommunityIntroDialog> createState() => _CommunityIntroDialogState();
+
+  /// 显示对话框（静态方法）
+  /// 
+  /// 调用者：
+  /// - CommunityPage._checkAndShowIntroDialog()
+  /// 
+  /// 如果用户已看过介绍，直接返回不显示
+  static Future<void> show(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    // 检查用户是否已看过介绍
+    final hasSeenIntro = ref.read(userSettingsProvider).hasSeenCommunityIntro;
+    
+    if (hasSeenIntro) {
+      // 用户已看过介绍，直接返回
+      return;
+    }
+    
+    // 显示介绍对话框
+    await DialogHelper.show(
+      context: context,
+      barrierDismissible: false, // 不允许点击外部关闭
+      builder: (context) => const CommunityIntroDialog(),
+    );
+  }
 }
 
 class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> with CountdownMixin {
@@ -94,32 +120,6 @@ class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> wit
           child: Text(countdownFinished ? '我知道了' : '我知道了 ($countdown)'),
         ),
       ],
-    );
-  }
-
-  /// 显示对话框（静态方法）
-  /// 
-  /// 调用者：
-  /// - CommunityPage._showIntroDialogIfNeeded()
-  /// 
-  /// 如果用户已看过介绍，直接返回不显示
-  static Future<void> show(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    // 检查用户是否已看过介绍
-    final hasSeenIntro = ref.read(userSettingsProvider).hasSeenCommunityIntro;
-    
-    if (hasSeenIntro) {
-      // 用户已看过介绍，直接返回
-      return;
-    }
-    
-    // 显示介绍对话框
-    await DialogHelper.show(
-      context: context,
-      barrierDismissible: false, // 不允许点击外部关闭
-      builder: (context) => const CommunityIntroDialog(),
     );
   }
 }
