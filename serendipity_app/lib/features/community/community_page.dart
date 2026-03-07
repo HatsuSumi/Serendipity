@@ -30,18 +30,33 @@ class CommunityPage extends ConsumerStatefulWidget {
   ConsumerState<CommunityPage> createState() => _CommunityPageState();
 }
 
-class _CommunityPageState extends ConsumerState<CommunityPage> {
+class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
+  bool _hasShownIntro = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     
-    // 首次进入时显示介绍对话框
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showIntroDialogIfNeeded();
-    });
+    // 只在第一次真正显示时弹出对话框
+    // 使用 _hasShownIntro 标记避免重复显示
+    if (!_hasShownIntro) {
+      _hasShownIntro = true;
+      
+      // 延迟到下一帧显示，确保页面已完全构建
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showIntroDialogIfNeeded();
+      });
+    }
   }
 
   /// 显示介绍对话框（如果需要）
@@ -51,11 +66,18 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   /// - 如果未看过，显示介绍对话框
   /// 
   /// 调用者：
-  /// - initState（首次进入时）
+  /// - didChangeDependencies（页面首次显示时）
+  /// 
+  /// 说明：
+  /// - CommunityIntroDialog.show() 内部会检查 hasSeenCommunityIntro
+  /// - 如果已看过，直接返回不显示对话框
+  /// - 使用 _hasShownIntro 标记避免在 IndexedStack 中重复触发
   Future<void> _showIntroDialogIfNeeded() async {
     // Fail Fast: 检查 mounted
     if (!mounted) return;
     
+    // CommunityIntroDialog.show() 会自动检查用户是否已看过
+    // 如果已看过，直接返回不显示
     await CommunityIntroDialog.show(context, ref);
   }
 
