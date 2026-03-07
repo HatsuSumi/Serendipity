@@ -2,9 +2,8 @@ import 'package:uuid/uuid.dart';
 import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
-import '../repositories/i_remote_data_repository.dart';
-import '../config/app_config.dart';
 import '../utils/address_helper.dart';
+import 'i_community_data_source.dart';
 
 /// 社区仓储
 /// 
@@ -16,13 +15,18 @@ import '../utils/address_helper.dart';
 /// - 删除自己的帖子
 /// - 筛选帖子
 /// 
+/// 设计原则：
+/// - 依赖倒置（DIP）：依赖 ICommunityDataSource 抽象
+/// - 策略模式：运行时切换数据源（远程/测试）
+/// - 单一职责（SRP）：只负责业务逻辑，不关心数据来源
+/// 
 /// 调用者：
 /// - CommunityProvider（状态管理层）
 class CommunityRepository {
-  final IRemoteDataRepository _remoteData;
+  final ICommunityDataSource _dataSource;
   final _uuid = const Uuid();
 
-  CommunityRepository(this._remoteData);
+  CommunityRepository(this._dataSource);
 
   /// 从 EncounterRecord 创建 CommunityPost
   /// 
@@ -84,14 +88,8 @@ class CommunityRepository {
     // 创建社区帖子
     final post = _createPostFromRecord(record, userId);
 
-    // 测试模式：不上传到云端
-    if (AppConfig.serverType == ServerType.test) {
-      // 测试模式下，直接返回成功（未替换）
-      return false;
-    }
-
-    // 上传到云端
-    return await _remoteData.saveCommunityPost(post, forceReplace: forceReplace);
+    // 委托给数据源（策略模式）
+    return await _dataSource.publishPost(post, forceReplace: forceReplace);
   }
 
   /// 批量检查发布状态
@@ -110,15 +108,8 @@ class CommunityRepository {
       throw ArgumentError('records cannot be empty');
     }
 
-    // 测试模式：所有记录都可以发布
-    if (AppConfig.serverType == ServerType.test) {
-      return {
-        for (var record in records) record.id: 'can_publish',
-      };
-    }
-
-    // 从云端检查
-    return await _remoteData.checkPublishStatus(records);
+    // 委托给数据源（策略模式）
+    return await _dataSource.checkPublishStatus(records);
   }
 
   /// 获取社区帖子列表（分页）
@@ -139,13 +130,8 @@ class CommunityRepository {
       throw ArgumentError('limit must be positive');
     }
 
-    // 测试模式：返回空列表
-    if (AppConfig.serverType == ServerType.test) {
-      return [];
-    }
-
-    // 从云端获取
-    return await _remoteData.getCommunityPosts(
+    // 委托给数据源（策略模式）
+    return await _dataSource.getPosts(
       limit: limit,
       lastTimestamp: lastTimestamp,
     );
@@ -163,13 +149,8 @@ class CommunityRepository {
       throw ArgumentError('userId cannot be empty');
     }
 
-    // 测试模式：返回空列表
-    if (AppConfig.serverType == ServerType.test) {
-      return [];
-    }
-
-    // 从云端获取
-    return await _remoteData.getMyCommunityPosts(userId);
+    // 委托给数据源（策略模式）
+    return await _dataSource.getMyPosts(userId);
   }
 
   /// 删除帖子
@@ -189,13 +170,8 @@ class CommunityRepository {
       throw ArgumentError('userId cannot be empty');
     }
 
-    // 测试模式：直接返回成功
-    if (AppConfig.serverType == ServerType.test) {
-      return;
-    }
-
-    // 从云端删除
-    await _remoteData.deleteCommunityPost(postId, userId);
+    // 委托给数据源（策略模式）
+    await _dataSource.deletePost(postId, userId);
   }
 
   /// 筛选帖子
@@ -240,13 +216,8 @@ class CommunityRepository {
       throw ArgumentError('publishStartDate must be before publishEndDate');
     }
 
-    // 测试模式：返回空列表
-    if (AppConfig.serverType == ServerType.test) {
-      return [];
-    }
-
-    // 从云端筛选
-    return await _remoteData.filterCommunityPosts(
+    // 委托给数据源（策略模式）
+    return await _dataSource.filterPosts(
       startDate: startDate,
       endDate: endDate,
       publishStartDate: publishStartDate,

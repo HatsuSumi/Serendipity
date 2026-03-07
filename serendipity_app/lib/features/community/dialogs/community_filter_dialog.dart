@@ -60,29 +60,26 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   /// - 延迟到第一帧后执行，避免阻塞初始化
   /// - 添加 mounted 检查，避免内存泄漏
   void _initializeFromProvider() {
-    final communityState = ref.read(communityProvider).value;
-    final criteria = communityState?.filterCriteria;
+    final criteria = ref.read(communityFilterProvider);
     
-    if (criteria != null) {
-      setState(() {
-        _startDate = criteria.startDate;
-        _endDate = criteria.endDate;
-        _publishStartDate = criteria.publishStartDate;
-        _publishEndDate = criteria.publishEndDate;
-        _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
-        _selectedStatuses = criteria.statuses?.toSet() ?? {};
-        _tagController.text = criteria.tags?.join(', ') ?? '';
-        
-        // 恢复地区选择
-        if (criteria.province != null || criteria.city != null || criteria.area != null) {
-          _selectedRegion = SelectedRegion(
-            province: criteria.province,
-            city: criteria.city,
-            area: criteria.area,
-          );
-        }
-      });
-    }
+    setState(() {
+      _startDate = criteria.startDate;
+      _endDate = criteria.endDate;
+      _publishStartDate = criteria.publishStartDate;
+      _publishEndDate = criteria.publishEndDate;
+      _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
+      _selectedStatuses = criteria.statuses?.toSet() ?? {};
+      _tagController.text = criteria.tags?.join(', ') ?? '';
+      
+      // 恢复地区选择
+      if (criteria.province != null || criteria.city != null || criteria.area != null) {
+        _selectedRegion = SelectedRegion(
+          province: criteria.province,
+          city: criteria.city,
+          area: criteria.area,
+        );
+      }
+    });
   }
 
   @override

@@ -668,11 +668,11 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   /// 
   /// 调用者：_handleMenuAction()
   Future<void> _publishToCommunity(BuildContext context) async {
-    final communityNotifier = ref.read(communityProvider.notifier);
+    final publishNotifier = ref.read(communityPublishProvider.notifier);
     
     try {
       // 步骤1：先检查发布状态
-      final statusMap = await communityNotifier.checkPublishStatus([_currentRecord]);
+      final statusMap = await publishNotifier.checkPublishStatus([_currentRecord]);
       final status = statusMap[_currentRecord.id] ?? 'can_publish';
       
       if (status == 'cannot_publish') {
@@ -719,7 +719,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         final localContext = context;
         await AsyncActionHelper.execute(
           localContext,
-          action: () => communityNotifier.publishPost(_currentRecord, forceReplace: true),
+          action: () => publishNotifier.publishPost(_currentRecord, forceReplace: true),
           successMessage: '已发布到树洞',
           errorMessagePrefix: '发布失败',
         );
@@ -729,7 +729,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         final localContext = context;
         await AsyncActionHelper.execute(
           localContext,
-          action: () => communityNotifier.publishPost(_currentRecord),
+          action: () => publishNotifier.publishPost(_currentRecord),
           successMessage: '已发布到树洞',
           errorMessagePrefix: '发布失败',
         );

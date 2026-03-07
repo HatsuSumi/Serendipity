@@ -553,11 +553,11 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   /// 
   /// 调用者：_handleMenuAction()
   void _showPublishToCommunityDialog(BuildContext context, WidgetRef ref, EncounterRecord record) async {
-    final communityNotifier = ref.read(communityProvider.notifier);
+    final publishNotifier = ref.read(communityPublishProvider.notifier);
     
     try {
       // 步骤1：先检查发布状态
-      final statusMap = await communityNotifier.checkPublishStatus([record]);
+      final statusMap = await publishNotifier.checkPublishStatus([record]);
       final status = statusMap[record.id] ?? 'can_publish';
       
       if (status == 'cannot_publish') {
@@ -604,7 +604,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         final localContext = context;
         await AsyncActionHelper.execute(
           localContext,
-          action: () => communityNotifier.publishPost(record, forceReplace: true),
+          action: () => publishNotifier.publishPost(record, forceReplace: true),
           successMessage: '已发布到树洞',
           errorMessagePrefix: '发布失败',
         );
@@ -614,7 +614,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         final localContext = context;
         await AsyncActionHelper.execute(
           localContext,
-          action: () => communityNotifier.publishPost(record),
+          action: () => publishNotifier.publishPost(record),
           successMessage: '已发布到树洞',
           errorMessagePrefix: '发布失败',
         );

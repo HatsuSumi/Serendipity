@@ -164,8 +164,8 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     if (!widget.isEditMode || widget.recordToEdit == null) return;
     
     try {
-      final communityNotifier = ref.read(communityProvider.notifier);
-      final statusMap = await communityNotifier.checkPublishStatus([widget.recordToEdit!]);
+      final publishNotifier = ref.read(communityPublishProvider.notifier);
+      final statusMap = await publishNotifier.checkPublishStatus([widget.recordToEdit!]);
       final status = statusMap[widget.recordToEdit!.id] ?? 'can_publish';
       
       if (mounted) {
@@ -392,7 +392,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       if (_publishToCommunity && mounted) {
         // 编辑模式下，如果之前已发布过（_publishStatus 不是 'can_publish'），则需要 forceReplace
         final forceReplace = widget.isEditMode && _publishStatus != 'can_publish';
-        await ref.read(communityProvider.notifier).publishPost(record, forceReplace: forceReplace);
+        await ref.read(communityPublishProvider.notifier).publishPost(record, forceReplace: forceReplace);
       }
 
       if (mounted) {

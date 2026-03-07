@@ -1,84 +1,86 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/community_post.dart';
-import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../repositories/community_repository.dart';
+import '../repositories/i_community_data_source.dart';
+import '../repositories/remote_community_data_source.dart';
+import '../repositories/test_community_data_source.dart';
 import '../services/sync_service.dart';
 import '../utils/auth_error_helper.dart';
+import '../config/app_config.dart';
 import 'auth_provider.dart';
-import 'achievement_provider.dart';
-import '../services/achievement_detector.dart';
+import 'community_filter_provider.dart';
+
+// 导出发布 Provider
+export 'community_publish_provider.dart';
+// 导出筛选 Provider
+export 'community_filter_provider.dart';
+
+/// 社区数据源 Provider
+/// 
+/// 根据配置选择数据源（策略模式）
+/// - 测试模式：使用 TestCommunityDataSource
+/// - 正常模式：使用 RemoteCommunityDataSource
+final communityDataSourceProvider = Provider<ICommunityDataSource>((ref) {
+  if (AppConfig.serverType == ServerType.test) {
+    return TestCommunityDataSource();
+  } else {
+    final remoteData = ref.read(remoteDataRepositoryProvider);
+    return RemoteCommunityDataSource(remoteData);
+  }
+});
 
 /// 社区仓储 Provider
 final communityRepositoryProvider = Provider<CommunityRepository>((ref) {
-  return CommunityRepository(ref.read(remoteDataRepositoryProvider));
+  final dataSource = ref.read(communityDataSourceProvider);
+  return CommunityRepository(dataSource);
 });
 
 /// 社区状态
+/// 
+/// 职责：
+/// - 存储帖子列表
+/// - 存储分页状态
+/// - 存储筛选状态
+/// 
+/// 设计原则：
+/// - 单一职责（SRP）：只负责列表状态
+/// - 筛选条件独立管理：使用 communityFilterProvider
 class CommunityState {
   final List<CommunityPost> posts;
   final bool isFiltering;
   final bool hasMore;
-  final CommunityFilterCriteria? filterCriteria;
-  
+
   const CommunityState({
     required this.posts,
     this.isFiltering = false,
     this.hasMore = true,
-    this.filterCriteria,
   });
-  
+
   CommunityState copyWith({
     List<CommunityPost>? posts,
     bool? isFiltering,
     bool? hasMore,
-    CommunityFilterCriteria? filterCriteria,
-    bool clearFilterCriteria = false,
   }) {
     return CommunityState(
       posts: posts ?? this.posts,
       isFiltering: isFiltering ?? this.isFiltering,
       hasMore: hasMore ?? this.hasMore,
-      filterCriteria: clearFilterCriteria ? null : (filterCriteria ?? this.filterCriteria),
     );
   }
-}
-
-/// 社区筛选条件
-class CommunityFilterCriteria {
-  final DateTime? startDate;
-  final DateTime? endDate;
-  final DateTime? publishStartDate;
-  final DateTime? publishEndDate;
-  final String? province;
-  final String? city;
-  final String? area;
-  final List<PlaceType>? placeTypes;
-  final List<String>? tags;  // 修改：支持多个标签
-  final List<EncounterStatus>? statuses;
-  
-  const CommunityFilterCriteria({
-    this.startDate,
-    this.endDate,
-    this.publishStartDate,
-    this.publishEndDate,
-    this.province,
-    this.city,
-    this.area,
-    this.placeTypes,
-    this.tags,
-    this.statuses,
-  });
 }
 
 /// 社区状态管理
 /// 
 /// 职责：
 /// - 管理社区帖子列表状态
-/// - 发布记录到社区
 /// - 删除自己的帖子
 /// - 筛选帖子
 /// - 加载更多帖子（分页）
+/// 
+/// 注意：
+/// - 发布功能已移至 CommunityPublishNotifier
+/// - 筛选条件已移至 CommunityFilterNotifier
 /// 
 /// 调用者：
 /// - CommunityPage（UI 层）
@@ -87,10 +89,22 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   
   /// 最后一条帖子的时间戳（用于分页）
   DateTime? _lastTimestamp;
+  
+  /// 标志位：是否正在执行筛选（防止无限递归）
+  bool _isFiltering = false;
 
   @override
   Future<CommunityState> build() async {
     _repository = ref.read(communityRepositoryProvider);
+    
+    // 监听筛选条件变化
+    ref.listen(communityFilterProvider, (previous, next) {
+      // 当筛选条件变化时，自动重新加载
+      if (previous != next) {
+        _onFilterChanged(next);
+      }
+    });
+    
     // 初始化时加载第一页
     final posts = await _loadPosts();
     return CommunityState(
@@ -100,8 +114,32 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     );
   }
 
-  /// 获取成就检测服务
-  AchievementDetector get _achievementDetector => ref.read(achievementDetectorProvider);
+  /// 筛选条件变化时的处理
+  /// 
+  /// 自动响应筛选条件变化，重新加载数据
+  Future<void> _onFilterChanged(CommunityFilterCriteria filter) async {
+    // 如果正在执行筛选，忽略此次变化（防止无限递归）
+    if (_isFiltering) return;
+    
+    if (filter.hasAnyFilter) {
+      // 有筛选条件，执行筛选
+      await filterPosts(
+        startDate: filter.startDate,
+        endDate: filter.endDate,
+        publishStartDate: filter.publishStartDate,
+        publishEndDate: filter.publishEndDate,
+        province: filter.province,
+        city: filter.city,
+        area: filter.area,
+        placeTypes: filter.placeTypes,
+        tags: filter.tags,
+        statuses: filter.statuses,
+      );
+    } else {
+      // 无筛选条件，刷新列表
+      await refresh();
+    }
+  }
 
   /// 加载帖子（内部方法）
   Future<List<CommunityPost>> _loadPosts({
@@ -134,7 +172,6 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         posts: posts,
         isFiltering: false,
         hasMore: posts.length >= 20,
-        filterCriteria: null, // 清除筛选条件
       );
     });
   }
@@ -168,7 +205,6 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         posts: posts,
         isFiltering: false,
         hasMore: posts.length >= 20,
-        filterCriteria: null,
       );
     });
     
@@ -217,146 +253,6 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     // 不显示错误提示，避免打扰用户（用户可以下拉刷新重试）
   }
 
-  /// 发布记录到社区
-  /// 
-  /// Fail Fast:
-  /// - 如果用户未登录，抛出 StateError
-  /// - 如果记录为 null，抛出 ArgumentError
-  /// 
-  /// 参数：
-  /// - forceReplace: 是否强制替换（用户已确认）
-  /// - skipRefresh: 是否跳过刷新（批量发布时使用）
-  /// 
-  /// 返回：
-  /// - replaced: 是否替换了旧帖子
-  /// 
-  /// 调用者：
-  /// - RecordDetailPage（记录详情页菜单）
-  /// - CreateRecordPage（创建记录时勾选"发布到树洞"）
-  /// - TimelinePage（时间轴页面菜单）
-  Future<bool> publishPost(EncounterRecord record, {bool forceReplace = false, bool skipRefresh = false}) async {
-    // Fail Fast: 用户必须登录
-    final authState = ref.read(authProvider);
-    final currentUser = authState.value;
-    
-    if (currentUser == null) {
-      throw Exception('必须登录后才可发布');
-    }
-
-    try {
-      // 发布到社区
-      final replaced = await _repository.publishPost(record, currentUser.id, forceReplace: forceReplace);
-
-      // 检测社区成就（只在非批量发布时检测）
-      if (!skipRefresh) {
-        try {
-          final unlockedAchievements = await _achievementDetector.checkCommunityAchievements(currentUser.id);
-          if (unlockedAchievements.isNotEmpty) {
-            // 通知UI层显示成就解锁通知
-            ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-            // 刷新成就列表
-            ref.invalidate(achievementsProvider);
-          }
-        } catch (e) {
-          // 成就检测失败不影响发布
-        }
-
-        // 静默刷新帖子列表（避免页面闪烁）
-        await refreshSilently();
-      }
-      
-      return replaced;
-    } catch (e) {
-      // 使用 AuthErrorHelper 清理异常前缀
-      throw Exception(AuthErrorHelper.extractErrorMessage(e));
-    }
-  }
-
-  /// 批量发布记录到社区
-  /// 
-  /// Fail Fast:
-  /// - 如果用户未登录，抛出 StateError
-  /// - 如果 records 为空，抛出 ArgumentError
-  /// 
-  /// 返回：
-  /// - successCount: 成功发布的数量
-  /// - replacedCount: 替换旧帖的数量
-  /// 
-  /// 调用者：PublishToCommunityDialog._handleConfirm()
-  Future<({int successCount, int replacedCount})> publishPosts(
-    List<({EncounterRecord record, bool forceReplace})> records,
-  ) async {
-    // Fail Fast: 参数验证
-    if (records.isEmpty) {
-      throw ArgumentError('records cannot be empty');
-    }
-
-    int successCount = 0;
-    int replacedCount = 0;
-
-    // 批量发布，跳过每次刷新
-    for (final item in records) {
-      try {
-        final replaced = await publishPost(
-          item.record,
-          forceReplace: item.forceReplace,
-          skipRefresh: true,
-        );
-
-        successCount++;
-        if (replaced) {
-          replacedCount++;
-        }
-      } catch (e) {
-        // 单条记录发布失败，继续发布其他记录
-      }
-    }
-
-    // 批量发布完成后，统一检测成就并刷新
-    final authState = ref.read(authProvider);
-    final currentUser = authState.value;
-    
-    if (currentUser != null) {
-      try {
-        final unlockedAchievements = await _achievementDetector.checkCommunityAchievements(currentUser.id);
-        if (unlockedAchievements.isNotEmpty) {
-          ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-          ref.invalidate(achievementsProvider);
-        }
-      } catch (e) {
-        // 成就检测失败不影响发布
-      }
-    }
-
-    // 统一静默刷新一次（避免页面闪烁）
-    await refreshSilently();
-
-    return (successCount: successCount, replacedCount: replacedCount);
-  }
-
-  /// 批量检查发布状态
-  /// 
-  /// Fail Fast:
-  /// - 如果 records 为空，抛出 ArgumentError
-  /// 
-  /// 返回：
-  /// - `Map<recordId, PublishStatus>`：每条记录的发布状态
-  /// 
-  /// 调用者：PublishToCommunityDialog._handleConfirm()
-  Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {
-    // Fail Fast: 参数验证
-    if (records.isEmpty) {
-      throw Exception('记录列表不能为空');
-    }
-
-    try {
-      return await _repository.checkPublishStatus(records);
-    } catch (e) {
-      // 使用 AuthErrorHelper 清理异常前缀
-      throw Exception(AuthErrorHelper.extractErrorMessage(e));
-    }
-  }
-
   /// 删除帖子
   /// 
   /// Fail Fast:
@@ -399,7 +295,9 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - tags: 标签名称列表（可选，多选OR逻辑）
   /// - statuses: 状态列表（可选，多选OR逻辑）
   /// 
-  /// 调用者：CommunityFilterDialog（筛选对话框）
+  /// 调用者：
+  /// - CommunityFilterDialog（筛选对话框）
+  /// - _onFilterChanged（筛选条件变化时自动调用）
   Future<void> filterPosts({
     DateTime? startDate,
     DateTime? endDate,
@@ -412,25 +310,12 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     List<String>? tags,
     List<EncounterStatus>? statuses,
   }) async {
-    state = const AsyncValue.loading();
-    _lastTimestamp = null;
-
-    // 保存筛选条件
-    final criteria = CommunityFilterCriteria(
-      startDate: startDate,
-      endDate: endDate,
-      publishStartDate: publishStartDate,
-      publishEndDate: publishEndDate,
-      province: province,
-      city: city,
-      area: area,
-      placeTypes: placeTypes,
-      tags: tags,
-      statuses: statuses,
-    );
-
-    state = await AsyncValue.guard(() async {
-      final posts = await _repository.filterPosts(
+    // 设置标志位，防止无限递归
+    _isFiltering = true;
+    
+    try {
+      // 先更新筛选条件到 Provider，以便对话框下次打开时能读取
+      final criteria = CommunityFilterCriteria(
         startDate: startDate,
         endDate: endDate,
         publishStartDate: publishStartDate,
@@ -442,20 +327,45 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         tags: tags,
         statuses: statuses,
       );
+      ref.read(communityFilterProvider.notifier).updateFilter(criteria);
       
-      return CommunityState(
-        posts: posts,
-        isFiltering: true,
-        hasMore: false, // 筛选结果不支持分页
-        filterCriteria: criteria, // 保存筛选条件
-      );
-    });
+      state = const AsyncValue.loading();
+      _lastTimestamp = null;
+
+      state = await AsyncValue.guard(() async {
+        final posts = await _repository.filterPosts(
+          startDate: startDate,
+          endDate: endDate,
+          publishStartDate: publishStartDate,
+          publishEndDate: publishEndDate,
+          province: province,
+          city: city,
+          area: area,
+          placeTypes: placeTypes,
+          tags: tags,
+          statuses: statuses,
+        );
+        
+        return CommunityState(
+          posts: posts,
+          isFiltering: true,
+          hasMore: false, // 筛选结果不支持分页
+        );
+      });
+    } finally {
+      // 无论成功还是失败，都要重置标志位
+      _isFiltering = false;
+    }
   }
 
   /// 清除筛选（恢复默认列表）
   /// 
   /// 调用者：CommunityPage（清除筛选按钮）
   Future<void> clearFilter() async {
+    // 先清除筛选条件
+    ref.read(communityFilterProvider.notifier).clearFilter();
+    
+    // 立即刷新列表，恢复到默认状态
     await refresh();
   }
 
