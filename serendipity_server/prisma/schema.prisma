@@ -171,16 +171,17 @@ model VerificationCode {
 }
 
 model UserSettings {
-  id              String   @id @default(uuid())
-  userId          String   @unique @map("user_id")
-  theme           String   @default("light") @db.VarChar(50)
-  pageTransition  String   @default("slide_from_right") @map("page_transition") @db.VarChar(50)
-  dialogAnimation String   @default("fade_in") @map("dialog_animation") @db.VarChar(50)
-  notifications   Json     @default("{\"checkInReminder\": true, \"achievementUnlocked\": true, \"checkInReminderTime\": \"20:00\"}")
-  checkIn         Json     @default("{\"confettiEnabled\": true, \"vibrationEnabled\": true}") @map("check_in")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String   @id @default(uuid())
+  userId                 String   @unique @map("user_id")
+  theme                  String   @default("light") @db.VarChar(50)
+  pageTransition         String   @default("slide_from_right") @map("page_transition") @db.VarChar(50)
+  dialogAnimation        String   @default("fade_in") @map("dialog_animation") @db.VarChar(50)
+  notifications          Json     @default("{\"checkInReminder\": true, \"achievementUnlocked\": true, \"checkInReminderTime\": \"20:00\"}")
+  checkIn                Json     @default("{\"confettiEnabled\": true, \"vibrationEnabled\": true}") @map("check_in")
+  hasSeenCommunityIntro  Boolean  @default(false) @map("has_seen_community_intro")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_settings")

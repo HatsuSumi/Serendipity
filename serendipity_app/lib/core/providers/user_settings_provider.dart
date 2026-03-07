@@ -59,6 +59,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       autoPublishToCommunity: false,
       hidePublishWarning: false,
       hasSeenPublishWarning: false,
+      hasSeenCommunityIntro: false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -209,6 +210,22 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   Future<void> markPublishWarningSeen([bool seen = true]) async {
     final updated = state.copyWith(
       hasSeenPublishWarning: seen,
+      updatedAt: DateTime.now(),
+    );
+
+    await _storageService.saveUserSettings(updated);
+    state = updated;
+  }
+
+  /// 标记用户已看过社区介绍
+  /// 
+  /// [seen] 是否已看过（默认 true）
+  /// 
+  /// 调用者：
+  /// - CommunityIntroDialog（用户点击"我知道了"时）
+  Future<void> markCommunityIntroSeen([bool seen = true]) async {
+    final updated = state.copyWith(
+      hasSeenCommunityIntro: seen,
       updatedAt: DateTime.now(),
     );
 

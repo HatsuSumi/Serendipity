@@ -51,6 +51,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           vibrationEnabled: true,
           confettiEnabled: true,
         },
+        hasSeenCommunityIntro: false,
       },
     });
   }
@@ -70,6 +71,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         dialogAnimation: data.dialogAnimation,
         notifications: data.notifications as Prisma.InputJsonValue | undefined,
         checkIn: data.checkIn as Prisma.InputJsonValue | undefined,
+        hasSeenCommunityIntro: data.hasSeenCommunityIntro,
         updatedAt: new Date(),
       },
     });
@@ -90,6 +92,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         dialogAnimation: data.dialogAnimation,
         notifications: data.notifications as Prisma.InputJsonValue | undefined,
         checkIn: data.checkIn as Prisma.InputJsonValue | undefined,
+        hasSeenCommunityIntro: data.hasSeenCommunityIntro,
         updatedAt: new Date(),
       },
       create: {
@@ -106,6 +109,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           vibrationEnabled: true,
           confettiEnabled: true,
         }) as Prisma.InputJsonValue,
+        hasSeenCommunityIntro: data.hasSeenCommunityIntro ?? false,
       },
     });
   }

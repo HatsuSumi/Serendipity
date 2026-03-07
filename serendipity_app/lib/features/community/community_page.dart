@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/user_settings_provider.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
@@ -10,6 +11,7 @@ import '../../core/widgets/empty_state_widget.dart';
 import '../record/create_record_page.dart';
 import 'widgets/community_post_card.dart';
 import 'dialogs/community_filter_dialog.dart';
+import 'dialogs/community_intro_dialog.dart';
 import 'dialogs/publish_to_community_dialog.dart';
 
 /// 社区页面（树洞）
@@ -35,6 +37,26 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    
+    // 首次进入时显示介绍对话框
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showIntroDialogIfNeeded();
+    });
+  }
+
+  /// 显示介绍对话框（如果需要）
+  /// 
+  /// 职责：
+  /// - 检查用户是否已看过介绍
+  /// - 如果未看过，显示介绍对话框
+  /// 
+  /// 调用者：
+  /// - initState（首次进入时）
+  Future<void> _showIntroDialogIfNeeded() async {
+    // Fail Fast: 检查 mounted
+    if (!mounted) return;
+    
+    await CommunityIntroDialog.show(context, ref);
   }
 
   @override
