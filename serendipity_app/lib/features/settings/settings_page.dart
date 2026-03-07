@@ -394,9 +394,15 @@ class SettingsPage extends ConsumerWidget {
           ),
           ListTile(
             leading: const Icon(Icons.notifications_off_outlined, color: Colors.blue),
-            title: const Text('重置对话框提醒'),
+            title: const Text('重置发布警告对话框'),
             subtitle: const Text('重新显示"发布到社区"警告对话框'),
-            onTap: () => _showResetDialogWarningDialog(context, ref),
+            onTap: () => _showResetPublishWarningDialog(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline, color: Colors.blue),
+            title: const Text('重置社区介绍对话框'),
+            subtitle: const Text('重新显示"欢迎来到树洞"介绍对话框'),
+            onTap: () => _showResetCommunityIntroDialog(context, ref),
           ),
           ListTile(
             leading: const Icon(Icons.refresh, color: Colors.orange),
@@ -1276,12 +1282,12 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  /// 显示重置对话框警告确认对话框
-  void _showResetDialogWarningDialog(BuildContext context, WidgetRef ref) {
+  /// 显示重置发布警告对话框确认对话框
+  void _showResetPublishWarningDialog(BuildContext context, WidgetRef ref) {
     DialogHelper.show(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('重置对话框提醒'),
+        title: const Text('重置发布警告对话框'),
         content: const Text('确定要重置"发布到社区"警告对话框的"不再提示"设置吗？\n\n重置后，下次发布时将重新显示警告对话框和倒计时。'),
         actions: [
           TextButton(
@@ -1299,7 +1305,42 @@ class SettingsPage extends ConsumerWidget {
                   await ref.read(userSettingsProvider.notifier).updateHidePublishWarning(false);
                   await ref.read(userSettingsProvider.notifier).markPublishWarningSeen(false);
                 },
-                successMessage: '对话框提醒已重置',
+                successMessage: '发布警告对话框已重置',
+                errorMessagePrefix: '重置失败',
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue,
+            ),
+            child: const Text('确定重置'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示重置社区介绍对话框确认对话框
+  void _showResetCommunityIntroDialog(BuildContext context, WidgetRef ref) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重置社区介绍对话框'),
+        content: const Text('确定要重置社区介绍对话框吗？\n\n重置后，下次进入树洞页面时将重新显示"欢迎来到树洞"介绍对话框。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              await AsyncActionHelper.execute(
+                context,
+                action: () async {
+                  await ref.read(userSettingsProvider.notifier).markCommunityIntroSeen(false);
+                },
+                successMessage: '社区介绍对话框已重置',
                 errorMessagePrefix: '重置失败',
               );
             },
