@@ -37,6 +37,8 @@ class CommunityIntroDialog extends ConsumerWidget {
           children: [
             const Text('这里是一个匿名的树洞，\n记录着大家错过的瞬间。'),
             const SizedBox(height: 16),
+            const Text('你可以在树洞中看到\n是否有别人记录了你。'),
+            const SizedBox(height: 16),
             const Text('但树洞没有评论、点赞、\n也无法联系发布者。'),
             const SizedBox(height: 16),
             Text(
