@@ -54,6 +54,7 @@ model Record {
   @@index([updatedAt])
   @@index([storyLineId])
   @@index([timestamp])
+  @@index([userId, updatedAt])
   @@map("records")
 }
 
@@ -69,6 +70,7 @@ model StoryLine {
 
   @@index([userId])
   @@index([updatedAt])
+  @@index([userId, updatedAt])
   @@map("story_lines")
 }
 
