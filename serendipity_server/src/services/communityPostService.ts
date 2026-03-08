@@ -152,22 +152,22 @@ export class CommunityPostService implements ICommunityPostService {
     // 辅助函数：统一处理 null 和 undefined
     const normalize = (value: any) => value ?? null;
     
-    // 定义需要比较的字段映射表
+    // 定义需要比较的字段映射表（不可变）
     // key: 字段名, value: 转换函数（可选）
-    const fieldComparisons: Array<{
-      field: keyof CommunityPost;
-      transform?: (value: any) => any;
-    }> = [
-      { field: 'timestamp', transform: (v) => new Date(v).toISOString() },
-      { field: 'address' },
-      { field: 'placeName' },
-      { field: 'placeType' },
-      { field: 'province' },
-      { field: 'city' },
-      { field: 'area' },
-      { field: 'description' },
-      { field: 'status' },
-    ];
+    const fieldComparisons: ReadonlyArray<{
+      readonly field: keyof CommunityPost;
+      readonly transform?: (value: any) => any;
+    }> = Object.freeze([
+      Object.freeze({ field: 'timestamp' as const, transform: (v: any) => new Date(v).toISOString() }),
+      Object.freeze({ field: 'address' as const }),
+      Object.freeze({ field: 'placeName' as const }),
+      Object.freeze({ field: 'placeType' as const }),
+      Object.freeze({ field: 'province' as const }),
+      Object.freeze({ field: 'city' as const }),
+      Object.freeze({ field: 'area' as const }),
+      Object.freeze({ field: 'description' as const }),
+      Object.freeze({ field: 'status' as const }),
+    ]);
 
     // 遍历字段进行比较
     for (const { field, transform } of fieldComparisons) {
