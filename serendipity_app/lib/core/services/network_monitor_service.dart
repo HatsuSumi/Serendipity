@@ -17,7 +17,7 @@ import 'sync_service.dart';
 /// 
 /// 设计原则：
 /// - 单一职责（SRP）：只负责网络状态监听和触发同步
-/// - 依赖倒置（DIP）：通过 Ref 获取依赖，不直接依赖具体实现
+/// - 依赖倒置（DIP）：通过 WidgetRef 获取依赖，不直接依赖具体实现
 /// - Fail Fast：参数验证立即抛出异常
 /// 
 /// 调用者：
@@ -39,7 +39,7 @@ class NetworkMonitorService {
   /// 功能：
   /// 1. 启动网络状态监听
   /// 2. 触发 App 启动时的初始同步
-  void startMonitoring(Ref ref) {
+  void startMonitoring(WidgetRef ref) {
     // Fail Fast：参数验证
     if (_isMonitoring) {
       return; // 避免重复监听
@@ -73,7 +73,7 @@ class NetworkMonitorService {
   /// - 用户昨天登录了 App
   /// - 今天打开 App（已登录状态）
   /// - 自动同步最新数据
-  Future<void> _triggerInitialSync(Ref ref) async {
+  Future<void> _triggerInitialSync(WidgetRef ref) async {
     // 使用 Future.microtask 避免在 Provider 构建期间触发同步
     Future.microtask(() async {
       try {
@@ -111,7 +111,7 @@ class NetworkMonitorService {
   /// 设计原则：
   /// - 只在网络从离线恢复到在线时触发同步
   /// - 避免频繁触发同步（如 WiFi 和移动网络切换）
-  void _handleConnectivityChange(List<ConnectivityResult> results, Ref ref) {
+  void _handleConnectivityChange(List<ConnectivityResult> results, WidgetRef ref) {
     // 判断是否在线
     final isOnline = results.isNotEmpty && 
                      !results.every((result) => result == ConnectivityResult.none);
@@ -132,7 +132,7 @@ class NetworkMonitorService {
   /// - 只在用户已登录时触发同步
   /// - 同步失败不影响应用运行（静默失败）
   /// - 使用 Future.microtask 避免阻塞当前事件循环
-  Future<void> _onNetworkRestored(Ref ref) async {
+  Future<void> _onNetworkRestored(WidgetRef ref) async {
     // 使用 Future.microtask 避免在 Provider 构建期间触发同步
     Future.microtask(() async {
       try {
@@ -186,7 +186,7 @@ class NetworkMonitorService {
   /// 设计原则：
   /// - 通过 SyncService 触发同步，遵循分层架构
   /// - 同步失败不抛出异常，静默处理
-  Future<void> _triggerSync(Ref ref, User user) async {
+  Future<void> _triggerSync(WidgetRef ref, User user) async {
     try {
       final syncService = ref.read(syncServiceProvider);
       await syncService.syncAllData(user);
