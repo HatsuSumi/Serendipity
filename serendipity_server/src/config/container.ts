@@ -5,6 +5,7 @@ import winston from 'winston';
 import { JwtService } from '../services/jwtService';
 import { AuthService } from '../services/authService';
 import { VerificationService } from '../services/verificationService';
+import { BcryptPasswordHasher } from '../services/passwordHasher';
 import { UserRepository } from '../repositories/userRepository';
 import { RefreshTokenRepository } from '../repositories/refreshTokenRepository';
 import { VerificationCodeRepository } from '../repositories/verificationCodeRepository';
@@ -26,6 +27,7 @@ import { CommunityPostService } from '../services/communityPostService';
 import { UserService } from '../services/userService';
 import { CheckInService } from '../services/checkInService';
 import { config } from '../config';
+import { AUTH_CONFIG } from '../config/auth.config';
 import path from 'path';
 
 // 依赖容器
@@ -145,6 +147,10 @@ export const initializeContainer = (): Container => {
   const jwtService = new JwtService();
   container.register('jwtService', jwtService);
 
+  // 初始化 Password Hasher
+  const passwordHasher = new BcryptPasswordHasher(AUTH_CONFIG.SALT_ROUNDS);
+  container.register('passwordHasher', passwordHasher);
+
   // 初始化 Repositories
   const userRepository = new UserRepository(prisma);
   const refreshTokenRepository = new RefreshTokenRepository(prisma);
@@ -172,7 +178,8 @@ export const initializeContainer = (): Container => {
     userRepository,
     refreshTokenRepository,
     verificationService,
-    jwtService
+    jwtService,
+    passwordHasher
   );
   const recordService = new RecordService(recordRepository);
   const storyLineService = new StoryLineService(storyLineRepository);

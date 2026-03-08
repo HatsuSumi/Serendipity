@@ -2,15 +2,11 @@ import { AuthService } from '../../../src/services/authService';
 import { IUserRepository } from '../../../src/repositories/userRepository';
 import { IRefreshTokenRepository } from '../../../src/repositories/refreshTokenRepository';
 import { IVerificationService } from '../../../src/services/verificationService';
+import { IPasswordHasher } from '../../../src/services/passwordHasher';
 import { JwtService } from '../../../src/services/jwtService';
 import { createMockUser } from '../../helpers/factories';
 import { AppError } from '../../../src/middlewares/errorHandler';
 import { ErrorCode } from '../../../src/types/errors';
-import bcrypt from 'bcrypt';
-
-// Mock bcrypt
-jest.mock('bcrypt');
-const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -18,6 +14,7 @@ describe('AuthService', () => {
   let mockRefreshTokenRepository: jest.Mocked<IRefreshTokenRepository>;
   let mockVerificationService: jest.Mocked<IVerificationService>;
   let mockJwtService: jest.Mocked<JwtService>;
+  let mockPasswordHasher: jest.Mocked<IPasswordHasher>;
 
   beforeEach(() => {
     // 创建 mock 对象
@@ -33,6 +30,8 @@ describe('AuthService', () => {
       bindEmail: jest.fn(),
       bindPhone: jest.fn(),
       updatePassword: jest.fn(),
+      updateRecoveryKey: jest.fn(),
+      findByEmailAndRecoveryKey: jest.fn(),
     };
 
     mockRefreshTokenRepository = {
@@ -49,17 +48,23 @@ describe('AuthService', () => {
       generateCode: jest.fn(),
     };
 
+    mockPasswordHasher = {
+      hash: jest.fn(),
+      compare: jest.fn(),
+    };
+
     mockJwtService = {
-      generateToken: jest.fn(),
-      generateRefreshToken: jest.fn(),
-      verifyToken: jest.fn(),
+      generateToken: jest.fn().mockReturnValue('access-token'),
+      generateRefreshToken: jest.fn().mockReturnValue('refresh-token'),
+      verify: jest.fn(),
     } as any;
 
     authService = new AuthService(
       mockUserRepository,
       mockRefreshTokenRepository,
       mockVerificationService,
-      mockJwtService
+      mockJwtService,
+      mockPasswordHasher
     );
   });
 
@@ -68,41 +73,32 @@ describe('AuthService', () => {
       const registerData = {
         email: 'test@example.com',
         password: 'password123',
-        verificationCode: '123456',
       };
 
       const mockUser = createMockUser();
-      
-      mockVerificationService.verifyCode.mockResolvedValue(true);
+
       mockUserRepository.findByEmail.mockResolvedValue(null);
-      mockedBcrypt.hash.mockResolvedValue('hashed-password' as never);
+      mockPasswordHasher.hash.mockResolvedValue('hashed-password');
       mockUserRepository.create.mockResolvedValue(mockUser);
-      mockJwtService.generateToken.mockReturnValue('access-token');
-      mockJwtService.generateRefreshToken.mockReturnValue('refresh-token');
+      mockUserRepository.updateRecoveryKey.mockResolvedValue(mockUser);
       mockRefreshTokenRepository.create.mockResolvedValue({} as any);
 
       const result = await authService.registerEmail(registerData);
 
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(registerData.email);
+      expect(mockPasswordHasher.hash).toHaveBeenCalledWith(registerData.password);
+      expect(mockUserRepository.create).toHaveBeenCalled();
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('tokens');
-      expect(result.tokens.accessToken).toBe('access-token');
-      expect(mockVerificationService.verifyCode).toHaveBeenCalledWith(
-        registerData.email,
-        registerData.verificationCode,
-        'register'
-      );
-      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(registerData.email);
-      expect(mockUserRepository.create).toHaveBeenCalled();
+      expect(result).toHaveProperty('recoveryKey');
     });
 
     it('邮箱已存在时应该抛出错误', async () => {
       const registerData = {
         email: 'existing@example.com',
         password: 'password123',
-        verificationCode: '123456',
       };
 
-      mockVerificationService.verifyCode.mockResolvedValue(true);
       mockUserRepository.findByEmail.mockResolvedValue(createMockUser());
 
       await expect(authService.registerEmail(registerData)).rejects.toThrow(AppError);
@@ -122,10 +118,8 @@ describe('AuthService', () => {
       const mockUser = createMockUser();
       
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-      mockedBcrypt.compare.mockResolvedValue(true as never);
+      mockPasswordHasher.compare.mockResolvedValue(true);
       mockUserRepository.updateLastLogin.mockResolvedValue(mockUser);
-      mockJwtService.generateToken.mockReturnValue('access-token');
-      mockJwtService.generateRefreshToken.mockReturnValue('refresh-token');
       mockRefreshTokenRepository.create.mockResolvedValue({} as any);
 
       const result = await authService.loginEmail(loginData);
@@ -158,7 +152,7 @@ describe('AuthService', () => {
       const mockUser = createMockUser();
       
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-      mockedBcrypt.compare.mockResolvedValue(false as never);
+      mockPasswordHasher.compare.mockResolvedValue(false);
 
       await expect(authService.loginEmail(loginData)).rejects.toThrow(AppError);
       await expect(authService.loginEmail(loginData)).rejects.toMatchObject({
@@ -171,25 +165,19 @@ describe('AuthService', () => {
     it('应该成功重置密码', async () => {
       const resetData = {
         email: 'test@example.com',
-        verificationCode: '123456',
+        recoveryKey: 'xxxx-xxxx-xxxx-xxxx',
         newPassword: 'new-password123',
       };
 
-      const mockUser = createMockUser();
+      const mockUser = createMockUser({ recoveryKey: 'xxxx-xxxx-xxxx-xxxx' });
       
-      mockVerificationService.verifyCode.mockResolvedValue(true);
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-      mockedBcrypt.hash.mockResolvedValue('new-hashed-password' as never);
+      mockPasswordHasher.hash.mockResolvedValue('new-hashed-password');
       mockUserRepository.updatePassword.mockResolvedValue(mockUser);
       mockRefreshTokenRepository.deleteByUserId.mockResolvedValue(1);
 
       await authService.resetPassword(resetData);
 
-      expect(mockVerificationService.verifyCode).toHaveBeenCalledWith(
-        resetData.email,
-        resetData.verificationCode,
-        'reset_password'
-      );
       expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
         mockUser.id,
         'new-hashed-password'
@@ -200,16 +188,15 @@ describe('AuthService', () => {
     it('用户不存在时应该抛出错误', async () => {
       const resetData = {
         email: 'nonexistent@example.com',
-        verificationCode: '123456',
+        recoveryKey: 'xxxx-xxxx-xxxx-xxxx',
         newPassword: 'new-password123',
       };
 
-      mockVerificationService.verifyCode.mockResolvedValue(true);
       mockUserRepository.findByEmail.mockResolvedValue(null);
 
       await expect(authService.resetPassword(resetData)).rejects.toThrow(AppError);
       await expect(authService.resetPassword(resetData)).rejects.toMatchObject({
-        code: ErrorCode.USER_NOT_FOUND,
+        code: ErrorCode.INVALID_CREDENTIALS,
       });
     });
   });
@@ -225,8 +212,8 @@ describe('AuthService', () => {
       const mockUser = createMockUser();
       
       mockUserRepository.findById.mockResolvedValue(mockUser);
-      mockedBcrypt.compare.mockResolvedValue(true as never);
-      mockedBcrypt.hash.mockResolvedValue('new-hashed-password' as never);
+      mockPasswordHasher.compare.mockResolvedValue(true);
+      mockPasswordHasher.hash.mockResolvedValue('new-hashed-password');
       mockUserRepository.updatePassword.mockResolvedValue(mockUser);
       mockRefreshTokenRepository.deleteByUserId.mockResolvedValue(1);
 
@@ -249,7 +236,7 @@ describe('AuthService', () => {
       const mockUser = createMockUser();
       
       mockUserRepository.findById.mockResolvedValue(mockUser);
-      mockedBcrypt.compare.mockResolvedValue(false as never);
+      mockPasswordHasher.compare.mockResolvedValue(false);
 
       await expect(authService.changePassword(userId, changeData)).rejects.toThrow(AppError);
       await expect(authService.changePassword(userId, changeData)).rejects.toMatchObject({
@@ -273,14 +260,12 @@ describe('AuthService', () => {
       mockRefreshTokenRepository.findByToken.mockResolvedValue(mockTokenRecord);
       mockUserRepository.findById.mockResolvedValue(mockUser);
       mockRefreshTokenRepository.deleteByToken.mockResolvedValue(undefined as any);
-      mockJwtService.generateToken.mockReturnValue('new-access-token');
-      mockJwtService.generateRefreshToken.mockReturnValue('new-refresh-token');
       mockRefreshTokenRepository.create.mockResolvedValue({} as any);
 
       const result = await authService.refreshToken(refreshToken);
 
-      expect(result.tokens.accessToken).toBe('new-access-token');
-      expect(result.tokens.refreshToken).toBe('new-refresh-token');
+      expect(result.tokens.accessToken).toBe('access-token');
+      expect(result.tokens.refreshToken).toBe('refresh-token');
       expect(mockRefreshTokenRepository.deleteByToken).toHaveBeenCalledWith(refreshToken);
     });
 
@@ -327,4 +312,3 @@ describe('AuthService', () => {
     });
   });
 });
-

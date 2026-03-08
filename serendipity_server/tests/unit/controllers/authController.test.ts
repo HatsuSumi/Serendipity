@@ -21,6 +21,8 @@ describe('AuthController', () => {
       getMe: jest.fn(),
       refreshToken: jest.fn(),
       logout: jest.fn(),
+      generateRecoveryKey: jest.fn(),
+      getRecoveryKey: jest.fn(),
     };
 
     mockVerificationService = {
@@ -46,7 +48,7 @@ describe('AuthController', () => {
 
       const mockResult = {
         user: { id: 'user-id', email: 'test@example.com', createdAt: new Date() },
-        tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 604800 },
+        tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 
       mockAuthService.registerEmail.mockResolvedValue(mockResult);
@@ -86,7 +88,7 @@ describe('AuthController', () => {
 
       const mockResult = {
         user: { id: 'user-id', email: 'test@example.com', createdAt: new Date() },
-        tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 604800 },
+        tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 
       mockAuthService.loginEmail.mockResolvedValue(mockResult);
@@ -157,7 +159,7 @@ describe('AuthController', () => {
 
       const mockResult = {
         user: { id: 'user-id', email: 'test@example.com', createdAt: new Date() },
-        tokens: { accessToken: 'new-token', refreshToken: 'new-refresh', expiresIn: 604800 },
+        tokens: { accessToken: 'new-token', refreshToken: 'new-refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 
       mockAuthService.refreshToken.mockResolvedValue(mockResult);

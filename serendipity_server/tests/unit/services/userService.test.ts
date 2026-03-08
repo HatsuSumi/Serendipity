@@ -27,6 +27,8 @@ describe('UserService', () => {
       bindEmail: jest.fn(),
       bindPhone: jest.fn(),
       updatePassword: jest.fn(),
+      updateRecoveryKey: jest.fn(),
+      findByEmailAndRecoveryKey: jest.fn(),
     };
 
     mockUserSettingsRepository = {
