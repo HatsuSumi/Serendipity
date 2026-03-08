@@ -65,6 +65,9 @@ dependencies:
   
   # 时区支持（用于通知调度）
   timezone: ^0.9.4
+  
+  # 网络状态监听
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:

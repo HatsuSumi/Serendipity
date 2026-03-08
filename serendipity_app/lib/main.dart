@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/network_monitor_service.dart';
 import 'core/repositories/check_in_repository.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
@@ -95,11 +96,33 @@ void main() async {
 /// 用于在认证状态变化时控制导航，避免重建整个 MaterialApp
 final navigatorKey = GlobalKey<NavigatorState>();
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // 启动网络监听（在下一帧执行，避免在构建期间访问 Provider）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(networkMonitorServiceProvider).startMonitoring(ref);
+    });
+  }
+  
+  @override
+  void dispose() {
+    // 停止网络监听
+    ref.read(networkMonitorServiceProvider).stopMonitoring();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // 监听主题选项变化
     final themeOption = ref.watch(themeOptionProvider);
     
