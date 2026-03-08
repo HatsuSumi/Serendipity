@@ -54,7 +54,6 @@ class NetworkMonitorService {
       },
       onError: (error) {
         // 监听失败不影响应用运行
-        // 生产环境应记录错误日志
       },
     );
     
@@ -94,7 +93,6 @@ class NetworkMonitorService {
         }
       } catch (e) {
         // 同步失败不影响应用启动
-        // 生产环境应记录错误日志
       }
     });
   }
@@ -154,7 +152,6 @@ class NetworkMonitorService {
         }
       } catch (e) {
         // 同步失败不影响应用运行
-        // 生产环境应记录错误日志
       }
     });
   }
@@ -196,7 +193,6 @@ class NetworkMonitorService {
     } catch (e) {
       // 同步失败不抛出异常
       // 用户可以稍后手动触发同步
-      // 生产环境应记录错误日志
     }
   }
 }
