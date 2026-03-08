@@ -76,7 +76,7 @@ describe('AuthService', () => {
       };
 
       const mockUser = createMockUser();
-
+      
       mockUserRepository.findByEmail.mockResolvedValue(null);
       mockPasswordHasher.hash.mockResolvedValue('hashed-password');
       mockUserRepository.create.mockResolvedValue(mockUser);

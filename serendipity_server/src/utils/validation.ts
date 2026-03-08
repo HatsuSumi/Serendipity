@@ -115,3 +115,69 @@ export const ValidationPatterns = {
   uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
 };
 
+/**
+ * Fail Fast 参数验证工具
+ * 在函数开始时立即验证参数，发现问题立即抛出错误
+ */
+export class FailFastValidator {
+  /**
+   * 验证字符串参数不为空
+   * @param value - 要验证的值
+   * @param paramName - 参数名称
+   * @throws {AppError} 当参数为空时
+   */
+  static validateNonEmptyString(value: unknown, paramName: string): asserts value is string {
+    if (!value || typeof value !== 'string' || value.trim() === '') {
+      throw new AppError(
+        `${paramName} 不能为空`,
+        ErrorCode.INVALID_REQUEST
+      );
+    }
+  }
+
+  /**
+   * 验证对象参数不为空
+   * @param value - 要验证的值
+   * @param paramName - 参数名称
+   * @throws {AppError} 当参数为空时
+   */
+  static validateNonNullObject<T>(value: T | null | undefined, paramName: string): asserts value is T {
+    if (!value || typeof value !== 'object') {
+      throw new AppError(
+        `${paramName} 不能为空`,
+        ErrorCode.INVALID_REQUEST
+      );
+    }
+  }
+
+  /**
+   * 验证数组参数不为空
+   * @param value - 要验证的值
+   * @param paramName - 参数名称
+   * @throws {AppError} 当参数为空或不是数组时
+   */
+  static validateNonEmptyArray<T>(value: unknown, paramName: string): asserts value is T[] {
+    if (!Array.isArray(value) || value.length === 0) {
+      throw new AppError(
+        `${paramName} 必须是非空数组`,
+        ErrorCode.INVALID_REQUEST
+      );
+    }
+  }
+
+  /**
+   * 验证 UUID 格式
+   * @param value - 要验证的值
+   * @param paramName - 参数名称
+   * @throws {AppError} 当格式不正确时
+   */
+  static validateUUID(value: unknown, paramName: string): asserts value is string {
+    if (typeof value !== 'string' || !ValidationPatterns.uuid.test(value)) {
+      throw new AppError(
+        `${paramName} 必须是有效的 UUID`,
+        ErrorCode.INVALID_REQUEST
+      );
+    }
+  }
+}
+

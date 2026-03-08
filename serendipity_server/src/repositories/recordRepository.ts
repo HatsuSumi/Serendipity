@@ -2,25 +2,70 @@ import { PrismaClient, Record } from '@prisma/client';
 import { CreateRecordDto, UpdateRecordDto } from '../types/record.dto';
 import { toJsonValue } from '../utils/prisma-json';
 
-// Record Repository 接口
+/**
+ * Record Repository 接口
+ * 负责记录数据的持久化操作
+ */
 export interface IRecordRepository {
+  /**
+   * 创建或更新记录（使用 upsert）
+   * @param userId - 用户 ID
+   * @param data - 记录数据
+   * @returns 创建或更新的记录
+   */
   create(userId: string, data: CreateRecordDto): Promise<Record>;
+  
+  /**
+   * 根据 ID 查找记录
+   * @param id - 记录 ID
+   * @param userId - 用户 ID
+   * @returns 记录对象，不存在则返回 null
+   */
   findById(id: string, userId: string): Promise<Record | null>;
+  
+  /**
+   * 根据用户 ID 查找记录列表（支持增量同步和分页）
+   * @param userId - 用户 ID
+   * @param lastSyncTime - 最后同步时间（可选）
+   * @param limit - 每页数量（默认 100）
+   * @param offset - 偏移量（默认 0）
+   * @returns 记录列表和总数
+   */
   findByUserId(
     userId: string,
     lastSyncTime?: Date,
     limit?: number,
     offset?: number
   ): Promise<{ records: Record[]; total: number }>;
-  update(id: string, userId: string, data: UpdateRecordDto): Promise<Record>;
-  delete(id: string, userId: string): Promise<void>;
-  countByUserId(userId: string, lastSyncTime?: Date): Promise<number>;
+  
+  /**
+   * 更新记录
+   * @param id - 记录 ID
+   * @param data - 更新数据
+   * @returns 更新后的记录
+   * @note 权限验证应在 Service 层完成
+   */
+  update(id: string, data: UpdateRecordDto): Promise<Record>;
+  
+  /**
+   * 删除记录
+   * @param id - 记录 ID
+   * @note 权限验证应在 Service 层完成
+   */
+  delete(id: string): Promise<void>;
 }
 
-// Record Repository 实现
+/**
+ * Record Repository 实现
+ * 负责记录数据的持久化操作
+ */
 export class RecordRepository implements IRecordRepository {
   constructor(private prisma: PrismaClient) {}
 
+  /**
+   * 创建或更新记录（使用 upsert）
+   * 如果记录已存在则更新，否则创建新记录
+   */
   async create(userId: string, data: CreateRecordDto): Promise<Record> {
     return this.prisma.record.upsert({
       where: { id: data.id },
@@ -60,12 +105,18 @@ export class RecordRepository implements IRecordRepository {
     });
   }
 
+  /**
+   * 根据 ID 查找记录
+   */
   async findById(id: string, userId: string): Promise<Record | null> {
     return this.prisma.record.findFirst({
       where: { id, userId },
     });
   }
 
+  /**
+   * 根据用户 ID 查找记录列表（支持增量同步和分页）
+   */
   async findByUserId(
     userId: string,
     lastSyncTime?: Date,
@@ -90,47 +141,73 @@ export class RecordRepository implements IRecordRepository {
     return { records, total };
   }
 
+  /**
+   * 更新记录
+   * 使用辅助函数构建更新数据，避免大量 if 判断
+   * 注意：调用前必须先通过 findById 验证记录归属
+   */
   async update(
     id: string,
-    userId: string,
     data: UpdateRecordDto
   ): Promise<Record> {
+    const updateData = this.buildUpdateData(data);
+
+    // 使用 updateMany 可以在 where 中使用复合条件
+    // 但为了保持返回类型一致，我们先查询再更新
+    const record = await this.prisma.record.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return record;
+  }
+
+  /**
+   * 删除记录
+   * 注意：调用前必须先通过 findById 验证记录归属
+   */
+  async delete(id: string): Promise<void> {
+    await this.prisma.record.delete({
+      where: { id },
+    });
+  }
+
+  /**
+   * 构建更新数据对象
+   * 提取为私有方法，简化 update 方法
+   * @private
+   */
+  private buildUpdateData(data: UpdateRecordDto): any {
     const updateData: any = {
       updatedAt: new Date(data.updatedAt),
     };
 
-    if (data.timestamp) updateData.timestamp = new Date(data.timestamp);
-    if (data.location) updateData.location = toJsonValue(data.location);
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.tags) updateData.tags = toJsonValue(data.tags);
-    if (data.emotion !== undefined) updateData.emotion = data.emotion;
-    if (data.status) updateData.status = data.status;
-    if (data.storyLineId !== undefined) updateData.storyLineId = data.storyLineId;
-    if (data.ifReencounter !== undefined) updateData.ifReencounter = data.ifReencounter;
-    if (data.conversationStarter !== undefined) updateData.conversationStarter = data.conversationStarter;
-    if (data.backgroundMusic !== undefined) updateData.backgroundMusic = data.backgroundMusic;
-    if (data.weather) updateData.weather = toJsonValue(data.weather);
-    if (data.isPinned !== undefined) updateData.isPinned = data.isPinned;
+    // 使用对象映射简化条件判断
+    const fieldMappings: Array<{
+      key: keyof UpdateRecordDto;
+      transform?: (value: any) => any;
+    }> = [
+      { key: 'timestamp', transform: (v) => new Date(v) },
+      { key: 'location', transform: toJsonValue },
+      { key: 'description' },
+      { key: 'tags', transform: toJsonValue },
+      { key: 'emotion' },
+      { key: 'status' },
+      { key: 'storyLineId' },
+      { key: 'ifReencounter' },
+      { key: 'conversationStarter' },
+      { key: 'backgroundMusic' },
+      { key: 'weather', transform: toJsonValue },
+      { key: 'isPinned' },
+    ];
 
-    return this.prisma.record.update({
-      where: { id, userId },
-      data: updateData,
-    });
-  }
+    for (const { key, transform } of fieldMappings) {
+      if (data[key] !== undefined) {
+        updateData[key] = transform ? transform(data[key]) : data[key];
+      }
+    }
 
-  async delete(id: string, userId: string): Promise<void> {
-    await this.prisma.record.delete({
-      where: { id, userId },
-    });
-  }
-
-  async countByUserId(userId: string, lastSyncTime?: Date): Promise<number> {
-    return this.prisma.record.count({
-      where: {
-        userId,
-        ...(lastSyncTime && { updatedAt: { gt: lastSyncTime } }),
-      },
-    });
+    return updateData;
   }
 }
 

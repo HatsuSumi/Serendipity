@@ -5,29 +5,73 @@ import {
 } from '../types/storyline.dto';
 import { toJsonValue } from '../utils/prisma-json';
 
-// StoryLine Repository 接口
+/**
+ * StoryLine Repository 接口
+ * 负责故事线数据的持久化操作
+ */
 export interface IStoryLineRepository {
+  /**
+   * 创建或更新故事线（使用 upsert）
+   * @param userId - 用户 ID
+   * @param data - 故事线数据
+   * @returns 创建或更新的故事线
+   */
   create(userId: string, data: CreateStoryLineDto): Promise<StoryLine>;
+  
+  /**
+   * 根据 ID 查找故事线
+   * @param id - 故事线 ID
+   * @param userId - 用户 ID
+   * @returns 故事线对象，不存在则返回 null
+   */
   findById(id: string, userId: string): Promise<StoryLine | null>;
+  
+  /**
+   * 根据用户 ID 查找故事线列表（支持增量同步和分页）
+   * @param userId - 用户 ID
+   * @param lastSyncTime - 最后同步时间（可选）
+   * @param limit - 每页数量（默认 100）
+   * @param offset - 偏移量（默认 0）
+   * @returns 故事线列表和总数
+   */
   findByUserId(
     userId: string,
     lastSyncTime?: Date,
     limit?: number,
     offset?: number
   ): Promise<{ storylines: StoryLine[]; total: number }>;
+  
+  /**
+   * 更新故事线
+   * @param id - 故事线 ID
+   * @param data - 更新数据
+   * @returns 更新后的故事线
+   * @note 权限验证应在 Service 层完成
+   */
   update(
     id: string,
-    userId: string,
     data: UpdateStoryLineDto
   ): Promise<StoryLine>;
-  delete(id: string, userId: string): Promise<void>;
-  countByUserId(userId: string, lastSyncTime?: Date): Promise<number>;
+  
+  /**
+   * 删除故事线
+   * @param id - 故事线 ID
+   * @note 权限验证应在 Service 层完成
+   */
+  delete(id: string): Promise<void>;
 }
 
-// StoryLine Repository 实现
+/**
+ * StoryLine Repository 实现
+ * 负责故事线数据的持久化操作
+ */
 export class StoryLineRepository implements IStoryLineRepository {
   constructor(private prisma: PrismaClient) {}
 
+  /**
+   * 创建或更新故事线（使用 upsert）
+   * 如果故事线已存在则更新，否则创建新故事线
+   */
   async create(userId: string, data: CreateStoryLineDto): Promise<StoryLine> {
     return this.prisma.storyLine.upsert({
       where: { id: data.id },
@@ -47,12 +91,18 @@ export class StoryLineRepository implements IStoryLineRepository {
     });
   }
 
+  /**
+   * 根据 ID 查找故事线
+   */
   async findById(id: string, userId: string): Promise<StoryLine | null> {
     return this.prisma.storyLine.findFirst({
       where: { id, userId },
     });
   }
 
+  /**
+   * 根据用户 ID 查找故事线列表（支持增量同步和分页）
+   */
   async findByUserId(
     userId: string,
     lastSyncTime?: Date,
@@ -77,34 +127,50 @@ export class StoryLineRepository implements IStoryLineRepository {
     return { storylines, total };
   }
 
+  /**
+   * 更新故事线
+   * 使用辅助函数构建更新数据，保持代码简洁
+   */
   async update(
     id: string,
-    userId: string,
     data: UpdateStoryLineDto
   ): Promise<StoryLine> {
+    const updateData = this.buildUpdateData(data);
+
     return this.prisma.storyLine.update({
-      where: { id, userId },
-      data: {
-        ...(data.name && { name: data.name }),
-        ...(data.recordIds && { recordIds: toJsonValue(data.recordIds) }),
-        updatedAt: new Date(data.updatedAt),
-      },
+      where: { id },
+      data: updateData,
     });
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  /**
+   * 删除故事线
+   */
+  async delete(id: string): Promise<void> {
     await this.prisma.storyLine.delete({
-      where: { id, userId },
+      where: { id },
     });
   }
 
-  async countByUserId(userId: string, lastSyncTime?: Date): Promise<number> {
-    return this.prisma.storyLine.count({
-      where: {
-        userId,
-        ...(lastSyncTime && { updatedAt: { gt: lastSyncTime } }),
-      },
-    });
+  /**
+   * 构建更新数据对象
+   * 提取为私有方法，简化 update 方法
+   * @private
+   */
+  private buildUpdateData(data: UpdateStoryLineDto): any {
+    const updateData: any = {
+      updatedAt: new Date(data.updatedAt),
+    };
+
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+
+    if (data.recordIds !== undefined) {
+      updateData.recordIds = toJsonValue(data.recordIds);
+    }
+
+    return updateData;
   }
 }
 
