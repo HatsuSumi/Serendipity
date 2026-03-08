@@ -104,40 +104,48 @@ export class CommunityPostService implements ICommunityPostService {
       throw new AppError('records is required', ErrorCode.VALIDATION_ERROR);
     }
 
-    const statuses: RecordPublishStatusDto[] = [];
+    // 性能优化：批量查询所有已发布的帖子（避免 N+1 问题）
+    const recordIds = records.map(r => r.recordId);
+    const existingPosts = await this.communityPostRepository.findByUserAndRecords(
+      userId,
+      recordIds
+    );
 
-    for (const record of records) {
-      // 查询是否已发布
-      const existingPost = await this.communityPostRepository.findByUserAndRecord(
-        userId,
-        record.recordId
-      );
+    // 构建 recordId -> CommunityPost 的映射表
+    const postMap = new Map<string, CommunityPost>();
+    for (const post of existingPosts) {
+      postMap.set(post.recordId, post);
+    }
+
+    // 批量检查状态
+    const statuses: RecordPublishStatusDto[] = records.map(record => {
+      const existingPost = postMap.get(record.recordId);
 
       if (!existingPost) {
         // 未发布过，可以发布
-        statuses.push({
+        return {
           recordId: record.recordId,
           status: PublishStatus.CAN_PUBLISH,
-        });
-      } else {
-        // 已发布过，检查内容是否变化
-        const hasChanged = this.hasPostContentChanged(existingPost, record);
-        
-        if (hasChanged) {
-          // 内容已变化，需要用户确认
-          statuses.push({
-            recordId: record.recordId,
-            status: PublishStatus.NEED_CONFIRM,
-          });
-        } else {
-          // 内容未变化，不能发布
-          statuses.push({
-            recordId: record.recordId,
-            status: PublishStatus.CANNOT_PUBLISH,
-          });
-        }
+        };
       }
-    }
+
+      // 已发布过，检查内容是否变化
+      const hasChanged = this.hasPostContentChanged(existingPost, record);
+      
+      if (hasChanged) {
+        // 内容已变化，需要用户确认
+        return {
+          recordId: record.recordId,
+          status: PublishStatus.NEED_CONFIRM,
+        };
+      } else {
+        // 内容未变化，不能发布
+        return {
+          recordId: record.recordId,
+          status: PublishStatus.CANNOT_PUBLISH,
+        };
+      }
+    });
 
     return { statuses };
   }
