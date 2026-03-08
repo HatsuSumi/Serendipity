@@ -195,7 +195,7 @@ class NetworkMonitorService {
   /// - 服务器正常：返回 true
   Future<bool> _checkServerHealth() async {
     try {
-      final url = '${ServerConfig.baseUrl}/health';
+      final url = '${ServerConfig.apiUrl}/health';
       debugPrint('🏥 [NetworkMonitor] 检查服务器: $url');
       
       final response = await http.get(
