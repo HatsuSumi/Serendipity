@@ -215,6 +215,7 @@ void main() {
       test('应该从存储加载上次同步时间', () async {
         final lastSyncTime = DateTime(2026, 3, 1, 10, 30);
         await mockStorage.set('last_manual_sync_time', lastSyncTime.toIso8601String());
+        await mockStorage.set('last_full_sync_time', lastSyncTime.toIso8601String());
 
         // 重新创建 container 以触发初始化
         container.dispose();
@@ -230,6 +231,7 @@ void main() {
         expect(state.lastManualSyncTime!.year, 2026);
         expect(state.lastManualSyncTime!.month, 3);
         expect(state.lastManualSyncTime!.day, 1);
+        expect(state.lastFullSyncTime, isNotNull);
       });
     });
 
@@ -282,10 +284,12 @@ void main() {
 
         container.read(syncStatusProvider.notifier).syncSuccess(result);
 
-        final savedTime = await mockStorage.get<String>('last_manual_sync_time');
-        expect(savedTime, isNotNull);
+        final savedManualTime = await mockStorage.get<String>('last_manual_sync_time');
+        final savedFullTime = await mockStorage.get<String>('last_full_sync_time');
+        expect(savedManualTime, isNotNull);
+        expect(savedFullTime, isNotNull);
         
-        final parsedTime = DateTime.parse(savedTime!);
+        final parsedTime = DateTime.parse(savedManualTime!);
         final now = DateTime.now();
         expect(parsedTime.difference(now).inSeconds.abs(), lessThan(2));
       });

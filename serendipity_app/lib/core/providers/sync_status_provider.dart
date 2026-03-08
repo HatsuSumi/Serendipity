@@ -23,6 +23,7 @@ enum SyncStatus {
 /// 职责：
 /// - 追踪同步状态（空闲、同步中、成功、失败）
 /// - 记录上次手动同步时间
+/// - 记录上次全量同步时间（用于增量同步）
 /// - 记录同步结果统计
 /// - 记录错误信息
 class SyncStatusInfo {
@@ -31,6 +32,9 @@ class SyncStatusInfo {
   
   /// 上次手动同步时间
   final DateTime? lastManualSyncTime;
+  
+  /// 上次全量同步时间（用于增量同步）
+  final DateTime? lastFullSyncTime;
   
   /// 同步结果统计
   final SyncResult? syncResult;
@@ -41,6 +45,7 @@ class SyncStatusInfo {
   const SyncStatusInfo({
     required this.status,
     this.lastManualSyncTime,
+    this.lastFullSyncTime,
     this.syncResult,
     this.errorMessage,
   });
@@ -48,12 +53,14 @@ class SyncStatusInfo {
   SyncStatusInfo copyWith({
     SyncStatus? status,
     DateTime? lastManualSyncTime,
+    DateTime? lastFullSyncTime,
     SyncResult? syncResult,
     String? errorMessage,
   }) {
     return SyncStatusInfo(
       status: status ?? this.status,
       lastManualSyncTime: lastManualSyncTime ?? this.lastManualSyncTime,
+      lastFullSyncTime: lastFullSyncTime ?? this.lastFullSyncTime,
       syncResult: syncResult ?? this.syncResult,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -80,6 +87,7 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   final IStorageService _storage;
   
   static const String _lastManualSyncTimeKey = 'last_manual_sync_time';
+  static const String _lastFullSyncTimeKey = 'last_full_sync_time';
   
   /// 构造函数
   /// 
@@ -90,6 +98,7 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   SyncStatusNotifier(this._storage) : super(SyncStatusInfo(
     status: SyncStatus.idle,
     lastManualSyncTime: _loadLastManualSyncTime(_storage),
+    lastFullSyncTime: _loadLastFullSyncTime(_storage),
   ));
   
   /// 加载上次手动同步时间
@@ -97,6 +106,21 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   /// 调用者：构造函数
   static DateTime? _loadLastManualSyncTime(IStorageService storage) {
     final timeStr = storage.get<String>(_lastManualSyncTimeKey);
+    if (timeStr == null) return null;
+    
+    try {
+      return DateTime.parse(timeStr);
+    } catch (e) {
+      // 解析失败，返回 null
+      return null;
+    }
+  }
+  
+  /// 加载上次全量同步时间
+  /// 
+  /// 调用者：构造函数
+  static DateTime? _loadLastFullSyncTime(IStorageService storage) {
+    final timeStr = storage.get<String>(_lastFullSyncTimeKey);
     if (timeStr == null) return null;
     
     try {
@@ -127,10 +151,12 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   void syncSuccess(SyncResult result) {
     final now = DateTime.now();
     _storage.set(_lastManualSyncTimeKey, now.toIso8601String());
+    _storage.set(_lastFullSyncTimeKey, now.toIso8601String());
     
     state = SyncStatusInfo(
       status: SyncStatus.success,
       lastManualSyncTime: now,
+      lastFullSyncTime: now,
       syncResult: result,
       errorMessage: null,
     );
@@ -158,6 +184,7 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
     state = SyncStatusInfo(
       status: SyncStatus.error,
       lastManualSyncTime: state.lastManualSyncTime,
+      lastFullSyncTime: state.lastFullSyncTime,
       syncResult: null,
       errorMessage: errorMessage,
     );
@@ -177,6 +204,7 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
     state = SyncStatusInfo(
       status: SyncStatus.idle,
       lastManualSyncTime: state.lastManualSyncTime,
+      lastFullSyncTime: state.lastFullSyncTime,
       syncResult: state.syncResult,
       errorMessage: null,
     );

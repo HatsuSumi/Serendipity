@@ -103,9 +103,12 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
         _currentStep = '正在合并数据...';
       });
 
-      // 执行同步
+      // 执行同步（使用增量同步）
       final syncService = ref.read(syncServiceProvider);
-      final result = await syncService.syncAllData(user);
+      final syncStatus = ref.read(syncStatusProvider);
+      final lastSyncTime = syncStatus.lastFullSyncTime;
+      
+      final result = await syncService.syncAllData(user, lastSyncTime: lastSyncTime);
 
       // 5. 同步成功
       if (!mounted) return;

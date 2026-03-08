@@ -34,6 +34,12 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
     // 测试模式：返回空列表
     return [];
   }
+  
+  @override
+  Future<List<EncounterRecord>> downloadRecordsSince(String userId, DateTime lastSyncTime) async {
+    // 测试模式：返回空列表
+    return [];
+  }
 
   @override
   Future<void> deleteRecord(String userId, String recordId) async {
@@ -57,6 +63,12 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
 
   @override
   Future<List<StoryLine>> downloadStoryLines(String userId) async {
+    // 测试模式：返回空列表
+    return [];
+  }
+  
+  @override
+  Future<List<StoryLine>> downloadStoryLinesSince(String userId, DateTime lastSyncTime) async {
     // 测试模式：返回空列表
     return [];
   }
@@ -130,6 +142,12 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   
   @override
   Future<List<CheckInRecord>> downloadCheckIns(String userId) async {
+    // 测试模式：返回空列表
+    return [];
+  }
+  
+  @override
+  Future<List<CheckInRecord>> downloadCheckInsSince(String userId, DateTime lastSyncTime) async {
     // 测试模式：返回空列表
     return [];
   }

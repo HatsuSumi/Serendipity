@@ -79,6 +79,23 @@ abstract class IRemoteDataRepository {
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<List<EncounterRecord>> downloadRecords(String userId);
   
+  /// 下载用户增量记录（自上次同步后的变化）
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [lastSyncTime]：上次同步时间
+  /// 
+  /// 返回：自上次同步后有变化的记录列表
+  /// 
+  /// 调用者：
+  /// - SyncService.downloadData()（增量同步）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - lastSyncTime 为 null：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<EncounterRecord>> downloadRecordsSince(String userId, DateTime lastSyncTime);
+  
   /// 删除云端记录
   /// 
   /// 参数：
@@ -160,6 +177,23 @@ abstract class IRemoteDataRepository {
   /// - userId 为空：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<List<StoryLine>> downloadStoryLines(String userId);
+  
+  /// 下载用户增量故事线（自上次同步后的变化）
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [lastSyncTime]：上次同步时间
+  /// 
+  /// 返回：自上次同步后有变化的故事线列表
+  /// 
+  /// 调用者：
+  /// - SyncService.downloadData()（增量同步）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - lastSyncTime 为 null：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<StoryLine>> downloadStoryLinesSince(String userId, DateTime lastSyncTime);
   
   /// 删除云端故事线
   /// 
@@ -351,6 +385,23 @@ abstract class IRemoteDataRepository {
   /// - userId 为空：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<List<CheckInRecord>> downloadCheckIns(String userId);
+  
+  /// 下载用户增量签到记录（自上次同步后的变化）
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [lastSyncTime]：上次同步时间
+  /// 
+  /// 返回：自上次同步后有变化的签到记录列表
+  /// 
+  /// 调用者：
+  /// - SyncService.downloadData()（增量同步）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - lastSyncTime 为 null：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<CheckInRecord>> downloadCheckInsSince(String userId, DateTime lastSyncTime);
   
   /// 删除云端签到记录
   /// 

@@ -98,6 +98,31 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   }
   
   @override
+  Future<List<EncounterRecord>> downloadRecordsSince(String userId, DateTime lastSyncTime) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      final response = await _httpClient.get(
+        ServerConfig.records,
+        queryParams: {
+          'lastSyncTime': lastSyncTime.toIso8601String(),
+        },
+      );
+      final data = response['data'] as Map<String, dynamic>;
+      final recordsJson = data['records'] as List;
+      
+      return recordsJson
+          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on HttpException catch (e) {
+      throw Exception('下载增量记录失败：${e.message}');
+    }
+  }
+  
+  @override
   Future<void> deleteRecord(String userId, String recordId) async {
     // Fail Fast：参数验证
     if (userId.isEmpty) {
@@ -192,6 +217,31 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
           .toList();
     } on HttpException catch (e) {
       throw Exception('下载故事线失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<List<StoryLine>> downloadStoryLinesSince(String userId, DateTime lastSyncTime) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      final response = await _httpClient.get(
+        ServerConfig.storylines,
+        queryParams: {
+          'lastSyncTime': lastSyncTime.toIso8601String(),
+        },
+      );
+      final data = response['data'] as Map<String, dynamic>;
+      final storylinesJson = data['storyLines'] as List;
+      
+      return storylinesJson
+          .map((json) => StoryLine.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on HttpException catch (e) {
+      throw Exception('下载增量故事线失败：${e.message}');
     }
   }
   
@@ -492,6 +542,31 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
           .toList();
     } on HttpException catch (e) {
       throw Exception('下载签到记录失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<List<CheckInRecord>> downloadCheckInsSince(String userId, DateTime lastSyncTime) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      final response = await _httpClient.get(
+        ServerConfig.checkIns,
+        queryParams: {
+          'lastSyncTime': lastSyncTime.toIso8601String(),
+        },
+      );
+      final data = response['data'] as Map<String, dynamic>;
+      final checkInsJson = data['checkIns'] as List;
+      
+      return checkInsJson
+          .map((json) => CheckInRecord.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on HttpException catch (e) {
+      throw Exception('下载增量签到记录失败：${e.message}');
     }
   }
   

@@ -257,33 +257,34 @@ class SyncService {
     await _remoteRepository.deleteCheckIn(user.id, checkInId);
   }
   
-  /// 全量同步：上传本地数据到云端，下载云端数据到本地
+  /// 增量同步：只同步有变化的数据
   /// 
   /// 调用者：
-  /// - AuthProvider：用户登录成功后自动调用
-  /// - SettingsPage：手动同步按钮
+  /// - AuthProvider：用户登录成功后自动调用（首次全量同步）
+  /// - SettingsPage：手动同步按钮（增量同步）
   /// 
   /// 同步策略：
-  /// 1. 上传本地所有记录和故事线到云端
-  /// 2. 下载云端所有数据到本地
-  /// 3. 合并数据（最后更新时间优先）
+  /// 1. 获取上次同步时间
+  /// 2. 上传本地有变化的数据（updatedAt > lastSyncTime）
+  /// 3. 下载云端有变化的数据（updatedAt > lastSyncTime）
+  /// 4. 合并数据（最后更新时间优先）
   /// 
   /// 返回：同步结果统计
   /// 
   /// Fail Fast：
   /// - user 为 null：抛出 ArgumentError
   /// - 网络错误：向上抛出异常
-  Future<SyncResult> syncAllData(User user) async {
+  Future<SyncResult> syncAllData(User user, {DateTime? lastSyncTime}) async {
     // Fail Fast：参数验证
     if (user.id.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
     
-    // 1. 上传本地数据到云端
-    final uploadStats = await _uploadLocalData(user);
+    // 1. 上传本地有变化的数据
+    final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
     
-    // 2. 下载云端数据到本地
-    final downloadStats = await _downloadRemoteData(user);
+    // 2. 下载云端有变化的数据
+    final downloadStats = await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
     
     // 3. 返回同步结果统计
     return SyncResult(
@@ -299,55 +300,78 @@ class SyncService {
     );
   }
   
-  /// 上传本地数据到云端
+  /// 上传本地有变化的数据到云端（增量上传）
   /// 
   /// 调用者：syncAllData()
   /// 
+  /// 参数：
+  /// - lastSyncTime：上次同步时间，如果为 null 则全量上传
+  /// 
   /// 返回：上传统计信息
-  Future<Map<String, int>> _uploadLocalData(User user) async {
+  Future<Map<String, int>> _uploadLocalData(User user, {DateTime? lastSyncTime}) async {
     // 获取本地所有记录
-    final localRecords = _storageService.getRecordsSortedByTime();
+    final allRecords = _storageService.getRecordsSortedByTime();
+    
+    // 过滤出有变化的记录（增量上传）
+    final changedRecords = lastSyncTime == null
+        ? allRecords
+        : allRecords.where((r) => r.updatedAt.isAfter(lastSyncTime)).toList();
     
     // 批量上传记录
-    if (localRecords.isNotEmpty) {
-      await _remoteRepository.uploadRecords(user.id, localRecords);
+    if (changedRecords.isNotEmpty) {
+      await _remoteRepository.uploadRecords(user.id, changedRecords);
     }
     
     // 获取本地所有故事线
-    final localStoryLines = _storageService.getAllStoryLines();
+    final allStoryLines = _storageService.getAllStoryLines();
+    
+    // 过滤出有变化的故事线（增量上传）
+    final changedStoryLines = lastSyncTime == null
+        ? allStoryLines
+        : allStoryLines.where((s) => s.updatedAt.isAfter(lastSyncTime)).toList();
     
     // 批量上传故事线
-    if (localStoryLines.isNotEmpty) {
-      await _remoteRepository.uploadStoryLines(user.id, localStoryLines);
+    if (changedStoryLines.isNotEmpty) {
+      await _remoteRepository.uploadStoryLines(user.id, changedStoryLines);
     }
     
     // 获取本地所有签到记录
-    final localCheckIns = _storageService.getAllCheckIns();
+    final allCheckIns = _storageService.getAllCheckIns();
+    
+    // 过滤出有变化的签到记录（增量上传）
+    final changedCheckIns = lastSyncTime == null
+        ? allCheckIns
+        : allCheckIns.where((c) => c.updatedAt.isAfter(lastSyncTime)).toList();
     
     // 批量上传签到记录
-    if (localCheckIns.isNotEmpty) {
-      await _remoteRepository.uploadCheckIns(user.id, localCheckIns);
+    if (changedCheckIns.isNotEmpty) {
+      await _remoteRepository.uploadCheckIns(user.id, changedCheckIns);
     }
     
     return {
-      'records': localRecords.length,
-      'storyLines': localStoryLines.length,
-      'checkIns': localCheckIns.length,
+      'records': changedRecords.length,
+      'storyLines': changedStoryLines.length,
+      'checkIns': changedCheckIns.length,
     };
   }
   
-  /// 下载云端数据到本地
+  /// 下载云端有变化的数据到本地（增量下载）
   /// 
   /// 调用者：syncAllData()
   /// 
+  /// 参数：
+  /// - lastSyncTime：上次同步时间，如果为 null 则全量下载
+  /// 
   /// 返回：下载和合并统计信息
-  Future<Map<String, int>> _downloadRemoteData(User user) async {
+  Future<Map<String, int>> _downloadRemoteData(User user, {DateTime? lastSyncTime}) async {
     int mergedRecords = 0;
     int mergedStoryLines = 0;
     int mergedCheckIns = 0;
     
-    // 下载云端记录
-    final remoteRecords = await _remoteRepository.downloadRecords(user.id);
+    // 下载云端记录（增量或全量）
+    final remoteRecords = lastSyncTime == null
+        ? await _remoteRepository.downloadRecords(user.id)
+        : await _remoteRepository.downloadRecordsSince(user.id, lastSyncTime);
     
     // 合并到本地（最后更新时间优先）
     for (final remoteRecord in remoteRecords) {
@@ -365,8 +389,10 @@ class SyncService {
       }
     }
     
-    // 下载云端故事线
-    final remoteStoryLines = await _remoteRepository.downloadStoryLines(user.id);
+    // 下载云端故事线（增量或全量）
+    final remoteStoryLines = lastSyncTime == null
+        ? await _remoteRepository.downloadStoryLines(user.id)
+        : await _remoteRepository.downloadStoryLinesSince(user.id, lastSyncTime);
     
     // 合并到本地（最后更新时间优先）
     for (final remoteStoryLine in remoteStoryLines) {
@@ -384,8 +410,10 @@ class SyncService {
       }
     }
     
-    // 下载云端签到记录
-    final remoteCheckIns = await _remoteRepository.downloadCheckIns(user.id);
+    // 下载云端签到记录（增量或全量）
+    final remoteCheckIns = lastSyncTime == null
+        ? await _remoteRepository.downloadCheckIns(user.id)
+        : await _remoteRepository.downloadCheckInsSince(user.id, lastSyncTime);
     
     // 合并到本地（最后更新时间优先）
     for (final remoteCheckIn in remoteCheckIns) {
