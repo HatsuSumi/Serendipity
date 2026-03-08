@@ -64,6 +64,8 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
   /// 
   /// 调用者：initState()
   Future<void> _startSync() async {
+    if (!mounted) return;
+    
     setState(() {
       _isSyncing = true;
       _currentStep = '准备同步...';
@@ -82,18 +84,21 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       }
 
       // 2. 上传本地数据
+      if (!mounted) return;
       setState(() {
         _currentStep = '正在上传本地数据...';
       });
       await Future.delayed(const Duration(milliseconds: 500)); // 让用户看到进度
 
       // 3. 下载云端数据
+      if (!mounted) return;
       setState(() {
         _currentStep = '正在下载云端数据...';
       });
       await Future.delayed(const Duration(milliseconds: 500)); // 让用户看到进度
 
       // 4. 合并数据
+      if (!mounted) return;
       setState(() {
         _currentStep = '正在合并数据...';
       });
@@ -103,6 +108,7 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       final result = await syncService.syncAllData(user);
 
       // 5. 同步成功
+      if (!mounted) return;
       setState(() {
         _isSyncing = false;
         _currentStep = '同步完成';
@@ -120,6 +126,7 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       // 同步失败
       final cleanMessage = AuthErrorHelper.extractErrorMessage(e);
       
+      if (!mounted) return;
       setState(() {
         _isSyncing = false;
         _errorMessage = cleanMessage;
