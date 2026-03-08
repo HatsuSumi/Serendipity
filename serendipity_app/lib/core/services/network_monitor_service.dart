@@ -261,17 +261,23 @@ class NetworkMonitorService {
   Future<bool> _checkServerHealth() async {
     try {
       // Web 端：先检查外网连接（避免 localhost 误判）
+      debugPrint('🔍 [NetworkMonitor] 平台检查: kIsWeb = $kIsWeb');
       if (kIsWeb) {
         try {
+          debugPrint('🌐 [NetworkMonitor] 开始检查外网连接...');
           // 使用 Google DNS 检查外网连接
           final dnsResponse = await http.get(
             Uri.parse('https://dns.google/resolve?name=google.com&type=A'),
           ).timeout(const Duration(seconds: 3));
           
+          debugPrint('🌐 [NetworkMonitor] 外网检查响应: ${dnsResponse.statusCode}');
+          
           if (dnsResponse.statusCode != 200) {
             debugPrint('❌ [NetworkMonitor] 外网不可达');
             return false;
           }
+          
+          debugPrint('✅ [NetworkMonitor] 外网连接正常');
         } catch (e) {
           debugPrint('❌ [NetworkMonitor] 外网检查失败: $e');
           return false;
