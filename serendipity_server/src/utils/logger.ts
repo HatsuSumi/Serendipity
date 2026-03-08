@@ -22,7 +22,7 @@ const consoleFormat = winston.format.combine(
 );
 
 export const logger = winston.createLogger({
-  level: config.nodeEnv === 'production' ? 'info' : 'debug',
+  level: 'info', // 只输出 info、warn、error 级别日志
   format: logFormat,
   transports: [
     // 错误日志
