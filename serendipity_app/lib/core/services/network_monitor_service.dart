@@ -268,14 +268,16 @@ class NetworkMonitorService {
       if (kIsWeb) {
         try {
           debugPrint('🌐 [NetworkMonitor] 开始检查外网连接...');
-          // 使用 Google DNS 检查外网连接
-          final dnsResponse = await http.get(
-            Uri.parse('https://dns.google/resolve?name=google.com&type=A'),
+          // 使用随机参数避免缓存，访问一个轻量级的公共 API
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final testResponse = await http.head(
+            Uri.parse('https://www.google.com/generate_204?t=$timestamp'),
           ).timeout(const Duration(seconds: 3));
           
-          debugPrint('🌐 [NetworkMonitor] 外网检查响应: ${dnsResponse.statusCode}');
+          debugPrint('🌐 [NetworkMonitor] 外网检查响应: ${testResponse.statusCode}');
           
-          if (dnsResponse.statusCode != 200) {
+          // Google 的 generate_204 端点返回 204 表示成功
+          if (testResponse.statusCode != 204 && testResponse.statusCode != 200) {
             debugPrint('❌ [NetworkMonitor] 外网不可达');
             return false;
           }
