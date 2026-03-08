@@ -268,23 +268,30 @@ class NetworkMonitorService {
       if (kIsWeb) {
         try {
           debugPrint('🌐 [NetworkMonitor] 开始检查外网连接...');
-          // 使用随机参数避免缓存，访问一个轻量级的公共 API
+          // 使用随机参数避免缓存，尝试多个公共 API
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final testResponse = await http.head(
-            Uri.parse('https://www.google.com/generate_204?t=$timestamp'),
-          ).timeout(const Duration(seconds: 3));
           
-          debugPrint('🌐 [NetworkMonitor] 外网检查响应: ${testResponse.statusCode}');
-          
-          // Google 的 generate_204 端点返回 204 表示成功
-          if (testResponse.statusCode != 204 && testResponse.statusCode != 200) {
-            debugPrint('❌ [NetworkMonitor] 外网不可达');
+          // 尝试访问百度（国内可访问）
+          try {
+            final testResponse = await http.head(
+              Uri.parse('https://www.baidu.com/?t=$timestamp'),
+            ).timeout(const Duration(seconds: 3));
+            
+            debugPrint('🌐 [NetworkMonitor] 外网检查响应（百度）: ${testResponse.statusCode}');
+            
+            if (testResponse.statusCode == 200) {
+              debugPrint('✅ [NetworkMonitor] 外网连接正常');
+              // 外网可达，继续检查服务器
+            } else {
+              debugPrint('❌ [NetworkMonitor] 外网不可达');
+              return false;
+            }
+          } catch (e) {
+            debugPrint('❌ [NetworkMonitor] 外网检查失败: $e');
             return false;
           }
-          
-          debugPrint('✅ [NetworkMonitor] 外网连接正常');
         } catch (e) {
-          debugPrint('❌ [NetworkMonitor] 外网检查失败: $e');
+          debugPrint('❌ [NetworkMonitor] 外网检查异常: $e');
           return false;
         }
       }
