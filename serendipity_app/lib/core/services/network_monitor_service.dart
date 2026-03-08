@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import '../../models/user.dart';
 import '../providers/auth_provider.dart';
+import '../config/server_config.dart';
 import 'sync_service.dart';
 
 /// 网络监听服务
@@ -83,6 +85,7 @@ class NetworkMonitorService {
   /// 网络恢复时的处理
   /// 
   /// 设计原则：
+  /// - 先检查服务器是否可达（避免无效的同步尝试）
   /// - 只在用户已登录时触发同步
   /// - 同步失败不影响应用运行（静默失败）
   /// - 使用 Future.microtask 避免阻塞当前事件循环
@@ -90,6 +93,12 @@ class NetworkMonitorService {
     // 使用 Future.microtask 避免在 Provider 构建期间触发同步
     Future.microtask(() async {
       try {
+        // 先检查服务器是否可达
+        final isServerHealthy = await _checkServerHealth();
+        if (!isServerHealthy) {
+          return; // 服务器不可达，不触发同步
+        }
+        
         // 检查是否有用户登录
         final authState = ref.read(authProvider);
         final user = authState.value;
@@ -103,6 +112,31 @@ class NetworkMonitorService {
         // 生产环境应记录错误日志
       }
     });
+  }
+  
+  /// 检查服务器健康状态
+  /// 
+  /// 设计原则：
+  /// - 使用后端的 /health 端点检查服务器是否可达
+  /// - 5 秒超时（避免长时间等待）
+  /// - 检查失败返回 false（不抛出异常）
+  /// 
+  /// 应用场景：
+  /// - 酒店 WiFi（需要认证）：返回 false
+  /// - WiFi 无外网：返回 false
+  /// - 服务器维护：返回 false
+  /// - 服务器正常：返回 true
+  Future<bool> _checkServerHealth() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ServerConfig.baseUrl}/health'),
+      ).timeout(const Duration(seconds: 5));
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      // 网络请求失败，服务器不可达
+      return false;
+    }
   }
   
   /// 触发同步
