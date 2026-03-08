@@ -56,7 +56,7 @@ export class RateLimitMiddleware implements MiddlewareConfig {
   apply(app: Application): void {
     const limiter = rateLimit({
       windowMs: 15 * 60 * 1000, // 15 分钟
-      max: 100, // 限制 100 个请求
+      max: 300, // 限制 300 个请求（放宽限制）
       message: 'Too many requests from this IP, please try again later.',
     });
     app.use('/api', limiter);
