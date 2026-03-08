@@ -29,12 +29,14 @@ describe('RecordRepository', () => {
         updatedAt: new Date(),
       };
 
-      prismaMock.record.create.mockResolvedValue(mockRecord as any);
+      // Repository 使用 upsert 而不是 create
+      prismaMock.record.upsert.mockResolvedValue(mockRecord as any);
 
       const result = await recordRepository.create('user-id', {
         id: 'record-id',
         timestamp: new Date(),
         location: {},
+        description: 'Test',
         tags: [],
         status: 'active',
         weather: [],
@@ -44,7 +46,7 @@ describe('RecordRepository', () => {
       });
 
       expect(result).toEqual(mockRecord);
-      expect(prismaMock.record.create).toHaveBeenCalled();
+      expect(prismaMock.record.upsert).toHaveBeenCalled();
     });
   });
 

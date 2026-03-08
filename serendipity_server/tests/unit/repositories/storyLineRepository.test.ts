@@ -19,7 +19,8 @@ describe('StoryLineRepository', () => {
         updatedAt: new Date(),
       };
 
-      prismaMock.storyLine.create.mockResolvedValue(mockStoryLine as any);
+      // Repository 使用 upsert 而不是 create
+      prismaMock.storyLine.upsert.mockResolvedValue(mockStoryLine as any);
 
       const result = await storyLineRepository.create('user-id', {
         id: 'storyline-id',
@@ -30,7 +31,7 @@ describe('StoryLineRepository', () => {
       });
 
       expect(result).toEqual(mockStoryLine);
-      expect(prismaMock.storyLine.create).toHaveBeenCalled();
+      expect(prismaMock.storyLine.upsert).toHaveBeenCalled();
     });
   });
 
