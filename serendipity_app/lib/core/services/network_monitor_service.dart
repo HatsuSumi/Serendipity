@@ -63,12 +63,15 @@ class NetworkMonitorService {
       },
     );
     
-    // Web 端：启动轮询作为备用方案（每 10 秒检查一次）
-    if (kIsWeb) {
-      debugPrint('🌐 [NetworkMonitor] Web 端启动轮询机制（每 10 秒）');
+    // 移动端：启动轮询作为备用方案（每 10 秒检查一次）
+    // Web 端：不启动轮询，因为 localhost 无法检测真实网络状态
+    if (!kIsWeb) {
+      debugPrint('📱 [NetworkMonitor] 移动端启动轮询机制（每 10 秒）');
       _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         _pollNetworkStatus(ref);
       });
+    } else {
+      debugPrint('🌐 [NetworkMonitor] Web 端跳过轮询（localhost 无法检测网络状态）');
     }
     
     // App 启动时触发初始同步
