@@ -100,7 +100,6 @@ class NetworkMonitorService {
           debugPrint('👤 [NetworkMonitor] 用户已登录 (${user.email ?? user.phoneNumber})，触发初始同步');
           // 自动触发全量同步
           await _triggerSync(ref, user);
-          debugPrint('🎉 [NetworkMonitor] 初始同步完成');
         } else {
           debugPrint('ℹ️ [NetworkMonitor] 用户未登录，跳过初始同步');
         }
@@ -223,8 +222,10 @@ class NetworkMonitorService {
       final syncService = ref.read(syncServiceProvider);
       await syncService.syncAllData(user);
       debugPrint('✅ [NetworkMonitor] 数据同步成功');
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ [NetworkMonitor] 数据同步失败: $e');
+      debugPrint('📍 [NetworkMonitor] 错误堆栈: $stackTrace');
+      rethrow; // 重新抛出，让上层捕获
     }
   }
 }
