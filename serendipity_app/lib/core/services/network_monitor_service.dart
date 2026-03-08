@@ -248,7 +248,8 @@ class NetworkMonitorService {
   /// 检查服务器健康状态
   /// 
   /// 设计原则：
-  /// - 使用后端的 /health 端点检查服务器是否可达
+  /// - Web 端：检查外网连接（使用公共 DNS）+ 服务器健康
+  /// - 移动端：只检查服务器健康
   /// - 5 秒超时（避免长时间等待）
   /// - 检查失败返回 false（不抛出异常）
   /// 
@@ -259,6 +260,25 @@ class NetworkMonitorService {
   /// - 服务器正常：返回 true
   Future<bool> _checkServerHealth() async {
     try {
+      // Web 端：先检查外网连接（避免 localhost 误判）
+      if (kIsWeb) {
+        try {
+          // 使用 Google DNS 检查外网连接
+          final dnsResponse = await http.get(
+            Uri.parse('https://dns.google/resolve?name=google.com&type=A'),
+          ).timeout(const Duration(seconds: 3));
+          
+          if (dnsResponse.statusCode != 200) {
+            debugPrint('❌ [NetworkMonitor] 外网不可达');
+            return false;
+          }
+        } catch (e) {
+          debugPrint('❌ [NetworkMonitor] 外网检查失败: $e');
+          return false;
+        }
+      }
+      
+      // 检查服务器健康
       final url = '${ServerConfig.apiUrl}/health';
       debugPrint('🏥 [NetworkMonitor] 检查服务器: $url');
       
