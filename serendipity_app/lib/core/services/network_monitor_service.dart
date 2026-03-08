@@ -96,6 +96,8 @@ class NetworkMonitorService {
         
         // 先检查服务器是否可达
         final isServerHealthy = await _checkServerHealth();
+        _lastServerHealthy = isServerHealthy; // 更新状态
+        
         if (!isServerHealthy) {
           debugPrint('⚠️ [NetworkMonitor] 服务器不可达，跳过初始同步');
           return; // 服务器不可达，不触发同步
@@ -116,6 +118,7 @@ class NetworkMonitorService {
         }
       } catch (e) {
         debugPrint('❌ [NetworkMonitor] 初始同步失败: $e');
+        _lastServerHealthy = false; // 失败时标记为不健康
       }
     });
   }
