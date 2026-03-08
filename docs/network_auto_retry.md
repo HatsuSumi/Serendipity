@@ -28,11 +28,19 @@
 
 ```
 NetworkMonitorService
-  ↓ 监听网络状态变化
-  ↓ 检测到网络恢复
-  ↓ 检查用户是否登录 (authProvider)
-  ↓ 触发同步 (SyncService)
-  ↓ 上传本地数据 + 下载云端数据
+  ↓ 
+  ├─ App 启动时
+  │   ↓ 检查服务器健康状态
+  │   ↓ 检查用户是否登录 (authProvider)
+  │   ↓ 触发同步 (SyncService)
+  │   ↓ 上传本地数据 + 下载云端数据
+  │
+  └─ 监听网络状态变化
+      ↓ 检测到网络恢复
+      ↓ 检查服务器健康状态
+      ↓ 检查用户是否登录 (authProvider)
+      ↓ 触发同步 (SyncService)
+      ↓ 上传本地数据 + 下载云端数据
 ```
 
 ## 📁 文件结构
@@ -56,18 +64,21 @@ lib/
 - 监听网络状态变化
 - 检测网络从离线恢复到在线
 - 检查服务器是否可达
+- App 启动时触发初始同步
 - 触发自动同步
 
 **关键方法：**
 ```dart
-void startMonitoring(Ref ref)           // 开始监听
-void stopMonitoring()                   // 停止监听
-Future<bool> _checkServerHealth()       // 检查服务器健康状态
+void startMonitoring(Ref ref)                // 开始监听 + 触发初始同步
+void stopMonitoring()                        // 停止监听
+Future<void> _triggerInitialSync(Ref ref)   // App 启动时的初始同步
+Future<bool> _checkServerHealth()            // 检查服务器健康状态
 ```
 
 **设计亮点：**
 - 使用 `Future.microtask` 避免在 Provider 构建期间触发同步
 - 避免频繁触发（只在离线→在线时触发）
+- **App 启动时自动同步**（用户已登录状态）
 - **先检查服务器是否可达，再触发同步**（避免无效尝试）
 - 同步失败不影响应用运行（静默失败）
 
@@ -99,7 +110,18 @@ GET http://localhost:3000/health
 
 ## 🎯 使用场景
 
-### 场景 1：地铁中创建记录
+### 场景 1：App 启动时同步
+
+```
+1. 用户昨天登录了 App
+2. 今天打开 App（已登录状态）
+3. NetworkMonitorService 启动
+4. 检查服务器健康状态 → 成功 ✅
+5. 自动触发全量同步
+6. 获取最新数据 ✅
+```
+
+### 场景 2：地铁中创建记录
 
 ```
 1. 用户在地铁上（无网络）创建了 10 条记录
@@ -111,7 +133,7 @@ GET http://localhost:3000/health
 7. 数据安全备份到云端 ✅
 ```
 
-### 场景 2：电梯中更新记录
+### 场景 3：电梯中更新记录
 
 ```
 1. 用户在电梯中（无网络）更新了记录
@@ -122,7 +144,7 @@ GET http://localhost:3000/health
 6. 数据同步到云端 ✅
 ```
 
-### 场景 3：飞行模式
+### 场景 4：飞行模式
 
 ```
 1. 用户开启飞行模式
@@ -133,7 +155,7 @@ GET http://localhost:3000/health
 6. 数据同步到云端 ✅
 ```
 
-### 场景 4：酒店 WiFi（需要认证）
+### 场景 5：酒店 WiFi（需要认证）
 
 ```
 1. 用户连接酒店 WiFi
@@ -145,7 +167,7 @@ GET http://localhost:3000/health
 7. 触发同步 ✅
 ```
 
-### 场景 5：服务器维护
+### 场景 6：服务器维护
 
 ```
 1. 用户网络正常

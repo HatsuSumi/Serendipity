@@ -13,6 +13,7 @@ import 'sync_service.dart';
 /// - 监听网络状态变化
 /// - 检测网络恢复
 /// - 触发自动同步
+/// - App 启动时触发初始同步
 /// 
 /// 设计原则：
 /// - 单一职责（SRP）：只负责网络状态监听和触发同步
@@ -34,6 +35,10 @@ class NetworkMonitorService {
   /// 
   /// Fail Fast：
   /// - ref 为 null：抛出 ArgumentError
+  /// 
+  /// 功能：
+  /// 1. 启动网络状态监听
+  /// 2. 触发 App 启动时的初始同步
   void startMonitoring(Ref ref) {
     // Fail Fast：参数验证
     if (_isMonitoring) {
@@ -52,6 +57,46 @@ class NetworkMonitorService {
         // 生产环境应记录错误日志
       },
     );
+    
+    // App 启动时触发初始同步
+    _triggerInitialSync(ref);
+  }
+  
+  /// App 启动时触发初始同步
+  /// 
+  /// 设计原则：
+  /// - 先检查服务器是否可达（避免无效的同步尝试）
+  /// - 只在用户已登录时触发同步
+  /// - 同步失败不影响应用启动（静默失败）
+  /// - 使用 Future.microtask 避免阻塞当前事件循环
+  /// 
+  /// 应用场景：
+  /// - 用户昨天登录了 App
+  /// - 今天打开 App（已登录状态）
+  /// - 自动同步最新数据
+  Future<void> _triggerInitialSync(Ref ref) async {
+    // 使用 Future.microtask 避免在 Provider 构建期间触发同步
+    Future.microtask(() async {
+      try {
+        // 先检查服务器是否可达
+        final isServerHealthy = await _checkServerHealth();
+        if (!isServerHealthy) {
+          return; // 服务器不可达，不触发同步
+        }
+        
+        // 检查是否有用户登录
+        final authState = ref.read(authProvider);
+        final user = authState.value;
+        
+        if (user != null) {
+          // 自动触发全量同步
+          await _triggerSync(ref, user);
+        }
+      } catch (e) {
+        // 同步失败不影响应用启动
+        // 生产环境应记录错误日志
+      }
+    });
   }
   
   /// 停止监听
