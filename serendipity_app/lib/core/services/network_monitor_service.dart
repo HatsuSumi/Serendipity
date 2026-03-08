@@ -251,51 +251,16 @@ class NetworkMonitorService {
   /// 检查服务器健康状态
   /// 
   /// 设计原则：
-  /// - Web 端：检查外网连接（使用公共 DNS）+ 服务器健康
-  /// - 移动端：只检查服务器健康
+  /// - 直接检查服务器健康（不检查外网，避免 CORS 问题）
   /// - 5 秒超时（避免长时间等待）
   /// - 检查失败返回 false（不抛出异常）
   /// 
   /// 应用场景：
-  /// - 酒店 WiFi（需要认证）：返回 false
-  /// - WiFi 无外网：返回 false
   /// - 服务器维护：返回 false
+  /// - 网络断开：返回 false
   /// - 服务器正常：返回 true
   Future<bool> _checkServerHealth() async {
     try {
-      // Web 端：先检查外网连接（避免 localhost 误判）
-      debugPrint('🔍 [NetworkMonitor] 平台检查: kIsWeb = $kIsWeb');
-      if (kIsWeb) {
-        try {
-          debugPrint('🌐 [NetworkMonitor] 开始检查外网连接...');
-          // 使用随机参数避免缓存，尝试多个公共 API
-          final timestamp = DateTime.now().millisecondsSinceEpoch;
-          
-          // 尝试访问百度（国内可访问）
-          try {
-            final testResponse = await http.head(
-              Uri.parse('https://www.baidu.com/?t=$timestamp'),
-            ).timeout(const Duration(seconds: 3));
-            
-            debugPrint('🌐 [NetworkMonitor] 外网检查响应（百度）: ${testResponse.statusCode}');
-            
-            if (testResponse.statusCode == 200) {
-              debugPrint('✅ [NetworkMonitor] 外网连接正常');
-              // 外网可达，继续检查服务器
-            } else {
-              debugPrint('❌ [NetworkMonitor] 外网不可达');
-              return false;
-            }
-          } catch (e) {
-            debugPrint('❌ [NetworkMonitor] 外网检查失败: $e');
-            return false;
-          }
-        } catch (e) {
-          debugPrint('❌ [NetworkMonitor] 外网检查异常: $e');
-          return false;
-        }
-      }
-      
       // 检查服务器健康
       final url = '${ServerConfig.apiUrl}/health';
       debugPrint('🏥 [NetworkMonitor] 检查服务器: $url');
