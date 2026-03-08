@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user.dart';
@@ -42,9 +43,11 @@ class NetworkMonitorService {
   void startMonitoring(WidgetRef ref) {
     // Fail Fast：参数验证
     if (_isMonitoring) {
+      debugPrint('🔄 [NetworkMonitor] 已在监听中，跳过重复启动');
       return; // 避免重复监听
     }
     
+    debugPrint('🚀 [NetworkMonitor] 开始监听网络状态');
     _isMonitoring = true;
     
     // 监听网络状态变化
@@ -53,11 +56,12 @@ class NetworkMonitorService {
         _handleConnectivityChange(results, ref);
       },
       onError: (error) {
-        // 监听失败不影响应用运行
+        debugPrint('❌ [NetworkMonitor] 监听失败: $error');
       },
     );
     
     // App 启动时触发初始同步
+    debugPrint('📱 [NetworkMonitor] App 启动，准备触发初始同步');
     _triggerInitialSync(ref);
   }
   
@@ -77,22 +81,31 @@ class NetworkMonitorService {
     // 使用 Future.microtask 避免在 Provider 构建期间触发同步
     Future.microtask(() async {
       try {
+        debugPrint('🔍 [NetworkMonitor] 检查服务器健康状态...');
+        
         // 先检查服务器是否可达
         final isServerHealthy = await _checkServerHealth();
         if (!isServerHealthy) {
+          debugPrint('⚠️ [NetworkMonitor] 服务器不可达，跳过初始同步');
           return; // 服务器不可达，不触发同步
         }
+        
+        debugPrint('✅ [NetworkMonitor] 服务器健康');
         
         // 检查是否有用户登录
         final authState = ref.read(authProvider);
         final user = authState.value;
         
         if (user != null) {
+          debugPrint('👤 [NetworkMonitor] 用户已登录 (${user.email ?? user.phoneNumber})，触发初始同步');
           // 自动触发全量同步
           await _triggerSync(ref, user);
+          debugPrint('🎉 [NetworkMonitor] 初始同步完成');
+        } else {
+          debugPrint('ℹ️ [NetworkMonitor] 用户未登录，跳过初始同步');
         }
       } catch (e) {
-        // 同步失败不影响应用启动
+        debugPrint('❌ [NetworkMonitor] 初始同步失败: $e');
       }
     });
   }
@@ -116,8 +129,11 @@ class NetworkMonitorService {
     final isOnline = results.isNotEmpty && 
                      !results.every((result) => result == ConnectivityResult.none);
     
+    debugPrint('📡 [NetworkMonitor] 网络状态变化: ${results.map((r) => r.name).join(", ")} (在线: $isOnline)');
+    
     // 检测到网络恢复（从离线到在线）
     if (isOnline && _wasOffline) {
+      debugPrint('🌐 [NetworkMonitor] 检测到网络恢复！');
       _onNetworkRestored(ref);
     }
     
@@ -136,22 +152,31 @@ class NetworkMonitorService {
     // 使用 Future.microtask 避免在 Provider 构建期间触发同步
     Future.microtask(() async {
       try {
+        debugPrint('🔍 [NetworkMonitor] 检查服务器健康状态...');
+        
         // 先检查服务器是否可达
         final isServerHealthy = await _checkServerHealth();
         if (!isServerHealthy) {
+          debugPrint('⚠️ [NetworkMonitor] 服务器不可达，跳过网络恢复同步');
           return; // 服务器不可达，不触发同步
         }
+        
+        debugPrint('✅ [NetworkMonitor] 服务器健康');
         
         // 检查是否有用户登录
         final authState = ref.read(authProvider);
         final user = authState.value;
         
         if (user != null) {
+          debugPrint('👤 [NetworkMonitor] 用户已登录 (${user.email ?? user.phoneNumber})，触发网络恢复同步');
           // 自动触发全量同步
           await _triggerSync(ref, user);
+          debugPrint('🎉 [NetworkMonitor] 网络恢复同步完成');
+        } else {
+          debugPrint('ℹ️ [NetworkMonitor] 用户未登录，跳过网络恢复同步');
         }
       } catch (e) {
-        // 同步失败不影响应用运行
+        debugPrint('❌ [NetworkMonitor] 网络恢复同步失败: $e');
       }
     });
   }
@@ -170,13 +195,19 @@ class NetworkMonitorService {
   /// - 服务器正常：返回 true
   Future<bool> _checkServerHealth() async {
     try {
+      final url = '${ServerConfig.baseUrl}/health';
+      debugPrint('🏥 [NetworkMonitor] 检查服务器: $url');
+      
       final response = await http.get(
-        Uri.parse('${ServerConfig.baseUrl}/health'),
+        Uri.parse(url),
       ).timeout(const Duration(seconds: 5));
       
-      return response.statusCode == 200;
+      final isHealthy = response.statusCode == 200;
+      debugPrint('🏥 [NetworkMonitor] 服务器状态: ${response.statusCode} ${isHealthy ? "✅" : "❌"}');
+      
+      return isHealthy;
     } catch (e) {
-      // 网络请求失败，服务器不可达
+      debugPrint('❌ [NetworkMonitor] 服务器健康检查失败: $e');
       return false;
     }
   }
@@ -188,11 +219,12 @@ class NetworkMonitorService {
   /// - 同步失败不抛出异常，静默处理
   Future<void> _triggerSync(WidgetRef ref, User user) async {
     try {
+      debugPrint('🔄 [NetworkMonitor] 开始同步数据...');
       final syncService = ref.read(syncServiceProvider);
       await syncService.syncAllData(user);
+      debugPrint('✅ [NetworkMonitor] 数据同步成功');
     } catch (e) {
-      // 同步失败不抛出异常
-      // 用户可以稍后手动触发同步
+      debugPrint('❌ [NetworkMonitor] 数据同步失败: $e');
     }
   }
 }
