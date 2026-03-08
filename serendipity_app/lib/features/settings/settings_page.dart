@@ -8,11 +8,13 @@ import '../../core/providers/achievement_provider.dart';
 import '../../core/providers/check_in_provider.dart';
 import '../../core/providers/first_launch_provider.dart';
 import '../../core/providers/user_settings_provider.dart';
+import '../../core/providers/sync_status_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/phone_helper.dart';
 import '../../core/utils/navigation_helper.dart';
+import '../../core/utils/date_time_helper.dart';
 import '../../core/widgets/countdown_button.dart';
 import '../../models/enums.dart';
 import '../auth/widgets/auth_text_field.dart';
@@ -23,6 +25,7 @@ import '../test/location_test_page.dart';
 import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
 import '../community/my_posts_page.dart';
+import 'dialogs/manual_sync_dialog.dart';
 
 /// 设置页面（我的页面）
 /// 
@@ -117,6 +120,30 @@ class SettingsPage extends ConsumerWidget {
                 context,
                 ref,
                 const MyPostsPage(),
+              );
+            },
+          ),
+          
+          // 手动同步入口
+          Consumer(
+            builder: (context, ref, child) {
+              final authState = ref.watch(authProvider);
+              final syncStatus = ref.watch(syncStatusProvider);
+              
+              return ListTile(
+                leading: const Text('🔄', style: TextStyle(fontSize: 24)),
+                title: const Text('手动同步'),
+                subtitle: _buildSyncSubtitle(context, syncStatus),
+                trailing: syncStatus.status == SyncStatus.syncing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.chevron_right),
+                onTap: syncStatus.status == SyncStatus.syncing
+                    ? null
+                    : () => _handleManualSync(context, ref, authState),
               );
             },
           ),
@@ -1351,6 +1378,75 @@ class SettingsPage extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+  
+  /// 构建同步状态副标题
+  /// 
+  /// 调用者：手动同步 ListTile
+  /// 
+  /// 遵循原则：
+  /// - 单一职责（SRP）：只负责构建副标题文本
+  /// - DRY：复用 DateTimeHelper.formatRelativeTime
+  Widget? _buildSyncSubtitle(BuildContext context, SyncStatusInfo syncStatus) {
+    if (syncStatus.status == SyncStatus.syncing) {
+      return const Text('同步中...');
+    }
+    
+    if (syncStatus.status == SyncStatus.success) {
+      return Text(
+        '同步成功',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
+    }
+    
+    if (syncStatus.status == SyncStatus.error) {
+      return Text(
+        '同步失败：${syncStatus.errorMessage}',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.error,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+    
+    // 空闲状态，显示上次同步时间
+    if (syncStatus.lastManualSyncTime != null) {
+      return Text(
+        '上次同步：${DateTimeHelper.formatRelativeTime(syncStatus.lastManualSyncTime!)}',
+      );
+    }
+    
+    return const Text('同步本地数据到云端');
+  }
+  
+  /// 处理手动同步
+  /// 
+  /// 调用者：手动同步 ListTile
+  /// 
+  /// 遵循原则：
+  /// - 单一职责（SRP）：只负责处理手动同步逻辑
+  /// - Fail Fast：未登录立即提示
+  void _handleManualSync(BuildContext context, WidgetRef ref, AsyncValue authState) {
+    authState.when(
+      data: (user) {
+        if (user == null) {
+          // 未登录，提示用户登录
+          MessageHelper.showError(context, '请先登录后再同步数据');
+        } else {
+          // 已登录，显示同步对话框
+          ManualSyncDialog.show(context, ref);
+        }
+      },
+      loading: () {
+        MessageHelper.showError(context, '正在加载用户信息...');
+      },
+      error: (error, stackTrace) {
+        MessageHelper.showError(context, '获取用户信息失败');
+      },
     );
   }
 }

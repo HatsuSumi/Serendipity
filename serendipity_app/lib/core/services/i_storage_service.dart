@@ -103,6 +103,12 @@ abstract class IStorageService {
   
   // ==================== 键值对存储（用于 Token 等） ====================
   
+  /// 保存值（泛型）
+  Future<void> set<T>(String key, T value);
+  
+  /// 获取值（泛型）
+  T? get<T>(String key);
+  
   /// 保存字符串
   Future<void> saveString(String key, String value);
   

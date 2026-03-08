@@ -10,6 +10,63 @@ import '../repositories/custom_server_remote_data_repository.dart';
 import '../providers/auth_provider.dart';
 import 'i_storage_service.dart';
 
+/// 同步结果统计
+/// 
+/// 记录同步过程中的数据统计信息
+class SyncResult {
+  /// 上传的记录数量
+  final int uploadedRecords;
+  
+  /// 上传的故事线数量
+  final int uploadedStoryLines;
+  
+  /// 上传的签到记录数量
+  final int uploadedCheckIns;
+  
+  /// 下载的记录数量
+  final int downloadedRecords;
+  
+  /// 下载的故事线数量
+  final int downloadedStoryLines;
+  
+  /// 下载的签到记录数量
+  final int downloadedCheckIns;
+  
+  /// 合并冲突的记录数量
+  final int mergedRecords;
+  
+  /// 合并冲突的故事线数量
+  final int mergedStoryLines;
+  
+  /// 合并冲突的签到记录数量
+  final int mergedCheckIns;
+  
+  const SyncResult({
+    required this.uploadedRecords,
+    required this.uploadedStoryLines,
+    required this.uploadedCheckIns,
+    required this.downloadedRecords,
+    required this.downloadedStoryLines,
+    required this.downloadedCheckIns,
+    required this.mergedRecords,
+    required this.mergedStoryLines,
+    required this.mergedCheckIns,
+  });
+  
+  /// 是否有数据变化
+  bool get hasChanges {
+    return uploadedRecords > 0 ||
+           uploadedStoryLines > 0 ||
+           uploadedCheckIns > 0 ||
+           downloadedRecords > 0 ||
+           downloadedStoryLines > 0 ||
+           downloadedCheckIns > 0 ||
+           mergedRecords > 0 ||
+           mergedStoryLines > 0 ||
+           mergedCheckIns > 0;
+  }
+}
+
 /// 远程数据仓储 Provider
 /// 
 /// 依赖抽象接口 IRemoteDataRepository，不依赖具体实现。
@@ -204,33 +261,50 @@ class SyncService {
   /// 
   /// 调用者：
   /// - AuthProvider：用户登录成功后自动调用
-  /// - SettingsPage：手动同步按钮（未来）
+  /// - SettingsPage：手动同步按钮
   /// 
   /// 同步策略：
   /// 1. 上传本地所有记录和故事线到云端
   /// 2. 下载云端所有数据到本地
   /// 3. 合并数据（最后更新时间优先）
   /// 
+  /// 返回：同步结果统计
+  /// 
   /// Fail Fast：
   /// - user 为 null：抛出 ArgumentError
   /// - 网络错误：向上抛出异常
-  Future<void> syncAllData(User user) async {
+  Future<SyncResult> syncAllData(User user) async {
     // Fail Fast：参数验证
     if (user.id.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
     
     // 1. 上传本地数据到云端
-    await _uploadLocalData(user);
+    final uploadStats = await _uploadLocalData(user);
     
     // 2. 下载云端数据到本地
-    await _downloadRemoteData(user);
+    final downloadStats = await _downloadRemoteData(user);
+    
+    // 3. 返回同步结果统计
+    return SyncResult(
+      uploadedRecords: uploadStats['records'] ?? 0,
+      uploadedStoryLines: uploadStats['storyLines'] ?? 0,
+      uploadedCheckIns: uploadStats['checkIns'] ?? 0,
+      downloadedRecords: downloadStats['records'] ?? 0,
+      downloadedStoryLines: downloadStats['storyLines'] ?? 0,
+      downloadedCheckIns: downloadStats['checkIns'] ?? 0,
+      mergedRecords: downloadStats['mergedRecords'] ?? 0,
+      mergedStoryLines: downloadStats['mergedStoryLines'] ?? 0,
+      mergedCheckIns: downloadStats['mergedCheckIns'] ?? 0,
+    );
   }
   
   /// 上传本地数据到云端
   /// 
   /// 调用者：syncAllData()
-  Future<void> _uploadLocalData(User user) async {
+  /// 
+  /// 返回：上传统计信息
+  Future<Map<String, int>> _uploadLocalData(User user) async {
     // 获取本地所有记录
     final localRecords = _storageService.getRecordsSortedByTime();
     
@@ -254,12 +328,24 @@ class SyncService {
     if (localCheckIns.isNotEmpty) {
       await _remoteRepository.uploadCheckIns(user.id, localCheckIns);
     }
+    
+    return {
+      'records': localRecords.length,
+      'storyLines': localStoryLines.length,
+      'checkIns': localCheckIns.length,
+    };
   }
   
   /// 下载云端数据到本地
   /// 
   /// 调用者：syncAllData()
-  Future<void> _downloadRemoteData(User user) async {
+  /// 
+  /// 返回：下载和合并统计信息
+  Future<Map<String, int>> _downloadRemoteData(User user) async {
+    int mergedRecords = 0;
+    int mergedStoryLines = 0;
+    int mergedCheckIns = 0;
+    
     // 下载云端记录
     final remoteRecords = await _remoteRepository.downloadRecords(user.id);
     
@@ -271,6 +357,11 @@ class SyncService {
       if (localRecord == null || 
           remoteRecord.updatedAt.isAfter(localRecord.updatedAt)) {
         _storageService.saveRecord(remoteRecord);
+        
+        // 如果本地存在且云端数据更新，说明发生了冲突合并
+        if (localRecord != null) {
+          mergedRecords++;
+        }
       }
     }
     
@@ -285,6 +376,11 @@ class SyncService {
       if (localStoryLine == null || 
           remoteStoryLine.updatedAt.isAfter(localStoryLine.updatedAt)) {
         _storageService.saveStoryLine(remoteStoryLine);
+        
+        // 如果本地存在且云端数据更新，说明发生了冲突合并
+        if (localStoryLine != null) {
+          mergedStoryLines++;
+        }
       }
     }
     
@@ -299,8 +395,22 @@ class SyncService {
       if (localCheckIn == null || 
           remoteCheckIn.updatedAt.isAfter(localCheckIn.updatedAt)) {
         _storageService.saveCheckIn(remoteCheckIn);
+        
+        // 如果本地存在且云端数据更新，说明发生了冲突合并
+        if (localCheckIn != null) {
+          mergedCheckIns++;
+        }
       }
     }
+    
+    return {
+      'records': remoteRecords.length,
+      'storyLines': remoteStoryLines.length,
+      'checkIns': remoteCheckIns.length,
+      'mergedRecords': mergedRecords,
+      'mergedStoryLines': mergedStoryLines,
+      'mergedCheckIns': mergedCheckIns,
+    };
   }
 }
 

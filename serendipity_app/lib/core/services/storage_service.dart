@@ -277,6 +277,18 @@ class StorageService implements IStorageService {
   
   // ==================== 键值对存储（用于 Token 等） ====================
   
+  /// 保存值（泛型）
+  @override
+  Future<void> set<T>(String key, T value) async {
+    await _settingsBoxOrThrow.put(key, value);
+  }
+  
+  /// 获取值（泛型）
+  @override
+  T? get<T>(String key) {
+    return _settingsBoxOrThrow.get(key) as T?;
+  }
+  
   /// 保存字符串
   @override
   Future<void> saveString(String key, String value) async {
