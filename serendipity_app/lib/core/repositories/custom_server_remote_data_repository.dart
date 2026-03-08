@@ -36,6 +36,25 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   }
   
   @override
+  Future<void> updateRecord(String userId, EncounterRecord record) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      // 使用 PUT API 进行增量更新
+      // 只传输完整数据（后端会根据 UpdateRecordDto 只更新传入的字段）
+      await _httpClient.put(
+        ServerConfig.recordById(record.id),
+        body: record.toJson(),
+      );
+    } on HttpException catch (e) {
+      throw Exception('更新记录失败：${e.message}');
+    }
+  }
+  
+  @override
   Future<void> uploadRecords(String userId, List<EncounterRecord> records) async {
     // Fail Fast：参数验证
     if (userId.isEmpty) {
@@ -111,6 +130,25 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       );
     } on HttpException catch (e) {
       throw Exception('上传故事线失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<void> updateStoryLine(String userId, StoryLine storyLine) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      // 使用 PUT API 进行增量更新
+      // 只传输完整数据（后端会根据 UpdateStoryLineDto 只更新传入的字段）
+      await _httpClient.put(
+        ServerConfig.storylineById(storyLine.id),
+        body: storyLine.toJson(),
+      );
+    } on HttpException catch (e) {
+      throw Exception('更新故事线失败：${e.message}');
     }
   }
   

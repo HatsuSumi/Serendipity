@@ -20,6 +20,11 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
+  Future<void> updateRecord(String userId, EncounterRecord record) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
   Future<void> uploadRecords(String userId, List<EncounterRecord> records) async {
     // 测试模式：不执行任何操作
   }
@@ -37,6 +42,11 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
 
   @override
   Future<void> uploadStoryLine(String userId, StoryLine storyLine) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<void> updateStoryLine(String userId, StoryLine storyLine) async {
     // 测试模式：不执行任何操作
   }
 

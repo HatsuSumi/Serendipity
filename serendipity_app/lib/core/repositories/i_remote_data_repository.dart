@@ -15,21 +15,37 @@ import '../../models/check_in_record.dart';
 abstract class IRemoteDataRepository {
   // ==================== 记录相关操作 ====================
   
-  /// 上传单条记录到云端
+  /// 上传单条记录到云端（创建或更新）
   /// 
   /// 参数：
   /// - [userId]：用户 ID
   /// - [record]：要上传的记录
   /// 
   /// 调用者：
-  /// - SyncService.syncRecord()
-  /// - RecordsProvider 创建/编辑记录后通过 SyncService 调用
+  /// - SyncService.uploadRecord()
+  /// - RecordsProvider 创建记录后通过 SyncService 调用
   /// 
   /// Fail Fast：
   /// - userId 为空：抛出 ArgumentError
   /// - record 为 null：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<void> uploadRecord(String userId, EncounterRecord record);
+  
+  /// 更新云端记录（增量更新）
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [record]：要更新的记录（只传输修改的字段）
+  /// 
+  /// 调用者：
+  /// - SyncService.updateRecord()
+  /// - RecordsProvider 更新记录后通过 SyncService 调用
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - record 为 null：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<void> updateRecord(String userId, EncounterRecord record);
   
   /// 批量上传记录到云端
   /// 
@@ -81,21 +97,37 @@ abstract class IRemoteDataRepository {
   
   // ==================== 故事线相关操作 ====================
   
-  /// 上传单条故事线到云端
+  /// 上传单条故事线到云端（创建或更新）
   /// 
   /// 参数：
   /// - [userId]：用户 ID
   /// - [storyLine]：要上传的故事线
   /// 
   /// 调用者：
-  /// - SyncService.syncStoryLine()
-  /// - StoryLinesProvider 创建/编辑故事线后通过 SyncService 调用
+  /// - SyncService.uploadStoryLine()
+  /// - StoryLinesProvider 创建故事线后通过 SyncService 调用
   /// 
   /// Fail Fast：
   /// - userId 为空：抛出 ArgumentError
   /// - storyLine 为 null：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<void> uploadStoryLine(String userId, StoryLine storyLine);
+  
+  /// 更新云端故事线（增量更新）
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [storyLine]：要更新的故事线（只传输修改的字段）
+  /// 
+  /// 调用者：
+  /// - SyncService.updateStoryLine()
+  /// - StoryLinesProvider 更新故事线后通过 SyncService 调用
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - storyLine 为 null：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<void> updateStoryLine(String userId, StoryLine storyLine);
   
   /// 批量上传故事线到云端
   /// 

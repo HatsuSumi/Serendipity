@@ -95,7 +95,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// 更新记录（自动处理故事线关联变化）
   /// 
   /// 集成云端同步：
-  /// - 如果用户已登录，更新本地后自动上传到云端
+  /// - 如果用户已登录，更新本地后自动上传到云端（使用 PUT API 增量更新）
   /// - 如果用户未登录，只更新本地（离线模式）
   /// - 云端同步失败不影响本地操作
   Future<void> updateRecord(EncounterRecord record) async {
@@ -139,11 +139,11 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       // 但需要记录错误日志（生产环境）
     }
     
-    // 5. 如果用户已登录，上传到云端
+    // 5. 如果用户已登录，使用 PUT API 更新云端（增量更新）
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
-        await _syncService.uploadRecord(currentUser, record);
+        await _syncService.updateRecord(currentUser, record);
       } catch (e) {
         // 云端同步失败不影响本地操作
         // 不抛出异常，避免影响后续流程

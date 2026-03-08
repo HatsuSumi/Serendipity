@@ -48,11 +48,11 @@ class SyncService {
   })  : _remoteRepository = remoteRepository,
         _storageService = storageService;
   
-  /// 上传单条记录到云端
+  /// 上传单条记录到云端（创建）
   /// 
   /// 调用者：
-  /// - RecordsProvider.saveRecord()
-  /// - RecordsProvider.updateRecord()
+  /// - RecordsProvider.saveRecord()（新建记录）
+  /// - syncAllData()（全量同步）
   /// 
   /// Fail Fast：
   /// - user 为 null：抛出 ArgumentError
@@ -67,11 +67,29 @@ class SyncService {
     await _remoteRepository.uploadRecord(user.id, record);
   }
   
-  /// 上传单条故事线到云端
+  /// 更新云端记录（增量更新）
   /// 
   /// 调用者：
-  /// - StoryLinesProvider.saveStoryLine()
-  /// - StoryLinesProvider.updateStoryLine()
+  /// - RecordsProvider.updateRecord()（更新记录）
+  /// 
+  /// Fail Fast：
+  /// - user 为 null：抛出 ArgumentError
+  /// - record 为 null：抛出 ArgumentError
+  /// - 网络错误：向上抛出异常
+  Future<void> updateRecord(User user, EncounterRecord record) async {
+    // Fail Fast：参数验证
+    if (user.id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    await _remoteRepository.updateRecord(user.id, record);
+  }
+  
+  /// 上传单条故事线到云端（创建）
+  /// 
+  /// 调用者：
+  /// - StoryLinesProvider.createStoryLine()（新建故事线）
+  /// - syncAllData()（全量同步）
   /// 
   /// Fail Fast：
   /// - user 为 null：抛出 ArgumentError
@@ -84,6 +102,24 @@ class SyncService {
     }
     
     await _remoteRepository.uploadStoryLine(user.id, storyLine);
+  }
+  
+  /// 更新云端故事线（增量更新）
+  /// 
+  /// 调用者：
+  /// - StoryLinesProvider.updateStoryLine()（更新故事线）
+  /// 
+  /// Fail Fast：
+  /// - user 为 null：抛出 ArgumentError
+  /// - storyLine 为 null：抛出 ArgumentError
+  /// - 网络错误：向上抛出异常
+  Future<void> updateStoryLine(User user, StoryLine storyLine) async {
+    // Fail Fast：参数验证
+    if (user.id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    await _remoteRepository.updateStoryLine(user.id, storyLine);
   }
   
   /// 上传单条签到记录到云端

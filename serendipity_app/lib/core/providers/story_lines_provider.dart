@@ -108,18 +108,18 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   /// 更新故事线
   /// 
   /// 集成云端同步：
-  /// - 如果用户已登录，更新本地后自动上传到云端
+  /// - 如果用户已登录，更新本地后自动上传到云端（使用 PUT API 增量更新）
   /// - 如果用户未登录，只更新本地（离线模式）
   /// - 云端同步失败不影响本地操作
   Future<void> updateStoryLine(StoryLine storyLine) async {
     // 1. 更新本地
     await _repository.updateStoryLine(storyLine);
     
-    // 2. 如果用户已登录，上传到云端
+    // 2. 如果用户已登录，使用 PUT API 更新云端（增量更新）
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
-        await _syncService.uploadStoryLine(currentUser, storyLine);
+        await _syncService.updateStoryLine(currentUser, storyLine);
       } catch (e) {
         // 云端同步失败不影响本地操作
         // 但需要向上抛出异常，让 UI 层显示提示
