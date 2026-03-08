@@ -171,7 +171,7 @@ export class StoryLineService implements IStoryLineService {
       );
 
     return {
-      storylines: storylines.map((storyline) =>
+      storyLines: storylines.map((storyline) =>
         this.toResponseDto(storyline)
       ),
       total,

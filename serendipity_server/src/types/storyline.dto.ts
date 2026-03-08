@@ -48,7 +48,7 @@ export interface BatchCreateStoryLinesResponseDto {
 
 // 下载故事线响应
 export interface GetStoryLinesResponseDto {
-  storylines: StoryLineResponseDto[];
+  storyLines: StoryLineResponseDto[];
   total: number;
   hasMore: boolean;
   syncTime: Date;
