@@ -54,8 +54,8 @@ class NetworkMonitorService {
       },
     );
     
-    // 启动轮询作为备用方案（每 10 秒检查一次）
-    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+    // 启动轮询作为备用方案（每 60 秒检查一次）
+    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       _pollNetworkStatus(ref);
     });
     
@@ -174,6 +174,8 @@ class NetworkMonitorService {
       
       return response.statusCode == 200;
     } catch (e) {
+      // 捕获所有错误（包括 429 Too Many Requests）
+      // 静默失败，避免影响用户体验
       return false;
     }
   }
