@@ -234,7 +234,7 @@ async function testGetMyPosts() {
 
 async function testFilterByLocation() {
   logSection('场景 8: 多条件筛选（省份+城市）');
-  const result = await request('GET', '/community/posts/filter?province=北京&city=北京市&limit=10', null, { 'Authorization': `Bearer ${testData.accessToken}` });
+  const result = await request('GET', '/community/posts?province=北京&city=北京市&limit=10', null, { 'Authorization': `Bearer ${testData.accessToken}` });
   if (!result.success) { logError('筛选失败'); return false; }
   const posts = result.data.data.posts;
   logSuccess(`✓ 返回了 ${posts.length} 条帖子`);
@@ -244,7 +244,7 @@ async function testFilterByLocation() {
 
 async function testFilterByTags() {
   logSection('场景 9: 标签筛选（验证 GIN 索引）');
-  const result = await request('GET', '/community/posts/filter?tags=购物&limit=10', null, { 'Authorization': `Bearer ${testData.accessToken}` });
+  const result = await request('GET', '/community/posts?tags=购物&limit=10', null, { 'Authorization': `Bearer ${testData.accessToken}` });
   if (!result.success) { logError('标签筛选失败'); return false; }
   const posts = result.data.data.posts;
   logSuccess(`✓ 返回了 ${posts.length} 条帖子`);
