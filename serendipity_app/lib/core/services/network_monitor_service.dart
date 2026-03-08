@@ -26,9 +26,11 @@ import 'sync_service.dart';
 class NetworkMonitorService {
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
+  Timer? _pollingTimer;
   
   bool _wasOffline = false;
   bool _isMonitoring = false;
+  bool _lastServerHealthy = true;
   
   /// 开始监听网络状态
   /// 
@@ -40,6 +42,7 @@ class NetworkMonitorService {
   /// 功能：
   /// 1. 启动网络状态监听
   /// 2. 触发 App 启动时的初始同步
+  /// 3. Web 端启动轮询（因为 connectivity_plus 在 Web 端不可靠）
   void startMonitoring(WidgetRef ref) {
     // Fail Fast：参数验证
     if (_isMonitoring) {
@@ -59,6 +62,14 @@ class NetworkMonitorService {
         debugPrint('❌ [NetworkMonitor] 监听失败: $error');
       },
     );
+    
+    // Web 端：启动轮询作为备用方案（每 10 秒检查一次）
+    if (kIsWeb) {
+      debugPrint('🌐 [NetworkMonitor] Web 端启动轮询机制（每 10 秒）');
+      _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+        _pollNetworkStatus(ref);
+      });
+    }
     
     // App 启动时触发初始同步
     debugPrint('📱 [NetworkMonitor] App 启动，准备触发初始同步');
@@ -115,6 +126,8 @@ class NetworkMonitorService {
   void stopMonitoring() {
     _subscription?.cancel();
     _subscription = null;
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
     _isMonitoring = false;
   }
   
@@ -123,6 +136,7 @@ class NetworkMonitorService {
   /// 设计原则：
   /// - 只在网络从离线恢复到在线时触发同步
   /// - 避免频繁触发同步（如 WiFi 和移动网络切换）
+  /// - Web 端通过服务器健康检查来确认真实的网络状态
   void _handleConnectivityChange(List<ConnectivityResult> results, WidgetRef ref) {
     // 判断是否在线
     final isOnline = results.isNotEmpty && 
@@ -134,10 +148,61 @@ class NetworkMonitorService {
     if (isOnline && _wasOffline) {
       debugPrint('🌐 [NetworkMonitor] 检测到网络恢复！');
       _onNetworkRestored(ref);
+    } else if (isOnline && !_wasOffline) {
+      // Web 端：即使状态显示在线，也可能实际无法访问服务器
+      // 通过服务器健康检查来确认真实状态
+      debugPrint('🔍 [NetworkMonitor] 网络状态保持在线，验证服务器连接...');
+      _verifyNetworkConnection(ref);
     }
     
     // 更新离线状态
     _wasOffline = !isOnline;
+  }
+  
+  /// 验证网络连接（用于 Web 端）
+  /// 
+  /// Web 端的 connectivity_plus 可能不准确，需要通过实际请求验证
+  Future<void> _verifyNetworkConnection(WidgetRef ref) async {
+    Future.microtask(() async {
+      try {
+        final isServerHealthy = await _checkServerHealth();
+        if (isServerHealthy) {
+          debugPrint('✅ [NetworkMonitor] 服务器连接正常');
+          // 如果之前是离线状态，现在服务器可达，触发同步
+          if (_wasOffline) {
+            _onNetworkRestored(ref);
+          }
+        } else {
+          debugPrint('⚠️ [NetworkMonitor] 服务器不可达');
+          _wasOffline = true; // 标记为离线状态
+        }
+      } catch (e) {
+        debugPrint('❌ [NetworkMonitor] 网络验证失败: $e');
+      }
+    });
+  }
+  
+  /// 轮询网络状态（Web 端备用方案）
+  /// 
+  /// 设计原则：
+  /// - 每 10 秒检查一次服务器健康状态
+  /// - 检测到从不健康到健康时触发同步
+  /// - 静默失败，不影响应用运行
+  Future<void> _pollNetworkStatus(WidgetRef ref) async {
+    try {
+      final isServerHealthy = await _checkServerHealth();
+      
+      // 检测到服务器从不健康恢复到健康
+      if (isServerHealthy && !_lastServerHealthy) {
+        debugPrint('🌐 [NetworkMonitor] 轮询检测到网络恢复！');
+        _onNetworkRestored(ref);
+      }
+      
+      _lastServerHealthy = isServerHealthy;
+    } catch (e) {
+      debugPrint('❌ [NetworkMonitor] 轮询失败: $e');
+      _lastServerHealthy = false;
+    }
   }
   
   /// 网络恢复时的处理
