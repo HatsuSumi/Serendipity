@@ -92,9 +92,9 @@ class NetworkMonitorService {
         
         debugPrint('✅ [NetworkMonitor] 服务器健康');
         
-        // 检查是否有用户登录
-        final authState = ref.read(authProvider);
-        final user = authState.value;
+        // 等待 authProvider 加载完成
+        debugPrint('⏳ [NetworkMonitor] 等待用户状态加载...');
+        final user = await ref.read(authProvider.future);
         
         if (user != null) {
           debugPrint('👤 [NetworkMonitor] 用户已登录 (${user.email ?? user.phoneNumber})，触发初始同步');
