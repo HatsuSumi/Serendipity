@@ -53,9 +53,10 @@ class CommunityPost {
       address: json['address'] as String?,
       placeName: json['placeName'] as String?,
       placeType: json['placeType'] != null
-          ? PlaceType.values.firstWhere(
+          ? PlaceType.values.firstWhereOrThrow(
               (e) => e.value == json['placeType'] as String,
-              orElse: () => PlaceType.other, // 容错：未知类型显示为"其他"
+              message: 'CommunityPost.fromJson: PlaceType with value="${json['placeType']}" not found. '
+                  'Available values: ${PlaceType.values.map((e) => e.value).join(", ")}',
             )
           : null,
       province: json['province'] as String?,
