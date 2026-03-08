@@ -55,7 +55,7 @@ function generateRecordData(id, opts = {}) {
     location: {
       latitude: opts.latitude || 39.9042, longitude: opts.longitude || 116.4074,
       address: opts.address || '北京市朝阳区建国门外大街1号',
-      placeName: opts.placeName || '国贸商城', placeType: opts.placeType || 'shopping_mall',
+      placeName: opts.placeName || '国贸商城', placeType: opts.placeType || 'mall',
       province: opts.province || '北京', city: opts.city || '北京市', area: opts.area || '朝阳区'
     },
     description: opts.description || '测试记录', tags: opts.tags || [{ tag: '购物' }],
@@ -99,7 +99,7 @@ async function testCreatePost() {
     timestamp: new Date().toISOString(),
     address: '北京市朝阳区',
     placeName: '三里屯',
-    placeType: 'shopping_mall',
+    placeType: 'mall',
     province: '北京',
     city: '北京市',
     area: '朝阳区',
@@ -125,7 +125,7 @@ async function testDuplicatePublish() {
     timestamp: new Date().toISOString(),
     address: '北京市朝阳区',
     placeName: '三里屯',
-    placeType: 'shopping_mall',
+    placeType: 'mall',
     province: '北京',
     city: '北京市',
     area: '朝阳区',
@@ -150,7 +150,7 @@ async function testContentChanged() {
     timestamp: new Date().toISOString(),
     address: '北京市朝阳区',
     placeName: '三里屯',
-    placeType: 'shopping_mall',
+    placeType: 'mall',
     province: '北京',
     city: '北京市',
     area: '朝阳区',
@@ -175,7 +175,7 @@ async function testForceReplace() {
     timestamp: new Date().toISOString(),
     address: '北京市朝阳区',
     placeName: '三里屯',
-    placeType: 'shopping_mall',
+    placeType: 'mall',
     province: '北京',
     city: '北京市',
     area: '朝阳区',
@@ -197,7 +197,7 @@ async function testForceReplace() {
 async function testBatchCheckStatus() {
   logSection('场景 5: 批量检查发布状态（验证 N+1 优化）');
   const records = [
-    { recordId: testData.recordId1, timestamp: new Date().toISOString(), address: '北京市朝阳区', placeName: '三里屯', placeType: 'shopping_mall', province: '北京', city: '北京市', area: '朝阳区', description: '今天逛街超级开心！', tags: [{ tag: '购物' }], status: 'met' },
+    { recordId: testData.recordId1, timestamp: new Date().toISOString(), address: '北京市朝阳区', placeName: '三里屯', placeType: 'mall', province: '北京', city: '北京市', area: '朝阳区', description: '今天逛街超级开心！', tags: [{ tag: '购物' }], status: 'met' },
     { recordId: testData.recordId2, timestamp: new Date().toISOString(), address: '上海市', placeName: '星巴克', placeType: 'cafe', province: '上海', city: '上海市', area: '黄浦区', description: '喝咖啡', tags: [{ tag: '咖啡' }], status: 'met' },
     { recordId: testData.recordId3, timestamp: new Date().toISOString(), address: '杭州市', placeName: '西湖', placeType: 'park', province: '浙江', city: '杭州市', area: '西湖区', description: '游玩', tags: [{ tag: '旅游' }], status: 'met' }
   ];
