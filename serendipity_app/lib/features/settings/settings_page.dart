@@ -289,9 +289,11 @@ class SettingsPage extends ConsumerWidget {
                   ? const Icon(Icons.check, color: Colors.blue)
                   : null,
               selected: isSelected,
-              onTap: () {
-                ref.read(pageTransitionProvider.notifier).state = type;
-                MessageHelper.showSuccess(context, '已切换到：${type.label}');
+              onTap: () async {
+                await ref.read(userSettingsProvider.notifier).updatePageTransition(type);
+                if (context.mounted) {
+                  MessageHelper.showSuccess(context, '已切换到：${type.label}');
+                }
               },
             );
           }),
@@ -328,9 +330,11 @@ class SettingsPage extends ConsumerWidget {
                   ? const Icon(Icons.check, color: Colors.blue)
                   : null,
               selected: isSelected,
-              onTap: () {
-                ref.read(dialogAnimationProvider.notifier).state = type;
-                MessageHelper.showSuccess(context, '已切换到：${type.label}');
+              onTap: () async {
+                await ref.read(userSettingsProvider.notifier).updateDialogAnimation(type);
+                if (context.mounted) {
+                  MessageHelper.showSuccess(context, '已切换到：${type.label}');
+                }
               },
             );
           }),
