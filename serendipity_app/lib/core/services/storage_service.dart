@@ -82,15 +82,6 @@ class StorageService implements IStorageService {
     _storyLinesBox = await Hive.openBox<StoryLine>(_storyLinesBoxName);
     _achievementsBox = await Hive.openBox<Achievement>(_achievementsBoxName);
     _checkInsBox = await Hive.openBox<CheckInRecord>(_checkInsBoxName);
-    
-    // 数据迁移：删除旧的同步历史 Box（因为添加了新字段 source）
-    // 必须在 openBox 之前删除，否则会在读取时报错
-    try {
-      await Hive.deleteBoxFromDisk(_syncHistoriesBoxName);
-    } catch (e) {
-      // 删除失败不影响应用启动（可能是第一次启动，Box 不存在）
-    }
-    
     _syncHistoriesBox = await Hive.openBox<SyncHistory>(_syncHistoriesBoxName);
   }
   
