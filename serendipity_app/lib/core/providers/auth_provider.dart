@@ -95,7 +95,7 @@ class AuthNotifier extends StreamNotifier<User?> {
   void _invalidateDataProviders() {
     ref.invalidate(recordsProvider);
     ref.invalidate(storyLinesProvider);
-    ref.invalidate(checkInsProvider);
+    ref.invalidate(checkInProvider);
     ref.invalidate(achievementsProvider);
   }
 
