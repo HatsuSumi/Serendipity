@@ -337,6 +337,11 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       
       final now = DateTime.now();
       
+      // 获取当前用户ID（用于数据归属）
+      final authState = ref.read(authProvider);
+      final currentUser = authState.value;
+      final ownerId = currentUser?.id; // 未登录时为 null（离线数据）
+      
       // 创建或更新记录
       final record = EncounterRecord(
         id: widget.recordToEdit?.id ?? const Uuid().v4(),
@@ -379,6 +384,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         ifReencounter: ifReencounter.isEmpty ? null : ifReencounter,
         createdAt: widget.recordToEdit?.createdAt ?? now,
         updatedAt: now,
+        ownerId: widget.recordToEdit?.ownerId ?? ownerId, // 编辑模式保持原 ownerId，创建模式使用当前用户ID
       );
 
       // 通过 Provider 保存，自动处理故事线关联

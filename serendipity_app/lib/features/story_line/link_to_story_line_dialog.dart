@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/story_line.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 
@@ -365,6 +366,12 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
       if (_isCreatingNew) {
         // 创建新故事线
         final name = _nameController.text.trim();
+        
+        // 获取当前用户ID（用于数据归属）
+        final authState = ref.read(authProvider);
+        final currentUser = authState.value;
+        final ownerId = currentUser?.id; // 未登录时为 null（离线数据）
+        
         final now = DateTime.now();
         final newStoryLine = StoryLine(
           id: const Uuid().v4(),
@@ -372,6 +379,7 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
           recordIds: [],
           createdAt: now,
           updatedAt: now,
+          ownerId: ownerId,
         );
 
         await storyLinesNotifier.createStoryLine(newStoryLine);

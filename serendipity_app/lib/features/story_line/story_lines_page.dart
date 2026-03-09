@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/story_lines_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
@@ -391,6 +392,11 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                 return;
               }
 
+              // 获取当前用户ID（用于数据归属）
+              final authState = ref.read(authProvider);
+              final currentUser = authState.value;
+              final ownerId = currentUser?.id; // 未登录时为 null（离线数据）
+
               final now = DateTime.now();
               final newStoryLine = StoryLine(
                 id: const Uuid().v4(),
@@ -398,6 +404,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                 recordIds: [],
                 createdAt: now,
                 updatedAt: now,
+                ownerId: ownerId,
               );
 
               try {
