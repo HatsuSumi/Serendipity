@@ -32,14 +32,14 @@ export interface ICheckInRepository {
   findById(id: string): Promise<CheckIn | null>;
 
   /**
-   * 获取用户所有签到记录
+   * 获取用户所有签到记录（支持增量同步）
    * 
    * Fail Fast：
    * - userId 为空：抛出 Error
    * 
    * 调用者：CheckInService.getCheckIns()
    */
-  findByUserId(userId: string): Promise<CheckIn[]>;
+  findByUserId(userId: string, lastSyncTime?: Date): Promise<CheckIn[]>;
 
   /**
    * 根据用户和日期查找签到记录
@@ -112,14 +112,19 @@ export class CheckInRepository implements ICheckInRepository {
     });
   }
 
-  async findByUserId(userId: string): Promise<CheckIn[]> {
+  async findByUserId(userId: string, lastSyncTime?: Date): Promise<CheckIn[]> {
     // Fail Fast：参数验证
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
     }
 
+    const where = {
+      userId,
+      ...(lastSyncTime && { updatedAt: { gt: lastSyncTime } }),
+    };
+
     return this.prisma.checkIn.findMany({
-      where: { userId },
+      where,
       orderBy: { date: 'desc' },
     });
   }

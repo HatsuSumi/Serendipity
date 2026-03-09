@@ -248,6 +248,7 @@ void main() {
 
     group('syncSuccess', () {
       test('应该将状态设置为成功并保存同步结果', () {
+        final syncStartTime = DateTime.now();
         final result = SyncResult(
           uploadedRecords: 5,
           uploadedStoryLines: 2,
@@ -260,16 +261,18 @@ void main() {
           mergedCheckIns: 2,
         );
 
-        container.read(syncStatusProvider.notifier).syncSuccess(result);
+        container.read(syncStatusProvider.notifier).syncSuccess(result, syncStartTime);
         final state = container.read(syncStatusProvider);
 
         expect(state.status, SyncStatus.success);
         expect(state.syncResult, result);
         expect(state.errorMessage, null);
         expect(state.lastManualSyncTime, isNotNull);
+        expect(state.lastFullSyncTime, syncStartTime);
       });
 
       test('应该保存上次同步时间到存储', () async {
+        final syncStartTime = DateTime.now();
         final result = SyncResult(
           uploadedRecords: 0,
           uploadedStoryLines: 0,
@@ -282,19 +285,22 @@ void main() {
           mergedCheckIns: 0,
         );
 
-        container.read(syncStatusProvider.notifier).syncSuccess(result);
+        container.read(syncStatusProvider.notifier).syncSuccess(result, syncStartTime);
 
         final savedManualTime = await mockStorage.get<String>('last_manual_sync_time');
         final savedFullTime = await mockStorage.get<String>('last_full_sync_time');
         expect(savedManualTime, isNotNull);
         expect(savedFullTime, isNotNull);
         
-        final parsedTime = DateTime.parse(savedManualTime!);
+        final parsedManualTime = DateTime.parse(savedManualTime!);
+        final parsedFullTime = DateTime.parse(savedFullTime!);
         final now = DateTime.now();
-        expect(parsedTime.difference(now).inSeconds.abs(), lessThan(2));
+        expect(parsedManualTime.difference(now).inSeconds.abs(), lessThan(2));
+        expect(parsedFullTime, syncStartTime);
       });
 
       test('3秒后应该自动切换回空闲状态', () async {
+        final syncStartTime = DateTime.now();
         final result = SyncResult(
           uploadedRecords: 0,
           uploadedStoryLines: 0,
@@ -307,7 +313,7 @@ void main() {
           mergedCheckIns: 0,
         );
 
-        container.read(syncStatusProvider.notifier).syncSuccess(result);
+        container.read(syncStatusProvider.notifier).syncSuccess(result, syncStartTime);
         
         var state = container.read(syncStatusProvider);
         expect(state.status, SyncStatus.success);

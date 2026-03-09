@@ -148,15 +148,19 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   /// 
   /// Fail Fast：
   /// - result 为 null：由 Dart 类型系统保证
-  void syncSuccess(SyncResult result) {
+  /// - syncStartTime 为 null：由 Dart 类型系统保证
+  /// 
+  /// 重要：syncStartTime 必须是同步开始前的时间，而不是同步完成后的时间
+  /// 这样可以确保不会漏掉在同步过程中产生的数据变化
+  void syncSuccess(SyncResult result, DateTime syncStartTime) {
     final now = DateTime.now();
     _storage.set(_lastManualSyncTimeKey, now.toIso8601String());
-    _storage.set(_lastFullSyncTimeKey, now.toIso8601String());
+    _storage.set(_lastFullSyncTimeKey, syncStartTime.toIso8601String());
     
     state = SyncStatusInfo(
       status: SyncStatus.success,
       lastManualSyncTime: now,
-      lastFullSyncTime: now,
+      lastFullSyncTime: syncStartTime,
       syncResult: result,
       errorMessage: null,
     );

@@ -82,9 +82,9 @@ export class CheckInController {
   };
 
   /**
-   * 获取用户所有签到记录
+   * 获取用户所有签到记录（支持增量同步）
    * 
-   * GET /api/check-ins
+   * GET /api/check-ins?lastSyncTime=2024-01-01T00:00:00.000Z
    * 
    * 响应：{ checkIns: CheckInResponseDto[] }
    * 
@@ -98,8 +98,9 @@ export class CheckInController {
       }
 
       const userId = req.user.userId;
+      const lastSyncTime = req.query.lastSyncTime as string | undefined;
 
-      const checkIns = await this.checkInService.getCheckIns(userId);
+      const checkIns = await this.checkInService.getCheckIns(userId, lastSyncTime);
 
       sendSuccess(res, {
         checkIns: checkIns.map((c) => this.toResponseDto(c)),

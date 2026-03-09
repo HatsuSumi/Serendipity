@@ -542,7 +542,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       actions: [
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('知道了'),
+          child: const Text('我知道了'),
         ),
       ],
     );

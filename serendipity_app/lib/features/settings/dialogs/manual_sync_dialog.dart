@@ -66,6 +66,9 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
   Future<void> _startSync() async {
     if (!mounted) return;
     
+    // 记录同步开始时间（在同步开始前）
+    final syncStartTime = DateTime.now();
+    
     setState(() {
       _isSyncing = true;
       _currentStep = '准备同步...';
@@ -118,8 +121,8 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
         _syncResult = result;
       });
 
-      // 更新同步状态为"成功"
-      ref.read(syncStatusProvider.notifier).syncSuccess(result);
+      // 更新同步状态为"成功"（传入同步开始时间）
+      ref.read(syncStatusProvider.notifier).syncSuccess(result, syncStartTime);
 
       // 刷新所有数据列表
       ref.invalidate(recordsProvider);
@@ -258,12 +261,12 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
           storyLines: result.downloadedStoryLines,
           checkIns: result.downloadedCheckIns,
         ),
+        const SizedBox(height: 8),
         
         // 冲突合并统计（如果有）
         if (result.mergedRecords > 0 || 
             result.mergedStoryLines > 0 || 
             result.mergedCheckIns > 0) ...[
-          const SizedBox(height: 8),
           _buildStatRow(
             context,
             icon: Icons.merge_outlined,
@@ -304,7 +307,7 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
         
         // 无数据变化提示
         if (!result.hasChanges) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           Center(
             child: Text(
               '数据已是最新，无需同步',

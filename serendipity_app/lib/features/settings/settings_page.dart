@@ -26,6 +26,7 @@ import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
 import '../community/my_posts_page.dart';
 import 'dialogs/manual_sync_dialog.dart';
+import 'dialogs/sync_info_dialog.dart';
 
 /// 设置页面（我的页面）
 /// 
@@ -132,7 +133,20 @@ class SettingsPage extends ConsumerWidget {
               
               return ListTile(
                 leading: const Text('🔄', style: TextStyle(fontSize: 24)),
-                title: const Text('手动同步'),
+                title: Row(
+                  children: [
+                    const Text('手动同步'),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => SyncInfoDialog.show(context),
+                      child: Icon(
+                        Icons.help_outline,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
                 subtitle: _buildSyncSubtitle(context, syncStatus),
                 trailing: syncStatus.status == SyncStatus.syncing
                     ? const SizedBox(

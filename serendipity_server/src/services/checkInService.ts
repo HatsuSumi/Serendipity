@@ -34,14 +34,14 @@ export interface ICheckInService {
   batchCreateCheckIns(userId: string, checkIns: CreateCheckInDto[]): Promise<void>;
 
   /**
-   * 获取用户所有签到记录
+   * 获取用户所有签到记录（支持增量同步）
    * 
    * Fail Fast：
    * - userId 为空：抛出 Error
    * 
    * 调用者：CheckInController.getCheckIns()
    */
-  getCheckIns(userId: string): Promise<CheckIn[]>;
+  getCheckIns(userId: string, lastSyncTime?: string): Promise<CheckIn[]>;
 
   /**
    * 删除签到记录
@@ -123,13 +123,15 @@ export class CheckInService implements ICheckInService {
     }
   }
 
-  async getCheckIns(userId: string): Promise<CheckIn[]> {
+  async getCheckIns(userId: string, lastSyncTime?: string): Promise<CheckIn[]> {
     // Fail Fast：参数验证
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
     }
 
-    return await this.checkInRepository.findByUserId(userId);
+    const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;
+
+    return await this.checkInRepository.findByUserId(userId, lastSyncDate);
   }
 
   async deleteCheckIn(checkInId: string, userId: string): Promise<void> {
