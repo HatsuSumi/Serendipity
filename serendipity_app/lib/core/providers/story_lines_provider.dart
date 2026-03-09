@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/story_line.dart';
 import '../../models/encounter_record.dart';
+import '../../models/achievement_unlock.dart';
 import '../services/sync_service.dart';
 import '../services/achievement_detector.dart';
 import '../repositories/story_line_repository.dart';
@@ -95,6 +96,9 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
         ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
         // 刷新成就列表
         ref.invalidate(achievementsProvider);
+        
+        // 上传成就解锁记录到云端
+        await _uploadAchievementUnlocks(unlockedAchievements);
       }
     } catch (e) {
       // 成就检测失败不影响故事线创建
@@ -172,6 +176,9 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
         ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
         // 刷新成就列表
         ref.invalidate(achievementsProvider);
+        
+        // 上传成就解锁记录到云端
+        await _uploadAchievementUnlocks(unlockedAchievements);
       }
     } catch (e) {
       // 成就检测失败不影响记录关联
@@ -244,6 +251,52 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
       await unpinStoryLine(id);
     } else {
       await pinStoryLine(id);
+    }
+  }
+  
+  /// 上传成就解锁记录到云端
+  /// 
+  /// 调用者：createStoryLine()、linkRecord()
+  /// 
+  /// 设计原则：
+  /// - 单一职责：只负责上传成就解锁记录
+  /// - Fail Fast：用户未登录时直接返回，不抛异常
+  /// - 容错处理：上传失败不影响成就解锁（已保存到本地）
+  Future<void> _uploadAchievementUnlocks(List<String> achievementIds) async {
+    // 获取当前用户
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser == null) {
+      // 用户未登录，跳过上传
+      return;
+    }
+    
+    // 获取成就仓储
+    final achievementRepo = ref.read(achievementRepositoryProvider);
+    
+    // 遍历每个成就ID，上传解锁记录
+    for (final achievementId in achievementIds) {
+      try {
+        // 获取成就详情（包含解锁时间）
+        final achievement = await achievementRepo.getAchievement(achievementId);
+        if (achievement == null || !achievement.unlocked || achievement.unlockedAt == null) {
+          // 成就不存在或未解锁，跳过
+          continue;
+        }
+        
+        // 创建成就解锁记录
+        final unlock = AchievementUnlock(
+          userId: currentUser.id,
+          achievementId: achievementId,
+          unlockedAt: achievement.unlockedAt!,
+        );
+        
+        // 上传到云端
+        await _syncService.uploadAchievementUnlock(unlock);
+      } catch (e) {
+        // 单个成就上传失败不影响其他成就
+        // 用户可以稍后通过全量同步补齐
+        // 生产环境应记录错误日志
+      }
     }
   }
 }
