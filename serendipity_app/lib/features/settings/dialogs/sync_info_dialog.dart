@@ -81,7 +81,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 16),
             _buildInfoText(
               context,
-              '【实时同步】',
+              '【实时同步】单条数据立即同步',
               isBold: true,
             ),
             const SizedBox(height: 4),
