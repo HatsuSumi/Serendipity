@@ -111,7 +111,11 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       final syncStatus = ref.read(syncStatusProvider);
       final lastSyncTime = syncStatus.lastFullSyncTime;
       
-      final result = await syncService.syncAllData(user, lastSyncTime: lastSyncTime);
+      final result = await syncService.syncAllData(
+        user,
+        lastSyncTime: lastSyncTime,
+        isManual: true,  // 标记为手动同步
+      );
 
       // 5. 同步成功
       if (!mounted) return;
@@ -121,8 +125,12 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
         _syncResult = result;
       });
 
-      // 更新同步状态为"成功"（传入同步开始时间）
-      ref.read(syncStatusProvider.notifier).syncSuccess(result, syncStartTime);
+      // 更新同步状态为"成功"（传入同步开始时间和手动同步标记）
+      ref.read(syncStatusProvider.notifier).syncSuccess(
+        result,
+        syncStartTime,
+        isManual: true,
+      );
 
       // 刷新所有数据列表
       ref.invalidate(recordsProvider);
@@ -139,7 +147,10 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       });
 
       // 更新同步状态为"失败"
-      ref.read(syncStatusProvider.notifier).syncError(cleanMessage);
+      ref.read(syncStatusProvider.notifier).syncError(
+        cleanMessage,
+        isManual: true,
+      );
     }
   }
 

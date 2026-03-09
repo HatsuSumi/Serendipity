@@ -4,6 +4,7 @@ import '../../models/story_line.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user.dart';
+import '../../models/sync_history.dart';
 import '../config/app_config.dart';
 import '../repositories/i_remote_data_repository.dart';
 import '../repositories/test_remote_data_repository.dart';
@@ -295,7 +296,8 @@ class SyncService {
   /// 
   /// 调用者：
   /// - AuthProvider：用户登录成功后自动调用（首次全量同步）
-  /// - SettingsPage：手动同步按钮（增量同步）
+  /// - NetworkMonitorService：网络恢复/App启动时自动调用
+  /// - ManualSyncDialog：手动同步按钮（增量同步）
   /// 
   /// 同步策略：
   /// 1. 获取上次同步时间
@@ -303,40 +305,81 @@ class SyncService {
   /// 3. 下载云端有变化的数据（updatedAt > lastSyncTime）
   /// 4. 合并数据（最后更新时间优先）
   /// 5. 同步成就解锁状态（静默）
+  /// 6. 保存同步历史记录
+  /// 
+  /// 参数：
+  /// - user：当前用户
+  /// - lastSyncTime：上次同步时间（null 表示全量同步）
+  /// - isManual：是否手动同步（默认 false，自动同步）
   /// 
   /// 返回：同步结果统计
   /// 
   /// Fail Fast：
   /// - user 为 null：抛出 ArgumentError
   /// - 网络错误：向上抛出异常
-  Future<SyncResult> syncAllData(User user, {DateTime? lastSyncTime}) async {
+  Future<SyncResult> syncAllData(
+    User user, {
+    DateTime? lastSyncTime,
+    bool isManual = false,
+  }) async {
     // Fail Fast：参数验证
     if (user.id.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
     
-    // 1. 上传本地有变化的数据
-    final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
+    // 记录同步开始时间
+    final syncStartTime = DateTime.now();
     
-    // 2. 下载云端有变化的数据
-    final downloadStats = await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
-    
-    // 3. 同步成就解锁状态（静默，不触发通知）
-    final syncedAchievements = await _syncAchievementUnlocks(user);
-    
-    // 4. 返回同步结果统计
-    return SyncResult(
-      uploadedRecords: uploadStats['records'] ?? 0,
-      uploadedStoryLines: uploadStats['storyLines'] ?? 0,
-      uploadedCheckIns: uploadStats['checkIns'] ?? 0,
-      downloadedRecords: downloadStats['records'] ?? 0,
-      downloadedStoryLines: downloadStats['storyLines'] ?? 0,
-      downloadedCheckIns: downloadStats['checkIns'] ?? 0,
-      mergedRecords: downloadStats['mergedRecords'] ?? 0,
-      mergedStoryLines: downloadStats['mergedStoryLines'] ?? 0,
-      mergedCheckIns: downloadStats['mergedCheckIns'] ?? 0,
-      syncedAchievements: syncedAchievements,
-    );
+    try {
+      // 1. 上传本地有变化的数据
+      final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
+      
+      // 2. 下载云端有变化的数据
+      final downloadStats = await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
+      
+      // 3. 同步成就解锁状态（静默，不触发通知）
+      final syncedAchievements = await _syncAchievementUnlocks(user);
+      
+      // 4. 构建同步结果统计
+      final result = SyncResult(
+        uploadedRecords: uploadStats['records'] ?? 0,
+        uploadedStoryLines: uploadStats['storyLines'] ?? 0,
+        uploadedCheckIns: uploadStats['checkIns'] ?? 0,
+        downloadedRecords: downloadStats['records'] ?? 0,
+        downloadedStoryLines: downloadStats['storyLines'] ?? 0,
+        downloadedCheckIns: downloadStats['checkIns'] ?? 0,
+        mergedRecords: downloadStats['mergedRecords'] ?? 0,
+        mergedStoryLines: downloadStats['mergedStoryLines'] ?? 0,
+        mergedCheckIns: downloadStats['mergedCheckIns'] ?? 0,
+        syncedAchievements: syncedAchievements,
+      );
+      
+      // 5. 保存同步历史记录（成功）
+      final syncEndTime = DateTime.now();
+      final history = SyncHistory.fromSuccess(
+        result: result,
+        syncStartTime: syncStartTime,
+        syncEndTime: syncEndTime,
+        isManual: isManual,
+      );
+      await _storageService.saveSyncHistory(history);
+      
+      // 6. 返回同步结果统计
+      return result;
+    } catch (e) {
+      // 保存同步历史记录（失败）
+      final syncEndTime = DateTime.now();
+      final history = SyncHistory.fromError(
+        errorMessage: e.toString(),
+        syncStartTime: syncStartTime,
+        syncEndTime: syncEndTime,
+        isManual: isManual,
+      );
+      await _storageService.saveSyncHistory(history);
+      
+      // 重新抛出异常
+      rethrow;
+    }
   }
   
   /// 上传本地有变化的数据到云端（增量上传）
