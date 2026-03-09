@@ -6,6 +6,7 @@ import { createStoryLineRoutes } from './storyline.routes';
 import { createCommunityRoutes } from './community.routes';
 import { createUserRoutes } from './user.routes';
 import { createCheckInRoutes } from './checkIn.routes';
+import { createAchievementUnlockRoutes } from './achievementUnlock.routes';
 import Container from '../config/container';
 import { AuthController } from '../controllers/authController';
 import { RecordController } from '../controllers/recordController';
@@ -13,6 +14,7 @@ import { StoryLineController } from '../controllers/storyLineController';
 import { CommunityPostController } from '../controllers/communityPostController';
 import { UserController } from '../controllers/userController';
 import { CheckInController } from '../controllers/checkInController';
+import { AchievementUnlockController } from '../controllers/achievementUnlockController';
 
 /**
  * 创建主路由
@@ -36,6 +38,7 @@ export const createMainRoutes = (): Router => {
   const communityPostController = container.get<CommunityPostController>('communityPostController');
   const userController = container.get<UserController>('userController');
   const checkInController = container.get<CheckInController>('checkInController');
+  const achievementUnlockController = container.get<AchievementUnlockController>('achievementUnlockController');
 
   // 注册子路由
   router.use('/auth', createAuthRoutes(authController));
@@ -44,6 +47,7 @@ export const createMainRoutes = (): Router => {
   router.use('/community', createCommunityRoutes(communityPostController));
   router.use('/users', createUserRoutes(userController));
   router.use('/check-ins', createCheckInRoutes(checkInController));
+  router.use('/achievement-unlocks', createAchievementUnlockRoutes(achievementUnlockController));
 
   return router;
 };

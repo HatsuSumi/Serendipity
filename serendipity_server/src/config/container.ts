@@ -15,17 +15,20 @@ import { CommunityPostRepository } from '../repositories/communityPostRepository
 import { UserSettingsRepository } from '../repositories/userSettingsRepository';
 import { MembershipRepository } from '../repositories/membershipRepository';
 import { CheckInRepository } from '../repositories/checkInRepository';
+import { AchievementUnlockRepository } from '../repositories/achievementUnlockRepository';
 import { AuthController } from '../controllers/authController';
 import { RecordController } from '../controllers/recordController';
 import { StoryLineController } from '../controllers/storyLineController';
 import { CommunityPostController } from '../controllers/communityPostController';
 import { UserController } from '../controllers/userController';
 import { CheckInController } from '../controllers/checkInController';
+import { AchievementUnlockController } from '../controllers/achievementUnlockController';
 import { RecordService } from '../services/recordService';
 import { StoryLineService } from '../services/storyLineService';
 import { CommunityPostService } from '../services/communityPostService';
 import { UserService } from '../services/userService';
 import { CheckInService } from '../services/checkInService';
+import { AchievementUnlockService } from '../services/achievementUnlockService';
 import { config } from '../config';
 import { AUTH_CONFIG } from '../config/auth.config';
 import path from 'path';
@@ -161,6 +164,7 @@ export const initializeContainer = (): Container => {
   const membershipRepository = new MembershipRepository(prisma);
   const userSettingsRepository = new UserSettingsRepository(prisma);
   const checkInRepository = new CheckInRepository(prisma);
+  const achievementUnlockRepository = new AchievementUnlockRepository(prisma);
 
   container.register('userRepository', userRepository);
   container.register('refreshTokenRepository', refreshTokenRepository);
@@ -171,6 +175,7 @@ export const initializeContainer = (): Container => {
   container.register('membershipRepository', membershipRepository);
   container.register('userSettingsRepository', userSettingsRepository);
   container.register('checkInRepository', checkInRepository);
+  container.register('achievementUnlockRepository', achievementUnlockRepository);
 
   // 初始化 Services
   const verificationService = new VerificationService(verificationCodeRepository);
@@ -186,6 +191,7 @@ export const initializeContainer = (): Container => {
   const communityPostService = new CommunityPostService(communityPostRepository);
   const userService = new UserService(userRepository, userSettingsRepository);
   const checkInService = new CheckInService(checkInRepository);
+  const achievementUnlockService = new AchievementUnlockService(achievementUnlockRepository);
 
   container.register('verificationService', verificationService);
   container.register('authService', authService);
@@ -194,6 +200,7 @@ export const initializeContainer = (): Container => {
   container.register('communityPostService', communityPostService);
   container.register('userService', userService);
   container.register('checkInService', checkInService);
+  container.register('achievementUnlockService', achievementUnlockService);
 
   // 初始化 Controllers
   const authController = new AuthController(authService, verificationService);
@@ -202,6 +209,7 @@ export const initializeContainer = (): Container => {
   const communityPostController = new CommunityPostController(communityPostService);
   const userController = new UserController(userService);
   const checkInController = new CheckInController(checkInService);
+  const achievementUnlockController = new AchievementUnlockController(achievementUnlockService);
 
   container.register('authController', authController);
   container.register('recordController', recordController);
@@ -209,6 +217,7 @@ export const initializeContainer = (): Container => {
   container.register('communityPostController', communityPostController);
   container.register('userController', userController);
   container.register('checkInController', checkInController);
+  container.register('achievementUnlockController', achievementUnlockController);
 
   return container;
 };

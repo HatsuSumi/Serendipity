@@ -7,23 +7,24 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(uuid())
-  email          String?         @unique
-  phoneNumber    String?         @unique @map("phone_number")
-  passwordHash   String          @map("password_hash")
-  recoveryKey    String?         @map("recovery_key")
-  displayName    String?         @map("display_name") @db.VarChar(100)
-  avatarUrl      String?         @map("avatar_url")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
-  lastLoginAt    DateTime?       @map("last_login_at")
-  checkIns       CheckIn[]
-  communityPosts CommunityPost[]
-  membership     Membership?
-  records        Record[]
-  refreshTokens  RefreshToken[]
-  storyLines     StoryLine[]
-  settings       UserSettings?
+  id                String              @id @default(uuid())
+  email             String?             @unique
+  phoneNumber       String?             @unique @map("phone_number")
+  passwordHash      String              @map("password_hash")
+  recoveryKey       String?             @map("recovery_key")
+  displayName       String?             @map("display_name") @db.VarChar(100)
+  avatarUrl         String?             @map("avatar_url")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  lastLoginAt       DateTime?           @map("last_login_at")
+  achievementUnlocks AchievementUnlock[]
+  checkIns          CheckIn[]
+  communityPosts    CommunityPost[]
+  membership        Membership?
+  records           Record[]
+  refreshTokens     RefreshToken[]
+  storyLines        StoryLine[]
+  settings          UserSettings?
 
   @@index([email])
   @@index([phoneNumber])
@@ -183,4 +184,18 @@ model CheckIn {
   @@index([userId])
   @@index([date])
   @@map("check_ins")
+}
+
+model AchievementUnlock {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  achievementId String   @map("achievement_id") @db.VarChar(255)
+  unlockedAt    DateTime @map("unlocked_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
+  @@map("achievement_unlocks")
 }
