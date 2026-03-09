@@ -13,6 +13,7 @@ import '../repositories/custom_server_remote_data_repository.dart';
 import '../repositories/achievement_repository.dart';
 import '../providers/auth_provider.dart';
 import '../providers/achievement_provider.dart';
+import '../utils/auth_error_helper.dart';
 import 'i_storage_service.dart';
 
 /// 同步结果统计
@@ -304,13 +305,15 @@ class SyncService {
   /// 1. 获取上次同步时间
   /// 2. 上传本地有变化的数据（updatedAt > lastSyncTime）
   /// 3. 下载云端有变化的数据（updatedAt > lastSyncTime）
+  ///    - 首次同步（lastSyncTime == null）：跳过下载，因为刚上传的数据本地已有
+  ///    - 增量同步（lastSyncTime != null）：下载云端变化，可能包含其他设备的数据
   /// 4. 合并数据（最后更新时间优先）
   /// 5. 同步成就解锁状态（静默）
   /// 6. 保存同步历史记录
   /// 
   /// 参数：
   /// - user：当前用户
-  /// - lastSyncTime：上次同步时间（null 表示全量同步）
+  /// - lastSyncTime：上次同步时间（null 表示首次同步）
   /// - source：同步来源（默认手动同步）
   /// 
   /// 返回：同步结果统计
@@ -336,7 +339,10 @@ class SyncService {
       final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
       
       // 2. 下载云端有变化的数据
-      final downloadStats = await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
+      // 优化：首次同步时跳过下载，因为刚上传的数据本地已有
+      final downloadStats = lastSyncTime == null
+          ? {'records': 0, 'storyLines': 0, 'checkIns': 0, 'mergedRecords': 0, 'mergedStoryLines': 0, 'mergedCheckIns': 0}
+          : await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
       
       // 3. 同步用户设置
       await _syncUserSettings(user);
@@ -374,7 +380,7 @@ class SyncService {
       // 保存同步历史记录（失败）
       final syncEndTime = DateTime.now();
       final history = SyncHistory.fromError(
-        errorMessage: e.toString(),
+        errorMessage: AuthErrorHelper.extractErrorMessage(e),
         syncStartTime: syncStartTime,
         syncEndTime: syncEndTime,
         source: source,
