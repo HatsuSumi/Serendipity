@@ -42,7 +42,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '【全量同步】',
+              '【全量同步】扫描所有数据',
               isBold: true,
             ),
             const SizedBox(height: 4),
@@ -62,6 +62,12 @@ class SyncInfoDialog extends StatelessWidget {
               context,
               '4. 每 60 秒轮询一次（后台自动）',
             ),
+            const SizedBox(height: 16),
+            _buildInfoText(
+              context,
+              '【增量同步】只同步有变化的数据',
+              isBold: true,
+            ),
             const SizedBox(height: 4),
             _buildInfoText(
               context,
@@ -70,7 +76,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '说明：全量同步会记录到"同步历史"，可查看详细统计。',
+              '说明：以上同步会记录到"同步历史"，可查看详细统计。',
             ),
             const SizedBox(height: 16),
             _buildInfoText(
@@ -145,12 +151,12 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '全量同步：扫描所有数据，确保本地和云端完全一致。首次启动、登录、注册、网络恢复、60秒轮询时使用。',
+              '全量同步：扫描所有数据，确保本地和云端完全一致。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '增量同步：只同步有变化的数据，节省流量和时间。手动同步时使用。',
+              '增量同步：只同步有变化的数据，节省流量和时间。',
             ),
             const SizedBox(height: 16),
 
