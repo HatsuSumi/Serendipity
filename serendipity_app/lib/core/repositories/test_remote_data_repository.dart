@@ -3,6 +3,7 @@ import '../../models/story_line.dart';
 import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
+import '../../models/user_settings.dart';
 import 'i_remote_data_repository.dart';
 
 /// 测试远程数据仓库
@@ -167,6 +168,17 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   Future<List<AchievementUnlock>> downloadAchievementUnlocks(String userId) async {
     // 测试模式：返回空列表
     return [];
+  }
+  
+  @override
+  Future<void> uploadSettings(UserSettings settings) async {
+    // 测试模式：不执行任何操作
+  }
+  
+  @override
+  Future<UserSettings?> downloadSettings(String userId) async {
+    // 测试模式：返回 null（用户没有设置）
+    return null;
   }
 }
 

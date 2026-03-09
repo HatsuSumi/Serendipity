@@ -3,6 +3,7 @@ import '../../models/story_line.dart';
 import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
+import '../../models/user_settings.dart';
 import 'i_remote_data_repository.dart';
 import '../services/http_client_service.dart';
 import '../config/server_config.dart';
@@ -630,6 +631,48 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
           .toList();
     } on HttpException catch (e) {
       throw Exception('下载成就解锁记录失败：${e.message}');
+    }
+  }
+  
+  // ==================== 用户设置相关操作 ====================
+  
+  @override
+  Future<void> uploadSettings(UserSettings settings) async {
+    // Fail Fast：参数验证
+    if (settings.userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      // 使用模型的转换方法（单一职责原则）
+      await _httpClient.put(
+        ServerConfig.usersSettings,
+        body: settings.toServerDto(),
+      );
+    } on HttpException catch (e) {
+      throw Exception('上传用户设置失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<UserSettings?> downloadSettings(String userId) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      final response = await _httpClient.get(ServerConfig.usersSettings);
+      final data = response['data'] as Map<String, dynamic>;
+      
+      // 使用模型的转换方法（单一职责原则）
+      return UserSettings.fromServerDto(data, userId);
+    } on HttpException catch (e) {
+      // 如果是 404，说明用户还没有设置，返回 null
+      if (e.statusCode == 404) {
+        return null;
+      }
+      throw Exception('下载用户设置失败：${e.message}');
     }
   }
 }
