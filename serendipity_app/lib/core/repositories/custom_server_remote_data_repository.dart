@@ -620,7 +620,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     try {
       final response = await _httpClient.get(
         ServerConfig.achievementUnlocks,
-        queryParameters: {'userId': userId},
+        queryParams: {'userId': userId},
       );
       final data = response['data'] as Map<String, dynamic>;
       final unlocksJson = data['unlocks'] as List;

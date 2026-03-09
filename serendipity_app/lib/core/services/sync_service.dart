@@ -10,6 +10,7 @@ import '../repositories/test_remote_data_repository.dart';
 import '../repositories/custom_server_remote_data_repository.dart';
 import '../repositories/achievement_repository.dart';
 import '../providers/auth_provider.dart';
+import '../providers/achievement_provider.dart';
 import 'i_storage_service.dart';
 
 /// 同步结果统计
