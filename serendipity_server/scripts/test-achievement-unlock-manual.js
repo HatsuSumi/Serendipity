@@ -3,7 +3,7 @@
  * 运行方式: node scripts/test-achievement-unlock-manual.js
  */
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'http://localhost:3000/api/v1';
 
 // 测试数据存储
 const testData = {
