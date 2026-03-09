@@ -133,6 +133,11 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用者：RegisterPage._handleEmailRegister()
   /// 
+  /// 注册流程：
+  /// 1. 清空本地用户数据（防止旧数据污染新账号）
+  /// 2. 调用 AuthRepository 注册
+  /// 3. 触发数据同步（创建云端空数据）
+  /// 
   /// 返回：恢复密钥（仅在注册时返回一次）
   /// 
   /// Fail Fast：
@@ -151,10 +156,15 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
+      // 1. 清空本地用户数据
+      final storageService = ref.read(storageServiceProvider);
+      await storageService.clearUserData();
+      
+      // 2. 调用 AuthRepository 注册
       final result = await _repository.signUpWithEmail(email, password);
       state = AsyncValue.data(result.user);
       
-      // 注册成功后触发数据同步
+      // 3. 注册成功后触发数据同步
       await _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
@@ -249,6 +259,11 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用者：RegisterPage._handlePhoneRegister()
   /// 
+  /// 注册流程：
+  /// 1. 清空本地用户数据（防止旧数据污染新账号）
+  /// 2. 调用 AuthRepository 注册
+  /// 3. 触发数据同步（创建云端空数据）
+  /// 
   /// 返回：恢复密钥（仅在注册时返回一次）
   /// 
   /// Fail Fast：
@@ -275,6 +290,11 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
+      // 1. 清空本地用户数据
+      final storageService = ref.read(storageServiceProvider);
+      await storageService.clearUserData();
+      
+      // 2. 调用 AuthRepository 注册
       final result = await _repository.signUpWithPhone(
         phoneNumber,
         verificationCode,
@@ -282,7 +302,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       );
       state = AsyncValue.data(result.user);
       
-      // 注册成功后触发数据同步
+      // 3. 注册成功后触发数据同步
       await _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
