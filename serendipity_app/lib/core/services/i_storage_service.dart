@@ -135,5 +135,24 @@ abstract class IStorageService {
   
   /// 删除键值对
   Future<void> remove(String key);
+  
+  // ==================== 用户数据清理 ====================
+  
+  /// 清空用户数据（登出时调用）
+  /// 
+  /// 清空内容：
+  /// - 记录
+  /// - 故事线
+  /// - 签到记录
+  /// - 成就
+  /// - 用户设置
+  /// - 同步历史
+  /// 
+  /// 保留内容：
+  /// - Token（由 AuthRepository 管理）
+  /// - 首次启动标记
+  /// 
+  /// 调用者：AuthNotifier.signOut()
+  Future<void> clearUserData();
 }
 

@@ -380,5 +380,39 @@ class StorageService implements IStorageService {
   Future<void> remove(String key) async {
     await _settingsBoxOrThrow.delete(key);
   }
+  
+  // ==================== 用户数据清理 ====================
+  
+  /// 清空用户数据（登出时调用）
+  /// 
+  /// 调用者：AuthNotifier.signOut()
+  /// 
+  /// 清空策略：
+  /// - 清空所有用户相关数据
+  /// - 保留 Token（由 AuthRepository 管理）
+  /// - 保留首次启动标记
+  /// 
+  /// Fail Fast：
+  /// - Box 未初始化：抛出 StateError
+  @override
+  Future<void> clearUserData() async {
+    // 清空记录
+    await _recordsBoxOrThrow.clear();
+    
+    // 清空故事线
+    await _storyLinesBoxOrThrow.clear();
+    
+    // 清空签到记录
+    await _checkInsBoxOrThrow.clear();
+    
+    // 清空成就
+    await _achievementsBoxOrThrow.clear();
+    
+    // 清空同步历史
+    await _syncHistoriesBoxOrThrow.clear();
+    
+    // 清空用户设置（但保留其他全局设置）
+    await _settingsBoxOrThrow.delete('user_settings');
+  }
 }
 

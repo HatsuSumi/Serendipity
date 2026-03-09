@@ -89,6 +89,11 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用者：LoginPage._handleEmailLogin()
   /// 
+  /// 登录流程：
+  /// 1. 清空本地用户数据（防止账号切换时数据混淆）
+  /// 2. 调用 AuthRepository 登录
+  /// 3. 触发数据同步（从云端下载当前用户数据）
+  /// 
   /// Fail Fast：
   /// - 邮箱格式错误立即抛异常
   /// - 密码长度不足立即抛异常
@@ -105,11 +110,16 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
+      // 1. 清空本地用户数据
+      final storageService = ref.read(storageServiceProvider);
+      await storageService.clearUserData();
+      
+      // 2. 调用 AuthRepository 登录
       await _repository.signInWithEmail(email, password);
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
       
-      // 登录成功后触发数据同步
+      // 3. 登录成功后触发数据同步
       if (user != null) {
         await _triggerSync(user);
       }
@@ -183,6 +193,11 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用者：LoginPage._handlePhoneLogin()
   /// 
+  /// 登录流程：
+  /// 1. 清空本地用户数据（防止账号切换时数据混淆）
+  /// 2. 调用 AuthRepository 登录
+  /// 3. 触发数据同步（从云端下载当前用户数据）
+  /// 
   /// Fail Fast：
   /// - 手机号格式错误立即抛异常
   /// - 验证码格式错误立即抛异常
@@ -207,6 +222,11 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
+      // 1. 清空本地用户数据
+      final storageService = ref.read(storageServiceProvider);
+      await storageService.clearUserData();
+      
+      // 2. 调用 AuthRepository 登录
       await _repository.signInWithPhone(
         phoneNumber,
         verificationCode,
@@ -215,7 +235,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
       
-      // 登录成功后触发数据同步
+      // 3. 登录成功后触发数据同步
       if (user != null) {
         await _triggerSync(user);
       }
@@ -276,12 +296,24 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用者：SettingsPage 的登出按钮
   /// 
+  /// 登出流程：
+  /// 1. 调用 AuthRepository 登出（清除 Token）
+  /// 2. 清空本地用户数据（避免数据混淆）
+  /// 3. 更新认证状态为 null
+  /// 
   /// Fail Fast：登出失败立即抛异常
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     
     try {
+      // 1. 调用 AuthRepository 登出
       await _repository.signOut();
+      
+      // 2. 清空本地用户数据
+      final storageService = ref.read(storageServiceProvider);
+      await storageService.clearUserData();
+      
+      // 3. 更新认证状态
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
