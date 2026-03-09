@@ -54,15 +54,33 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   Future<List<StoryLine>> build() async {
     _repository = ref.read(storyLineRepositoryProvider);
     _syncService = ref.read(syncServiceProvider);
-    // 初始化时加载所有故事线
-    return _repository.getStoryLinesSortedByTime();
+    
+    // 获取当前登录用户
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    
+    // 根据用户加载数据
+    if (currentUser != null) {
+      // 已登录：加载该用户的数据
+      return _repository.getStoryLinesByUser(currentUser.id);
+    } else {
+      // 未登录：加载离线数据
+      return _repository.getStoryLinesByUser(null);
+    }
   }
 
   /// 刷新故事线列表
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      return _repository.getStoryLinesSortedByTime();
+      // 获取当前登录用户
+      final currentUser = await ref.read(authProvider.notifier).currentUser;
+      
+      // 根据用户加载数据
+      if (currentUser != null) {
+        return _repository.getStoryLinesByUser(currentUser.id);
+      } else {
+        return _repository.getStoryLinesByUser(null);
+      }
     });
   }
 

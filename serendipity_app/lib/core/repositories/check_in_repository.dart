@@ -57,6 +57,16 @@ class CheckInRepository {
   List<CheckInRecord> getCheckInsSortedByDate() {
     return _storageService.getCheckInsSortedByDate();
   }
+  
+  /// 获取指定用户的签到记录列表（按日期倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：CheckInProvider（未来可能需要）
+  List<CheckInRecord> getCheckInsByUser(String? userId) {
+    return _storageService.getCheckInsByUser(userId);
+  }
 
   /// 计算连续签到天数
   /// 

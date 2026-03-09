@@ -26,8 +26,18 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   @override
   Future<List<EncounterRecord>> build() async {
     _repository = ref.read(recordRepositoryProvider);
-    // 初始化时加载所有记录
-    return _repository.getRecordsSortedByTime();
+    
+    // 获取当前登录用户
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    
+    // 根据用户加载数据
+    if (currentUser != null) {
+      // 已登录：加载该用户的数据
+      return _repository.getRecordsByUser(currentUser.id);
+    } else {
+      // 未登录：加载离线数据
+      return _repository.getRecordsByUser(null);
+    }
   }
   
   /// 获取同步服务（延迟初始化）
@@ -40,7 +50,15 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      return _repository.getRecordsSortedByTime();
+      // 获取当前登录用户
+      final currentUser = await ref.read(authProvider.notifier).currentUser;
+      
+      // 根据用户加载数据
+      if (currentUser != null) {
+        return _repository.getRecordsByUser(currentUser.id);
+      } else {
+        return _repository.getRecordsByUser(null);
+      }
     });
   }
 

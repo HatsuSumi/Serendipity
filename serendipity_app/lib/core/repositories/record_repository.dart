@@ -83,6 +83,16 @@ class RecordRepository {
   List<EncounterRecord> getRecordsSortedByTime() {
     return _storage.getRecordsSortedByTime();
   }
+  
+  /// 获取指定用户的记录列表（按时间倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：RecordsProvider
+  List<EncounterRecord> getRecordsByUser(String? userId) {
+    return _storage.getRecordsByUser(userId);
+  }
 
   /// 根据故事线ID获取记录
   List<EncounterRecord> getRecordsByStoryLine(String storyLineId) {

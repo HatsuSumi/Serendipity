@@ -157,6 +157,23 @@ class StorageService implements IStorageService {
         .toList();
   }
   
+  /// 获取指定用户的记录列表（按时间倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：RecordRepository
+  /// 
+  /// Fail Fast：不验证 userId，允许 null（表示离线数据）
+  @override
+  List<EncounterRecord> getRecordsByUser(String? userId) {
+    final records = getAllRecords()
+        .where((record) => record.ownerId == userId)
+        .toList();
+    records.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return records;
+  }
+  
   // ==================== 故事线相关操作 ====================
   
   /// 保存故事线
@@ -199,6 +216,23 @@ class StorageService implements IStorageService {
   Future<void> updateStoryLine(StoryLine storyLine) async {
     assert(storyLine.id.isNotEmpty, 'Story line ID cannot be empty');
     await _storyLinesBoxOrThrow.put(storyLine.id, storyLine);
+  }
+  
+  /// 获取指定用户的故事线列表（按更新时间倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：StoryLineRepository
+  /// 
+  /// Fail Fast：不验证 userId，允许 null（表示离线数据）
+  @override
+  List<StoryLine> getStoryLinesByUser(String? userId) {
+    final storyLines = getAllStoryLines()
+        .where((storyLine) => storyLine.ownerId == userId)
+        .toList();
+    storyLines.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return storyLines;
   }
   
   // ==================== 成就相关操作 ====================
@@ -256,6 +290,23 @@ class StorageService implements IStorageService {
   @override
   List<CheckInRecord> getCheckInsSortedByDate() {
     final checkIns = getAllCheckIns();
+    checkIns.sort((a, b) => b.date.compareTo(a.date));
+    return checkIns;
+  }
+  
+  /// 获取指定用户的签到记录列表（按日期倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：CheckInRepository
+  /// 
+  /// Fail Fast：不验证 userId，允许 null（表示离线数据）
+  @override
+  List<CheckInRecord> getCheckInsByUser(String? userId) {
+    final checkIns = getAllCheckIns()
+        .where((checkIn) => checkIn.userId == userId)
+        .toList();
     checkIns.sort((a, b) => b.date.compareTo(a.date));
     return checkIns;
   }
@@ -381,7 +432,84 @@ class StorageService implements IStorageService {
     await _settingsBoxOrThrow.delete(key);
   }
   
-  // ==================== 用户数据清理 ====================
+  // ==================== 用户数据管理 ====================
+  
+  /// 绑定离线数据到指定用户
+  /// 
+  /// 将所有 ownerId = null 的数据绑定到指定用户
+  /// 
+  /// 参数：
+  /// - userId: 目标用户ID
+  /// 
+  /// 调用者：AuthNotifier（首次登录/注册时）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  @override
+  Future<void> bindOfflineDataToUser(String userId) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    // 绑定记录
+    final offlineRecords = getAllRecords()
+        .where((record) => record.ownerId == null)
+        .toList();
+    for (final record in offlineRecords) {
+      final boundRecord = record.copyWith(ownerId: () => userId);
+      await saveRecord(boundRecord);
+    }
+    
+    // 绑定故事线
+    final offlineStoryLines = getAllStoryLines()
+        .where((storyLine) => storyLine.ownerId == null)
+        .toList();
+    for (final storyLine in offlineStoryLines) {
+      final boundStoryLine = storyLine.copyWith(ownerId: () => userId);
+      await saveStoryLine(boundStoryLine);
+    }
+    
+    // 绑定签到记录
+    final offlineCheckIns = getAllCheckIns()
+        .where((checkIn) => checkIn.userId == null)
+        .toList();
+    for (final checkIn in offlineCheckIns) {
+      final boundCheckIn = checkIn.copyWith(userId: () => userId);
+      await saveCheckIn(boundCheckIn);
+    }
+  }
+  
+  /// 删除所有离线数据
+  /// 
+  /// 删除所有 ownerId = null 的数据
+  /// 
+  /// 调用者：AuthNotifier（用户选择不绑定离线数据时）
+  @override
+  Future<void> deleteOfflineData() async {
+    // 删除离线记录
+    final offlineRecords = getAllRecords()
+        .where((record) => record.ownerId == null)
+        .toList();
+    for (final record in offlineRecords) {
+      await deleteRecord(record.id);
+    }
+    
+    // 删除离线故事线
+    final offlineStoryLines = getAllStoryLines()
+        .where((storyLine) => storyLine.ownerId == null)
+        .toList();
+    for (final storyLine in offlineStoryLines) {
+      await deleteStoryLine(storyLine.id);
+    }
+    
+    // 删除离线签到记录
+    final offlineCheckIns = getAllCheckIns()
+        .where((checkIn) => checkIn.userId == null)
+        .toList();
+    for (final checkIn in offlineCheckIns) {
+      await deleteCheckIn(checkIn.id);
+    }
+  }
   
   /// 清空用户数据（登出时调用）
   /// 

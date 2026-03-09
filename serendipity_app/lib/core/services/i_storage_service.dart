@@ -31,6 +31,14 @@ abstract class IStorageService {
   /// 获取记录列表（按时间倒序）
   List<EncounterRecord> getRecordsSortedByTime();
   
+  /// 获取指定用户的记录列表（按时间倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：RecordRepository
+  List<EncounterRecord> getRecordsByUser(String? userId);
+  
   /// 删除记录
   Future<void> deleteRecord(String id);
   
@@ -56,6 +64,14 @@ abstract class IStorageService {
   
   /// 获取故事线列表（按更新时间倒序）
   List<StoryLine> getStoryLinesSortedByTime();
+  
+  /// 获取指定用户的故事线列表（按更新时间倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：StoryLineRepository
+  List<StoryLine> getStoryLinesByUser(String? userId);
   
   /// 删除故事线
   Future<void> deleteStoryLine(String id);
@@ -90,6 +106,14 @@ abstract class IStorageService {
   
   /// 获取签到记录列表（按日期倒序）
   List<CheckInRecord> getCheckInsSortedByDate();
+  
+  /// 获取指定用户的签到记录列表（按日期倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：CheckInRepository
+  List<CheckInRecord> getCheckInsByUser(String? userId);
   
   /// 删除签到记录
   Future<void> deleteCheckIn(String id);
@@ -136,7 +160,27 @@ abstract class IStorageService {
   /// 删除键值对
   Future<void> remove(String key);
   
-  // ==================== 用户数据清理 ====================
+  // ==================== 用户数据管理 ====================
+  
+  /// 绑定离线数据到指定用户
+  /// 
+  /// 将所有 ownerId = null 的数据绑定到指定用户
+  /// 
+  /// 参数：
+  /// - userId: 目标用户ID
+  /// 
+  /// 调用者：AuthNotifier（首次登录/注册时）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  Future<void> bindOfflineDataToUser(String userId);
+  
+  /// 删除所有离线数据
+  /// 
+  /// 删除所有 ownerId = null 的数据
+  /// 
+  /// 调用者：AuthNotifier（用户选择不绑定离线数据时）
+  Future<void> deleteOfflineData();
   
   /// 清空用户数据（登出时调用）
   /// 

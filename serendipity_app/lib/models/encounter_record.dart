@@ -136,6 +136,8 @@ class EncounterRecord {
   final DateTime updatedAt;
   @HiveField(14)
   final bool isPinned; // 是否置顶
+  @HiveField(15)
+  final String? ownerId; // 数据归属用户ID，null 表示离线创建未绑定账号
 
   EncounterRecord({
     required this.id,
@@ -153,6 +155,7 @@ class EncounterRecord {
     required this.createdAt,
     required this.updatedAt,
     this.isPinned = false,
+    this.ownerId,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
        assert(description == null || description.length <= 500, 
          'Description must be at most 500 characters, got ${description.length}'),
@@ -176,6 +179,7 @@ class EncounterRecord {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'isPinned': isPinned,
+      'ownerId': ownerId,
     };
   }
 
@@ -222,6 +226,7 @@ class EncounterRecord {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       isPinned: json['isPinned'] as bool? ?? false,
+      ownerId: json['ownerId'] as String?,
     );
   }
 
@@ -259,6 +264,7 @@ class EncounterRecord {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isPinned,
+    String? Function()? ownerId,
   }) {
     return EncounterRecord(
       id: id ?? this.id,
@@ -276,6 +282,7 @@ class EncounterRecord {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
+      ownerId: ownerId != null ? ownerId() : this.ownerId,
     );
   }
 }

@@ -391,20 +391,23 @@ class SyncService {
   /// 调用者：syncAllData()
   /// 
   /// 参数：
+  /// - user: 当前用户
   /// - lastSyncTime：上次同步时间，如果为 null 则全量上传
   /// 
   /// 返回：上传统计信息
+  /// 
+  /// 注意：只上传属于当前用户的数据（ownerId == user.id）
   Future<Map<String, int>> _uploadLocalData(User user, {DateTime? lastSyncTime}) async {
     int uploadedRecords = 0;
     int uploadedStoryLines = 0;
     int uploadedCheckIns = 0;
     
-    // 上传记录
+    // 上传记录（只上传当前用户的）
     try {
-      final allRecords = _storageService.getRecordsSortedByTime();
+      final userRecords = _storageService.getRecordsByUser(user.id);
       final changedRecords = lastSyncTime == null
-          ? allRecords
-          : allRecords.where((r) => r.updatedAt.isAfter(lastSyncTime)).toList();
+          ? userRecords
+          : userRecords.where((r) => r.updatedAt.isAfter(lastSyncTime)).toList();
       
       if (changedRecords.isNotEmpty) {
         await _remoteRepository.uploadRecords(user.id, changedRecords);
@@ -414,12 +417,12 @@ class SyncService {
       // 上传失败不影响其他数据同步
     }
     
-    // 上传故事线
+    // 上传故事线（只上传当前用户的）
     try {
-      final allStoryLines = _storageService.getAllStoryLines();
+      final userStoryLines = _storageService.getStoryLinesByUser(user.id);
       final changedStoryLines = lastSyncTime == null
-          ? allStoryLines
-          : allStoryLines.where((s) => s.updatedAt.isAfter(lastSyncTime)).toList();
+          ? userStoryLines
+          : userStoryLines.where((s) => s.updatedAt.isAfter(lastSyncTime)).toList();
       
       if (changedStoryLines.isNotEmpty) {
         await _remoteRepository.uploadStoryLines(user.id, changedStoryLines);
@@ -429,12 +432,12 @@ class SyncService {
       // 上传失败不影响其他数据同步
     }
     
-    // 上传签到记录
+    // 上传签到记录（只上传当前用户的）
     try {
-      final allCheckIns = _storageService.getAllCheckIns();
+      final userCheckIns = _storageService.getCheckInsByUser(user.id);
       final changedCheckIns = lastSyncTime == null
-          ? allCheckIns
-          : allCheckIns.where((c) => c.updatedAt.isAfter(lastSyncTime)).toList();
+          ? userCheckIns
+          : userCheckIns.where((c) => c.updatedAt.isAfter(lastSyncTime)).toList();
       
       if (changedCheckIns.isNotEmpty) {
         await _remoteRepository.uploadCheckIns(user.id, changedCheckIns);

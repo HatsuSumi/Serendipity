@@ -69,6 +69,16 @@ class StoryLineRepository {
   List<StoryLine> getStoryLinesSortedByTime() {
     return _storage.getStoryLinesSortedByTime();
   }
+  
+  /// 获取指定用户的故事线列表（按更新时间倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  /// 
+  /// 调用者：StoryLinesProvider
+  List<StoryLine> getStoryLinesByUser(String? userId) {
+    return _storage.getStoryLinesByUser(userId);
+  }
 
   /// 将记录关联到故事线
   /// 

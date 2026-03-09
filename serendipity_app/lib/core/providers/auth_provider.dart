@@ -111,9 +111,10 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 调用者：LoginPage._handleEmailLogin()
   /// 
   /// 登录流程：
-  /// 1. 清空本地用户数据（防止账号切换时数据混淆）
-  /// 2. 调用 AuthRepository 登录
-  /// 3. 触发数据同步（从云端下载当前用户数据）
+  /// 1. 调用 AuthRepository 登录
+  /// 2. 检查并绑定离线数据（如果有）
+  /// 3. 刷新所有数据 Provider
+  /// 4. 触发数据同步（从云端下载当前用户数据）
   /// 
   /// Fail Fast：
   /// - 邮箱格式错误立即抛异常
@@ -131,20 +132,19 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      // 1. 清空本地用户数据
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.clearUserData();
-      
-      // 2. 刷新所有数据 Provider（清除内存缓存）
-      _invalidateDataProviders();
-      
-      // 3. 调用 AuthRepository 登录
+      // 1. 调用 AuthRepository 登录
       await _repository.signInWithEmail(email, password);
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
       
-      // 4. 登录成功后触发数据同步
       if (user != null) {
+        // 2. 绑定离线数据到当前用户
+        await _bindOfflineDataIfNeeded(user.id);
+        
+        // 3. 刷新所有数据 Provider
+        _invalidateDataProviders();
+        
+        // 4. 登录成功后触发数据同步
         await _triggerSync(user);
       }
     } catch (e, stack) {
@@ -158,9 +158,10 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 调用者：RegisterPage._handleEmailRegister()
   /// 
   /// 注册流程：
-  /// 1. 清空本地用户数据（防止旧数据污染新账号）
-  /// 2. 调用 AuthRepository 注册
-  /// 3. 触发数据同步（创建云端空数据）
+  /// 1. 调用 AuthRepository 注册
+  /// 2. 绑定离线数据到新账号
+  /// 3. 刷新所有数据 Provider
+  /// 4. 触发数据同步（上传到云端）
   /// 
   /// 返回：恢复密钥（仅在注册时返回一次）
   /// 
@@ -180,16 +181,15 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      // 1. 清空本地用户数据
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.clearUserData();
-      
-      // 2. 刷新所有数据 Provider（清除内存缓存）
-      _invalidateDataProviders();
-      
-      // 3. 调用 AuthRepository 注册
+      // 1. 调用 AuthRepository 注册
       final result = await _repository.signUpWithEmail(email, password);
       state = AsyncValue.data(result.user);
+      
+      // 2. 绑定离线数据到新账号
+      await _bindOfflineDataIfNeeded(result.user.id);
+      
+      // 3. 刷新所有数据 Provider
+      _invalidateDataProviders();
       
       // 4. 注册成功后触发数据同步
       await _triggerSync(result.user, isRegister: true);
@@ -231,9 +231,10 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 调用者：LoginPage._handlePhoneLogin()
   /// 
   /// 登录流程：
-  /// 1. 清空本地用户数据（防止账号切换时数据混淆）
-  /// 2. 调用 AuthRepository 登录
-  /// 3. 触发数据同步（从云端下载当前用户数据）
+  /// 1. 调用 AuthRepository 登录
+  /// 2. 检查并绑定离线数据（如果有）
+  /// 3. 刷新所有数据 Provider
+  /// 4. 触发数据同步（从云端下载当前用户数据）
   /// 
   /// Fail Fast：
   /// - 手机号格式错误立即抛异常
@@ -259,14 +260,7 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      // 1. 清空本地用户数据
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.clearUserData();
-      
-      // 2. 刷新所有数据 Provider（清除内存缓存）
-      _invalidateDataProviders();
-      
-      // 3. 调用 AuthRepository 登录
+      // 1. 调用 AuthRepository 登录
       await _repository.signInWithPhone(
         phoneNumber,
         verificationCode,
@@ -275,8 +269,14 @@ class AuthNotifier extends StreamNotifier<User?> {
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
       
-      // 4. 登录成功后触发数据同步
       if (user != null) {
+        // 2. 绑定离线数据到当前用户
+        await _bindOfflineDataIfNeeded(user.id);
+        
+        // 3. 刷新所有数据 Provider
+        _invalidateDataProviders();
+        
+        // 4. 登录成功后触发数据同步
         await _triggerSync(user);
       }
     } catch (e, stack) {
@@ -290,9 +290,10 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 调用者：RegisterPage._handlePhoneRegister()
   /// 
   /// 注册流程：
-  /// 1. 清空本地用户数据（防止旧数据污染新账号）
-  /// 2. 调用 AuthRepository 注册
-  /// 3. 触发数据同步（创建云端空数据）
+  /// 1. 调用 AuthRepository 注册
+  /// 2. 绑定离线数据到新账号
+  /// 3. 刷新所有数据 Provider
+  /// 4. 触发数据同步（上传到云端）
   /// 
   /// 返回：恢复密钥（仅在注册时返回一次）
   /// 
@@ -320,20 +321,19 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      // 1. 清空本地用户数据
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.clearUserData();
-      
-      // 2. 刷新所有数据 Provider（清除内存缓存）
-      _invalidateDataProviders();
-      
-      // 3. 调用 AuthRepository 注册
+      // 1. 调用 AuthRepository 注册
       final result = await _repository.signUpWithPhone(
         phoneNumber,
         verificationCode,
         verificationId,
       );
       state = AsyncValue.data(result.user);
+      
+      // 2. 绑定离线数据到新账号
+      await _bindOfflineDataIfNeeded(result.user.id);
+      
+      // 3. 刷新所有数据 Provider
+      _invalidateDataProviders();
       
       // 4. 注册成功后触发数据同步
       await _triggerSync(result.user, isRegister: true);
@@ -351,8 +351,10 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 登出流程：
   /// 1. 调用 AuthRepository 登出（清除 Token）
-  /// 2. 清空本地用户数据（避免数据混淆）
+  /// 2. 刷新所有数据 Provider（切换到离线数据视图）
   /// 3. 更新认证状态为 null
+  /// 
+  /// 注意：不清空本地数据，支持离线使用
   /// 
   /// Fail Fast：登出失败立即抛异常
   Future<void> signOut() async {
@@ -362,19 +364,35 @@ class AuthNotifier extends StreamNotifier<User?> {
       // 1. 调用 AuthRepository 登出
       await _repository.signOut();
       
-      // 2. 清空本地用户数据
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.clearUserData();
-      
-      // 3. 刷新所有数据 Provider（清除内存缓存）
+      // 2. 刷新所有数据 Provider（切换到离线数据视图）
       _invalidateDataProviders();
       
-      // 4. 更新认证状态
+      // 3. 更新认证状态
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
     }
+  }
+  
+  /// 绑定离线数据到指定用户（如果有离线数据）
+  /// 
+  /// 调用时机：首次登录/注册时
+  /// 
+  /// 策略：自动绑定所有离线数据，不询问用户
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  Future<void> _bindOfflineDataIfNeeded(String userId) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    final storageService = ref.read(storageServiceProvider);
+    
+    // 直接绑定离线数据（不询问用户）
+    // 如果没有离线数据，bindOfflineDataToUser 会自动跳过
+    await storageService.bindOfflineDataToUser(userId);
   }
   
   /// 发送密码重置邮件
