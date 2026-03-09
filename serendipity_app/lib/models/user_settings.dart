@@ -70,7 +70,41 @@ class UserSettings {
        assert(!passwordLockEnabled || passwordHash != null,
          'Password hash is required when password lock is enabled');
 
-  /// 从 JSON 创建 UserSettings
+  /// 创建默认设置
+  /// 
+  /// 调用者：
+  /// - SyncService._syncUserSettings()（首次登录时）
+  /// - UserSettingsProvider（初始化时）
+  factory UserSettings.createDefault({required String userId}) {
+    final now = DateTime.now();
+    return UserSettings(
+      id: 'settings_$userId',
+      userId: userId,
+      theme: ThemeOption.system,
+      accentColor: null,
+      pageTransition: PageTransitionType.random,
+      dialogAnimation: DialogAnimationType.random,
+      cloudSyncEnabled: true,
+      biometricLockEnabled: false,
+      passwordLockEnabled: false,
+      passwordHash: null,
+      hiddenRecordIds: [],
+      achievementNotification: true,
+      anniversaryReminder: true,
+      checkInReminderEnabled: true,
+      checkInReminderTime: const TimeOfDay(hour: 20, minute: 0),
+      checkInVibrationEnabled: true,
+      checkInConfettiEnabled: false,
+      autoPublishToCommunity: false,
+      hidePublishWarning: false,
+      hasSeenPublishWarning: false,
+      hasSeenCommunityIntro: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// 从 JSON 创建 UserSettings（本地存储格式）
   factory UserSettings.fromJson(Map<String, dynamic> json) {
     // 解析签到提醒时间
     final reminderTimeData = json['checkInReminderTime'];
@@ -125,7 +159,75 @@ class UserSettings {
     );
   }
 
-  /// 转换为 JSON
+  /// 从后端 DTO 创建 UserSettings
+  /// 
+  /// 后端返回的 UserSettingsDto 格式：
+  /// ```json
+  /// {
+  ///   "theme": "system",
+  ///   "pageTransition": "random",
+  ///   "dialogAnimation": "random",
+  ///   "notifications": {
+  ///     "checkInReminder": true,
+  ///     "checkInReminderTime": "20:00",
+  ///     "achievementUnlocked": true
+  ///   },
+  ///   "checkIn": {
+  ///     "vibrationEnabled": true,
+  ///     "confettiEnabled": true
+  ///   }
+  /// }
+  /// ```
+  /// 
+  /// 调用者：CustomServerRemoteDataRepository.downloadSettings()
+  factory UserSettings.fromServerDto(Map<String, dynamic> dto, String userId) {
+    // 解析签到提醒时间（格式："HH:mm"）
+    final notifications = dto['notifications'] as Map<String, dynamic>;
+    final reminderTimeStr = notifications['checkInReminderTime'] as String;
+    final timeParts = reminderTimeStr.split(':');
+    final reminderHour = int.parse(timeParts[0]);
+    final reminderMinute = int.parse(timeParts[1]);
+    
+    final checkIn = dto['checkIn'] as Map<String, dynamic>;
+    final now = DateTime.now();
+    
+    return UserSettings(
+      id: 'settings_$userId',
+      userId: userId,
+      theme: ThemeOption.values.firstWhere(
+        (e) => e.value == dto['theme'] as String,
+        orElse: () => ThemeOption.system,
+      ),
+      accentColor: null,
+      pageTransition: PageTransitionType.values.firstWhere(
+        (e) => e.value == dto['pageTransition'] as String,
+        orElse: () => PageTransitionType.random,
+      ),
+      dialogAnimation: DialogAnimationType.values.firstWhere(
+        (e) => e.value == dto['dialogAnimation'] as String,
+        orElse: () => DialogAnimationType.random,
+      ),
+      cloudSyncEnabled: true,
+      biometricLockEnabled: false,
+      passwordLockEnabled: false,
+      passwordHash: null,
+      hiddenRecordIds: [],
+      achievementNotification: notifications['achievementUnlocked'] as bool,
+      anniversaryReminder: true,
+      checkInReminderEnabled: notifications['checkInReminder'] as bool,
+      checkInReminderTime: TimeOfDay(hour: reminderHour, minute: reminderMinute),
+      checkInVibrationEnabled: checkIn['vibrationEnabled'] as bool,
+      checkInConfettiEnabled: checkIn['confettiEnabled'] as bool,
+      autoPublishToCommunity: false,
+      hidePublishWarning: false,
+      hasSeenPublishWarning: false,
+      hasSeenCommunityIntro: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// 转换为 JSON（本地存储用）
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -154,6 +256,30 @@ class UserSettings {
       'hasSeenCommunityIntro': hasSeenCommunityIntro,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  /// 转换为后端 DTO 格式（用于上传）
+  /// 
+  /// 调用者：CustomServerRemoteDataRepository.uploadSettings()
+  Map<String, dynamic> toServerDto() {
+    final hour = checkInReminderTime.hour.toString().padLeft(2, '0');
+    final minute = checkInReminderTime.minute.toString().padLeft(2, '0');
+    
+    return {
+      'theme': theme.value,
+      'pageTransition': pageTransition.value,
+      'dialogAnimation': dialogAnimation.value,
+      'notifications': {
+        'checkInReminder': checkInReminderEnabled,
+        'checkInReminderTime': '$hour:$minute',
+        'achievementUnlocked': achievementNotification,
+      },
+      'checkIn': {
+        'vibrationEnabled': checkInVibrationEnabled,
+        'confettiEnabled': checkInConfettiEnabled,
+      },
+      'hasSeenCommunityIntro': hasSeenCommunityIntro,
     };
   }
 
