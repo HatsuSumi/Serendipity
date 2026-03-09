@@ -473,6 +473,12 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => _showResetCheckInsDialog(context, ref),
           ),
           ListTile(
+            leading: const Icon(Icons.history, color: Colors.orange),
+            title: const Text('清空同步历史记录'),
+            subtitle: const Text('清空所有同步历史数据'),
+            onTap: () => _showClearSyncHistoryDialog(context, ref),
+          ),
+          ListTile(
             leading: const Icon(Icons.restart_alt, color: Colors.blue),
             title: const Text('重置首次启动标记'),
             subtitle: const Text('下次启动将显示欢迎页面'),
@@ -1291,6 +1297,41 @@ class SettingsPage extends ConsumerWidget {
               foregroundColor: Colors.red,
             ),
             child: const Text('确定重置'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示清空同步历史记录确认对话框
+  void _showClearSyncHistoryDialog(BuildContext context, WidgetRef ref) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('清空同步历史记录'),
+        content: const Text('确定要清空所有同步历史记录吗？\n\n此操作不可恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              await AsyncActionHelper.execute(
+                context,
+                action: () async {
+                  await ref.read(storageServiceProvider).clearAllSyncHistories();
+                },
+                successMessage: '同步历史记录已清空',
+                errorMessagePrefix: '清空失败',
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.orange,
+            ),
+            child: const Text('确定清空'),
           ),
         ],
       ),

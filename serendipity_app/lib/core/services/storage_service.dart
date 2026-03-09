@@ -83,6 +83,13 @@ class StorageService implements IStorageService {
     _achievementsBox = await Hive.openBox<Achievement>(_achievementsBoxName);
     _checkInsBox = await Hive.openBox<CheckInRecord>(_checkInsBoxName);
     _syncHistoriesBox = await Hive.openBox<SyncHistory>(_syncHistoriesBoxName);
+    
+    // 数据迁移：清空旧的同步历史记录（因为添加了新字段 source）
+    try {
+      await _syncHistoriesBox?.clear();
+    } catch (e) {
+      // 清空失败不影响应用启动
+    }
   }
   
   /// 关闭所有 Box
