@@ -2,6 +2,7 @@ import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
+import '../../models/achievement_unlock.dart';
 
 /// 远程数据仓库接口
 /// 
@@ -418,5 +419,39 @@ abstract class IRemoteDataRepository {
   /// - checkInId 为空：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<void> deleteCheckIn(String userId, String checkInId);
+  
+  // ==================== 成就相关操作 ====================
+  
+  /// 上传成就解锁记录到云端
+  /// 
+  /// 参数：
+  /// - [unlock]：成就解锁记录
+  /// 
+  /// 调用者：
+  /// - SyncService.uploadAchievementUnlock()
+  /// - AchievementRepository.unlockAchievement() 通过 SyncService 调用
+  /// 
+  /// Fail Fast：
+  /// - unlock 为 null：抛出 ArgumentError
+  /// - unlock.userId 为空：抛出 ArgumentError
+  /// - unlock.achievementId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<void> uploadAchievementUnlock(AchievementUnlock unlock);
+  
+  /// 下载用户所有成就解锁记录
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// 
+  /// 返回：用户的所有成就解锁记录列表
+  /// 
+  /// 调用者：
+  /// - SyncService.syncAllData()
+  /// - 用户登录后，下载云端成就解锁状态到本地
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<AchievementUnlock>> downloadAchievementUnlocks(String userId);
 }
 

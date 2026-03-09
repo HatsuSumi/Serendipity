@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/check_in_record.dart';
+import '../../models/achievement_unlock.dart';
 import '../../models/user.dart';
 import '../config/app_config.dart';
 import '../repositories/i_remote_data_repository.dart';
 import '../repositories/test_remote_data_repository.dart';
 import '../repositories/custom_server_remote_data_repository.dart';
+import '../repositories/achievement_repository.dart';
 import '../providers/auth_provider.dart';
 import 'i_storage_service.dart';
 
@@ -41,6 +43,9 @@ class SyncResult {
   /// 合并冲突的签到记录数量
   final int mergedCheckIns;
   
+  /// 同步的成就解锁数量
+  final int syncedAchievements;
+  
   const SyncResult({
     required this.uploadedRecords,
     required this.uploadedStoryLines,
@@ -51,6 +56,7 @@ class SyncResult {
     required this.mergedRecords,
     required this.mergedStoryLines,
     required this.mergedCheckIns,
+    required this.syncedAchievements,
   });
   
   /// 是否有数据变化
@@ -63,7 +69,8 @@ class SyncResult {
            downloadedCheckIns > 0 ||
            mergedRecords > 0 ||
            mergedStoryLines > 0 ||
-           mergedCheckIns > 0;
+           mergedCheckIns > 0 ||
+           syncedAchievements > 0;
   }
 }
 
@@ -98,12 +105,15 @@ final remoteDataRepositoryProvider = Provider<IRemoteDataRepository>((ref) {
 class SyncService {
   final IRemoteDataRepository _remoteRepository;
   final IStorageService _storageService;
+  final AchievementRepository _achievementRepository;
   
   SyncService({
     required IRemoteDataRepository remoteRepository,
     required IStorageService storageService,
+    required AchievementRepository achievementRepository,
   })  : _remoteRepository = remoteRepository,
-        _storageService = storageService;
+        _storageService = storageService,
+        _achievementRepository = achievementRepository;
   
   /// 上传单条记录到云端（创建）
   /// 
@@ -217,6 +227,29 @@ class SyncService {
     await _remoteRepository.deleteRecord(user.id, recordId);
   }
   
+  /// 上传成就解锁记录到云端
+  /// 
+  /// 调用者：
+  /// - RecordsProvider：成就解锁后上传
+  /// - CheckInProvider：成就解锁后上传
+  /// - StoryLinesProvider：成就解锁后上传
+  /// 
+  /// Fail Fast：
+  /// - unlock 为 null：抛出 ArgumentError
+  /// - unlock.userId 为空：抛出 ArgumentError
+  /// - 网络错误：向上抛出异常
+  Future<void> uploadAchievementUnlock(AchievementUnlock unlock) async {
+    // Fail Fast：参数验证
+    if (unlock.userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (unlock.achievementId.isEmpty) {
+      throw ArgumentError('成就 ID 不能为空');
+    }
+    
+    await _remoteRepository.uploadAchievementUnlock(unlock);
+  }
+  
   /// 删除云端故事线
   /// 
   /// 调用者：StoryLinesProvider.deleteStoryLine()
@@ -268,6 +301,7 @@ class SyncService {
   /// 2. 上传本地有变化的数据（updatedAt > lastSyncTime）
   /// 3. 下载云端有变化的数据（updatedAt > lastSyncTime）
   /// 4. 合并数据（最后更新时间优先）
+  /// 5. 同步成就解锁状态（静默）
   /// 
   /// 返回：同步结果统计
   /// 
@@ -286,7 +320,10 @@ class SyncService {
     // 2. 下载云端有变化的数据
     final downloadStats = await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
     
-    // 3. 返回同步结果统计
+    // 3. 同步成就解锁状态（静默，不触发通知）
+    final syncedAchievements = await _syncAchievementUnlocks(user);
+    
+    // 4. 返回同步结果统计
     return SyncResult(
       uploadedRecords: uploadStats['records'] ?? 0,
       uploadedStoryLines: uploadStats['storyLines'] ?? 0,
@@ -297,6 +334,7 @@ class SyncService {
       mergedRecords: downloadStats['mergedRecords'] ?? 0,
       mergedStoryLines: downloadStats['mergedStoryLines'] ?? 0,
       mergedCheckIns: downloadStats['mergedCheckIns'] ?? 0,
+      syncedAchievements: syncedAchievements,
     );
   }
   
@@ -440,6 +478,32 @@ class SyncService {
       'mergedCheckIns': mergedCheckIns,
     };
   }
+  
+  /// 同步成就解锁状态（静默）
+  /// 
+  /// 调用者：syncAllData()
+  /// 
+  /// 同步策略：
+  /// 1. 下载云端所有成就解锁记录
+  /// 2. 静默标记本地成就为已解锁（不触发通知）
+  /// 3. 本地检测器继续运行，检测新成就（触发通知）
+  /// 
+  /// 返回：同步的成就数量
+  Future<int> _syncAchievementUnlocks(User user) async {
+    try {
+      // 下载云端成就解锁记录
+      final remoteUnlocks = await _remoteRepository.downloadAchievementUnlocks(user.id);
+      
+      // 静默标记本地成就为已解锁
+      await _achievementRepository.syncAchievementUnlocks(remoteUnlocks);
+      
+      return remoteUnlocks.length;
+    } catch (e) {
+      // 成就同步失败不影响其他数据同步
+      // 生产环境应记录错误日志
+      return 0;
+    }
+  }
 }
 
 /// 数据同步服务 Provider
@@ -447,6 +511,7 @@ final syncServiceProvider = Provider<SyncService>((ref) {
   return SyncService(
     remoteRepository: ref.read(remoteDataRepositoryProvider),
     storageService: ref.read(storageServiceProvider),
+    achievementRepository: ref.read(achievementRepositoryProvider),
   );
 });
 

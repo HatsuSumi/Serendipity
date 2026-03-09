@@ -1,4 +1,5 @@
 import '../../models/achievement.dart';
+import '../../models/achievement_unlock.dart';
 import '../services/i_storage_service.dart';
 import '../constants/achievement_definitions.dart';
 
@@ -152,6 +153,60 @@ class AchievementRepository {
   Future<List<Achievement>> getAchievementsByCategory(AchievementCategory category) async {
     final achievements = await getAllAchievements();
     return achievements.where((a) => a.category == category).toList();
+  }
+
+  /// 静默解锁成就（从云端同步时使用）
+  /// 
+  /// 与 unlockAchievement() 的区别：
+  /// - 不返回 true/false，不触发 UI 通知
+  /// - 使用云端的解锁时间，而不是当前时间
+  /// - 如果成就已解锁，静默跳过（不抛异常）
+  /// 
+  /// 调用者：
+  /// - SyncService.syncAllData()：同步云端成就解锁状态时调用
+  /// 
+  /// Fail Fast：
+  /// - id 为空：断言失败
+  /// - 成就不存在：抛出 StateError
+  Future<void> silentUnlockAchievement(String id, DateTime unlockedAt) async {
+    assert(id.isNotEmpty, 'Achievement ID cannot be empty');
+    
+    final achievement = await getAchievement(id);
+    if (achievement == null) {
+      throw StateError('Achievement $id does not exist');
+    }
+    
+    if (achievement.unlocked) {
+      // 已经解锁，静默跳过
+      return;
+    }
+    
+    final unlockedAchievement = achievement.copyWith(
+      unlocked: true,
+      unlockedAt: () => unlockedAt,
+    );
+    
+    await _storageService.updateAchievement(unlockedAchievement);
+  }
+
+  /// 批量静默解锁成就（从云端同步时使用）
+  /// 
+  /// 调用者：
+  /// - SyncService.syncAllData()：同步云端成就解锁状态时调用
+  /// 
+  /// Fail Fast：
+  /// - unlocks 为空列表：直接返回，不抛异常（允许空列表）
+  /// - 单个成就解锁失败：继续处理其他成就，不中断
+  Future<void> syncAchievementUnlocks(List<AchievementUnlock> unlocks) async {
+    for (final unlock in unlocks) {
+      try {
+        await silentUnlockAchievement(unlock.achievementId, unlock.unlockedAt);
+      } catch (e) {
+        // 单个成就解锁失败不影响其他成就
+        // 可能的原因：成就定义已删除、数据损坏等
+        // 生产环境应记录错误日志
+      }
+    }
   }
 
   /// 重置所有成就（开发者功能）

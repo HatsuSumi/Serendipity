@@ -75,6 +75,9 @@ class ServerConfig {
   static const String checkInsBatch = '/check-ins/batch';
   static String checkInById(String id) => '/check-ins/$id';
   
+  // 成就相关
+  static const String achievementUnlocks = '/achievement-unlocks';
+  
   /// 构建完整的 API URL
   static String buildUrl(String endpoint) {
     return '$apiUrl$endpoint';

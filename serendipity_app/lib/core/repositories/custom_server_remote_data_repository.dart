@@ -2,6 +2,7 @@ import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
+import '../../models/achievement_unlock.dart';
 import 'i_remote_data_repository.dart';
 import '../services/http_client_service.dart';
 import '../config/server_config.dart';
@@ -584,6 +585,51 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       await _httpClient.delete(ServerConfig.checkInById(checkInId));
     } on HttpException catch (e) {
       throw Exception('删除签到记录失败：${e.message}');
+    }
+  }
+  
+  // ==================== 成就相关操作 ====================
+  
+  @override
+  Future<void> uploadAchievementUnlock(AchievementUnlock unlock) async {
+    // Fail Fast：参数验证
+    if (unlock.userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (unlock.achievementId.isEmpty) {
+      throw ArgumentError('成就 ID 不能为空');
+    }
+    
+    try {
+      await _httpClient.post(
+        ServerConfig.achievementUnlocks,
+        body: unlock.toJson(),
+      );
+    } on HttpException catch (e) {
+      throw Exception('上传成就解锁记录失败：${e.message}');
+    }
+  }
+  
+  @override
+  Future<List<AchievementUnlock>> downloadAchievementUnlocks(String userId) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    try {
+      final response = await _httpClient.get(
+        ServerConfig.achievementUnlocks,
+        queryParameters: {'userId': userId},
+      );
+      final data = response['data'] as Map<String, dynamic>;
+      final unlocksJson = data['unlocks'] as List;
+      
+      return unlocksJson
+          .map((json) => AchievementUnlock.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on HttpException catch (e) {
+      throw Exception('下载成就解锁记录失败：${e.message}');
     }
   }
 }
