@@ -87,10 +87,8 @@ export class AchievementUnlockRepository implements IAchievementUnlockRepository
         },
       },
       update: {
-        // 如果已存在，使用最早的解锁时间
-        unlockedAt: {
-          set: unlockedAt,
-        },
+        // 如果已存在，保持原有数据不变（幂等性）
+        // 不更新任何字段
       },
       create: {
         userId: data.userId,
