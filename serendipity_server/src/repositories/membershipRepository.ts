@@ -24,6 +24,8 @@ export interface Membership {
   status: string;
   startedAt: Date | null;
   expiresAt: Date | null;
+  monthlyAmount: number | null;
+  autoRenew: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,7 +37,7 @@ export interface IMembershipRepository {
   findByUserId(userId: string): Promise<Membership | null>;
   create(data: CreateMembershipDto): Promise<Membership>;
   updateStatus(userId: string, status: string, expiresAt?: Date): Promise<Membership>;
-  activateOrCreate(userId: string, expiresAt: Date): Promise<Membership>;
+  activateOrCreate(userId: string, monthlyAmount: number, expiresAt: Date): Promise<Membership>;
 }
 
 export class MembershipRepository implements IMembershipRepository {
@@ -63,6 +65,7 @@ export class MembershipRepository implements IMembershipRepository {
         userId: data.userId,
         tier: data.tier,
         status: data.status,
+        autoRenew: false,
       },
     });
   }
@@ -89,10 +92,11 @@ export class MembershipRepository implements IMembershipRepository {
    * 激活会员（如果不存在则创建）
    * 使用 upsert 避免多次数据库操作
    * @param userId - 用户 ID
+   * @param monthlyAmount - 月付金额
    * @param expiresAt - 到期时间
    * @returns 会员对象
    */
-  async activateOrCreate(userId: string, expiresAt: Date) {
+  async activateOrCreate(userId: string, monthlyAmount: number, expiresAt: Date) {
     return this.prisma.membership.upsert({
       where: { userId },
       update: {
@@ -100,6 +104,7 @@ export class MembershipRepository implements IMembershipRepository {
         status: 'active',
         startedAt: new Date(),
         expiresAt,
+        monthlyAmount,
         updatedAt: new Date(),
       },
       create: {
@@ -108,6 +113,8 @@ export class MembershipRepository implements IMembershipRepository {
         status: 'active',
         startedAt: new Date(),
         expiresAt,
+        monthlyAmount,
+        autoRenew: false,
       },
     });
   }
