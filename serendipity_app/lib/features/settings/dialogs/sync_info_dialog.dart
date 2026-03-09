@@ -37,7 +37,13 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '自动同步：在以下情况下自动触发全量同步',
+              '自动同步：在以下情况下自动触发',
+            ),
+            const SizedBox(height: 8),
+            _buildInfoText(
+              context,
+              '【全量同步】',
+              isBold: true,
             ),
             const SizedBox(height: 4),
             _buildInfoText(
@@ -59,7 +65,41 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '此外，创建、编辑、删除记录/故事线，以及签到时，会自动上传单条数据到云端（增量上传）。',
+              '【增量上传】',
+              isBold: true,
+            ),
+            const SizedBox(height: 4),
+            _buildInfoText(
+              context,
+              '1. 创建记录后，自动上传该记录',
+            ),
+            _buildInfoText(
+              context,
+              '2. 编辑记录后，自动上传该记录',
+            ),
+            _buildInfoText(
+              context,
+              '3. 删除记录后，自动删除云端数据',
+            ),
+            _buildInfoText(
+              context,
+              '4. 创建故事线后，自动上传该故事线',
+            ),
+            _buildInfoText(
+              context,
+              '5. 编辑故事线后，自动上传该故事线',
+            ),
+            _buildInfoText(
+              context,
+              '6. 删除故事线后，自动删除云端数据',
+            ),
+            _buildInfoText(
+              context,
+              '7. 签到后，自动上传签到记录',
+            ),
+            _buildInfoText(
+              context,
+              '8. 解锁成就后，自动上传成就解锁记录',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
@@ -146,11 +186,12 @@ class SyncInfoDialog extends StatelessWidget {
   }
 
   /// 构建说明文本
-  Widget _buildInfoText(BuildContext context, String text) {
+  Widget _buildInfoText(BuildContext context, String text, {bool isBold = false}) {
     return Text(
       text,
       style: TextStyle(
         fontSize: 14,
+        fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
         color: Theme.of(context).colorScheme.onSurface,
         height: 1.5,
       ),
