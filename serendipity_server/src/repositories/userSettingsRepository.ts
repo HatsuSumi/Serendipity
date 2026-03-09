@@ -40,10 +40,10 @@ export class UserSettingsRepository implements IUserSettingsRepository {
       data: {
         userId,
         theme: 'system',
-        pageTransition: 'slide_from_right',
-        dialogAnimation: 'fade_in',
+        pageTransition: 'random',
+        dialogAnimation: 'random',
         notifications: {
-          checkInReminder: false,
+          checkInReminder: true,
           checkInReminderTime: '20:00',
           achievementUnlocked: true,
         },
@@ -98,10 +98,10 @@ export class UserSettingsRepository implements IUserSettingsRepository {
       create: {
         userId,
         theme: data.theme || 'system',
-        pageTransition: data.pageTransition || 'slide_from_right',
-        dialogAnimation: data.dialogAnimation || 'fade_in',
+        pageTransition: data.pageTransition || 'random',
+        dialogAnimation: data.dialogAnimation || 'random',
         notifications: (data.notifications || {
-          checkInReminder: false,
+          checkInReminder: true,
           checkInReminderTime: '20:00',
           achievementUnlocked: true,
         }) as Prisma.InputJsonValue,
