@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user_settings.dart';
+import '../../models/user.dart';
 import '../../models/enums.dart';
 import '../services/i_storage_service.dart';
 import '../services/notification_service.dart';
+import '../services/sync_service.dart';
 import 'auth_provider.dart';
 import 'check_in_provider.dart' show checkInRepositoryProvider;
 
@@ -19,24 +21,33 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 /// 
 /// 调用者：
 /// - UI 层：读取和修改用户设置
+/// - AuthProvider：用户登录/登出时刷新设置
 /// 
 /// 设计原则：
 /// - 单一职责：只负责用户设置的状态管理
 /// - 依赖注入：通过构造函数注入依赖
 /// - Fail Fast：操作失败立即抛出异常
 /// - 保证非空：state 始终为非空，简化 UI 层逻辑
+/// 
+/// 云端同步：
+/// - 登录时：SyncService 自动从云端下载设置到本地
+/// - 修改时：自动上传到云端（如果用户已登录）
+/// - 登出时：保留本地设置（下次登录会被覆盖）
 class UserSettingsNotifier extends StateNotifier<UserSettings> {
   final IStorageService _storageService;
   final NotificationService _notificationService;
+  final Ref _ref;
 
   UserSettingsNotifier(
     this._storageService,
     this._notificationService,
+    this._ref,
   ) : super(_createDefaultSettings()) {
     _loadSettings();
+    _listenToAuthChanges();
   }
 
-  /// 创建默认设置
+  /// 创建默认设置（访客模式）
   /// 
   /// 单一职责：只负责创建默认配置
   static UserSettings _createDefaultSettings() {
@@ -65,9 +76,32 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     );
   }
 
+  /// 监听用户登录/登出状态变化
+  /// 
+  /// 用户登录后：重新加载设置（已由 SyncService 从云端同步）
+  /// 用户登出后：保留本地设置（继续使用，但不再同步到云端）
+  void _listenToAuthChanges() {
+    _ref.listen<AsyncValue<User?>>(
+      authProvider,
+      (previous, next) {
+        next.whenData((user) {
+          if (user != null) {
+            // 用户登录，重新加载设置
+            _loadSettings();
+          }
+          // 用户登出时不做任何操作，保留本地设置
+        });
+      },
+    );
+  }
+
   /// 加载用户设置
   /// 
   /// 单一职责：只负责从存储加载，不负责创建默认值
+  /// 
+  /// 注意：
+  /// - 登录后由 SyncService 自动从云端同步到本地
+  /// - 这里只需要从本地存储读取即可
   Future<void> _loadSettings() async {
     final settings = _storageService.getUserSettings();
     
@@ -78,9 +112,38 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       if (settings.checkInReminderEnabled) {
         await _scheduleCheckInReminder(settings.checkInReminderTime);
       }
-    } else {
-      // 首次使用，保存默认设置
-      await _storageService.saveUserSettings(state);
+    }
+    // 如果本地没有设置，保持当前 state（默认设置或之前的设置）
+  }
+
+  /// 上传设置到云端（如果用户已登录）
+  /// 
+  /// 调用者：所有设置更新方法
+  /// 
+  /// 注意：上传失败不影响本地保存，静默失败
+  Future<void> _uploadToCloud(UserSettings settings) async {
+    try {
+      // 检查用户是否登录
+      final authState = _ref.read(authProvider);
+      final user = authState.value;
+      
+      if (user == null || user.id.isEmpty || user.id == 'guest') {
+        // 用户未登录，跳过云端上传
+        print('[UserSettings] 用户未登录，跳过云端上传');
+        return;
+      }
+      
+      print('[UserSettings] 开始上传设置到云端，用户ID: ${user.id}');
+      
+      // 上传到云端
+      final remoteRepository = _ref.read(remoteDataRepositoryProvider);
+      await remoteRepository.uploadSettings(settings);
+      
+      print('[UserSettings] 设置上传成功');
+    } catch (e) {
+      // 上传失败，静默失败（不影响用户体验）
+      // 生产环境应记录错误日志
+      print('[UserSettings] 设置上传失败: $e');
     }
   }
 
@@ -93,6 +156,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 更新页面切换动画
@@ -104,6 +170,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 更新对话框动画
@@ -115,6 +184,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 更新签到提醒开关
@@ -137,6 +209,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     } else {
       await _notificationService.cancelCheckInReminder();
     }
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 更新签到提醒时间
@@ -160,6 +235,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     if (updated.checkInReminderEnabled) {
       await _scheduleCheckInReminder(time);
     }
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 更新签到震动开关
@@ -171,6 +249,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 更新签到粒子特效开关
@@ -182,6 +263,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 更新发布警告隐藏开关
@@ -198,6 +282,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 标记用户已看过发布警告
@@ -215,6 +302,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 标记用户已看过社区介绍
@@ -231,6 +321,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+    
+    // 上传到云端
+    await _uploadToCloud(updated);
   }
 
   /// 调度签到提醒通知
@@ -259,6 +352,6 @@ final userSettingsProvider =
     StateNotifierProvider<UserSettingsNotifier, UserSettings>((ref) {
   final storageService = ref.read(storageServiceProvider);
   final notificationService = ref.read(notificationServiceProvider);
-  return UserSettingsNotifier(storageService, notificationService);
+  return UserSettingsNotifier(storageService, notificationService, ref);
 });
 
