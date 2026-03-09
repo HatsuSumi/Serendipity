@@ -54,10 +54,13 @@ class NetworkMonitorService {
       },
     );
     
-    // 启动轮询作为备用方案（每 60 秒检查一次）
-    _pollingTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      _pollNetworkStatus(ref);
-    });
+    // 启动轮询作为备用方案
+    _pollingTimer = Timer.periodic(
+      Duration(seconds: ServerConfig.networkPollingInterval),
+      (_) {
+        _pollNetworkStatus(ref);
+      },
+    );
     
     // App 启动时触发初始同步
     _triggerInitialSync(ref);
@@ -170,7 +173,7 @@ class NetworkMonitorService {
       final url = '${ServerConfig.apiUrl}/health';
       final response = await http.get(
         Uri.parse(url),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(Duration(seconds: ServerConfig.healthCheckTimeout));
       
       return response.statusCode == 200;
     } catch (e) {

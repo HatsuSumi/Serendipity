@@ -34,6 +34,13 @@ class ServerConfig {
   /// 在 Token 过期前 5 分钟自动刷新
   static const int tokenRefreshAdvance = 5;
   
+  /// 网络状态轮询间隔（秒）
+  /// 作为 connectivity_plus 监听的备份方案
+  static const int networkPollingInterval = 60;
+  
+  /// 服务器健康检查超时时间（秒）
+  static const int healthCheckTimeout = 5;
+  
   // ==================== API 端点 ====================
   
   // 认证相关
