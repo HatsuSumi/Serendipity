@@ -72,9 +72,13 @@ export class AchievementUnlockController {
   };
 
   /**
-   * 下载用户所有成就解锁记录
+   * 下载用户成就解锁记录
    * 
-   * GET /api/v1/achievement-unlocks?userId=xxx
+   * GET /api/v1/achievement-unlocks?userId=xxx&since=timestamp
+   * 
+   * Query Parameters:
+   * - userId: 用户ID（必填）
+   * - since: 增量同步时间戳（可选，ISO 8601 格式）
    * 
    * Response:
    * {
@@ -90,15 +94,21 @@ export class AchievementUnlockController {
    *   }
    * }
    * 
+   * 增量同步优化：
+   * - 不提供 since：返回所有记录（首次同步）
+   * - 提供 since：只返回该时间之后创建的记录（增量同步）
+   * - 性能：O(n) → O(新增)
+   * 
    * Fail Fast：
    * - userId 缺失：返回 400
+   * - since 格式错误：返回 400
    * - 服务器错误：返回 500
    * 
    * 调用者：客户端（Flutter App）
    */
   downloadAchievementUnlocks = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { userId } = req.query;
+      const { userId, since } = req.query;
 
       // Fail Fast：参数验证
       if (!userId || typeof userId !== 'string') {
@@ -109,7 +119,28 @@ export class AchievementUnlockController {
         return;
       }
 
-      const unlocks = await this.achievementUnlockService.getAchievementUnlocks(userId);
+      // 解析 since 参数（可选）
+      let sinceDate: Date | undefined;
+      if (since) {
+        if (typeof since !== 'string') {
+          res.status(400).json({
+            success: false,
+            message: 'since parameter must be a valid ISO 8601 timestamp',
+          });
+          return;
+        }
+        
+        sinceDate = new Date(since);
+        if (isNaN(sinceDate.getTime())) {
+          res.status(400).json({
+            success: false,
+            message: 'since parameter must be a valid ISO 8601 timestamp',
+          });
+          return;
+        }
+      }
+
+      const unlocks = await this.achievementUnlockService.getAchievementUnlocks(userId, sinceDate);
 
       res.status(200).json({
         success: true,

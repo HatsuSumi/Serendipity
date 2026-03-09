@@ -27,12 +27,16 @@ export interface IAchievementUnlockRepository {
   /**
    * 获取用户所有成就解锁记录
    * 
+   * 支持增量同步：
+   * - 如果提供 since 参数，只返回该时间之后创建的记录
+   * - 如果不提供 since，返回所有记录
+   * 
    * Fail Fast：
    * - userId 为空：抛出 Error
    * 
    * 调用者：AchievementUnlockService.getAchievementUnlocks()
    */
-  findByUserId(userId: string): Promise<AchievementUnlock[]>;
+  findByUserId(userId: string, since?: Date): Promise<AchievementUnlock[]>;
 
   /**
    * 查找特定用户的特定成就解锁记录
@@ -98,14 +102,21 @@ export class AchievementUnlockRepository implements IAchievementUnlockRepository
     });
   }
 
-  async findByUserId(userId: string): Promise<AchievementUnlock[]> {
+  async findByUserId(userId: string, since?: Date): Promise<AchievementUnlock[]> {
     // Fail Fast：参数验证
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
     }
 
+    const where: any = { userId };
+    
+    // 增量同步：只返回 since 之后创建的记录
+    if (since) {
+      where.createdAt = { gt: since };
+    }
+
     return this.prisma.achievementUnlock.findMany({
-      where: { userId },
+      where,
       orderBy: { unlockedAt: 'desc' },
     });
   }

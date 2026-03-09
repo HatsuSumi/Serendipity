@@ -50,20 +50,24 @@ export class AchievementUnlockService {
   }
 
   /**
-   * 获取用户所有成就解锁记录
+   * 获取用户成就解锁记录
+   * 
+   * 支持增量同步：
+   * - 如果提供 since 参数，只返回该时间之后创建的记录
+   * - 如果不提供 since，返回所有记录
    * 
    * Fail Fast：
    * - userId 为空：抛出 Error
    * 
    * 调用者：AchievementUnlockController.downloadAchievementUnlocks()
    */
-  async getAchievementUnlocks(userId: string): Promise<AchievementUnlockResponseDto[]> {
+  async getAchievementUnlocks(userId: string, since?: Date): Promise<AchievementUnlockResponseDto[]> {
     // Fail Fast：参数验证
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
     }
 
-    const unlocks = await this.achievementUnlockRepository.findByUserId(userId);
+    const unlocks = await this.achievementUnlockRepository.findByUserId(userId, since);
 
     // 转换为响应 DTO
     return unlocks.map((unlock) => ({
