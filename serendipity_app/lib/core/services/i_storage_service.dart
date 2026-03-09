@@ -3,6 +3,7 @@ import '../../models/story_line.dart';
 import '../../models/achievement.dart';
 import '../../models/check_in_record.dart';
 import '../../models/user_settings.dart';
+import '../../models/sync_history.dart';
 
 /// 存储服务接口
 /// 
@@ -100,6 +101,23 @@ abstract class IStorageService {
   
   /// 保存用户设置
   Future<void> saveUserSettings(UserSettings settings);
+  
+  // ==================== 同步历史相关操作 ====================
+  
+  /// 保存同步历史记录
+  Future<void> saveSyncHistory(SyncHistory history);
+  
+  /// 获取所有同步历史记录（按时间倒序）
+  List<SyncHistory> getAllSyncHistories();
+  
+  /// 获取最近 N 条同步历史记录
+  List<SyncHistory> getRecentSyncHistories(int limit);
+  
+  /// 删除同步历史记录
+  Future<void> deleteSyncHistory(String id);
+  
+  /// 清空所有同步历史记录
+  Future<void> clearAllSyncHistories();
   
   // ==================== 键值对存储（用于 Token 等） ====================
   

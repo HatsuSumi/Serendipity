@@ -4,6 +4,7 @@ import '../../models/story_line.dart';
 import '../../models/achievement.dart';
 import '../../models/check_in_record.dart';
 import '../../models/user_settings.dart';
+import '../../models/sync_history.dart';
 import 'i_storage_service.dart';
 
 /// 本地存储服务（Hive 实现）
@@ -15,6 +16,7 @@ class StorageService implements IStorageService {
   static const String _storyLinesBoxName = 'story_lines';
   static const String _achievementsBoxName = 'achievements';
   static const String _checkInsBoxName = 'check_ins';
+  static const String _syncHistoriesBoxName = 'sync_histories';
   
   // 单例模式
   static final StorageService _instance = StorageService._internal();
@@ -27,6 +29,7 @@ class StorageService implements IStorageService {
   Box<StoryLine>? _storyLinesBox;
   Box<Achievement>? _achievementsBox;
   Box<CheckInRecord>? _checkInsBox;
+  Box<SyncHistory>? _syncHistoriesBox;
   
   // Box getters with initialization check
   Box<EncounterRecord> get _recordsBoxOrThrow {
@@ -64,6 +67,13 @@ class StorageService implements IStorageService {
     return _checkInsBox!;
   }
   
+  Box<SyncHistory> get _syncHistoriesBoxOrThrow {
+    if (_syncHistoriesBox == null) {
+      throw StateError('StorageService not initialized. Call init() first.');
+    }
+    return _syncHistoriesBox!;
+  }
+  
   /// 初始化所有 Box
   @override
   Future<void> init() async {
@@ -72,6 +82,7 @@ class StorageService implements IStorageService {
     _storyLinesBox = await Hive.openBox<StoryLine>(_storyLinesBoxName);
     _achievementsBox = await Hive.openBox<Achievement>(_achievementsBoxName);
     _checkInsBox = await Hive.openBox<CheckInRecord>(_checkInsBoxName);
+    _syncHistoriesBox = await Hive.openBox<SyncHistory>(_syncHistoriesBoxName);
   }
   
   /// 关闭所有 Box
@@ -82,6 +93,7 @@ class StorageService implements IStorageService {
     await _storyLinesBox?.close();
     await _achievementsBox?.close();
     await _checkInsBox?.close();
+    await _syncHistoriesBox?.close();
   }
   
   // ==================== 记录相关操作 ====================
@@ -273,6 +285,68 @@ class StorageService implements IStorageService {
   @override
   Future<void> saveUserSettings(UserSettings settings) async {
     await _settingsBoxOrThrow.put('user_settings', settings.toJson());
+  }
+  
+  // ==================== 同步历史相关操作 ====================
+  
+  /// 保存同步历史记录
+  /// 
+  /// 调用者：SyncStatusNotifier.syncSuccess() / syncError()
+  /// 
+  /// Fail Fast：
+  /// - history.id 为空：由 SyncHistory 构造函数保证
+  @override
+  Future<void> saveSyncHistory(SyncHistory history) async {
+    assert(history.id.isNotEmpty, 'SyncHistory ID cannot be empty');
+    await _syncHistoriesBoxOrThrow.put(history.id, history);
+  }
+  
+  /// 获取所有同步历史记录（按时间倒序）
+  /// 
+  /// 调用者：SyncHistoryDialog.build()
+  @override
+  List<SyncHistory> getAllSyncHistories() {
+    final histories = _syncHistoriesBoxOrThrow.values.toList();
+    histories.sort((a, b) => b.syncTime.compareTo(a.syncTime));
+    return histories;
+  }
+  
+  /// 获取最近 N 条同步历史记录
+  /// 
+  /// 调用者：SettingsPage（显示最近一次同步）
+  /// 
+  /// Fail Fast：
+  /// - limit <= 0：抛出 ArgumentError
+  @override
+  List<SyncHistory> getRecentSyncHistories(int limit) {
+    if (limit <= 0) {
+      throw ArgumentError('limit 必须大于 0');
+    }
+    
+    final histories = getAllSyncHistories();
+    return histories.take(limit).toList();
+  }
+  
+  /// 删除同步历史记录
+  /// 
+  /// 调用者：SyncHistoryDialog（未来可能添加删除功能）
+  /// 
+  /// Fail Fast：
+  /// - id 为空：抛出 ArgumentError
+  @override
+  Future<void> deleteSyncHistory(String id) async {
+    if (id.isEmpty) {
+      throw ArgumentError('SyncHistory ID 不能为空');
+    }
+    await _syncHistoriesBoxOrThrow.delete(id);
+  }
+  
+  /// 清空所有同步历史记录
+  /// 
+  /// 调用者：SettingsPage（开发者功能）
+  @override
+  Future<void> clearAllSyncHistories() async {
+    await _syncHistoriesBoxOrThrow.clear();
   }
   
   // ==================== 键值对存储（用于 Token 等） ====================

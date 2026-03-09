@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/sync_history.dart';
 import '../services/i_storage_service.dart';
 import '../services/sync_service.dart';
 import 'auth_provider.dart';
@@ -74,6 +75,7 @@ class SyncStatusInfo {
 /// - 记录上次手动同步时间（只记录手动同步，不记录自动同步）
 /// - 记录同步结果统计
 /// - 记录错误信息
+/// - 保存同步历史记录
 /// 
 /// 调用者：
 /// - SettingsPage：显示同步状态和手动同步按钮
@@ -88,6 +90,9 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   
   static const String _lastManualSyncTimeKey = 'last_manual_sync_time';
   static const String _lastFullSyncTimeKey = 'last_full_sync_time';
+  
+  // 记录同步开始时间（用于计算耗时）
+  DateTime? _syncStartTime;
   
   /// 构造函数
   /// 
@@ -135,6 +140,7 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   /// 
   /// 调用者：手动同步对话框
   void startSync() {
+    _syncStartTime = DateTime.now();
     state = state.copyWith(
       status: SyncStatus.syncing,
       syncResult: null,
@@ -149,13 +155,23 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   /// Fail Fast：
   /// - result 为 null：由 Dart 类型系统保证
   /// - syncStartTime 为 null：由 Dart 类型系统保证
+  /// - isManual 为 null：由 Dart 类型系统保证
   /// 
   /// 重要：syncStartTime 必须是同步开始前的时间，而不是同步完成后的时间
   /// 这样可以确保不会漏掉在同步过程中产生的数据变化
-  void syncSuccess(SyncResult result, DateTime syncStartTime) {
+  void syncSuccess(SyncResult result, DateTime syncStartTime, {bool isManual = true}) {
     final now = DateTime.now();
     _storage.set(_lastManualSyncTimeKey, now.toIso8601String());
     _storage.set(_lastFullSyncTimeKey, syncStartTime.toIso8601String());
+    
+    // 保存同步历史记录
+    final history = SyncHistory.fromSuccess(
+      result: result,
+      syncStartTime: syncStartTime,
+      syncEndTime: now,
+      isManual: isManual,
+    );
+    _storage.saveSyncHistory(history);
     
     state = SyncStatusInfo(
       status: SyncStatus.success,
@@ -179,10 +195,22 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   /// 
   /// Fail Fast：
   /// - errorMessage 为空：抛出 ArgumentError
-  void syncError(String errorMessage) {
+  /// - isManual 为 null：由 Dart 类型系统保证
+  void syncError(String errorMessage, {bool isManual = true}) {
     // Fail Fast：参数验证
     if (errorMessage.isEmpty) {
       throw ArgumentError('错误信息不能为空');
+    }
+    
+    // 保存同步历史记录
+    if (_syncStartTime != null) {
+      final history = SyncHistory.fromError(
+        errorMessage: errorMessage,
+        syncStartTime: _syncStartTime!,
+        syncEndTime: DateTime.now(),
+        isManual: isManual,
+      );
+      _storage.saveSyncHistory(history);
     }
     
     state = SyncStatusInfo(

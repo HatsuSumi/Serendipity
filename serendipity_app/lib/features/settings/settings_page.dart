@@ -27,6 +27,7 @@ import '../check_in/check_in_page.dart';
 import '../community/my_posts_page.dart';
 import 'dialogs/manual_sync_dialog.dart';
 import 'dialogs/sync_info_dialog.dart';
+import 'dialogs/sync_history_dialog.dart';
 
 /// 设置页面（我的页面）
 /// 
@@ -125,39 +126,53 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           
-          // 手动同步入口
+          // 数据同步区域
           Consumer(
             builder: (context, ref, child) {
               final authState = ref.watch(authProvider);
               final syncStatus = ref.watch(syncStatusProvider);
               
-              return ListTile(
-                leading: const Text('🔄', style: TextStyle(fontSize: 24)),
-                title: Row(
-                  children: [
-                    const Text('手动同步'),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () => SyncInfoDialog.show(context),
-                      child: Icon(
-                        Icons.help_outline,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+              return Column(
+                children: [
+                  // 手动同步
+                  ListTile(
+                    leading: const Text('🔄', style: TextStyle(fontSize: 24)),
+                    title: Row(
+                      children: [
+                        const Text('手动同步'),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => SyncInfoDialog.show(context),
+                          child: Icon(
+                            Icons.help_outline,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                subtitle: _buildSyncSubtitle(context, syncStatus),
-                trailing: syncStatus.status == SyncStatus.syncing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.chevron_right),
-                onTap: syncStatus.status == SyncStatus.syncing
-                    ? null
-                    : () => _handleManualSync(context, ref, authState),
+                    subtitle: _buildSyncSubtitle(context, syncStatus),
+                    trailing: syncStatus.status == SyncStatus.syncing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.chevron_right),
+                    onTap: syncStatus.status == SyncStatus.syncing
+                        ? null
+                        : () => _handleManualSync(context, ref, authState),
+                  ),
+                  
+                  // 同步历史
+                  ListTile(
+                    leading: const Text('📋', style: TextStyle(fontSize: 24)),
+                    title: const Text('同步历史'),
+                    subtitle: const Text('查看历史同步记录'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => SyncHistoryDialog.show(context),
+                  ),
+                ],
               );
             },
           ),
