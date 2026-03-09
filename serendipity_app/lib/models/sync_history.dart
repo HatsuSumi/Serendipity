@@ -3,6 +3,27 @@ import '../core/services/sync_service.dart';
 
 part 'sync_history.g.dart';
 
+/// 自动同步来源
+enum SyncSource {
+  /// 手动同步
+  manual,
+  
+  /// App 启动时
+  appStartup,
+  
+  /// 登录成功后
+  login,
+  
+  /// 注册成功后
+  register,
+  
+  /// 网络重新连接
+  networkReconnect,
+  
+  /// 60秒轮询
+  polling,
+}
+
 /// 同步历史记录
 /// 
 /// 记录每次同步的详细信息，用于用户查看历史同步记录。
@@ -86,6 +107,10 @@ class SyncHistory {
   @HiveField(15)
   final int syncedAchievements;
   
+  /// 同步来源
+  @HiveField(16)
+  final SyncSource source;
+  
   /// 构造函数
   /// 
   /// 调用者：SyncStatusNotifier.syncSuccess()
@@ -111,6 +136,7 @@ class SyncHistory {
     required this.mergedStoryLines,
     required this.mergedCheckIns,
     required this.syncedAchievements,
+    required this.source,
   }) {
     // Fail Fast：参数验证
     if (id.isEmpty) {
@@ -126,7 +152,7 @@ class SyncHistory {
   
   /// 从 SyncResult 创建成功的同步历史记录
   /// 
-  /// 调用者：SyncStatusNotifier.syncSuccess()
+  /// 调用者：SyncService.syncAllData()
   /// 
   /// Fail Fast：
   /// - result 为 null：由 Dart 类型系统保证
@@ -136,14 +162,14 @@ class SyncHistory {
     required SyncResult result,
     required DateTime syncStartTime,
     required DateTime syncEndTime,
-    required bool isManual,
+    required SyncSource source,
   }) {
     final durationMs = syncEndTime.difference(syncStartTime).inMilliseconds;
     
     return SyncHistory(
       id: syncStartTime.millisecondsSinceEpoch.toString(),
       syncTime: syncStartTime,
-      isManual: isManual,
+      isManual: source == SyncSource.manual,
       success: true,
       durationMs: durationMs,
       errorMessage: null,
@@ -157,12 +183,13 @@ class SyncHistory {
       mergedStoryLines: result.mergedStoryLines,
       mergedCheckIns: result.mergedCheckIns,
       syncedAchievements: result.syncedAchievements,
+      source: source,
     );
   }
   
   /// 创建失败的同步历史记录
   /// 
-  /// 调用者：SyncStatusNotifier.syncError()
+  /// 调用者：SyncService.syncAllData()
   /// 
   /// Fail Fast：
   /// - errorMessage 为空：抛出 ArgumentError
@@ -172,7 +199,7 @@ class SyncHistory {
     required String errorMessage,
     required DateTime syncStartTime,
     required DateTime syncEndTime,
-    required bool isManual,
+    required SyncSource source,
   }) {
     if (errorMessage.isEmpty) {
       throw ArgumentError('错误信息不能为空');
@@ -183,7 +210,7 @@ class SyncHistory {
     return SyncHistory(
       id: syncStartTime.millisecondsSinceEpoch.toString(),
       syncTime: syncStartTime,
-      isManual: isManual,
+      isManual: source == SyncSource.manual,
       success: false,
       durationMs: durationMs,
       errorMessage: errorMessage,
@@ -197,6 +224,7 @@ class SyncHistory {
       mergedStoryLines: 0,
       mergedCheckIns: 0,
       syncedAchievements: 0,
+      source: source,
     );
   }
   
@@ -231,6 +259,26 @@ class SyncHistory {
     }
   }
   
+  /// 获取来源描述
+  /// 
+  /// 调用者：SyncHistoryDialog._buildHistoryItem()
+  String get sourceDescription {
+    switch (source) {
+      case SyncSource.manual:
+        return '手动同步';
+      case SyncSource.appStartup:
+        return 'App启动';
+      case SyncSource.login:
+        return '登录后';
+      case SyncSource.register:
+        return '注册后';
+      case SyncSource.networkReconnect:
+        return '网络恢复';
+      case SyncSource.polling:
+        return '60秒轮询';
+    }
+  }
+  
   /// JSON 序列化
   /// 
   /// 调用者：StorageService（Hive 不需要，但保留以备将来使用）
@@ -252,6 +300,7 @@ class SyncHistory {
       'mergedStoryLines': mergedStoryLines,
       'mergedCheckIns': mergedCheckIns,
       'syncedAchievements': syncedAchievements,
+      'source': source.name,
     };
   }
   
@@ -276,6 +325,10 @@ class SyncHistory {
       mergedStoryLines: json['mergedStoryLines'] as int,
       mergedCheckIns: json['mergedCheckIns'] as int,
       syncedAchievements: json['syncedAchievements'] as int,
+      source: SyncSource.values.firstWhere(
+        (e) => e.name == json['source'],
+        orElse: () => SyncSource.manual,
+      ),
     );
   }
 }

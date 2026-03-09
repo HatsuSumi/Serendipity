@@ -310,7 +310,7 @@ class SyncService {
   /// 参数：
   /// - user：当前用户
   /// - lastSyncTime：上次同步时间（null 表示全量同步）
-  /// - isManual：是否手动同步（默认 false，自动同步）
+  /// - source：同步来源（默认手动同步）
   /// 
   /// 返回：同步结果统计
   /// 
@@ -320,7 +320,7 @@ class SyncService {
   Future<SyncResult> syncAllData(
     User user, {
     DateTime? lastSyncTime,
-    bool isManual = false,
+    SyncSource source = SyncSource.manual,
   }) async {
     // Fail Fast：参数验证
     if (user.id.isEmpty) {
@@ -360,7 +360,7 @@ class SyncService {
         result: result,
         syncStartTime: syncStartTime,
         syncEndTime: syncEndTime,
-        isManual: isManual,
+        source: source,
       );
       await _storageService.saveSyncHistory(history);
       
@@ -373,7 +373,7 @@ class SyncService {
         errorMessage: e.toString(),
         syncStartTime: syncStartTime,
         syncEndTime: syncEndTime,
-        isManual: isManual,
+        source: source,
       );
       await _storageService.saveSyncHistory(history);
       

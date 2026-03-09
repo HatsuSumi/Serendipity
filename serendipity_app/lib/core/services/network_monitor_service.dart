@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user.dart';
+import '../../models/sync_history.dart';
 import '../providers/auth_provider.dart';
 import '../config/server_config.dart';
 import 'sync_service.dart';
@@ -80,7 +81,7 @@ class NetworkMonitorService {
         final user = await ref.read(authProvider.future);
         
         if (user != null) {
-          await _triggerSync(ref, user);
+          await _triggerSync(ref, user, SyncSource.appStartup);
         }
       } catch (e) {
         _lastServerHealthy = false;
@@ -138,6 +139,14 @@ class NetworkMonitorService {
       
       if (isServerHealthy && !_lastServerHealthy) {
         _onNetworkRestored(ref);
+      } else if (isServerHealthy) {
+        // 服务器健康，执行定期同步
+        final authState = ref.read(authProvider);
+        final user = authState.value;
+        
+        if (user != null) {
+          await _triggerSync(ref, user, SyncSource.polling);
+        }
       }
       
       _lastServerHealthy = isServerHealthy;
@@ -159,7 +168,7 @@ class NetworkMonitorService {
         final user = authState.value;
         
         if (user != null) {
-          await _triggerSync(ref, user);
+          await _triggerSync(ref, user, SyncSource.networkReconnect);
         }
       } catch (e) {
         // 静默失败
@@ -184,10 +193,10 @@ class NetworkMonitorService {
   }
   
   /// 触发同步
-  Future<void> _triggerSync(WidgetRef ref, User user) async {
+  Future<void> _triggerSync(WidgetRef ref, User user, SyncSource source) async {
     try {
       final syncService = ref.read(syncServiceProvider);
-      await syncService.syncAllData(user);
+      await syncService.syncAllData(user, source: source);
     } catch (e, stackTrace) {
       if (kDebugMode) {
         print('数据同步失败: $e');

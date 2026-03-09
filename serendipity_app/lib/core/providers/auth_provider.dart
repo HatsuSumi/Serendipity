@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
+import '../../models/sync_history.dart';
 import '../repositories/i_auth_repository.dart';
 import '../repositories/test_auth_repository.dart';
 import '../repositories/custom_server_auth_repository.dart';
@@ -61,13 +62,16 @@ class AuthNotifier extends StreamNotifier<User?> {
   
   /// 触发数据同步
   /// 
-  /// 调用时机：用户登录成功后
+  /// 调用时机：用户登录/注册成功后
   /// 
   /// 注意：同步失败不影响用户使用，用户可以稍后手动触发同步
-  Future<void> _triggerSync(User user) async {
+  Future<void> _triggerSync(User user, {bool isRegister = false}) async {
     try {
       final syncService = ref.read(syncServiceProvider);
-      await syncService.syncAllData(user);
+      await syncService.syncAllData(
+        user,
+        source: isRegister ? SyncSource.register : SyncSource.login,
+      );
     } catch (e) {
       // 同步失败不影响用户使用
       // 生产环境应记录错误日志
@@ -141,7 +145,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       state = AsyncValue.data(result.user);
       
       // 注册成功后触发数据同步
-      await _triggerSync(result.user);
+      await _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
@@ -259,7 +263,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       state = AsyncValue.data(result.user);
       
       // 注册成功后触发数据同步
-      await _triggerSync(result.user);
+      await _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {

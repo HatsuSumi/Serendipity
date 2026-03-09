@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../models/sync_history.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/sync_status_provider.dart';
 import '../../../core/providers/records_provider.dart';
@@ -114,7 +115,7 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       final result = await syncService.syncAllData(
         user,
         lastSyncTime: lastSyncTime,
-        isManual: true,  // 标记为手动同步
+        source: SyncSource.manual,  // 手动同步
       );
 
       // 5. 同步成功

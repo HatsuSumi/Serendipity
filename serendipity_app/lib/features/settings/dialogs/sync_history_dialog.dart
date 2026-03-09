@@ -211,7 +211,7 @@ class SyncHistoryDialog extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 
-                // 类型标签
+                // 类型标签（显示来源）
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -221,7 +221,7 @@ class SyncHistoryDialog extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    history.isManual ? '手动' : '自动',
+                    history.sourceDescription,
                     style: TextStyle(
                       fontSize: 10,
                       color: history.isManual
