@@ -62,10 +62,20 @@ class SyncInfoDialog extends StatelessWidget {
               context,
               '4. 每 60 秒轮询一次（后台自动）',
             ),
+            const SizedBox(height: 4),
+            _buildInfoText(
+              context,
+              '5. 点击"手动同步"按钮',
+            ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '【增量上传】',
+              '说明：全量同步会记录到"同步历史"，可查看详细统计。',
+            ),
+            const SizedBox(height: 16),
+            _buildInfoText(
+              context,
+              '【实时同步】',
               isBold: true,
             ),
             const SizedBox(height: 4),
@@ -104,7 +114,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '手动同步：点击"手动同步"按钮，主动触发数据同步，确保本地和云端数据一致。',
+              '说明：实时同步无需等待，操作完成即同步完成，不会记录到"同步历史"。',
             ),
             const SizedBox(height: 16),
 
