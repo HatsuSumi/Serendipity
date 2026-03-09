@@ -140,17 +140,17 @@ class SyncInfoDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // 增量同步
-            _buildSectionTitle(context, '什么是增量同步？'),
+            // 全量同步 vs 增量同步
+            _buildSectionTitle(context, '全量同步 vs 增量同步'),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '本项目采用增量同步机制，只同步有变化的数据，而不是每次都同步全部数据。',
+              '全量同步：扫描所有数据，确保本地和云端完全一致。首次启动、登录、注册、网络恢复、60秒轮询时使用。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '这样可以大幅减少网络流量和同步时间，提升使用体验。',
+              '增量同步：只同步有变化的数据，节省流量和时间。手动同步时使用。',
             ),
             const SizedBox(height: 16),
 
