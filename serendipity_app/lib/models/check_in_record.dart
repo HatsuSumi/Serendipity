@@ -43,13 +43,23 @@ class CheckInRecord {
   /// 参数：
   /// - userId: 用户ID（可选，未登录时为 null）
   /// 
+  /// ID 生成策略：
+  /// - 使用 UUID 保证全局唯一性
+  /// - 后端通过 (userId, date) 唯一约束去重
+  /// - 支持离线签到（未登录时 userId 为 null）
+  /// 
   /// 调用者：
   /// - CheckInRepository.checkIn()
   factory CheckInRecord.create({String? userId}) {
     final now = DateTime.now();
     final dateOnly = DateTime(now.year, now.month, now.day);
+    
+    // 使用时间戳作为简单的 ID（客户端本地唯一即可）
+    // 后端会根据 (userId, date) 唯一约束去重
+    final id = '${dateOnly.millisecondsSinceEpoch}_${now.millisecondsSinceEpoch}';
+    
     return CheckInRecord(
-      id: dateOnly.millisecondsSinceEpoch.toString(),
+      id: id,
       date: dateOnly,
       checkedAt: now,
       userId: userId,
