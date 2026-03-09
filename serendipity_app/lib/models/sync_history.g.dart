@@ -87,3 +87,62 @@ class SyncHistoryAdapter extends TypeAdapter<SyncHistory> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+class SyncSourceAdapter extends TypeAdapter<SyncSource> {
+  @override
+  final int typeId = 34;
+
+  @override
+  SyncSource read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return SyncSource.manual;
+      case 1:
+        return SyncSource.appStartup;
+      case 2:
+        return SyncSource.login;
+      case 3:
+        return SyncSource.register;
+      case 4:
+        return SyncSource.networkReconnect;
+      case 5:
+        return SyncSource.polling;
+      default:
+        return SyncSource.manual;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, SyncSource obj) {
+    switch (obj) {
+      case SyncSource.manual:
+        writer.writeByte(0);
+        break;
+      case SyncSource.appStartup:
+        writer.writeByte(1);
+        break;
+      case SyncSource.login:
+        writer.writeByte(2);
+        break;
+      case SyncSource.register:
+        writer.writeByte(3);
+        break;
+      case SyncSource.networkReconnect:
+        writer.writeByte(4);
+        break;
+      case SyncSource.polling:
+        writer.writeByte(5);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SyncSourceAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}

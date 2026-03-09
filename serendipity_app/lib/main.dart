@@ -31,7 +31,7 @@ void main() async {
   await Hive.initFlutter();
   
   // 注册所有 TypeAdapter
-  // 枚举类型 (typeId: 10-22, 30)
+  // 枚举类型 (typeId: 10-22, 30, 34)
   Hive.registerAdapter(EncounterStatusAdapter());
   Hive.registerAdapter(EmotionIntensityAdapter());
   Hive.registerAdapter(PlaceTypeAdapter());
@@ -41,6 +41,7 @@ void main() async {
   Hive.registerAdapter(MembershipStatusAdapter());
   Hive.registerAdapter(ThemeOptionAdapter());
   Hive.registerAdapter(AchievementCategoryAdapter());
+  Hive.registerAdapter(SyncSourceAdapter());
   
   // 数据模型类型 (typeId: 0-2, 31, 32, 33)
   Hive.registerAdapter(TagWithNoteAdapter());

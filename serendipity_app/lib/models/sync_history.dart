@@ -4,23 +4,30 @@ import '../core/services/sync_service.dart';
 part 'sync_history.g.dart';
 
 /// 自动同步来源
+@HiveType(typeId: 34)
 enum SyncSource {
   /// 手动同步
+  @HiveField(0)
   manual,
   
   /// App 启动时
+  @HiveField(1)
   appStartup,
   
   /// 登录成功后
+  @HiveField(2)
   login,
   
   /// 注册成功后
+  @HiveField(3)
   register,
   
   /// 网络重新连接
+  @HiveField(4)
   networkReconnect,
   
   /// 60秒轮询
+  @HiveField(5)
   polling,
 }
 
