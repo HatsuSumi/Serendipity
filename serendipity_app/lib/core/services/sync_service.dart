@@ -4,6 +4,7 @@ import '../../models/story_line.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user.dart';
+import '../../models/user_settings.dart';
 import '../../models/sync_history.dart';
 import '../config/app_config.dart';
 import '../repositories/i_remote_data_repository.dart';
@@ -337,10 +338,13 @@ class SyncService {
       // 2. 下载云端有变化的数据
       final downloadStats = await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
       
-      // 3. 同步成就解锁状态（静默，不触发通知）
+      // 3. 同步用户设置
+      await _syncUserSettings(user);
+      
+      // 4. 同步成就解锁状态（静默，不触发通知）
       final syncedAchievements = await _syncAchievementUnlocks(user);
       
-      // 4. 构建同步结果统计
+      // 5. 构建同步结果统计
       final result = SyncResult(
         uploadedRecords: uploadStats['records'] ?? 0,
         uploadedStoryLines: uploadStats['storyLines'] ?? 0,
@@ -354,7 +358,7 @@ class SyncService {
         syncedAchievements: syncedAchievements,
       );
       
-      // 5. 保存同步历史记录（成功）
+      // 6. 保存同步历史记录（成功）
       final syncEndTime = DateTime.now();
       final history = SyncHistory.fromSuccess(
         result: result,
@@ -364,7 +368,7 @@ class SyncService {
       );
       await _storageService.saveSyncHistory(history);
       
-      // 6. 返回同步结果统计
+      // 7. 返回同步结果统计
       return result;
     } catch (e) {
       // 保存同步历史记录（失败）
@@ -391,49 +395,59 @@ class SyncService {
   /// 
   /// 返回：上传统计信息
   Future<Map<String, int>> _uploadLocalData(User user, {DateTime? lastSyncTime}) async {
-    // 获取本地所有记录
-    final allRecords = _storageService.getRecordsSortedByTime();
+    int uploadedRecords = 0;
+    int uploadedStoryLines = 0;
+    int uploadedCheckIns = 0;
     
-    // 过滤出有变化的记录（增量上传）
-    final changedRecords = lastSyncTime == null
-        ? allRecords
-        : allRecords.where((r) => r.updatedAt.isAfter(lastSyncTime)).toList();
-    
-    // 批量上传记录
-    if (changedRecords.isNotEmpty) {
-      await _remoteRepository.uploadRecords(user.id, changedRecords);
+    // 上传记录
+    try {
+      final allRecords = _storageService.getRecordsSortedByTime();
+      final changedRecords = lastSyncTime == null
+          ? allRecords
+          : allRecords.where((r) => r.updatedAt.isAfter(lastSyncTime)).toList();
+      
+      if (changedRecords.isNotEmpty) {
+        await _remoteRepository.uploadRecords(user.id, changedRecords);
+        uploadedRecords = changedRecords.length;
+      }
+    } catch (e) {
+      // 上传失败不影响其他数据同步
     }
     
-    // 获取本地所有故事线
-    final allStoryLines = _storageService.getAllStoryLines();
-    
-    // 过滤出有变化的故事线（增量上传）
-    final changedStoryLines = lastSyncTime == null
-        ? allStoryLines
-        : allStoryLines.where((s) => s.updatedAt.isAfter(lastSyncTime)).toList();
-    
-    // 批量上传故事线
-    if (changedStoryLines.isNotEmpty) {
-      await _remoteRepository.uploadStoryLines(user.id, changedStoryLines);
+    // 上传故事线
+    try {
+      final allStoryLines = _storageService.getAllStoryLines();
+      final changedStoryLines = lastSyncTime == null
+          ? allStoryLines
+          : allStoryLines.where((s) => s.updatedAt.isAfter(lastSyncTime)).toList();
+      
+      if (changedStoryLines.isNotEmpty) {
+        await _remoteRepository.uploadStoryLines(user.id, changedStoryLines);
+        uploadedStoryLines = changedStoryLines.length;
+      }
+    } catch (e) {
+      // 上传失败不影响其他数据同步
     }
     
-    // 获取本地所有签到记录
-    final allCheckIns = _storageService.getAllCheckIns();
-    
-    // 过滤出有变化的签到记录（增量上传）
-    final changedCheckIns = lastSyncTime == null
-        ? allCheckIns
-        : allCheckIns.where((c) => c.updatedAt.isAfter(lastSyncTime)).toList();
-    
-    // 批量上传签到记录
-    if (changedCheckIns.isNotEmpty) {
-      await _remoteRepository.uploadCheckIns(user.id, changedCheckIns);
+    // 上传签到记录
+    try {
+      final allCheckIns = _storageService.getAllCheckIns();
+      final changedCheckIns = lastSyncTime == null
+          ? allCheckIns
+          : allCheckIns.where((c) => c.updatedAt.isAfter(lastSyncTime)).toList();
+      
+      if (changedCheckIns.isNotEmpty) {
+        await _remoteRepository.uploadCheckIns(user.id, changedCheckIns);
+        uploadedCheckIns = changedCheckIns.length;
+      }
+    } catch (e) {
+      // 上传失败不影响其他数据同步
     }
     
     return {
-      'records': changedRecords.length,
-      'storyLines': changedStoryLines.length,
-      'checkIns': changedCheckIns.length,
+      'records': uploadedRecords,
+      'storyLines': uploadedStoryLines,
+      'checkIns': uploadedCheckIns,
     };
   }
   
@@ -546,6 +560,128 @@ class SyncService {
       // 成就同步失败不影响其他数据同步
       // 生产环境应记录错误日志
       return 0;
+    }
+  }
+  
+  /// 同步用户设置
+  /// 
+  /// 调用者：syncAllData()
+  /// 
+  /// 同步策略（全量同步 + 智能冲突解决）：
+  /// 1. 下载云端设置
+  /// 2. 获取本地设置
+  /// 3. 根据存在性和 updatedAt 时间戳决定使用哪个版本：
+  ///    - 云端不存在 → 上传本地设置（或创建默认设置）
+  ///    - 本地不存在 → 使用云端设置
+  ///    - 两边都存在 → 比较 updatedAt，使用最新的版本
+  /// 
+  /// 优点：
+  /// - 保留离线修改（本地更新时上传）
+  /// - 逻辑简单（无需字段级别追踪）
+  /// - 性能优秀（全量同步，数据量小）
+  /// - 冲突解决合理（最后更新时间优先）
+  /// 
+  /// 注意：
+  /// - 本地存储不区分用户（单用户设计）
+  /// - 设置同步失败不影响其他数据同步
+  Future<void> _syncUserSettings(User user) async {
+    try {
+      // 1. 下载云端设置
+      final remoteSettings = await _remoteRepository.downloadSettings(user.id);
+      
+      // 2. 获取本地设置
+      final localSettings = _storageService.getUserSettings();
+      
+      // 3. 根据存在性和时间戳决定同步方向
+      await _resolveSettingsConflict(
+        user: user,
+        localSettings: localSettings,
+        remoteSettings: remoteSettings,
+      );
+    } catch (e) {
+      // 设置同步失败不影响其他数据同步
+      // 生产环境应记录错误日志
+    }
+  }
+  
+  /// 解决用户设置冲突
+  /// 
+  /// 调用者：_syncUserSettings()
+  /// 
+  /// 冲突解决策略：
+  /// - 场景1：云端不存在 → 上传本地设置（或创建默认设置）
+  /// - 场景2：本地不存在 → 使用云端设置
+  /// - 场景3：两边都存在 → 比较 updatedAt，使用最新的版本
+  /// 
+  /// 遵循原则：
+  /// - 单一职责：只负责冲突解决逻辑
+  /// - Fail Fast：参数验证
+  /// - 最后更新时间优先（Last Write Wins）
+  Future<void> _resolveSettingsConflict({
+    required User user,
+    required UserSettings? localSettings,
+    required UserSettings? remoteSettings,
+  }) async {
+    // 场景1：云端不存在
+    if (remoteSettings == null) {
+      await _handleRemoteSettingsNotFound(user, localSettings);
+      return;
+    }
+    
+    // 场景2：本地不存在
+    if (localSettings == null) {
+      await _handleLocalSettingsNotFound(remoteSettings);
+      return;
+    }
+    
+    // 场景3：两边都存在，比较 updatedAt
+    await _handleSettingsConflict(localSettings, remoteSettings);
+  }
+  
+  /// 处理云端设置不存在的情况
+  /// 
+  /// 调用者：_resolveSettingsConflict()
+  /// 
+  /// 策略：
+  /// - 如果本地有设置 → 上传本地设置
+  /// - 如果本地没有设置 → 创建默认设置并上传
+  Future<void> _handleRemoteSettingsNotFound(
+    User user,
+    UserSettings? localSettings,
+  ) async {
+    final settings = localSettings ?? UserSettings.createDefault(userId: user.id);
+    await _remoteRepository.uploadSettings(settings);
+    await _storageService.saveUserSettings(settings);
+  }
+  
+  /// 处理本地设置不存在的情况
+  /// 
+  /// 调用者：_resolveSettingsConflict()
+  /// 
+  /// 策略：使用云端设置
+  Future<void> _handleLocalSettingsNotFound(UserSettings remoteSettings) async {
+    await _storageService.saveUserSettings(remoteSettings);
+  }
+  
+  /// 处理本地和云端设置都存在的冲突
+  /// 
+  /// 调用者：_resolveSettingsConflict()
+  /// 
+  /// 策略：比较 updatedAt，使用最新的版本（Last Write Wins）
+  /// - 本地更新 → 上传本地设置
+  /// - 云端更新 → 使用云端设置
+  /// - 时间相同 → 使用云端设置（保守策略）
+  Future<void> _handleSettingsConflict(
+    UserSettings localSettings,
+    UserSettings remoteSettings,
+  ) async {
+    // 比较更新时间（Last Write Wins）
+    if (localSettings.updatedAt.isAfter(remoteSettings.updatedAt)) {
+      // 本地更新，上传本地设置
+      await _remoteRepository.uploadSettings(localSettings);
+    } else {
+      // 云端更新或时间相同，使用云端设置
+      await _storageService.saveUserSettings(remoteSettings);
     }
   }
 }
