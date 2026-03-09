@@ -54,6 +54,13 @@ class SyncInfoDialog extends StatelessWidget {
               context,
               '2. 登录或注册成功后',
             ),
+            const SizedBox(height: 16),
+            _buildInfoText(
+              context,
+              '【增量同步】只同步有变化的数据',
+              isBold: true,
+            ),
+            const SizedBox(height: 4),
             _buildInfoText(
               context,
               '3. 网络重新连接时',
@@ -62,13 +69,6 @@ class SyncInfoDialog extends StatelessWidget {
               context,
               '4. 每 60 秒轮询一次（后台自动）',
             ),
-            const SizedBox(height: 16),
-            _buildInfoText(
-              context,
-              '【增量同步】只同步有变化的数据',
-              isBold: true,
-            ),
-            const SizedBox(height: 4),
             _buildInfoText(
               context,
               '5. 点击"手动同步"按钮',

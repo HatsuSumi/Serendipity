@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
 import '../providers/auth_provider.dart';
+import '../providers/sync_status_provider.dart';
 import '../config/server_config.dart';
 import 'sync_service.dart';
 
@@ -133,6 +134,10 @@ class NetworkMonitorService {
   }
   
   /// 轮询网络状态
+  /// 
+  /// 调用者：startMonitoring() 的 Timer.periodic
+  /// 
+  /// 同步策略：使用增量同步，只同步有变化的数据
   Future<void> _pollNetworkStatus(WidgetRef ref) async {
     try {
       final isServerHealthy = await _checkServerHealth();
@@ -140,12 +145,12 @@ class NetworkMonitorService {
       if (isServerHealthy && !_lastServerHealthy) {
         _onNetworkRestored(ref);
       } else if (isServerHealthy) {
-        // 服务器健康，执行定期同步
+        // 服务器健康，执行定期同步（增量）
         final authState = ref.read(authProvider);
         final user = authState.value;
         
         if (user != null) {
-          await _triggerSync(ref, user, SyncSource.polling);
+          await _triggerIncrementalSync(ref, user, SyncSource.polling);
         }
       }
       
@@ -156,6 +161,10 @@ class NetworkMonitorService {
   }
   
   /// 网络恢复时的处理
+  /// 
+  /// 调用者：_handleConnectivityChange() 和 _pollNetworkStatus()
+  /// 
+  /// 同步策略：使用增量同步，只同步有变化的数据
   Future<void> _onNetworkRestored(WidgetRef ref) async {
     Future.microtask(() async {
       try {
@@ -168,7 +177,7 @@ class NetworkMonitorService {
         final user = authState.value;
         
         if (user != null) {
-          await _triggerSync(ref, user, SyncSource.networkReconnect);
+          await _triggerIncrementalSync(ref, user, SyncSource.networkReconnect);
         }
       } catch (e) {
         // 静默失败
@@ -192,11 +201,50 @@ class NetworkMonitorService {
     }
   }
   
-  /// 触发同步
+  /// 触发全量同步
+  /// 
+  /// 调用者：_triggerInitialSync()
+  /// 
+  /// 同步策略：全量同步（lastSyncTime = null）
+  /// 
+  /// Fail Fast：
+  /// - user 为 null：由调用者保证
+  /// - source 为 null：由 Dart 类型系统保证
   Future<void> _triggerSync(WidgetRef ref, User user, SyncSource source) async {
     try {
       final syncService = ref.read(syncServiceProvider);
       await syncService.syncAllData(user, source: source);
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('数据同步失败: $e');
+        print('错误堆栈: $stackTrace');
+      }
+      rethrow;
+    }
+  }
+  
+  /// 触发增量同步
+  /// 
+  /// 调用者：
+  /// - _pollNetworkStatus()：60秒轮询
+  /// - _onNetworkRestored()：网络恢复
+  /// 
+  /// 同步策略：增量同步（传入 lastFullSyncTime）
+  /// 
+  /// Fail Fast：
+  /// - user 为 null：由调用者保证
+  /// - source 为 null：由 Dart 类型系统保证
+  Future<void> _triggerIncrementalSync(WidgetRef ref, User user, SyncSource source) async {
+    try {
+      final syncService = ref.read(syncServiceProvider);
+      final syncStatus = ref.read(syncStatusProvider);
+      final lastSyncTime = syncStatus.lastFullSyncTime;
+      
+      await syncService.syncAllData(
+        user,
+        lastSyncTime: lastSyncTime,  // 增量同步
+        source: source,
+      );
     } catch (e, stackTrace) {
       if (kDebugMode) {
         print('数据同步失败: $e');
