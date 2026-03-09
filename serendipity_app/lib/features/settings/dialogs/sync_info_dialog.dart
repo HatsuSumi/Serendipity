@@ -117,6 +117,10 @@ class SyncInfoDialog extends StatelessWidget {
               context,
               '8. 解锁成就后，自动上传成就解锁记录',
             ),
+            _buildInfoText(
+              context,
+              '9. 修改用户设置后，自动上传设置',
+            ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
