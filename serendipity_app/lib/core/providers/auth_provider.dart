@@ -8,6 +8,10 @@ import '../services/http_client_service.dart';
 import '../services/i_storage_service.dart';
 import '../services/sync_service.dart';
 import '../config/app_config.dart';
+import 'records_provider.dart';
+import 'story_lines_provider.dart';
+import 'check_in_provider.dart';
+import 'achievement_provider.dart';
 
 /// 存储服务 Provider
 final storageServiceProvider = Provider<IStorageService>((ref) {
@@ -72,10 +76,27 @@ class AuthNotifier extends StreamNotifier<User?> {
         user,
         source: isRegister ? SyncSource.register : SyncSource.login,
       );
+      
+      // 同步完成后刷新所有数据 Provider
+      _invalidateDataProviders();
     } catch (e) {
       // 同步失败不影响用户使用
       // 生产环境应记录错误日志
     }
+  }
+  
+  /// 刷新所有数据 Provider（清除内存缓存）
+  /// 
+  /// 调用时机：
+  /// - 清空本地数据后
+  /// - 数据同步完成后
+  /// 
+  /// 作用：强制 Provider 重新从存储加载数据
+  void _invalidateDataProviders() {
+    ref.invalidate(recordsProvider);
+    ref.invalidate(storyLinesProvider);
+    ref.invalidate(checkInsProvider);
+    ref.invalidate(achievementsProvider);
   }
 
   /// 获取当前用户
@@ -114,12 +135,15 @@ class AuthNotifier extends StreamNotifier<User?> {
       final storageService = ref.read(storageServiceProvider);
       await storageService.clearUserData();
       
-      // 2. 调用 AuthRepository 登录
+      // 2. 刷新所有数据 Provider（清除内存缓存）
+      _invalidateDataProviders();
+      
+      // 3. 调用 AuthRepository 登录
       await _repository.signInWithEmail(email, password);
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
       
-      // 3. 登录成功后触发数据同步
+      // 4. 登录成功后触发数据同步
       if (user != null) {
         await _triggerSync(user);
       }
@@ -160,11 +184,14 @@ class AuthNotifier extends StreamNotifier<User?> {
       final storageService = ref.read(storageServiceProvider);
       await storageService.clearUserData();
       
-      // 2. 调用 AuthRepository 注册
+      // 2. 刷新所有数据 Provider（清除内存缓存）
+      _invalidateDataProviders();
+      
+      // 3. 调用 AuthRepository 注册
       final result = await _repository.signUpWithEmail(email, password);
       state = AsyncValue.data(result.user);
       
-      // 3. 注册成功后触发数据同步
+      // 4. 注册成功后触发数据同步
       await _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
@@ -236,7 +263,10 @@ class AuthNotifier extends StreamNotifier<User?> {
       final storageService = ref.read(storageServiceProvider);
       await storageService.clearUserData();
       
-      // 2. 调用 AuthRepository 登录
+      // 2. 刷新所有数据 Provider（清除内存缓存）
+      _invalidateDataProviders();
+      
+      // 3. 调用 AuthRepository 登录
       await _repository.signInWithPhone(
         phoneNumber,
         verificationCode,
@@ -245,7 +275,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       final user = await _repository.currentUser;
       state = AsyncValue.data(user);
       
-      // 3. 登录成功后触发数据同步
+      // 4. 登录成功后触发数据同步
       if (user != null) {
         await _triggerSync(user);
       }
@@ -294,7 +324,10 @@ class AuthNotifier extends StreamNotifier<User?> {
       final storageService = ref.read(storageServiceProvider);
       await storageService.clearUserData();
       
-      // 2. 调用 AuthRepository 注册
+      // 2. 刷新所有数据 Provider（清除内存缓存）
+      _invalidateDataProviders();
+      
+      // 3. 调用 AuthRepository 注册
       final result = await _repository.signUpWithPhone(
         phoneNumber,
         verificationCode,
@@ -302,7 +335,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       );
       state = AsyncValue.data(result.user);
       
-      // 3. 注册成功后触发数据同步
+      // 4. 注册成功后触发数据同步
       await _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
@@ -333,7 +366,10 @@ class AuthNotifier extends StreamNotifier<User?> {
       final storageService = ref.read(storageServiceProvider);
       await storageService.clearUserData();
       
-      // 3. 更新认证状态
+      // 3. 刷新所有数据 Provider（清除内存缓存）
+      _invalidateDataProviders();
+      
+      // 4. 更新认证状态
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
