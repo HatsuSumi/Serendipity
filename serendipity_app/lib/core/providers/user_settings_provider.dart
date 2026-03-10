@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user_settings.dart';
 import '../../models/user.dart';
 import '../../models/enums.dart';
+import 'records_provider.dart';
 import '../services/i_storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/sync_service.dart';
@@ -45,6 +46,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   ) : super(_createDefaultSettings()) {
     _loadSettings();
     _listenToAuthChanges();
+    _listenToSyncCompleted();
   }
 
   /// 创建默认设置（访客模式）
@@ -73,6 +75,20 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       hasSeenCommunityIntro: false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+    );
+  }
+
+  /// 监听同步完成信号，同步完成后重新加载本地设置
+  /// 
+  /// 调用者：构造函数
+  void _listenToSyncCompleted() {
+    _ref.listen<int>(
+      syncCompletedProvider,
+      (previous, next) {
+        if (previous != null && next > previous) {
+          _loadSettings();
+        }
+      },
     );
   }
 
