@@ -104,7 +104,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// - 这里只需要从本地存储读取即可
   Future<void> _loadSettings() async {
     final settings = _storageService.getUserSettings();
-    debugPrint('[CommunityIntro] _loadSettings: settings=${settings == null ? 'null' : 'found'}, hasSeenCommunityIntro=${settings?.hasSeenCommunityIntro}');
     
     if (settings != null) {
       state = settings;
@@ -136,9 +135,13 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       
       debugPrint('[UserSettings] 开始上传设置到云端，用户ID: ${user.id}');
       
-      // 上传到云端
+      // 上传到云端，获取服务端返回的最新设置（含服务端生成的 updatedAt）
       final remoteRepository = _ref.read(remoteDataRepositoryProvider);
-      await remoteRepository.uploadSettings(settings);
+      final serverSettings = await remoteRepository.uploadSettings(settings);
+      
+      // 用服务端的 updatedAt 更新本地，确保下次同步时时间戳对齐
+      await _storageService.saveUserSettings(serverSettings);
+      state = serverSettings;
       
       debugPrint('[UserSettings] 设置上传成功');
     } catch (e) {
@@ -315,7 +318,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 调用者：
   /// - CommunityIntroDialog（用户点击"我知道了"时）
   Future<void> markCommunityIntroSeen([bool seen = true]) async {
-    debugPrint('[CommunityIntro] markCommunityIntroSeen called, seen=$seen');
     final updated = state.copyWith(
       hasSeenCommunityIntro: seen,
       updatedAt: DateTime.now(),

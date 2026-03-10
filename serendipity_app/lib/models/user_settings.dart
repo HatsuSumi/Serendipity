@@ -223,7 +223,9 @@ class UserSettings {
       hasSeenPublishWarning: false,
       hasSeenCommunityIntro: dto['hasSeenCommunityIntro'] as bool? ?? false,
       createdAt: now,
-      updatedAt: now,
+      updatedAt: dto['updatedAt'] != null
+          ? DateTime.parse(dto['updatedAt'] as String)
+          : now,
     );
   }
 

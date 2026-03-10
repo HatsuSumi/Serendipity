@@ -479,7 +479,8 @@ abstract class IRemoteDataRepository {
   /// - settings 为 null：抛出 ArgumentError
   /// - settings.userId 为空：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
-  Future<void> uploadSettings(UserSettings settings);
+  /// 上传用户设置（返回服务端保存后的最新设置，含服务端生成的 updatedAt）
+  Future<UserSettings> uploadSettings(UserSettings settings);
   
   /// 下载用户设置
   /// 

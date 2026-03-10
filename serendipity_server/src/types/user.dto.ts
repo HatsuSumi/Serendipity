@@ -44,6 +44,8 @@ export interface UserSettingsDto {
     vibrationEnabled: boolean;
     confettiEnabled: boolean;
   };
+  hasSeenCommunityIntro: boolean;
+  updatedAt: string; // ISO 8601
 }
 
 export interface UpdateUserSettingsDto {
@@ -59,5 +61,6 @@ export interface UpdateUserSettingsDto {
     vibrationEnabled?: boolean;
     confettiEnabled?: boolean;
   };
+  hasSeenCommunityIntro?: boolean;
 }
 

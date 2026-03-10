@@ -176,8 +176,9 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
   
   @override
-  Future<void> uploadSettings(UserSettings settings) async {
-    // 测试模式：不执行任何操作
+  Future<UserSettings> uploadSettings(UserSettings settings) async {
+    // 测试模式：直接返回原设置（模拟服务端保存成功）
+    return settings;
   }
   
   @override

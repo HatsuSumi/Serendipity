@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
@@ -713,8 +712,8 @@ class SyncService {
     UserSettings? localSettings,
   ) async {
     final settings = localSettings ?? UserSettings.createDefault(userId: user.id);
-    await _remoteRepository.uploadSettings(settings);
-    await _storageService.saveUserSettings(settings);
+    final serverSettings = await _remoteRepository.uploadSettings(settings);
+    await _storageService.saveUserSettings(serverSettings);
   }
   
   /// 处理本地设置不存在的情况
@@ -731,29 +730,23 @@ class SyncService {
   /// 调用者：_resolveSettingsConflict()
   /// 
   /// 策略：比较 updatedAt，使用最新的版本（Last Write Wins）
-  /// - 本地更新 → 上传本地设置
+  /// - 本地更新 → 上传本地设置（服务端返回对齐后的 updatedAt，保存到本地）
   /// - 云端更新 → 使用云端设置
   /// - 时间相同 → 使用云端设置（保守策略）
+  /// 
+  /// 时间戳对齐：上传后用服务端返回的 updatedAt 更新本地，
+  /// 确保下次同步时 LWW 策略能正确工作。
   Future<void> _handleSettingsConflict(
     UserSettings localSettings,
     UserSettings remoteSettings,
   ) async {
-    // 比较更新时间（Last Write Wins）
-    debugPrint('[CommunityIntro] _handleSettingsConflict: local.updatedAt=${localSettings.updatedAt}, remote.updatedAt=${remoteSettings.updatedAt}, local.hasSeenCommunityIntro=${localSettings.hasSeenCommunityIntro}, remote.hasSeenCommunityIntro=${remoteSettings.hasSeenCommunityIntro}');
     if (localSettings.updatedAt.isAfter(remoteSettings.updatedAt)) {
-      // 本地更新，上传本地设置
-      await _remoteRepository.uploadSettings(localSettings);
+      // 本地更新：上传到云端，用服务端返回的 updatedAt 更新本地
+      final serverSettings = await _remoteRepository.uploadSettings(localSettings);
+      await _storageService.saveUserSettings(serverSettings);
     } else {
-      // 云端更新或时间相同，使用云端设置
-      // 对于"只增不减"的字段（如 hasSeenCommunityIntro），取本地与云端的最大值
-      final merged = remoteSettings.copyWith(
-        hasSeenCommunityIntro: localSettings.hasSeenCommunityIntro || remoteSettings.hasSeenCommunityIntro,
-      );
-      await _storageService.saveUserSettings(merged);
-      // 如果合并后与云端不一致（本地是 true，云端是 false），上传修正
-      if (merged.hasSeenCommunityIntro != remoteSettings.hasSeenCommunityIntro) {
-        await _remoteRepository.uploadSettings(merged);
-      }
+      // 云端更新或时间相同：使用云端设置
+      await _storageService.saveUserSettings(remoteSettings);
     }
   }
 }

@@ -651,18 +651,20 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   // ==================== 用户设置相关操作 ====================
   
   @override
-  Future<void> uploadSettings(UserSettings settings) async {
+  Future<UserSettings> uploadSettings(UserSettings settings) async {
     // Fail Fast：参数验证
     if (settings.userId.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
     
     try {
-      // 使用模型的转换方法（单一职责原则）
-      await _httpClient.put(
+      final response = await _httpClient.put(
         ServerConfig.usersSettings,
         body: settings.toServerDto(),
       );
+      // 用服务端返回的最新设置（含服务端生成的 updatedAt）更新本地
+      final data = response['data'] as Map<String, dynamic>;
+      return UserSettings.fromServerDto(data, settings.userId);
     } on HttpException catch (e) {
       throw Exception('上传用户设置失败：${e.message}');
     }
