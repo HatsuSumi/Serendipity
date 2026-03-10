@@ -188,6 +188,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// 调用者：
   /// - publishPost（发布后刷新）
   /// - deletePost（删除后刷新）
+  /// - MyPostsNotifier.deletePost（删除后同步）
   Future<void> refreshSilently() async {
     final currentState = state.value;
     if (currentState == null) {
@@ -386,25 +387,18 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
 
   /// 获取当前用户发布的所有帖子
   /// 
-  /// Fail Fast:
-  /// - 如果用户未登录，抛出 StateError
+  /// @deprecated 请使用 myPostsProvider 替代，MyPostsNotifier 直接依赖 Repository
   /// 
-  /// 调用者：MyPostsPage（我的发布页面）
-  /// 
-  /// 返回：用户发布的帖子列表
+  /// 保留此方法仅为向后兼容，内部已无调用
+  @Deprecated('Use myPostsProvider instead')
   Future<List<CommunityPost>> getMyPosts() async {
-    // Fail Fast: 用户必须登录
-    final authState = ref.read(authProvider);
-    final currentUser = authState.value;
-    
+    final currentUser = ref.read(authProvider).value;
     if (currentUser == null) {
       throw Exception('必须登录后才可查看我的发布');
     }
-
     try {
       return await _repository.getMyPosts(currentUser.id);
     } catch (e) {
-      // 使用 AuthErrorHelper 清理异常前缀
       throw Exception(AuthErrorHelper.extractErrorMessage(e));
     }
   }
@@ -419,14 +413,14 @@ final communityProvider = AsyncNotifierProvider<CommunityNotifier, CommunityStat
 /// 
 /// 职责：
 /// - 管理当前用户发布的帖子列表状态
-/// - 支持刷新
+/// - 支持刷新和删除
 /// 
 /// 调用者：MyPostsPage
 /// 
-/// 遵循原则：
-/// - 单一数据源（Single Source of Truth）
-/// - 状态管理规则：UI层不维护业务状态
-/// - 分层约束：状态管理层负责业务逻辑
+/// 设计原则：
+/// - 单一职责（SRP）：只负责"我的帖子"业务逻辑
+/// - 依赖倒置（DIP）：直接依赖 CommunityRepository，与 CommunityNotifier 平级
+/// - 无横向耦合：不依赖 communityProvider，避免 Notifier 间互相调用
 final myPostsProvider = AsyncNotifierProvider<MyPostsNotifier, List<CommunityPost>>(() {
   return MyPostsNotifier();
 });
@@ -440,10 +434,27 @@ final myPostsProvider = AsyncNotifierProvider<MyPostsNotifier, List<CommunityPos
 /// 
 /// 调用者：MyPostsPage
 class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
+  late CommunityRepository _repository;
+
   @override
   Future<List<CommunityPost>> build() async {
-    final communityNotifier = ref.read(communityProvider.notifier);
-    return await communityNotifier.getMyPosts();
+    _repository = ref.read(communityRepositoryProvider);
+    return await _fetchMyPosts();
+  }
+
+  /// 从仓储获取当前用户的帖子（内部方法）
+  /// 
+  /// Fail Fast：用户未登录时抛出 Exception
+  Future<List<CommunityPost>> _fetchMyPosts() async {
+    final currentUser = ref.read(authProvider).value;
+    if (currentUser == null) {
+      throw Exception('必须登录后才可查看我的发布');
+    }
+    try {
+      return await _repository.getMyPosts(currentUser.id);
+    } catch (e) {
+      throw Exception(AuthErrorHelper.extractErrorMessage(e));
+    }
   }
 
   /// 刷新我的帖子列表
@@ -451,52 +462,47 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
   /// 调用者：MyPostsPage（下拉刷新）
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final communityNotifier = ref.read(communityProvider.notifier);
-      return await communityNotifier.getMyPosts();
-    });
+    state = await AsyncValue.guard(_fetchMyPosts);
   }
 
   /// 删除帖子
   /// 
   /// 调用者：MyPostsPage（删除按钮）
   /// 
-  /// 优化说明：
-  /// - 删除成功后自动刷新列表
-  /// - 使用静默刷新避免页面闪烁
+  /// 设计说明：
+  /// - 直接调用 _repository.deletePost，不经由 CommunityNotifier
+  /// - 删除成功后通知 communityProvider 静默刷新（保持树洞列表同步）
+  /// - 自身使用静默刷新，避免页面闪烁
   Future<void> deletePost(String postId) async {
-    final communityNotifier = ref.read(communityProvider.notifier);
-    
-    // 删除帖子
-    await communityNotifier.deletePost(postId);
-    
-    // 删除成功后静默刷新列表（避免页面闪烁）
+    final currentUser = ref.read(authProvider).value;
+    if (currentUser == null) {
+      throw Exception('必须登录后才可删除');
+    }
+
+    try {
+      await _repository.deletePost(postId, currentUser.id);
+    } catch (e) {
+      throw Exception(AuthErrorHelper.extractErrorMessage(e));
+    }
+
+    // 通知树洞列表同步（静默，不阻塞当前页面）
+    ref.read(communityProvider.notifier).refreshSilently();
+
+    // 静默刷新自身列表
     await _refreshSilently();
   }
 
   /// 静默刷新我的帖子列表（不显示 loading 状态）
   /// 
-  /// 用于删除帖子后的刷新，避免页面闪烁
-  /// 
   /// 调用者：deletePost
   Future<void> _refreshSilently() async {
-    final currentState = state.value;
-    if (currentState == null) {
-      // 如果当前没有数据，使用普通刷新
+    if (state.value == null) {
       await refresh();
       return;
     }
-
-    // 使用 AsyncValue.guard，它会自动捕获错误
-    final result = await AsyncValue.guard(() async {
-      final communityNotifier = ref.read(communityProvider.notifier);
-      return await communityNotifier.getMyPosts();
-    });
-    
-    // 只在成功时更新状态，失败时保持当前状态不变
+    final result = await AsyncValue.guard(_fetchMyPosts);
     if (result.hasValue) {
       state = result;
     }
   }
 }
-
