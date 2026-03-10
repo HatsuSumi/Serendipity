@@ -51,6 +51,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
   @override
   void didUpdateWidget(CommunityPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    debugPrint('[CommunityIntro] didUpdateWidget: oldVisible=${oldWidget.isVisible}, newVisible=${widget.isVisible}');
     
     // 当页面从不可见变为可见时，检查是否需要显示对话框
     if (!oldWidget.isVisible && widget.isVisible) {
@@ -80,6 +81,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
   void _checkAndShowIntroDialog() {
     // 读取最新的设置状态
     final hasSeenIntro = ref.read(userSettingsProvider).hasSeenCommunityIntro;
+    debugPrint('[CommunityIntro] _checkAndShowIntroDialog called, hasSeenIntro=$hasSeenIntro, _isShowingIntroDialog=$_isShowingIntroDialog');
     
     // 如果已看过，不显示
     if (hasSeenIntro) return;

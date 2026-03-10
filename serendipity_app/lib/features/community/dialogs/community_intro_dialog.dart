@@ -31,9 +31,11 @@ class CommunityIntroDialog extends ConsumerStatefulWidget {
   ) async {
     // 检查用户是否已看过介绍
     final hasSeenIntro = ref.read(userSettingsProvider).hasSeenCommunityIntro;
+    debugPrint('[CommunityIntro] CommunityIntroDialog.show called, hasSeenIntro=$hasSeenIntro');
     
     if (hasSeenIntro) {
       // 用户已看过介绍，直接返回
+      debugPrint('[CommunityIntro] already seen, skip showing dialog');
       return;
     }
     

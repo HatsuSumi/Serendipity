@@ -129,21 +129,21 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       
       if (user == null || user.id.isEmpty || user.id == 'guest') {
         // 用户未登录，跳过云端上传
-        print('[UserSettings] 用户未登录，跳过云端上传');
+        debugPrint('[UserSettings] 用户未登录，跳过云端上传');
         return;
       }
       
-      print('[UserSettings] 开始上传设置到云端，用户ID: ${user.id}');
+      debugPrint('[UserSettings] 开始上传设置到云端，用户ID: ${user.id}');
       
       // 上传到云端
       final remoteRepository = _ref.read(remoteDataRepositoryProvider);
       await remoteRepository.uploadSettings(settings);
       
-      print('[UserSettings] 设置上传成功');
+      debugPrint('[UserSettings] 设置上传成功');
     } catch (e) {
       // 上传失败，静默失败（不影响用户体验）
       // 生产环境应记录错误日志
-      print('[UserSettings] 设置上传失败: $e');
+      debugPrint('[UserSettings] 设置上传失败: $e');
     }
   }
 
@@ -314,6 +314,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 调用者：
   /// - CommunityIntroDialog（用户点击"我知道了"时）
   Future<void> markCommunityIntroSeen([bool seen = true]) async {
+    debugPrint('[CommunityIntro] markCommunityIntroSeen called, seen=$seen');
     final updated = state.copyWith(
       hasSeenCommunityIntro: seen,
       updatedAt: DateTime.now(),
