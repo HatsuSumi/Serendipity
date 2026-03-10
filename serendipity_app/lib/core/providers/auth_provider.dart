@@ -80,14 +80,16 @@ class AuthNotifier extends StreamNotifier<User?> {
     try {
       final syncService = ref.read(syncServiceProvider);
       
-      // 区分注册和登录场景
-      final lastSyncTime = isRegister 
-          ? null  // 注册：跳过下载（云端确实没数据）
-          : await syncService.getLastSyncTime(user.id);  // 登录：读取该用户的上次同步时间
+      // 注册场景：跳过下载（新用户云端确实没数据）
+      // 登录/启动场景：读取持久化的上次同步时间，null 时全量下载
+      final lastSyncTime = isRegister
+          ? null
+          : await syncService.getLastSyncTime(user.id);
       
       await syncService.syncAllData(
         user,
         lastSyncTime: lastSyncTime,
+        skipDownload: isRegister,
         source: isRegister ? SyncSource.register : SyncSource.login,
       );
       
@@ -95,7 +97,6 @@ class AuthNotifier extends StreamNotifier<User?> {
       _invalidateDataProviders();
     } catch (e) {
       // 同步失败不影响用户使用
-      // 生产环境应记录错误日志
     }
   }
   

@@ -358,7 +358,8 @@ class SyncService {
   /// 
   /// 参数：
   /// - user：当前用户
-  /// - lastSyncTime：上次同步时间（null 表示注册场景，跳过下载）
+  /// - lastSyncTime：上次同步时间（null 表示全量下载）
+  /// - skipDownload：是否跳过下载（注册场景传 true，其他场景不传）
   /// - source：同步来源（默认手动同步）
   /// 
   /// 返回：同步结果统计
@@ -369,6 +370,7 @@ class SyncService {
   Future<SyncResult> syncAllData(
     User user, {
     DateTime? lastSyncTime,
+    bool skipDownload = false,
     SyncSource source = SyncSource.manual,
   }) async {
     // Fail Fast：参数验证
@@ -384,9 +386,9 @@ class SyncService {
       final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
       
       // 2. 下载云端有变化的数据
-      // 注册场景（lastSyncTime == null）：跳过下载，新用户云端确实没数据
-      // 登录/启动/手动场景（lastSyncTime != null）：增量下载，支持多设备同步
-      final downloadStats = lastSyncTime == null
+      // skipDownload == true（注册场景）：跳过下载，新用户云端确实没数据
+      // 其他场景：lastSyncTime == null 全量下载，否则增量下载
+      final downloadStats = skipDownload
           ? {'records': 0, 'storyLines': 0, 'checkIns': 0, 'mergedRecords': 0, 'mergedStoryLines': 0, 'mergedCheckIns': 0}
           : await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
       
