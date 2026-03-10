@@ -95,6 +95,8 @@ class AuthNotifier extends StreamNotifier<User?> {
       
       // 同步完成后刷新所有数据 Provider
       _invalidateDataProviders();
+      // 同时递增信号，确保 watch(syncCompletedProvider) 的 Provider 也重建
+      ref.read(syncCompletedProvider.notifier).state++;
     } catch (e) {
       // 同步失败不影响用户使用
     }
