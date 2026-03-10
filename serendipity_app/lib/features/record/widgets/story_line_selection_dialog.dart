@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/providers/story_lines_provider.dart';
 import '../../../core/utils/message_helper.dart';
+import '../../../core/utils/auth_error_helper.dart';
 import '../../../models/story_line.dart';
 
 /// 故事线选择对话框
@@ -299,7 +300,7 @@ class _StoryLineSelectionDialogState extends ConsumerState<StoryLineSelectionDia
       }
     } catch (e) {
       if (!mounted) return;
-      MessageHelper.showError(context, '操作失败：$e');
+      MessageHelper.showError(context, '操作失败：${AuthErrorHelper.extractErrorMessage(e)}');
     }
   }
 }

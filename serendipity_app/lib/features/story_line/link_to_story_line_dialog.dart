@@ -6,6 +6,7 @@ import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 
 /// 关联到故事线对话框
@@ -401,7 +402,7 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
       }
     } catch (e) {
       if (mounted) {
-        MessageHelper.showError(context, '关联失败：$e');
+        MessageHelper.showError(context, '关联失败：${AuthErrorHelper.extractErrorMessage(e)}');
       }
     }
   }

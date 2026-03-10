@@ -12,6 +12,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
@@ -736,7 +737,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       }
     } catch (e) {
       if (context.mounted) {
-        MessageHelper.showError(context, '检查发布状态失败：$e');
+        MessageHelper.showError(context, '检查发布状态失败：${AuthErrorHelper.extractErrorMessage(e)}');
       }
     }
   }
@@ -814,7 +815,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       if (!context.mounted) return;
       
       // 显示错误提示
-      MessageHelper.showError(context, '删除失败：$e');
+      MessageHelper.showError(context, '删除失败：${AuthErrorHelper.extractErrorMessage(e)}');
     }
   }
 }

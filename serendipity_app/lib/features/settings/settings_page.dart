@@ -12,6 +12,7 @@ import '../../core/providers/sync_status_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/phone_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
@@ -968,7 +969,7 @@ class SettingsPage extends ConsumerWidget {
       isLoading = false;
       isInitialLoad = false;
       if (context.mounted) {
-        MessageHelper.showError(context, '获取恢复密钥失败：${e.toString()}');
+        MessageHelper.showError(context, '获取恢复密钥失败：${AuthErrorHelper.extractErrorMessage(e)}');
       }
     }
     
@@ -1089,7 +1090,7 @@ class SettingsPage extends ConsumerWidget {
                         isLoading = false;
                       });
                       if (context.mounted) {
-                        MessageHelper.showError(context, '生成失败：${e.toString()}');
+                        MessageHelper.showError(context, '生成失败：${AuthErrorHelper.extractErrorMessage(e)}');
                       }
                     }
                   },

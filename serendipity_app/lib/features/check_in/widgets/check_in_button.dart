@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/check_in_provider.dart';
 import '../../../core/utils/message_helper.dart';
+import '../../../core/utils/auth_error_helper.dart';
 
 /// 签到按钮组件（带防抖逻辑和动画）
 /// 
@@ -109,7 +110,7 @@ class _CheckInButtonState extends ConsumerState<CheckInButton> {
       widget.onCheckInSuccess();
     } catch (e) {
       if (mounted && context.mounted) {
-        MessageHelper.showError(context, '签到失败：$e');
+        MessageHelper.showError(context, '签到失败：${AuthErrorHelper.extractErrorMessage(e)}');
       }
     } finally {
       if (mounted) {

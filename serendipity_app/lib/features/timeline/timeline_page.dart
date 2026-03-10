@@ -13,6 +13,7 @@ import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/utils/check_in_animation_helper.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../models/encounter_record.dart';
@@ -513,7 +514,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       }
     } catch (e) {
       if (context.mounted) {
-        MessageHelper.showError(context, '操作失败：$e');
+        MessageHelper.showError(context, '操作失败：${AuthErrorHelper.extractErrorMessage(e)}');
       }
     }
   }
@@ -621,7 +622,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       }
     } catch (e) {
       if (context.mounted) {
-        MessageHelper.showError(context, '检查发布状态失败：$e');
+        MessageHelper.showError(context, '检查发布状态失败：${AuthErrorHelper.extractErrorMessage(e)}');
       }
     }
   }
@@ -644,7 +645,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         }
       } catch (e) {
         if (context.mounted) {
-          MessageHelper.showError(context, '删除失败：$e');
+          MessageHelper.showError(context, '删除失败：${AuthErrorHelper.extractErrorMessage(e)}');
         }
       }
     }

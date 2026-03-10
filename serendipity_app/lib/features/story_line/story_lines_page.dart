@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
@@ -324,7 +325,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
       }
     } catch (e) {
       if (context.mounted) {
-        MessageHelper.showError(context, '操作失败：$e');
+        MessageHelper.showError(context, '操作失败：${AuthErrorHelper.extractErrorMessage(e)}');
       }
     }
   }
@@ -415,7 +416,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  MessageHelper.showError(context, '创建失败：$e');
+                  MessageHelper.showError(context, '创建失败：${AuthErrorHelper.extractErrorMessage(e)}');
                 }
               }
             },
@@ -449,7 +450,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
         }
       } catch (e) {
         if (context.mounted) {
-          MessageHelper.showError(context, '重命名失败：$e');
+          MessageHelper.showError(context, '重命名失败：${AuthErrorHelper.extractErrorMessage(e)}');
         }
       }
     }
@@ -471,7 +472,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
         }
       } catch (e) {
         if (context.mounted) {
-          MessageHelper.showError(context, '删除失败：$e');
+          MessageHelper.showError(context, '删除失败：${AuthErrorHelper.extractErrorMessage(e)}');
         }
       }
     }
