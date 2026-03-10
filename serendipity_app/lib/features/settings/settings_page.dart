@@ -1403,9 +1403,7 @@ class SettingsPage extends ConsumerWidget {
               await AsyncActionHelper.execute(
                 context,
                 action: () async {
-                  // 同时重置两个标记
-                  await ref.read(userSettingsProvider.notifier).updateHidePublishWarning(false);
-                  await ref.read(userSettingsProvider.notifier).markPublishWarningSeen(false);
+                  await ref.read(userSettingsProvider.notifier).resetPublishWarning();
                 },
                 successMessage: '发布警告对话框已重置',
                 errorMessagePrefix: '重置失败',

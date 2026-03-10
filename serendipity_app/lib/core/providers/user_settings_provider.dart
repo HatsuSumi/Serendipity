@@ -300,6 +300,26 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     await _uploadToCloud(updated);
   }
 
+  /// 重置发布警告对话框（原子操作）
+  /// 
+  /// 同时重置 hidePublishWarning 和 hasSeenPublishWarning，只上传一次
+  /// 
+  /// 调用者：
+  /// - SettingsPage（重置对话框提醒时）
+  Future<void> resetPublishWarning() async {
+    final updated = state.copyWith(
+      hidePublishWarning: false,
+      hasSeenPublishWarning: false,
+      updatedAt: DateTime.now(),
+    );
+
+    await _storageService.saveUserSettings(updated);
+    state = updated;
+
+    // 上传到云端
+    await _uploadToCloud(updated);
+  }
+
   /// 标记用户已看过发布警告
   /// 
   /// [seen] 是否已看过（默认 true）
