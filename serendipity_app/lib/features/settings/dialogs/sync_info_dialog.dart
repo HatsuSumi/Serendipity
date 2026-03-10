@@ -42,41 +42,33 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '【全量同步】扫描所有数据',
-              isBold: true,
-            ),
-            const SizedBox(height: 4),
-            _buildInfoText(
-              context,
-              '1. 首次启动 App 时',
+              '1. 注册成功后（跳过下载，只上传本地数据）',
             ),
             _buildInfoText(
               context,
-              '2. 登录或注册成功后',
+              '2. 登录成功后（增量同步）',
+            ),
+            _buildInfoText(
+              context,
+              '3. App 启动时（增量同步，如果已登录）',
+            ),
+            _buildInfoText(
+              context,
+              '4. 网络重新连接时（增量同步）',
+            ),
+            _buildInfoText(
+              context,
+              '5. 每 60 秒轮询一次（增量同步，后台自动）',
             ),
             const SizedBox(height: 16),
             _buildInfoText(
               context,
-              '【增量同步】只同步有变化的数据',
-              isBold: true,
-            ),
-            const SizedBox(height: 4),
-            _buildInfoText(
-              context,
-              '3. 网络重新连接时',
-            ),
-            _buildInfoText(
-              context,
-              '4. 每 60 秒轮询一次（后台自动）',
-            ),
-            _buildInfoText(
-              context,
-              '5. 点击"手动同步"按钮',
+              '手动同步：点击"手动同步"按钮（增量同步）',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '说明：以上同步会记录到"同步历史"，可查看详细统计。',
+              '说明：以上同步会记录到"同步历史"，支持多设备数据同步。',
             ),
             const SizedBox(height: 16),
             _buildInfoText(
@@ -138,11 +130,11 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 4),
             _buildInfoText(
               context,
-              '1. 更换设备后，首次登录时',
+              '1. 更换设备后，首次登录时（自动同步已触发，但可手动再次同步确认）',
             ),
             _buildInfoText(
               context,
-              '2. 长时间未使用应用后',
+              '2. 长时间未使用应用后（自动同步已触发，但可手动再次同步确认）',
             ),
             _buildInfoText(
               context,
@@ -155,12 +147,17 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '全量同步：扫描所有数据，确保本地和云端完全一致。',
+              '全量同步：扫描所有数据，上传和下载所有内容。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '增量同步：只同步有变化的数据，节省流量和时间。',
+              '增量同步：只同步有变化的数据（根据最后更新时间判断），节省流量和时间。',
+            ),
+            const SizedBox(height: 8),
+            _buildInfoText(
+              context,
+              '本应用使用增量同步策略，支持多设备数据同步。',
             ),
             const SizedBox(height: 16),
 

@@ -362,6 +362,28 @@ class StorageService implements IStorageService {
     return histories;
   }
   
+  /// 获取指定用户的同步历史记录（按时间倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户 ID
+  /// 
+  /// 调用者：SyncService.getLastSyncTime()
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  @override
+  List<SyncHistory> getSyncHistoriesByUser(String userId) {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    final histories = _syncHistoriesBoxOrThrow.values
+        .where((h) => h.userId == userId)
+        .toList();
+    histories.sort((a, b) => b.syncTime.compareTo(a.syncTime));
+    return histories;
+  }
+  
   /// 获取最近 N 条同步历史记录
   /// 
   /// 调用者：SettingsPage（显示最近一次同步）

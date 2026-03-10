@@ -34,13 +34,14 @@ class SyncHistoryAdapter extends TypeAdapter<SyncHistory> {
       mergedCheckIns: fields[14] as int,
       syncedAchievements: fields[15] as int,
       source: fields[16] as SyncSource,
+      userId: fields[17] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, SyncHistory obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -74,7 +75,9 @@ class SyncHistoryAdapter extends TypeAdapter<SyncHistory> {
       ..writeByte(15)
       ..write(obj.syncedAchievements)
       ..writeByte(16)
-      ..write(obj.source);
+      ..write(obj.source)
+      ..writeByte(17)
+      ..write(obj.userId);
   }
 
   @override

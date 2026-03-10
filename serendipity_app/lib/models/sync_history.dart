@@ -118,12 +118,17 @@ class SyncHistory {
   @HiveField(16)
   final SyncSource source;
   
+  /// 用户 ID（用于区分不同用户的同步历史）
+  @HiveField(17)
+  final String userId;
+  
   /// 构造函数
   /// 
   /// 调用者：SyncStatusNotifier.syncSuccess()
   /// 
   /// Fail Fast：
   /// - id 为空：抛出 ArgumentError
+  /// - userId 为空：抛出 ArgumentError
   /// - durationMs < 0：抛出 ArgumentError
   /// - success 为 false 但 errorMessage 为空：抛出 ArgumentError
   SyncHistory({
@@ -144,10 +149,14 @@ class SyncHistory {
     required this.mergedCheckIns,
     required this.syncedAchievements,
     required this.source,
+    required this.userId,
   }) {
     // Fail Fast：参数验证
     if (id.isEmpty) {
       throw ArgumentError('同步记录 ID 不能为空');
+    }
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
     }
     if (durationMs < 0) {
       throw ArgumentError('同步耗时不能为负数');
@@ -163,14 +172,20 @@ class SyncHistory {
   /// 
   /// Fail Fast：
   /// - result 为 null：由 Dart 类型系统保证
+  /// - userId 为空：抛出 ArgumentError
   /// - syncStartTime 为 null：由 Dart 类型系统保证
   /// - syncEndTime 为 null：由 Dart 类型系统保证
   factory SyncHistory.fromSuccess({
     required SyncResult result,
+    required String userId,
     required DateTime syncStartTime,
     required DateTime syncEndTime,
     required SyncSource source,
   }) {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
     final durationMs = syncEndTime.difference(syncStartTime).inMilliseconds;
     
     return SyncHistory(
@@ -191,6 +206,7 @@ class SyncHistory {
       mergedCheckIns: result.mergedCheckIns,
       syncedAchievements: result.syncedAchievements,
       source: source,
+      userId: userId,
     );
   }
   
@@ -200,16 +216,21 @@ class SyncHistory {
   /// 
   /// Fail Fast：
   /// - errorMessage 为空：抛出 ArgumentError
+  /// - userId 为空：抛出 ArgumentError
   /// - syncStartTime 为 null：由 Dart 类型系统保证
   /// - syncEndTime 为 null：由 Dart 类型系统保证
   factory SyncHistory.fromError({
     required String errorMessage,
+    required String userId,
     required DateTime syncStartTime,
     required DateTime syncEndTime,
     required SyncSource source,
   }) {
     if (errorMessage.isEmpty) {
       throw ArgumentError('错误信息不能为空');
+    }
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
     }
     
     final durationMs = syncEndTime.difference(syncStartTime).inMilliseconds;
@@ -232,6 +253,7 @@ class SyncHistory {
       mergedCheckIns: 0,
       syncedAchievements: 0,
       source: source,
+      userId: userId,
     );
   }
   
@@ -308,6 +330,7 @@ class SyncHistory {
       'mergedCheckIns': mergedCheckIns,
       'syncedAchievements': syncedAchievements,
       'source': source.name,
+      'userId': userId,
     };
   }
   
@@ -336,6 +359,7 @@ class SyncHistory {
         (e) => e.name == json['source'],
         orElse: () => SyncSource.manual,
       ),
+      userId: json['userId'] as String,
     );
   }
 }

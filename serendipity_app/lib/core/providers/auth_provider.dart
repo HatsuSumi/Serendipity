@@ -68,12 +68,26 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用时机：用户登录/注册成功后
   /// 
+  /// 同步策略：
+  /// - 注册：首次同步（lastSyncTime: null），只上传不下载
+  ///   原因：新用户云端确实没有数据
+  /// - 登录：读取该用户的上次同步时间
+  ///   - 该用户首次同步（lastSyncTime: null）：全量下载
+  ///   - 该用户非首次同步（lastSyncTime != null）：增量同步
+  /// 
   /// 注意：同步失败不影响用户使用，用户可以稍后手动触发同步
   Future<void> _triggerSync(User user, {bool isRegister = false}) async {
     try {
       final syncService = ref.read(syncServiceProvider);
+      
+      // 区分注册和登录场景
+      final lastSyncTime = isRegister 
+          ? null  // 注册：跳过下载（云端确实没数据）
+          : await syncService.getLastSyncTime(user.id);  // 登录：读取该用户的上次同步时间
+      
       await syncService.syncAllData(
         user,
+        lastSyncTime: lastSyncTime,
         source: isRegister ? SyncSource.register : SyncSource.login,
       );
       

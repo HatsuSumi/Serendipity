@@ -134,6 +134,14 @@ abstract class IStorageService {
   /// 获取所有同步历史记录（按时间倒序）
   List<SyncHistory> getAllSyncHistories();
   
+  /// 获取指定用户的同步历史记录（按时间倒序）
+  /// 
+  /// 参数：
+  /// - userId: 用户 ID
+  /// 
+  /// 调用者：SyncService.getLastSyncTime()
+  List<SyncHistory> getSyncHistoriesByUser(String userId);
+  
   /// 获取最近 N 条同步历史记录
   List<SyncHistory> getRecentSyncHistories(int limit);
   

@@ -294,26 +294,61 @@ class SyncService {
     await _remoteRepository.deleteCheckIn(user.id, checkInId);
   }
   
-  /// 增量同步：只同步有变化的数据
+  /// 获取指定用户的上次同步时间
   /// 
   /// 调用者：
-  /// - AuthProvider：用户登录成功后自动调用（首次全量同步）
+  /// - AuthProvider：登录时读取上次同步时间
+  /// - NetworkMonitorService：App启动时读取上次同步时间
+  /// 
+  /// 参数：
+  /// - userId：用户 ID
+  /// 
+  /// 返回：
+  /// - 上次同步时间（如果有）
+  /// - null（该用户首次同步）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  Future<DateTime?> getLastSyncTime(String userId) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
+    // 获取该用户的同步历史
+    final userHistories = _storageService.getSyncHistoriesByUser(userId);
+    if (userHistories.isEmpty) {
+      return null;
+    }
+    
+    // 获取最近一次成功的同步记录
+    final successHistories = userHistories.where((h) => h.success).toList();
+    if (successHistories.isEmpty) {
+      return null;
+    }
+    
+    // 返回最近一次同步的时间
+    return successHistories.first.syncTime;
+  }
+  
+  /// 数据同步：上传本地变化 + 下载云端变化
+  /// 
+  /// 调用者：
+  /// - AuthProvider：用户注册/登录成功后自动调用
   /// - NetworkMonitorService：网络恢复/App启动时自动调用
-  /// - ManualSyncDialog：手动同步按钮（增量同步）
+  /// - ManualSyncDialog：手动同步按钮
   /// 
   /// 同步策略：
-  /// 1. 获取上次同步时间
-  /// 2. 上传本地有变化的数据（updatedAt > lastSyncTime）
-  /// 3. 下载云端有变化的数据（updatedAt > lastSyncTime）
-  ///    - 首次同步（lastSyncTime == null）：跳过下载，因为刚上传的数据本地已有
-  ///    - 增量同步（lastSyncTime != null）：下载云端变化，可能包含其他设备的数据
-  /// 4. 合并数据（最后更新时间优先）
-  /// 5. 同步成就解锁状态（静默）
-  /// 6. 保存同步历史记录
+  /// 1. 上传本地有变化的数据（updatedAt > lastSyncTime）
+  /// 2. 下载云端有变化的数据（updatedAt > lastSyncTime）
+  ///    - 注册（lastSyncTime == null）：跳过下载，新用户云端确实没数据
+  ///    - 登录/启动/手动（lastSyncTime != null）：增量下载，支持多设备同步
+  /// 3. 合并数据（最后更新时间优先）
+  /// 4. 同步成就解锁状态（静默）
+  /// 5. 保存同步历史记录
   /// 
   /// 参数：
   /// - user：当前用户
-  /// - lastSyncTime：上次同步时间（null 表示首次同步）
+  /// - lastSyncTime：上次同步时间（null 表示注册场景，跳过下载）
   /// - source：同步来源（默认手动同步）
   /// 
   /// 返回：同步结果统计
@@ -339,7 +374,8 @@ class SyncService {
       final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
       
       // 2. 下载云端有变化的数据
-      // 优化：首次同步时跳过下载，因为刚上传的数据本地已有
+      // 注册场景（lastSyncTime == null）：跳过下载，新用户云端确实没数据
+      // 登录/启动/手动场景（lastSyncTime != null）：增量下载，支持多设备同步
       final downloadStats = lastSyncTime == null
           ? {'records': 0, 'storyLines': 0, 'checkIns': 0, 'mergedRecords': 0, 'mergedStoryLines': 0, 'mergedCheckIns': 0}
           : await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
@@ -368,6 +404,7 @@ class SyncService {
       final syncEndTime = DateTime.now();
       final history = SyncHistory.fromSuccess(
         result: result,
+        userId: user.id,
         syncStartTime: syncStartTime,
         syncEndTime: syncEndTime,
         source: source,
@@ -381,6 +418,7 @@ class SyncService {
       final syncEndTime = DateTime.now();
       final history = SyncHistory.fromError(
         errorMessage: AuthErrorHelper.extractErrorMessage(e),
+        userId: user.id,
         syncStartTime: syncStartTime,
         syncEndTime: syncEndTime,
         source: source,

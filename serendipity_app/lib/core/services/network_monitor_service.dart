@@ -201,11 +201,13 @@ class NetworkMonitorService {
     }
   }
   
-  /// 触发全量同步
+  /// 触发同步（App 启动时）
   /// 
   /// 调用者：_triggerInitialSync()
   /// 
-  /// 同步策略：全量同步（lastSyncTime = null）
+  /// 同步策略：读取该用户的上次同步时间
+  /// - 该用户首次同步（lastSyncTime: null）：全量下载
+  /// - 该用户非首次同步（lastSyncTime != null）：增量同步
   /// 
   /// Fail Fast：
   /// - user 为 null：由调用者保证
@@ -213,7 +215,13 @@ class NetworkMonitorService {
   Future<void> _triggerSync(WidgetRef ref, User user, SyncSource source) async {
     try {
       final syncService = ref.read(syncServiceProvider);
-      await syncService.syncAllData(user, source: source);
+      final lastSyncTime = await syncService.getLastSyncTime(user.id);
+      
+      await syncService.syncAllData(
+        user,
+        lastSyncTime: lastSyncTime,  // 增量同步，支持多设备
+        source: source,
+      );
     } catch (e, stackTrace) {
       if (kDebugMode) {
         print('数据同步失败: $e');

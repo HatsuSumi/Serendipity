@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:math';
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import '../models/encounter_record.dart';
 import '../models/enums.dart';
@@ -57,7 +59,31 @@ Future<void> createTestRecords() async {
       print('📧 邮箱: $testEmail');
       print('🔑 密码: $testPassword');
       
-      // 2. 创建 500 条测试记录
+      // 2. 加载中国地区数据
+      print('📍 正在加载中国地区数据...');
+      final regionsJson = await rootBundle.loadString('assets/data/china_regions.json');
+      final regions = json.decode(regionsJson) as List;
+      
+      // 构建所有可用的地址组合
+      final allAddresses = <Map<String, String>>[];
+      for (final province in regions) {
+        final provinceName = province['name'] as String;
+        final cities = province['city'] as List;
+        for (final city in cities) {
+          final cityName = city['name'] as String;
+          final areas = city['area'] as List;
+          for (final area in areas) {
+            allAddresses.add({
+              'province': provinceName,
+              'city': cityName,
+              'area': area as String,
+            });
+          }
+        }
+      }
+      print('✅ 已加载 ${allAddresses.length} 个地址');
+      
+      // 3. 创建 500 条测试记录
       print('📝 开始创建 500 条测试记录...');
       final random = Random();
       final uuid = Uuid();
@@ -92,6 +118,43 @@ Future<void> createTestRecords() async {
         '街道上匆匆走过，似乎在赶时间。',
       ];
       
+      // 一些示例"如果再遇"备忘
+      final sampleIfReencounter = [
+        '记得问问她最近在读什么书',
+        '可以聊聊咖啡的话题',
+        '下次带上相机，拍下这个瞬间',
+        '想知道他的狗狗叫什么名字',
+        '希望能鼓起勇气打个招呼',
+        '想问问那家书店的位置',
+        '记得微笑回应',
+        '可以推荐一些好听的音乐',
+      ];
+      
+      // 一些示例对话契机
+      final sampleConversationStarter = [
+        '看到她在读村上春树的书，可以聊聊文学',
+        '他的狗狗很可爱，可以从宠物话题开始',
+        '咖啡馆的拿铁很不错，可以推荐',
+        '图书馆很安静，适合学习，可以交流学习心得',
+        '健身房的跑步机旁边，可以聊聊运动',
+        '书店的新书区，可以推荐一些好书',
+        '电影院门口，可以聊聊最近的电影',
+      ];
+      
+      // 一些示例背景音乐
+      final sampleBackgroundMusic = [
+        'Lemon - 米津玄师',
+        '晴天 - 周杰伦',
+        'Shape of You - Ed Sheeran',
+        '告白气球 - 周杰伦',
+        'Someone Like You - Adele',
+        '演员 - 薛之谦',
+        'Perfect - Ed Sheeran',
+        '说散就散 - 袁娅维',
+        'Faded - Alan Walker',
+        '体面 - 于文文',
+      ];
+      
       for (int i = 0; i < 500; i++) {
         // 随机生成时间（过去一年内）
         final daysAgo = random.nextInt(365);
@@ -112,11 +175,20 @@ Future<void> createTestRecords() async {
         // 随机选择场所类型
         final placeType = placeTypes[random.nextInt(placeTypes.length)];
         
+        // 随机选择地址
+        final addressData = allAddresses[random.nextInt(allAddresses.length)];
+        final streetNumber = random.nextInt(999) + 1;
+        final address = '${addressData['province']}${addressData['city']}${addressData['area']}某街道${streetNumber}号';
+        
+        // 随机生成经纬度（中国范围：纬度 18-54，经度 73-135）
+        final latitude = 18.0 + random.nextDouble() * 36.0;
+        final longitude = 73.0 + random.nextDouble() * 62.0;
+        
         // 随机生成地点
         final location = Location(
-          latitude: 39.9 + random.nextDouble() * 0.2, // 北京附近
-          longitude: 116.3 + random.nextDouble() * 0.2,
-          address: '北京市朝阳区某街道${random.nextInt(100)}号',
+          latitude: latitude,
+          longitude: longitude,
+          address: address,
           placeName: placeType.label,
           placeType: placeType,
         );
@@ -147,6 +219,21 @@ Future<void> createTestRecords() async {
           }
         }
         
+        // 随机选择"如果再遇"备忘（60% 概率有）
+        final ifReencounter = random.nextDouble() < 0.6
+            ? sampleIfReencounter[random.nextInt(sampleIfReencounter.length)]
+            : null;
+        
+        // 随机选择对话契机（仅邂逅状态，50% 概率有）
+        final conversationStarter = status == EncounterStatus.met && random.nextDouble() < 0.5
+            ? sampleConversationStarter[random.nextInt(sampleConversationStarter.length)]
+            : null;
+        
+        // 随机选择背景音乐（40% 概率有）
+        final backgroundMusic = random.nextDouble() < 0.4
+            ? sampleBackgroundMusic[random.nextInt(sampleBackgroundMusic.length)]
+            : null;
+        
         // 创建记录
         final record = EncounterRecord(
           id: uuid.v4(), // 使用标准 UUID
@@ -157,6 +244,9 @@ Future<void> createTestRecords() async {
           emotion: emotion,
           status: status,
           weather: selectedWeathers,
+          ifReencounter: ifReencounter,
+          conversationStarter: conversationStarter,
+          backgroundMusic: backgroundMusic,
           createdAt: timestamp,
           updatedAt: timestamp,
           isPinned: false,
