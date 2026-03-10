@@ -219,7 +219,7 @@ class UserSettings {
       checkInVibrationEnabled: checkIn['vibrationEnabled'] as bool,
       checkInConfettiEnabled: checkIn['confettiEnabled'] as bool,
       autoPublishToCommunity: false,
-      hidePublishWarning: false,
+      hidePublishWarning: dto['hidePublishWarning'] as bool? ?? false,
       hasSeenPublishWarning: dto['hasSeenPublishWarning'] as bool? ?? false,
       hasSeenCommunityIntro: dto['hasSeenCommunityIntro'] as bool? ?? false,
       createdAt: now,

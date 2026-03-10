@@ -46,6 +46,7 @@ export interface UserSettingsDto {
   };
   hasSeenCommunityIntro: boolean;
   hasSeenPublishWarning: boolean;
+  hidePublishWarning: boolean;
   updatedAt: string; // ISO 8601
 }
 
@@ -64,5 +65,6 @@ export interface UpdateUserSettingsDto {
   };
   hasSeenCommunityIntro?: boolean;
   hasSeenPublishWarning?: boolean;
+  hidePublishWarning?: boolean;
 }
 

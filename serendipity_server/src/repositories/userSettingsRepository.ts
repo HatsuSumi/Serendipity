@@ -53,6 +53,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         },
         hasSeenCommunityIntro: false,
         hasSeenPublishWarning: false,
+        hidePublishWarning: false,
       },
     });
   }
@@ -74,6 +75,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         checkIn: data.checkIn as Prisma.InputJsonValue | undefined,
         hasSeenCommunityIntro: data.hasSeenCommunityIntro,
         hasSeenPublishWarning: data.hasSeenPublishWarning,
+        hidePublishWarning: data.hidePublishWarning,
         updatedAt: new Date(),
       },
     });
@@ -96,6 +98,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         checkIn: data.checkIn as Prisma.InputJsonValue | undefined,
         hasSeenCommunityIntro: data.hasSeenCommunityIntro,
         hasSeenPublishWarning: data.hasSeenPublishWarning,
+        hidePublishWarning: data.hidePublishWarning,
         updatedAt: new Date(),
       },
       create: {
@@ -114,6 +117,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         }) as Prisma.InputJsonValue,
         hasSeenCommunityIntro: data.hasSeenCommunityIntro ?? false,
         hasSeenPublishWarning: data.hasSeenPublishWarning ?? false,
+        hidePublishWarning: data.hidePublishWarning ?? false,
       },
     });
   }

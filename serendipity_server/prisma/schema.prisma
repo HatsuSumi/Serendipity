@@ -166,6 +166,7 @@ model UserSettings {
   checkIn                Json     @default("{\"confettiEnabled\": true, \"vibrationEnabled\": true}") @map("check_in")
   hasSeenCommunityIntro  Boolean  @default(false) @map("has_seen_community_intro")
   hasSeenPublishWarning  Boolean  @default(false) @map("has_seen_publish_warning")
+  hidePublishWarning     Boolean  @default(false) @map("hide_publish_warning")
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
   user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
