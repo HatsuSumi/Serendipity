@@ -213,7 +213,7 @@ class UserSettings {
       passwordHash: null,
       hiddenRecordIds: [],
       achievementNotification: notifications['achievementUnlocked'] as bool,
-      anniversaryReminder: true,
+      anniversaryReminder: notifications['anniversaryReminder'] as bool? ?? true,
       checkInReminderEnabled: notifications['checkInReminder'] as bool,
       checkInReminderTime: TimeOfDay(hour: reminderHour, minute: reminderMinute),
       checkInVibrationEnabled: checkIn['vibrationEnabled'] as bool,
@@ -276,6 +276,7 @@ class UserSettings {
         'checkInReminder': checkInReminderEnabled,
         'checkInReminderTime': '$hour:$minute',
         'achievementUnlocked': achievementNotification,
+        'anniversaryReminder': anniversaryReminder,
       },
       'checkIn': {
         'vibrationEnabled': checkInVibrationEnabled,
@@ -283,6 +284,7 @@ class UserSettings {
       },
       'hasSeenCommunityIntro': hasSeenCommunityIntro,
       'hasSeenPublishWarning': hasSeenPublishWarning,
+      'hidePublishWarning': hidePublishWarning,
     };
   }
 

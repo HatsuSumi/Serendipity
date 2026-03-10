@@ -120,6 +120,7 @@ export class UserService implements IUserService {
         checkInReminder: boolean;
         checkInReminderTime: string;
         achievementUnlocked: boolean;
+        anniversaryReminder: boolean;
       },
       checkIn: settings.checkIn as {
         vibrationEnabled: boolean;

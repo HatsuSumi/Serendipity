@@ -39,6 +39,7 @@ export interface UserSettingsDto {
     checkInReminder: boolean;
     checkInReminderTime: string;
     achievementUnlocked: boolean;
+    anniversaryReminder: boolean;
   };
   checkIn: {
     vibrationEnabled: boolean;
@@ -58,6 +59,7 @@ export interface UpdateUserSettingsDto {
     checkInReminder?: boolean;
     checkInReminderTime?: string;
     achievementUnlocked?: boolean;
+    anniversaryReminder?: boolean;
   };
   checkIn?: {
     vibrationEnabled?: boolean;

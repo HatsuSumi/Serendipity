@@ -46,6 +46,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           checkInReminder: true,
           checkInReminderTime: '20:00',
           achievementUnlocked: true,
+          anniversaryReminder: true,
         },
         checkIn: {
           vibrationEnabled: true,
