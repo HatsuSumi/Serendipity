@@ -104,6 +104,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// - 这里只需要从本地存储读取即可
   Future<void> _loadSettings() async {
     final settings = _storageService.getUserSettings();
+    debugPrint('[CommunityIntro] _loadSettings: settings=${settings == null ? 'null' : 'found'}, hasSeenCommunityIntro=${settings?.hasSeenCommunityIntro}');
     
     if (settings != null) {
       state = settings;
