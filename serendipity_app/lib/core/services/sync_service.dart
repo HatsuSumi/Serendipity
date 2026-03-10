@@ -536,7 +536,7 @@ class SyncService {
       // 如果本地不存在，或云端数据更新
       if (localRecord == null || 
           remoteRecord.updatedAt.isAfter(localRecord.updatedAt)) {
-        _storageService.saveRecord(remoteRecord);
+        await _storageService.saveRecord(remoteRecord);
         
         // 如果本地存在且云端数据更新，说明发生了冲突合并
         if (localRecord != null) {
@@ -557,7 +557,7 @@ class SyncService {
       // 如果本地不存在，或云端数据更新
       if (localStoryLine == null || 
           remoteStoryLine.updatedAt.isAfter(localStoryLine.updatedAt)) {
-        _storageService.saveStoryLine(remoteStoryLine);
+        await _storageService.saveStoryLine(remoteStoryLine);
         
         // 如果本地存在且云端数据更新，说明发生了冲突合并
         if (localStoryLine != null) {
@@ -578,7 +578,7 @@ class SyncService {
       // 如果本地不存在，或云端数据更新
       if (localCheckIn == null || 
           remoteCheckIn.updatedAt.isAfter(localCheckIn.updatedAt)) {
-        _storageService.saveCheckIn(remoteCheckIn);
+        await _storageService.saveCheckIn(remoteCheckIn);
         
         // 如果本地存在且云端数据更新，说明发生了冲突合并
         if (localCheckIn != null) {
