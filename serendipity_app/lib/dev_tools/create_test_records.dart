@@ -8,6 +8,7 @@ import '../models/encounter_record.dart';
 import '../models/enums.dart';
 import '../core/services/storage_service.dart';
 import '../core/repositories/custom_server_auth_repository.dart';
+import '../core/repositories/custom_server_remote_data_repository.dart';
 import '../core/services/http_client_service.dart';
 
 /// 开发工具：创建测试记录
@@ -268,6 +269,21 @@ Future<void> createTestRecords() async {
       }
       
       print('🎉 成功创建 500 条测试记录！');
+      
+      // 4. 批量上传到服务端（脚本绕过了 App 生命周期，必须手动上传）
+      print('☁️ 正在上传到服务端...');
+      final remoteRepo = CustomServerRemoteDataRepository(httpClient: httpClient);
+      final allRecords = storageService.getRecordsByUser(result.user.id);
+      
+      // 分批上传，每批100条
+      const batchSize = 100;
+      for (int i = 0; i < allRecords.length; i += batchSize) {
+        final batch = allRecords.sublist(i, (i + batchSize).clamp(0, allRecords.length));
+        await remoteRepo.uploadRecords(result.user.id, batch);
+        print('☁️ 已上传 ${(i + batch.length).clamp(0, allRecords.length)}/${allRecords.length} 条记录');
+      }
+      print('✅ 服务端上传完成！');
+      
       print('📊 账号信息：');
       print('   邮箱: $testEmail');
       print('   密码: $testPassword');

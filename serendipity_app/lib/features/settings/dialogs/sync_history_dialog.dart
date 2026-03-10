@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/i_storage_service.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/records_provider.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/date_time_helper.dart';
 import '../../../models/sync_history.dart';
@@ -41,6 +42,9 @@ class SyncHistoryDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // 获取存储服务
     final storage = ref.read(storageServiceProvider);
+    
+    // 监听同步完成信号，自动刷新
+    ref.watch(syncCompletedProvider);
     
     // 获取所有同步历史记录
     final histories = storage.getAllSyncHistories();
