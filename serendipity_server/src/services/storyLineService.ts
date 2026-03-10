@@ -253,7 +253,7 @@ export class StoryLineService implements IStoryLineService {
   private toResponseDto(storyline: StoryLine): StoryLineResponseDto {
     return {
       id: storyline.id,
-      userId: storyline.userId,
+      ownerId: storyline.userId,
       name: storyline.name,
       recordIds: fromJsonValue<string[]>(storyline.recordIds),
       createdAt: storyline.createdAt,

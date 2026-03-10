@@ -31,7 +31,7 @@ export interface GetStoryLinesQueryDto {
 // 故事线响应
 export interface StoryLineResponseDto {
   id: string;
-  userId: string;
+  ownerId: string;
   name: string;
   recordIds: string[];
   createdAt: Date;

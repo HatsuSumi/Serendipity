@@ -66,7 +66,7 @@ export interface GetRecordsQueryDto {
 // 记录响应
 export interface RecordResponseDto {
   id: string;
-  userId: string;
+  ownerId: string;
   timestamp: Date;
   location: LocationDto;
   description?: string;

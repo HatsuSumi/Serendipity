@@ -243,7 +243,7 @@ export class RecordService implements IRecordService {
   private toResponseDto(record: Record): RecordResponseDto {
     return {
       id: record.id,
-      userId: record.userId,
+      ownerId: record.userId,
       timestamp: record.timestamp,
       location: fromJsonValue<LocationDto>(record.location),
       description: record.description || undefined,
