@@ -98,6 +98,7 @@ class CommunityPublishNotifier extends AsyncNotifier<void> {
 
         // 刷新社区帖子列表（通知列表 Provider）
         ref.invalidate(communityProvider);
+        ref.invalidate(myPostsProvider);
       }
 
       return replaced;
@@ -169,6 +170,7 @@ class CommunityPublishNotifier extends AsyncNotifier<void> {
 
     // 统一刷新社区帖子列表一次
     ref.invalidate(communityProvider);
+    ref.invalidate(myPostsProvider);
 
     return (successCount: successCount, replacedCount: replacedCount);
   }
