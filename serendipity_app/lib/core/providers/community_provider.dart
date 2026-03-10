@@ -385,23 +385,6 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     return currentUser.id == postUserId;
   }
 
-  /// 获取当前用户发布的所有帖子
-  /// 
-  /// @deprecated 请使用 myPostsProvider 替代，MyPostsNotifier 直接依赖 Repository
-  /// 
-  /// 保留此方法仅为向后兼容，内部已无调用
-  @Deprecated('Use myPostsProvider instead')
-  Future<List<CommunityPost>> getMyPosts() async {
-    final currentUser = ref.read(authProvider).value;
-    if (currentUser == null) {
-      throw Exception('必须登录后才可查看我的发布');
-    }
-    try {
-      return await _repository.getMyPosts(currentUser.id);
-    } catch (e) {
-      throw Exception(AuthErrorHelper.extractErrorMessage(e));
-    }
-  }
 }
 
 /// 社区帖子列表 Provider
