@@ -16,10 +16,15 @@ class RecordHelper {
 
   /// 获取地点的显示文本（用于记录卡片）
   /// 
-  /// 显示格式：场所类型 + 地点名称/地址（两行显示）
+  /// 显示格式：场所类型 + 地址/地点名称（两行显示）
   /// 
   /// 第一行：场所类型（如果有）
-  /// 第二行：地点名称（优先）或地址
+  /// 第二行：地址（有 GPS 时优先）或地点名称
+  /// 
+  /// 显示优先级：
+  /// 1. 有 GPS 坐标 → 显示 address（GPS 逆地理编码，更准确）
+  /// 2. 无 GPS 坐标 → 显示 placeName（用户手动输入）
+  /// 3. 都没有 → 显示"未知地点"
   /// 
   /// 调用者：
   /// - RecordCard：显示记录卡片
@@ -27,10 +32,9 @@ class RecordHelper {
   /// - TimelinePage：显示时间轴
   /// 
   /// 示例：
-  /// - 有 placeType + placeName：🚇 地铁站\n常去的那家咖啡馆
-  /// - 有 placeType + address：🚇 地铁站\n北京市朝阳区建国门外大街1号
-  /// - 有 placeName 无 placeType：常去的那家咖啡馆
-  /// - 有 address 无 placeType：北京市朝阳区建国门外大街1号
+  /// - 有 GPS + placeType + address：🚇 地铁站\n北京市朝阳区建国门外大街1号
+  /// - 有 GPS + address（无 placeType）：北京市朝阳区建国门外大街1号
+  /// - 无 GPS + placeName：常去的那家咖啡馆
   /// - 只有 placeType：🚇 地铁站
   /// - 都没有：未知地点
   static String getLocationText(Location location) {
@@ -41,16 +45,20 @@ class RecordHelper {
       parts.add('${location.placeType!.icon} ${location.placeType!.label}');
     }
     
-    // 第二行：地点名称（优先）或地址
-    if (location.placeName != null && location.placeName!.trim().isNotEmpty) {
-      parts.add(location.placeName!);
-    } else if (location.address != null && location.address!.trim().isNotEmpty) {
-      // 如果地址太长，截断显示
+    // 第二行：地址（有 GPS 时优先）或地点名称
+    // 优先级：有 GPS 坐标 → 显示 address，无 GPS → 显示 placeName
+    if (hasCoordinates(location) && 
+        location.address != null && 
+        location.address!.trim().isNotEmpty) {
+      // 有 GPS 定位，显示地址（更准确、更客观）
       if (location.address!.length > 30) {
         parts.add('${location.address!.substring(0, 30)}...');
       } else {
         parts.add(location.address!);
       }
+    } else if (location.placeName != null && location.placeName!.trim().isNotEmpty) {
+      // 无 GPS 定位，显示用户输入的地点名称
+      parts.add(location.placeName!);
     }
     
     // 如果都没有，显示默认文本
@@ -63,28 +71,29 @@ class RecordHelper {
   
   /// 获取地点的完整显示文本（用于详情页）
   /// 
-  /// 显示格式：场所类型 + 地点名称/地址（多行显示，不截断）
+  /// 显示格式：场所类型 + 地址/地点名称（多行显示，不截断）
   /// 
   /// 第一行：场所类型（如果有）
-  /// 第二行：地点名称（如果有）
-  /// 第三行：地址（如果有且与地点名称不同）
+  /// 第二行：地址（有 GPS 时）或地点名称（无 GPS 时）
+  /// 第三行：地点名称（有 GPS 且有 placeName 时，作为备注显示）
+  /// 
+  /// 显示优先级：
+  /// 1. 有 GPS 坐标 → 显示 address，placeName 作为备注
+  /// 2. 无 GPS 坐标 → 显示 placeName
   /// 
   /// 调用者：
   /// - RecordDetailPage：显示完整地点信息
   /// 
   /// 示例：
-  /// - 有 placeType + placeName + address：
-  ///   🚇 地铁站
-  ///   常去的那家咖啡馆
-  ///   北京市朝阳区建国门外大街1号
-  /// - 有 placeType + placeName：
-  ///   🚇 地铁站
-  ///   常去的那家咖啡馆
-  /// - 有 placeType + address：
+  /// - 有 GPS + placeType + address + placeName：
   ///   🚇 地铁站
   ///   北京市朝阳区建国门外大街1号
-  /// - 只有 placeName：常去的那家咖啡馆
-  /// - 只有 address：北京市朝阳区建国门外大街1号
+  ///   （常去的那家咖啡馆）
+  /// - 有 GPS + placeType + address：
+  ///   🚇 地铁站
+  ///   北京市朝阳区建国门外大街1号
+  /// - 无 GPS + placeName：
+  ///   常去的那家咖啡馆
   /// - 只有 placeType：🚇 地铁站
   /// - 都没有：未知地点
   static String getFullLocationText(Location location) {
@@ -95,14 +104,20 @@ class RecordHelper {
       parts.add('${location.placeType!.icon} ${location.placeType!.label}');
     }
     
-    // 第二行：地点名称（如果有）
-    if (location.placeName != null && location.placeName!.trim().isNotEmpty) {
-      parts.add(location.placeName!);
-    }
-    
-    // 第三行：地址（如果有）
-    if (location.address != null && location.address!.trim().isNotEmpty) {
+    // 第二行：地址（有 GPS 时优先）或地点名称
+    if (hasCoordinates(location) && 
+        location.address != null && 
+        location.address!.trim().isNotEmpty) {
+      // 有 GPS 定位，显示地址
       parts.add(location.address!);
+      
+      // 第三行：如果有 placeName，作为备注显示
+      if (location.placeName != null && location.placeName!.trim().isNotEmpty) {
+        parts.add('（${location.placeName}）');
+      }
+    } else if (location.placeName != null && location.placeName!.trim().isNotEmpty) {
+      // 无 GPS 定位，显示用户输入的地点名称
+      parts.add(location.placeName!);
     }
     
     // 如果都没有，显示默认文本

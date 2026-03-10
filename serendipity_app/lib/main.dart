@@ -31,6 +31,7 @@ void main() async {
   
   // 🧹 开发工具：清空所有数据（测试用）
   // await clearAllData();
+  // return; // 清空完后直接退出，不启动 app
   
   // 📝 开发工具：创建测试记录（测试用）
   // await createTestRecords();

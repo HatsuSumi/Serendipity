@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/achievement_unlock.dart';
@@ -38,11 +39,13 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     
     // 获取当前登录用户
     final currentUser = await ref.read(authProvider.notifier).currentUser;
+    debugPrint('🔍 recordsProvider.build: currentUser=${currentUser?.id}');
     
     // 根据用户加载数据
     if (currentUser != null) {
-      // 已登录：加载该用户的数据
-      return _repository.getRecordsByUser(currentUser.id);
+      final records = _repository.getRecordsByUser(currentUser.id);
+      debugPrint('🔍 recordsProvider.build: found ${records.length} records for user ${currentUser.id}');
+      return records;
     } else {
       // 未登录：加载离线数据
       return _repository.getRecordsByUser(null);

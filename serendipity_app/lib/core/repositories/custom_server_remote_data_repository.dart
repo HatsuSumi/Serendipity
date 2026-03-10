@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/community_post.dart';

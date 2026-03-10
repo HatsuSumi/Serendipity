@@ -1,4 +1,4 @@
-import 'dart:async';
+  import 'dart:async';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/user.dart';
 import '../../models/register_result.dart';
