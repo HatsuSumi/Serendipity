@@ -59,7 +59,13 @@ mixin CountdownMixin<T extends StatefulWidget> on State<T> {
   }) {
     if (skipCountdown) {
       _countdownFinished = true;
-      onFinished?.call();
+      // 在下一帧触发重建，确保 UI 更新
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {});
+          onFinished?.call();
+        }
+      });
       return;
     }
 
