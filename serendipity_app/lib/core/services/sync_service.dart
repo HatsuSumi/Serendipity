@@ -739,6 +739,7 @@ class SyncService {
     UserSettings remoteSettings,
   ) async {
     // 比较更新时间（Last Write Wins）
+    debugPrint('[CommunityIntro] _handleSettingsConflict: local.updatedAt=${localSettings.updatedAt}, remote.updatedAt=${remoteSettings.updatedAt}, local.hasSeenCommunityIntro=${localSettings.hasSeenCommunityIntro}, remote.hasSeenCommunityIntro=${remoteSettings.hasSeenCommunityIntro}');
     if (localSettings.updatedAt.isAfter(remoteSettings.updatedAt)) {
       // 本地更新，上传本地设置
       await _remoteRepository.uploadSettings(localSettings);
