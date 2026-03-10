@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/sync_history.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -11,30 +11,9 @@ import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/auth_error_helper.dart';
 
 /// 手动同步对话框
-/// 
-/// 职责：
-/// - 显示同步进度
-/// - 显示同步结果统计
-/// - 显示冲突合并信息
-/// - 处理同步错误
-/// 
-/// 调用者：
-/// - SettingsPage：手动同步按钮
-/// 
-/// 遵循原则：
-/// - 单一职责（SRP）：只负责手动同步的 UI 交互
-/// - 依赖倒置（DIP）：通过 Provider 获取依赖
-/// - Fail Fast：参数验证立即抛出异常
 class ManualSyncDialog extends ConsumerStatefulWidget {
   const ManualSyncDialog({super.key});
 
-  /// 显示手动同步对话框
-  /// 
-  /// 调用者：SettingsPage
-  /// 
-  /// Fail Fast：
-  /// - context 为 null：由 Dart 类型系统保证
-  /// - ref 为 null：由 Dart 类型系统保证
   static Future<void> show(BuildContext context, WidgetRef ref) async {
     return DialogHelper.show<void>(
       context: context,
@@ -55,21 +34,14 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
   @override
   void initState() {
     super.initState();
-    // 对话框打开后立即开始同步
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startSync();
     });
   }
 
-  /// 开始同步
-  /// 
-  /// 调用者：initState()
   Future<void> _startSync() async {
     if (!mounted) return;
-    
-    // 记录同步开始时间（在同步开始前）
-    final syncStartTime = DateTime.now();
-    
+
     setState(() {
       _isSyncing = true;
       _currentStep = '准备同步...';
@@ -77,48 +49,33 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       _errorMessage = null;
     });
 
-    // 更新同步状态为"同步中"
     ref.read(syncStatusProvider.notifier).startSync();
 
     try {
-      // 1. 检查用户是否登录
       final user = await ref.read(authProvider.notifier).currentUser;
-      if (user == null) {
-        throw StateError('用户未登录');
-      }
+      if (user == null) throw StateError('用户未登录');
 
-      // 2. 上传本地数据
       if (!mounted) return;
-      setState(() {
-        _currentStep = '正在上传本地数据...';
-      });
-      await Future.delayed(const Duration(milliseconds: 500)); // 让用户看到进度
+      setState(() { _currentStep = '正在上传本地数据...'; });
+      await Future.delayed(const Duration(milliseconds: 500));
 
-      // 3. 下载云端数据
       if (!mounted) return;
-      setState(() {
-        _currentStep = '正在下载云端数据...';
-      });
-      await Future.delayed(const Duration(milliseconds: 500)); // 让用户看到进度
+      setState(() { _currentStep = '正在下载云端数据...'; });
+      await Future.delayed(const Duration(milliseconds: 500));
 
-      // 4. 合并数据
       if (!mounted) return;
-      setState(() {
-        _currentStep = '正在合并数据...';
-      });
+      setState(() { _currentStep = '正在合并数据...'; });
 
-      // 执行同步（使用增量同步）
+      // 从 SyncService 读取持久化的上次同步时间，自动判断全量/增量
       final syncService = ref.read(syncServiceProvider);
-      final syncStatus = ref.read(syncStatusProvider);
-      final lastSyncTime = syncStatus.lastFullSyncTime;
-      
+      final lastSyncTime = await syncService.getLastSyncTime(user.id);
+
       final result = await syncService.syncAllData(
         user,
         lastSyncTime: lastSyncTime,
-        source: SyncSource.manual,  // 手动同步
+        source: SyncSource.manual,
       );
 
-      // 5. 同步成功
       if (!mounted) return;
       setState(() {
         _isSyncing = false;
@@ -126,32 +83,20 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
         _syncResult = result;
       });
 
-      // 更新同步状态为"成功"（传入同步开始时间和手动同步标记）
-      ref.read(syncStatusProvider.notifier).syncSuccess(
-        result,
-        syncStartTime,
-        isManual: true,
-      );
+      // 更新 UI 状态（增量时间已由 SyncService 持久化，此处只更新手动同步时间）
+      ref.read(syncStatusProvider.notifier).syncSuccess(result);
 
-      // 刷新所有数据列表
       ref.invalidate(recordsProvider);
       ref.invalidate(storyLinesProvider);
       ref.invalidate(checkInProvider);
     } catch (e) {
-      // 同步失败
       final cleanMessage = AuthErrorHelper.extractErrorMessage(e);
-      
       if (!mounted) return;
       setState(() {
         _isSyncing = false;
         _errorMessage = cleanMessage;
       });
-
-      // 更新同步状态为"失败"
-      ref.read(syncStatusProvider.notifier).syncError(
-        cleanMessage,
-        isManual: true,
-      );
+      ref.read(syncStatusProvider.notifier).syncError(cleanMessage);
     }
   }
 
@@ -165,11 +110,8 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 同步进度
             if (_isSyncing) ...[
-              const Center(
-                child: CircularProgressIndicator(),
-              ),
+              const Center(child: CircularProgressIndicator()),
               const SizedBox(height: 16),
               Center(
                 child: Text(
@@ -178,44 +120,12 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
                 ),
               ),
             ],
-            
-            // 同步结果
-            if (_syncResult != null) ...[
-              _buildSyncResultSection(context),
-            ],
-            
-            // 错误信息
-            if (_errorMessage != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            if (_syncResult != null) _buildSyncResultSection(context),
+            if (_errorMessage != null) _buildErrorSection(context),
           ],
         ),
       ),
       actions: [
-        // 同步中不显示按钮
         if (!_isSyncing)
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -225,16 +135,35 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
     );
   }
 
-  /// 构建同步结果区域
-  /// 
-  /// 调用者：build()
+  Widget _buildErrorSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSyncResultSection(BuildContext context) {
     final result = _syncResult!;
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 成功图标
         Center(
           child: Icon(
             Icons.check_circle_outline,
@@ -243,8 +172,6 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
           ),
         ),
         const SizedBox(height: 16),
-        
-        // 同步统计
         Text(
           '同步统计',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -252,10 +179,7 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
               ),
         ),
         const SizedBox(height: 12),
-        
-        // 上传统计
-        _buildStatRow(
-          context,
+        _buildStatRow(context,
           icon: Icons.cloud_upload_outlined,
           label: '上传',
           records: result.uploadedRecords,
@@ -263,10 +187,7 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
           checkIns: result.uploadedCheckIns,
         ),
         const SizedBox(height: 8),
-        
-        // 下载统计
-        _buildStatRow(
-          context,
+        _buildStatRow(context,
           icon: Icons.cloud_download_outlined,
           label: '下载',
           records: result.downloadedRecords,
@@ -274,13 +195,10 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
           checkIns: result.downloadedCheckIns,
         ),
         const SizedBox(height: 8),
-        
-        // 冲突合并统计（如果有）
-        if (result.mergedRecords > 0 || 
-            result.mergedStoryLines > 0 || 
+        if (result.mergedRecords > 0 ||
+            result.mergedStoryLines > 0 ||
             result.mergedCheckIns > 0) ...[
-          _buildStatRow(
-            context,
+          _buildStatRow(context,
             icon: Icons.merge_outlined,
             label: '冲突合并',
             records: result.mergedRecords,
@@ -297,11 +215,8 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
+                Icon(Icons.info_outline, size: 20,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -316,8 +231,6 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
             ),
           ),
         ],
-        
-        // 无数据变化提示
         if (!result.hasChanges) ...[
           const SizedBox(height: 4),
           Center(
@@ -333,9 +246,6 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
     );
   }
 
-  /// 构建统计行
-  /// 
-  /// 调用者：_buildSyncResultSection()
   Widget _buildStatRow(
     BuildContext context, {
     required IconData icon,
@@ -347,17 +257,14 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
+        Icon(icon, size: 20,
           color: isWarning
               ? Theme.of(context).colorScheme.tertiary
               : Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            '$label：',
+          child: Text('$label：',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
@@ -371,4 +278,3 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
     );
   }
 }
-

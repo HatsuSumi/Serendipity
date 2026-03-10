@@ -18,23 +18,22 @@ enum SyncStatus {
   error,
 }
 
-/// 同步状态信息
+/// 同步状态信息（纯 UI 状态）
 /// 
 /// 职责：
 /// - 追踪同步状态（空闲、同步中、成功、失败）
-/// - 记录上次手动同步时间
-/// - 记录上次全量同步时间（用于增量同步）
+/// - 记录上次手动同步时间（仅用于 UI 展示）
 /// - 记录同步结果统计
 /// - 记录错误信息
+/// 
+/// 注意：增量同步所需的 lastFullSyncTime 由 SyncService 通过
+/// IStorageService 独立持久化，不在此处管理。
 class SyncStatusInfo {
   /// 当前状态
   final SyncStatus status;
   
   /// 上次手动同步时间
   final DateTime? lastManualSyncTime;
-  
-  /// 上次全量同步时间（用于增量同步）
-  final DateTime? lastFullSyncTime;
   
   /// 同步结果统计
   final SyncResult? syncResult;
@@ -45,7 +44,6 @@ class SyncStatusInfo {
   const SyncStatusInfo({
     required this.status,
     this.lastManualSyncTime,
-    this.lastFullSyncTime,
     this.syncResult,
     this.errorMessage,
   });
@@ -53,89 +51,60 @@ class SyncStatusInfo {
   SyncStatusInfo copyWith({
     SyncStatus? status,
     DateTime? lastManualSyncTime,
-    DateTime? lastFullSyncTime,
     SyncResult? syncResult,
     String? errorMessage,
   }) {
     return SyncStatusInfo(
       status: status ?? this.status,
       lastManualSyncTime: lastManualSyncTime ?? this.lastManualSyncTime,
-      lastFullSyncTime: lastFullSyncTime ?? this.lastFullSyncTime,
       syncResult: syncResult ?? this.syncResult,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 }
 
-/// 同步状态管理
+/// 同步状态管理（纯 UI 状态）
 /// 
 /// 职责：
-/// - 追踪同步状态
-/// - 记录上次手动同步时间（只记录手动同步，不记录自动同步）
+/// - 追踪同步状态（空闲、同步中、成功、失败）
+/// - 记录上次手动同步时间（持久化，供 UI 展示）
 /// - 记录同步结果统计
 /// - 记录错误信息
 /// 
-/// 注意：同步历史记录由 SyncService 统一保存
+/// 不负责：
+/// - 增量同步时间（由 SyncService + IStorageService 管理）
+/// - 同步历史记录（由 SyncService 统一保存）
 /// 
 /// 调用者：
 /// - SettingsPage：显示同步状态和手动同步按钮
-/// - 手动同步对话框：显示同步进度和结果
+/// - ManualSyncDialog：显示同步进度和结果
 /// 
 /// 遵循原则：
-/// - 单一职责（SRP）：只负责同步状态管理
+/// - 单一职责（SRP）：只负责 UI 同步状态
 /// - 依赖倒置（DIP）：依赖 IStorageService 抽象
-/// - Fail Fast：参数验证立即抛出异常
 class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   final IStorageService _storage;
   
   static const String _lastManualSyncTimeKey = 'last_manual_sync_time';
-  static const String _lastFullSyncTimeKey = 'last_full_sync_time';
   
-  /// 构造函数
-  /// 
-  /// 调用者：syncStatusProvider
-  /// 
-  /// Fail Fast：
-  /// - storage 为 null：由 Dart 类型系统保证
   SyncStatusNotifier(this._storage) : super(SyncStatusInfo(
     status: SyncStatus.idle,
     lastManualSyncTime: _loadLastManualSyncTime(_storage),
-    lastFullSyncTime: _loadLastFullSyncTime(_storage),
   ));
   
-  /// 加载上次手动同步时间
-  /// 
-  /// 调用者：构造函数
   static DateTime? _loadLastManualSyncTime(IStorageService storage) {
     final timeStr = storage.get<String>(_lastManualSyncTimeKey);
     if (timeStr == null) return null;
-    
     try {
       return DateTime.parse(timeStr);
-    } catch (e) {
-      // 解析失败，返回 null
-      return null;
-    }
-  }
-  
-  /// 加载上次全量同步时间
-  /// 
-  /// 调用者：构造函数
-  static DateTime? _loadLastFullSyncTime(IStorageService storage) {
-    final timeStr = storage.get<String>(_lastFullSyncTimeKey);
-    if (timeStr == null) return null;
-    
-    try {
-      return DateTime.parse(timeStr);
-    } catch (e) {
-      // 解析失败，返回 null
+    } catch (_) {
       return null;
     }
   }
   
   /// 开始同步
   /// 
-  /// 调用者：手动同步对话框
+  /// 调用者：ManualSyncDialog
   void startSync() {
     state = state.copyWith(
       status: SyncStatus.syncing,
@@ -146,26 +115,17 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   
   /// 同步成功
   /// 
-  /// 调用者：手动同步对话框
-  /// 
-  /// 注意：同步历史记录由 SyncService 统一保存
+  /// 调用者：ManualSyncDialog
   /// 
   /// Fail Fast：
   /// - result 为 null：由 Dart 类型系统保证
-  /// - syncStartTime 为 null：由 Dart 类型系统保证
-  /// - isManual 为 null：由 Dart 类型系统保证
-  /// 
-  /// 重要：syncStartTime 必须是同步开始前的时间，而不是同步完成后的时间
-  /// 这样可以确保不会漏掉在同步过程中产生的数据变化
-  void syncSuccess(SyncResult result, DateTime syncStartTime, {bool isManual = true}) {
+  void syncSuccess(SyncResult result) {
     final now = DateTime.now();
     _storage.set(_lastManualSyncTimeKey, now.toIso8601String());
-    _storage.set(_lastFullSyncTimeKey, syncStartTime.toIso8601String());
     
     state = SyncStatusInfo(
       status: SyncStatus.success,
       lastManualSyncTime: now,
-      lastFullSyncTime: syncStartTime,
       syncResult: result,
       errorMessage: null,
     );
@@ -180,15 +140,11 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   
   /// 同步失败
   /// 
-  /// 调用者：手动同步对话框
-  /// 
-  /// 注意：同步历史记录由 SyncService 统一保存
+  /// 调用者：ManualSyncDialog
   /// 
   /// Fail Fast：
   /// - errorMessage 为空：抛出 ArgumentError
-  /// - isManual 为 null：由 Dart 类型系统保证
-  void syncError(String errorMessage, {bool isManual = true}) {
-    // Fail Fast：参数验证
+  void syncError(String errorMessage) {
     if (errorMessage.isEmpty) {
       throw ArgumentError('错误信息不能为空');
     }
@@ -196,7 +152,6 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
     state = SyncStatusInfo(
       status: SyncStatus.error,
       lastManualSyncTime: state.lastManualSyncTime,
-      lastFullSyncTime: state.lastFullSyncTime,
       syncResult: null,
       errorMessage: errorMessage,
     );
@@ -211,12 +166,11 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   
   /// 重置状态
   /// 
-  /// 调用者：手动同步对话框关闭时
+  /// 调用者：ManualSyncDialog 关闭时
   void reset() {
     state = SyncStatusInfo(
       status: SyncStatus.idle,
       lastManualSyncTime: state.lastManualSyncTime,
-      lastFullSyncTime: state.lastFullSyncTime,
       syncResult: state.syncResult,
       errorMessage: null,
     );
@@ -227,8 +181,7 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
 /// 
 /// 调用者：
 /// - SettingsPage：显示同步状态
-/// - 手动同步对话框：更新同步状态
+/// - ManualSyncDialog：更新同步状态
 final syncStatusProvider = StateNotifierProvider<SyncStatusNotifier, SyncStatusInfo>((ref) {
   return SyncStatusNotifier(ref.read(storageServiceProvider));
 });
-

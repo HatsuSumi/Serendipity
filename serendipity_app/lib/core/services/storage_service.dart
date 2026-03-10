@@ -422,6 +422,36 @@ class StorageService implements IStorageService {
     await _syncHistoriesBoxOrThrow.clear();
   }
   
+  // ==================== 同步时间（增量同步用） ====================
+  
+  static const String _lastSyncTimeKeyPrefix = 'last_sync_time_';
+  
+  /// 获取指定用户的上次同步时间
+  /// 
+  /// 调用者：SyncService.getLastSyncTime()
+  @override
+  DateTime? getLastSyncTime(String userId) {
+    assert(userId.isNotEmpty, 'User ID cannot be empty');
+    final key = '$_lastSyncTimeKeyPrefix$userId';
+    final timeStr = _settingsBoxOrThrow.get(key) as String?;
+    if (timeStr == null) return null;
+    try {
+      return DateTime.parse(timeStr);
+    } catch (_) {
+      return null;
+    }
+  }
+  
+  /// 保存指定用户的上次同步时间
+  /// 
+  /// 调用者：SyncService._saveLastSyncTime()
+  @override
+  Future<void> setLastSyncTime(String userId, DateTime syncStartTime) async {
+    assert(userId.isNotEmpty, 'User ID cannot be empty');
+    final key = '$_lastSyncTimeKeyPrefix$userId';
+    await _settingsBoxOrThrow.put(key, syncStartTime.toIso8601String());
+  }
+  
   // ==================== 键值对存储（用于 Token 等） ====================
   
   /// 保存值（泛型）

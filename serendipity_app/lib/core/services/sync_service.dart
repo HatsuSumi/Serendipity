@@ -297,7 +297,6 @@ class SyncService {
   /// 获取指定用户的上次同步时间
   /// 
   /// 调用者：
-  /// - AuthProvider：登录时读取上次同步时间
   /// - NetworkMonitorService：App启动时读取上次同步时间
   /// 
   /// 参数：
@@ -314,20 +313,31 @@ class SyncService {
       throw ArgumentError('用户 ID 不能为空');
     }
     
-    // 获取该用户的同步历史
+    // 优先从持久化存储中读取（跨进程重启可用）
+    final persisted = _storageService.getLastSyncTime(userId);
+    if (persisted != null) return persisted;
+    
+    // 兜底：从同步历史记录中推断
     final userHistories = _storageService.getSyncHistoriesByUser(userId);
-    if (userHistories.isEmpty) {
-      return null;
-    }
+    if (userHistories.isEmpty) return null;
     
-    // 获取最近一次成功的同步记录
     final successHistories = userHistories.where((h) => h.success).toList();
-    if (successHistories.isEmpty) {
-      return null;
-    }
+    if (successHistories.isEmpty) return null;
     
-    // 返回最近一次同步的时间
     return successHistories.first.syncTime;
+  }
+  
+  /// 保存上次同步时间
+  /// 
+  /// 调用者：syncAllData() 成功后
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  Future<void> _saveLastSyncTime(String userId, DateTime syncStartTime) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    await _storageService.setLastSyncTime(userId, syncStartTime);
   }
   
   /// 数据同步：上传本地变化 + 下载云端变化
@@ -411,7 +421,10 @@ class SyncService {
       );
       await _storageService.saveSyncHistory(history);
       
-      // 7. 返回同步结果统计
+      // 7. 持久化上次同步时间（供下次增量同步使用）
+      await _saveLastSyncTime(user.id, syncStartTime);
+      
+      // 8. 返回同步结果统计
       return result;
     } catch (e) {
       // 保存同步历史记录（失败）

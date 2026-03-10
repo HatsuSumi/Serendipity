@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
 import '../providers/auth_provider.dart';
-import '../providers/sync_status_provider.dart';
 import '../config/server_config.dart';
 import 'sync_service.dart';
 
@@ -150,7 +149,7 @@ class NetworkMonitorService {
         final user = authState.value;
         
         if (user != null) {
-          await _triggerIncrementalSync(ref, user, SyncSource.polling);
+          await _triggerSync(ref, user, SyncSource.polling);
         }
       }
       
@@ -177,7 +176,7 @@ class NetworkMonitorService {
         final user = authState.value;
         
         if (user != null) {
-          await _triggerIncrementalSync(ref, user, SyncSource.networkReconnect);
+          await _triggerSync(ref, user, SyncSource.networkReconnect);
         }
       } catch (e) {
         // 静默失败
@@ -201,17 +200,19 @@ class NetworkMonitorService {
     }
   }
   
-  /// 触发同步（App 启动时）
+  /// 触发同步
   /// 
-  /// 调用者：_triggerInitialSync()
+  /// 调用者：
+  /// - _triggerInitialSync()：App 启动
+  /// - _pollNetworkStatus()：定期轮询
+  /// - _onNetworkRestored()：网络恢复
   /// 
-  /// 同步策略：读取该用户的上次同步时间
-  /// - 该用户首次同步（lastSyncTime: null）：全量下载
-  /// - 该用户非首次同步（lastSyncTime != null）：增量同步
+  /// 同步策略：从 SyncService 读取持久化的上次同步时间
+  /// - 首次同步（lastSyncTime == null）：全量同步
+  /// - 非首次同步（lastSyncTime != null）：增量同步
   /// 
-  /// Fail Fast：
-  /// - user 为 null：由调用者保证
-  /// - source 为 null：由 Dart 类型系统保证
+  /// 注意：syncStartTime 由 SyncService.syncAllData 内部持久化，
+  /// 自动同步不更新 syncStatusProvider（syncStatusProvider 只给手动同步的 UI 用）。
   Future<void> _triggerSync(WidgetRef ref, User user, SyncSource source) async {
     try {
       final syncService = ref.read(syncServiceProvider);
@@ -219,7 +220,7 @@ class NetworkMonitorService {
       
       await syncService.syncAllData(
         user,
-        lastSyncTime: lastSyncTime,  // 增量同步，支持多设备
+        lastSyncTime: lastSyncTime,
         source: source,
       );
     } catch (e, stackTrace) {
@@ -230,37 +231,7 @@ class NetworkMonitorService {
       rethrow;
     }
   }
-  
-  /// 触发增量同步
-  /// 
-  /// 调用者：
-  /// - _pollNetworkStatus()：60秒轮询
-  /// - _onNetworkRestored()：网络恢复
-  /// 
-  /// 同步策略：增量同步（传入 lastFullSyncTime）
-  /// 
-  /// Fail Fast：
-  /// - user 为 null：由调用者保证
-  /// - source 为 null：由 Dart 类型系统保证
-  Future<void> _triggerIncrementalSync(WidgetRef ref, User user, SyncSource source) async {
-    try {
-      final syncService = ref.read(syncServiceProvider);
-      final syncStatus = ref.read(syncStatusProvider);
-      final lastSyncTime = syncStatus.lastFullSyncTime;
-      
-      await syncService.syncAllData(
-        user,
-        lastSyncTime: lastSyncTime,  // 增量同步
-        source: source,
-      );
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        print('数据同步失败: $e');
-        print('错误堆栈: $stackTrace');
-      }
-      rethrow;
-    }
-  }
+
 }
 
 /// 网络监听服务 Provider

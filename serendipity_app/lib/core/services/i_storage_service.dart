@@ -151,6 +151,18 @@ abstract class IStorageService {
   /// 清空所有同步历史记录
   Future<void> clearAllSyncHistories();
   
+  // ==================== 同步时间（增量同步用） ====================
+  
+  /// 获取指定用户的上次同步时间
+  /// 
+  /// 调用者：SyncService.getLastSyncTime()
+  DateTime? getLastSyncTime(String userId);
+  
+  /// 保存指定用户的上次同步时间
+  /// 
+  /// 调用者：SyncService._saveLastSyncTime()
+  Future<void> setLastSyncTime(String userId, DateTime syncStartTime);
+  
   // ==================== 键值对存储（用于 Token 等） ====================
   
   /// 保存值（泛型）
