@@ -52,6 +52,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           confettiEnabled: true,
         },
         hasSeenCommunityIntro: false,
+        hasSeenPublishWarning: false,
       },
     });
   }

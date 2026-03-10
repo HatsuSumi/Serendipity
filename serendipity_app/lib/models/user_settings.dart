@@ -220,7 +220,7 @@ class UserSettings {
       checkInConfettiEnabled: checkIn['confettiEnabled'] as bool,
       autoPublishToCommunity: false,
       hidePublishWarning: false,
-      hasSeenPublishWarning: false,
+      hasSeenPublishWarning: dto['hasSeenPublishWarning'] as bool? ?? false,
       hasSeenCommunityIntro: dto['hasSeenCommunityIntro'] as bool? ?? false,
       createdAt: now,
       updatedAt: dto['updatedAt'] != null
@@ -282,6 +282,7 @@ class UserSettings {
         'confettiEnabled': checkInConfettiEnabled,
       },
       'hasSeenCommunityIntro': hasSeenCommunityIntro,
+      'hasSeenPublishWarning': hasSeenPublishWarning,
     };
   }
 

@@ -126,6 +126,7 @@ export class UserService implements IUserService {
         confettiEnabled: boolean;
       },
       hasSeenCommunityIntro: settings.hasSeenCommunityIntro,
+      hasSeenPublishWarning: settings.hasSeenPublishWarning,
       updatedAt: settings.updatedAt.toISOString(),
     };
   }
