@@ -34,6 +34,7 @@ export interface ICommunityPostService {
   ): Promise<CommunityPostListResponseDto>;
   getMyPosts(userId: string): Promise<MyCommunityPostsResponseDto>;
   deletePost(postId: string, userId: string): Promise<void>;
+  deletePostByRecordId(userId: string, recordId: string): Promise<void>;
   filterPosts(
     query: FilterCommunityPostsQuery,
     currentUserId?: string
@@ -259,6 +260,11 @@ export class CommunityPostService implements ICommunityPostService {
     }
 
     await this.communityPostRepository.deleteById(postId, userId);
+  }
+
+  async deletePostByRecordId(userId: string, recordId: string): Promise<void> {
+    // 幂等操作：若该记录从未发布过帖子，静默成功
+    await this.communityPostRepository.deleteByUserAndRecord(userId, recordId);
   }
 
   async filterPosts(

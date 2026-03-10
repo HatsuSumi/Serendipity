@@ -125,6 +125,25 @@ export class CommunityPostController {
     }
   };
 
+  // 删除社区帖子（按 recordId）
+  // 调用者：记录删除时联动触发
+  deletePostByRecordId = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const recordId = getParamAsString(req.params.recordId);
+
+      await this.communityPostService.deletePostByRecordId(userId, recordId);
+
+      sendSuccess(res, { message: 'Post deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // 删除社区帖子
   deletePost = async (
     req: Request,

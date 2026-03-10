@@ -6,6 +6,7 @@ import '../services/sync_service.dart';
 import '../services/achievement_detector.dart';
 import '../repositories/record_repository.dart';
 import '../repositories/story_line_repository.dart';
+import 'community_provider.dart';
 import 'story_lines_provider.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
@@ -189,12 +190,13 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     await refresh();
   }
 
-  /// 删除记录（自动从故事线移除）
+  /// 删除记录（自动从故事线移除，并联动删除对应社区帖子）
   /// 
   /// 集成云端同步：
   /// - 如果用户已登录，删除本地后自动删除云端数据
   /// - 如果用户未登录，只删除本地（离线模式）
   /// - 云端同步失败不影响本地操作
+  /// - 社区帖子联动删除失败不影响记录删除（静默处理）
   Future<void> deleteRecord(String id) async {
     // 1. 获取记录，检查是否关联了故事线
     final record = _repository.getRecord(id);
@@ -210,7 +212,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     // 2. 删除本地
     await _repository.deleteRecord(id);
     
-    // 3. 如果用户已登录，删除云端
+    // 3. 如果用户已登录，删除云端记录并联动删除社区帖子
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
@@ -219,6 +221,17 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
         // 云端同步失败不影响本地操作
         // 但需要向上抛出异常，让 UI 层显示提示
         rethrow;
+      }
+      
+      // 联动删除对应的社区帖子（幂等，帖子不存在时静默成功）
+      try {
+        final communityRepo = ref.read(communityRepositoryProvider);
+        await communityRepo.deletePostByRecordId(id);
+        // 刷新社区相关 Provider
+        ref.invalidate(communityProvider);
+        ref.invalidate(myPostsProvider);
+      } catch (e) {
+        // 社区帖子删除失败不影响记录删除（静默处理）
       }
     }
     

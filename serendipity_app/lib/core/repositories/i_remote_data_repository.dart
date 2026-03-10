@@ -299,6 +299,15 @@ abstract class IRemoteDataRepository {
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<void> deleteCommunityPost(String postId, String userId);
   
+  /// 按 recordId 删除社区帖子（幂等，帖子不存在时静默成功）
+  /// 
+  /// 调用者：
+  /// - CommunityRepository.deletePostByRecordId()
+  /// 
+  /// Fail Fast：
+  /// - recordId 为空：抛出 ArgumentError
+  Future<void> deleteCommunityPostByRecordId(String recordId);
+  
   /// 筛选社区帖子
   /// 
   /// 参数：

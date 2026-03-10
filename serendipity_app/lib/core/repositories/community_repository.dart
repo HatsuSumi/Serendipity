@@ -153,6 +153,17 @@ class CommunityRepository {
     return await _dataSource.getMyPosts(userId);
   }
 
+  /// 按 recordId 删除帖子（幂等，帖子不存在时静默成功）
+  /// 
+  /// 调用者：RecordsProvider.deleteRecord()
+  Future<void> deletePostByRecordId(String recordId) async {
+    // Fail Fast: 参数验证
+    if (recordId.isEmpty) {
+      throw ArgumentError('recordId cannot be empty');
+    }
+    await _dataSource.deletePostByRecordId(recordId);
+  }
+
   /// 删除帖子
   /// 
   /// Fail Fast:

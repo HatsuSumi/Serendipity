@@ -76,6 +76,7 @@ class ServerConfig {
   static const String communityPosts = '/community/posts';
   static const String communityMyPosts = '/community/my-posts';
   static String communityPostById(String id) => '/community/posts/$id';
+  static String communityPostByRecordId(String recordId) => '/community/posts/by-record/$recordId';
   
   // 签到相关
   static const String checkIns = '/check-ins';

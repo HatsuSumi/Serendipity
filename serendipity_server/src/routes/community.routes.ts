@@ -44,6 +44,14 @@ export function createCommunityRoutes(
     communityPostController.deletePost
   );
 
+  // 按 recordId 删除社区帖子（需要认证）
+  // 调用者：客户端删除记录时联动触发
+  router.delete(
+    '/posts/by-record/:recordId',
+    authMiddleware,
+    communityPostController.deletePostByRecordId
+  );
+
   return router;
 }
 

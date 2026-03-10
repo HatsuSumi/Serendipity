@@ -60,6 +60,12 @@ abstract class ICommunityDataSource {
   /// - userId: 用户ID
   Future<void> deletePost(String postId, String userId);
 
+  /// 按 recordId 删除帖子（幂等，帖子不存在时静默成功）
+  /// 
+  /// 参数：
+  /// - recordId: 记录ID
+  Future<void> deletePostByRecordId(String recordId);
+
   /// 筛选帖子
   /// 
   /// 参数：

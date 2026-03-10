@@ -24,6 +24,7 @@ export interface ICommunityPostRepository {
   }): Promise<CommunityPost[]>;
   findByUserAndRecords(userId: string, recordIds: string[]): Promise<CommunityPost[]>;
   deleteById(id: string, userId: string): Promise<void>;
+  deleteByUserAndRecord(userId: string, recordId: string): Promise<void>;
 }
 
 // 社区帖子仓储实现

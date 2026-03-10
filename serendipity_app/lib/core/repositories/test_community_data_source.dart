@@ -49,6 +49,11 @@ class TestCommunityDataSource implements ICommunityDataSource {
   }
 
   @override
+  Future<void> deletePostByRecordId(String recordId) async {
+    // 测试模式：直接返回成功（幂等）
+  }
+
+  @override
   Future<List<CommunityPost>> filterPosts({
     DateTime? startDate,
     DateTime? endDate,

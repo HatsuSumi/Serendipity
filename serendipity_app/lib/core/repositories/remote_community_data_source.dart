@@ -51,6 +51,11 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
   }
 
   @override
+  Future<void> deletePostByRecordId(String recordId) async {
+    await _remoteData.deleteCommunityPostByRecordId(recordId);
+  }
+
+  @override
   Future<List<CommunityPost>> filterPosts({
     DateTime? startDate,
     DateTime? endDate,

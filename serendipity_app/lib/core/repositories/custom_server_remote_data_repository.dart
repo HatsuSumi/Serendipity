@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/community_post.dart';
@@ -406,6 +405,20 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       await _httpClient.delete(ServerConfig.communityPostById(postId));
     } on HttpException catch (e) {
       throw Exception('删除社区帖子失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<void> deleteCommunityPostByRecordId(String recordId) async {
+    // Fail Fast：参数验证
+    if (recordId.isEmpty) {
+      throw ArgumentError('记录 ID 不能为空');
+    }
+    
+    try {
+      await _httpClient.delete(ServerConfig.communityPostByRecordId(recordId));
+    } on HttpException catch (e) {
+      throw Exception('按记录删除社区帖子失败：${e.message}');
     }
   }
   

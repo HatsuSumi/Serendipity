@@ -115,6 +115,11 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
+  Future<void> deleteCommunityPostByRecordId(String recordId) async {
+    // 测试模式：不执行任何操作（幂等）
+  }
+
+  @override
   Future<List<CommunityPost>> filterCommunityPosts({
     DateTime? startDate,
     DateTime? endDate,
