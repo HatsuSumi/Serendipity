@@ -221,7 +221,7 @@ class UserSettings {
       autoPublishToCommunity: false,
       hidePublishWarning: false,
       hasSeenPublishWarning: false,
-      hasSeenCommunityIntro: false,
+      hasSeenCommunityIntro: dto['hasSeenCommunityIntro'] as bool? ?? false,
       createdAt: now,
       updatedAt: now,
     );
