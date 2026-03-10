@@ -37,6 +37,7 @@ class CommunityPage extends ConsumerStatefulWidget {
 
 class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
+  bool _isShowingIntroDialog = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -84,13 +85,18 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
     if (hasSeenIntro) return;
     
     // 延迟到下一帧显示，避免在 build 期间显示对话框
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      
+      // 防止重复弹出（竞态保护）
+      if (_isShowingIntroDialog) return;
       
       // 再次检查状态（防止在延迟期间状态已改变）
       final currentHasSeenIntro = ref.read(userSettingsProvider).hasSeenCommunityIntro;
       if (!currentHasSeenIntro) {
-        CommunityIntroDialog.show(context, ref);
+        _isShowingIntroDialog = true;
+        await CommunityIntroDialog.show(context, ref);
+        _isShowingIntroDialog = false;
       }
     });
   }
