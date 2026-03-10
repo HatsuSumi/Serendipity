@@ -758,7 +758,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
   /// 显示删除确认对话框
   void _showDeleteConfirmDialog(BuildContext context) async {
-    final content = _buildDeleteContent(ref, _currentRecord);
+    final content = await _buildDeleteContent(ref, _currentRecord);
+    if (!context.mounted) return;
     final confirmed = await DialogHelper.showDeleteConfirm(
       context: context,
       title: '删除记录',
@@ -773,17 +774,16 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   /// 构建删除确认内容
   ///
   /// 根据记录是否关联故事线、是否已发布到社区，动态追加说明
-  static String _buildDeleteContent(WidgetRef ref, EncounterRecord record) {
+  static Future<String> _buildDeleteContent(WidgetRef ref, EncounterRecord record) async {
     final lines = <String>['确定要删除这条记录吗？此操作无法撤销。'];
 
     if (record.storyLineId != null) {
       lines.add('删除这条记录会自动取消关联故事线。');
     }
 
-    // 从缓存读取，不发网络请求
-    final myPostsAsync = ref.read(myPostsProvider);
-    final isPublished = myPostsAsync.valueOrNull
-        ?.any((post) => post.recordId == record.id) ?? false;
+    // 确保 myPostsProvider 已加载
+    final myPosts = await ref.read(myPostsProvider.future);
+    final isPublished = myPosts.any((post) => post.recordId == record.id);
     if (isPublished) {
       lines.add('删除这条记录会自动删除社区帖子。');
     }
