@@ -145,11 +145,8 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       
       if (user == null || user.id.isEmpty || user.id == 'guest') {
         // 用户未登录，跳过云端上传
-        debugPrint('[UserSettings] 用户未登录，跳过云端上传');
         return;
       }
-      
-      debugPrint('[UserSettings] 开始上传设置到云端，用户ID: ${user.id}');
       
       // 上传到云端，获取服务端返回的最新设置（含服务端生成的 updatedAt）
       final remoteRepository = _ref.read(remoteDataRepositoryProvider);
@@ -158,12 +155,8 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       // 用服务端的 updatedAt 更新本地，确保下次同步时时间戳对齐
       await _storageService.saveUserSettings(serverSettings);
       state = serverSettings;
-      
-      debugPrint('[UserSettings] 设置上传成功');
     } catch (e) {
       // 上传失败，静默失败（不影响用户体验）
-      // 生产环境应记录错误日志
-      debugPrint('[UserSettings] 设置上传失败: $e');
     }
   }
 
