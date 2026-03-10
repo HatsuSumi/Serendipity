@@ -43,10 +43,12 @@ class CustomServerAuthRepository implements IAuthRepository {
   }
   
   @override
-  Stream<User?> get authStateChanges {
-    // 自建服务器使用轮询方式检查认证状态
-    // 每 5 秒检查一次
-    return Stream.periodic(
+  Stream<User?> get authStateChanges async* {
+    // 立即发出当前用户状态（不等待轮询周期）
+    yield await currentUser;
+    
+    // 然后每 5 秒轮询一次
+    yield* Stream.periodic(
       const Duration(seconds: 5),
       (_) => currentUser,
     ).asyncMap((future) => future);
