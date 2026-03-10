@@ -107,7 +107,7 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
     }
   }
 
-  /// 刷新状态
+  /// 刷新状态（内部）
   void _refresh() {
     state = CheckInState(
       hasCheckedInToday: _repository.hasCheckedInToday(),
@@ -117,6 +117,9 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
       recentCheckIns: _repository.getCheckInsSortedByDate().take(7).toList(),
     );
   }
+
+  /// 刷新状态（供外部调用，如自动同步完成后）
+  void refresh() => _refresh();
 
   /// 获取指定月份的签到日期
   List<DateTime> getCheckInDatesInMonth(int year, int month) {

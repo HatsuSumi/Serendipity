@@ -55,6 +55,9 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
     _repository = ref.read(storyLineRepositoryProvider);
     _syncService = ref.read(syncServiceProvider);
     
+    // 监听自动同步完成信号，信号变化时自动重建
+    ref.watch(syncCompletedProvider);
+    
     // 获取当前登录用户
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     

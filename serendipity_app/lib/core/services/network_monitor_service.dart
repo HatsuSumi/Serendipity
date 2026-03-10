@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
 import '../providers/auth_provider.dart';
+import '../providers/records_provider.dart';
+import '../providers/check_in_provider.dart';
 import '../config/server_config.dart';
 import 'sync_service.dart';
 
@@ -223,6 +225,10 @@ class NetworkMonitorService {
         lastSyncTime: lastSyncTime,
         source: source,
       );
+      
+      // 通知所有数据 Provider 刷新
+      ref.read(syncCompletedProvider.notifier).state++;
+      ref.read(checkInProvider.notifier).refresh();
     } catch (e, stackTrace) {
       if (kDebugMode) {
         print('数据同步失败: $e');

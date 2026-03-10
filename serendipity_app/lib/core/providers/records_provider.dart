@@ -9,6 +9,12 @@ import 'story_lines_provider.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
 
+/// 自动同步完成信号
+/// 
+/// 每次自动同步（App启动/网络恢复/轮询）完成后递增，
+/// 让 recordsProvider / storyLinesProvider / checkInProvider 自动刷新。
+final syncCompletedProvider = StateProvider<int>((ref) => 0);
+
 /// 记录仓储 Provider
 final recordRepositoryProvider = Provider<RecordRepository>((ref) {
   return RecordRepository(ref.read(storageServiceProvider));
@@ -26,6 +32,9 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   @override
   Future<List<EncounterRecord>> build() async {
     _repository = ref.read(recordRepositoryProvider);
+    
+    // 监听自动同步完成信号，信号变化时自动重建
+    ref.watch(syncCompletedProvider);
     
     // 获取当前登录用户
     final currentUser = await ref.read(authProvider.notifier).currentUser;
