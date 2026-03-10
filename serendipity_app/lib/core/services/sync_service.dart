@@ -745,7 +745,15 @@ class SyncService {
       await _remoteRepository.uploadSettings(localSettings);
     } else {
       // 云端更新或时间相同，使用云端设置
-      await _storageService.saveUserSettings(remoteSettings);
+      // 对于"只增不减"的字段（如 hasSeenCommunityIntro），取本地与云端的最大值
+      final merged = remoteSettings.copyWith(
+        hasSeenCommunityIntro: localSettings.hasSeenCommunityIntro || remoteSettings.hasSeenCommunityIntro,
+      );
+      await _storageService.saveUserSettings(merged);
+      // 如果合并后与云端不一致（本地是 true，云端是 false），上传修正
+      if (merged.hasSeenCommunityIntro != remoteSettings.hasSeenCommunityIntro) {
+        await _remoteRepository.uploadSettings(merged);
+      }
     }
   }
 }
