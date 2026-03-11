@@ -106,6 +106,16 @@ class HttpClientService {
         .get(uri, headers: headers)
         .timeout(Duration(seconds: ServerConfig.requestTimeout));
     
+    // 401 时自动刷新 token 并重试一次
+    if (response.statusCode == 401 && !skipAuth) {
+      await _refreshAndClearOnFailure();
+      final retryHeaders = await _buildHeaders(skipAuth: false);
+      final retryResponse = await _client
+          .get(uri, headers: retryHeaders)
+          .timeout(Duration(seconds: ServerConfig.requestTimeout));
+      return _handleResponse(retryResponse);
+    }
+    
     return _handleResponse(response);
   }
   
@@ -125,6 +135,20 @@ class HttpClientService {
           body: body != null ? jsonEncode(body) : null,
         )
         .timeout(Duration(seconds: ServerConfig.requestTimeout));
+    
+    // 401 时自动刷新 token 并重试一次
+    if (response.statusCode == 401 && !skipAuth) {
+      await _refreshAndClearOnFailure();
+      final retryHeaders = await _buildHeaders(skipAuth: false);
+      final retryResponse = await _client
+          .post(
+            uri,
+            headers: retryHeaders,
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(Duration(seconds: ServerConfig.requestTimeout));
+      return _handleResponse(retryResponse);
+    }
     
     return _handleResponse(response);
   }
@@ -146,6 +170,20 @@ class HttpClientService {
         )
         .timeout(Duration(seconds: ServerConfig.requestTimeout));
     
+    // 401 时自动刷新 token 并重试一次
+    if (response.statusCode == 401 && !skipAuth) {
+      await _refreshAndClearOnFailure();
+      final retryHeaders = await _buildHeaders(skipAuth: false);
+      final retryResponse = await _client
+          .put(
+            uri,
+            headers: retryHeaders,
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(Duration(seconds: ServerConfig.requestTimeout));
+      return _handleResponse(retryResponse);
+    }
+    
     return _handleResponse(response);
   }
   
@@ -161,7 +199,27 @@ class HttpClientService {
         .delete(uri, headers: headers)
         .timeout(Duration(seconds: ServerConfig.requestTimeout));
     
+    // 401 时自动刷新 token 并重试一次
+    if (response.statusCode == 401 && !skipAuth) {
+      await _refreshAndClearOnFailure();
+      final retryHeaders = await _buildHeaders(skipAuth: false);
+      final retryResponse = await _client
+          .delete(uri, headers: retryHeaders)
+          .timeout(Duration(seconds: ServerConfig.requestTimeout));
+      return _handleResponse(retryResponse);
+    }
+    
     return _handleResponse(response);
+  }
+  
+  /// 刷新 Token，失败则清除并抛出登录过期异常
+  Future<void> _refreshAndClearOnFailure() async {
+    try {
+      await refreshToken();
+    } catch (e) {
+      await clearTokens();
+      throw Exception('Token 已过期，请重新登录');
+    }
   }
   
   // ==================== 私有辅助方法 ====================
