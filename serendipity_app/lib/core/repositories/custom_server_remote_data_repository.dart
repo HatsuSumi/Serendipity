@@ -358,6 +358,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       final response = await _httpClient.get(
         ServerConfig.communityPosts,
         queryParams: queryParams,
+        skipAuth: true,
       );
       
       final data = response['data'] as Map<String, dynamic>;
@@ -486,6 +487,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       final response = await _httpClient.get(
         ServerConfig.communityPosts,
         queryParams: queryParams,
+        skipAuth: true,
       );
       
       final data = response['data'] as Map<String, dynamic>;
