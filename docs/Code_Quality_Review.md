@@ -373,8 +373,7 @@
 7. ✅ create_record_page.dart：违反分层约束，直接使用StorageService（4处，已修复）
 
 ### 中优先级问题 ⚡
-1. ✅ user_settings.dart：hiddenRecordIds 的 == 和 hashCode 实现不正确（已修复）
-2. ✅ user_settings.dart：构造函数缺少业务规则验证（已修复）
+1. ✅ user_settings.dart：构造函数缺少业务规则验证（已修复）
 3. ✅ storage_service.dart：缺少 Fail Fast 验证（已修复）
 4. ✅ storage_service.dart：Box 未初始化时静默失败（已修复）
 5. ✅ status_colors.dart：缺少Fail Fast验证（已修复）
