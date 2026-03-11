@@ -243,16 +243,15 @@ class HttpClientService {
       'Accept': 'application/json',
     };
     
-    // 如果不跳过认证，添加 Authorization 头
+    // 如果不跳过认证，尝试添加 Authorization 头
     if (!skipAuth) {
       // 检查 Token 是否即将过期
       if (await isTokenExpiringSoon()) {
         try {
           await refreshToken();
         } catch (e) {
-          // Token 刷新失败，清除 Token
+          // Token 刷新失败，清除 Token，但不抛异常（允许匿名请求继续）
           await clearTokens();
-          throw Exception('Token 已过期，请重新登录');
         }
       }
       
@@ -260,6 +259,7 @@ class HttpClientService {
       if (accessToken != null) {
         headers['Authorization'] = 'Bearer $accessToken';
       }
+      // 没有 token 时不添加 Authorization 头，允许匿名访问公开接口
     }
     
     return headers;

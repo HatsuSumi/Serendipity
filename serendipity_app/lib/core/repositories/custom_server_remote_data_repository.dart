@@ -358,7 +358,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       final response = await _httpClient.get(
         ServerConfig.communityPosts,
         queryParams: queryParams,
-        skipAuth: true,
+        skipAuth: false, // 公开接口：有 token 时带上（服务端识别 isOwner），无 token 时自动跳过
       );
       
       final data = response['data'] as Map<String, dynamic>;
@@ -487,7 +487,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       final response = await _httpClient.get(
         ServerConfig.communityPosts,
         queryParams: queryParams,
-        skipAuth: true,
+        skipAuth: false, // 公开接口：有 token 时带上（服务端识别 isOwner），无 token 时自动跳过
       );
       
       final data = response['data'] as Map<String, dynamic>;
