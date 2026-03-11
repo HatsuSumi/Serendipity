@@ -259,7 +259,7 @@ class UserSettings {
 
   @override
   String toString() {
-    return 'UserSettings(id: \$id, theme: \${theme.label}, checkInReminderEnabled: \$checkInReminderEnabled)';
+    return 'UserSettings(id: $id, theme: ${theme.label}, checkInReminderEnabled: $checkInReminderEnabled)';
   }
 
   @override
