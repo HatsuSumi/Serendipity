@@ -1758,7 +1758,6 @@ class UserSettings {
   bool checkInConfettiEnabled;  // 签到时启用粒子特效（默认 true）
   
   // 社区设置
-  bool autoPublishToCommunity;  // 是否自动发布到社区（默认 false）
   
   DateTime createdAt;           // 创建时间
   DateTime updatedAt;           // 更新时间
