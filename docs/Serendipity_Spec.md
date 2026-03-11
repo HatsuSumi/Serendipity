@@ -1743,11 +1743,9 @@ class UserSettings {
   DialogAnimationType dialogAnimation; // 对话框动画类型
   
   // 隐私设置
-  bool cloudSyncEnabled;        // 是否启用云同步（会员功能）
   bool biometricLockEnabled;    // 是否启用生物识别锁
   bool passwordLockEnabled;     // 是否启用密码锁
   String? passwordHash;         // 密码哈希（如果启用密码锁）
-  List<String> hiddenRecordIds; // 隐藏的记录ID列表
   
   // 通知设置
   bool achievementNotification; // 成就解锁通知

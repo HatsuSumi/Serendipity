@@ -14,7 +14,6 @@ class UserSettings {
   final DialogAnimationType dialogAnimation;
   
   // 隐私设置
-  final bool cloudSyncEnabled;
   final bool biometricLockEnabled;
   final bool passwordLockEnabled;
   final String? passwordHash;
@@ -31,7 +30,6 @@ class UserSettings {
   final bool checkInConfettiEnabled;
   
   // 社区设置
-  final bool autoPublishToCommunity;
   final bool hidePublishWarning;
   final bool hasSeenPublishWarning;
   final bool hasSeenCommunityIntro;
@@ -46,7 +44,6 @@ class UserSettings {
     this.accentColor,
     required this.pageTransition,
     required this.dialogAnimation,
-    required this.cloudSyncEnabled,
     required this.biometricLockEnabled,
     required this.passwordLockEnabled,
     this.passwordHash,
@@ -57,7 +54,6 @@ class UserSettings {
     required this.checkInReminderTime,
     required this.checkInVibrationEnabled,
     required this.checkInConfettiEnabled,
-    required this.autoPublishToCommunity,
     required this.hidePublishWarning,
     required this.hasSeenPublishWarning,
     required this.hasSeenCommunityIntro,
@@ -71,10 +67,6 @@ class UserSettings {
          'Password hash is required when password lock is enabled');
 
   /// 创建默认设置
-  /// 
-  /// 调用者：
-  /// - SyncService._syncUserSettings()（首次登录时）
-  /// - UserSettingsProvider（初始化时）
   factory UserSettings.createDefault({required String userId}) {
     final now = DateTime.now();
     return UserSettings(
@@ -84,7 +76,6 @@ class UserSettings {
       accentColor: null,
       pageTransition: PageTransitionType.random,
       dialogAnimation: DialogAnimationType.random,
-      cloudSyncEnabled: true,
       biometricLockEnabled: false,
       passwordLockEnabled: false,
       passwordHash: null,
@@ -95,7 +86,6 @@ class UserSettings {
       checkInReminderTime: const TimeOfDay(hour: 20, minute: 0),
       checkInVibrationEnabled: true,
       checkInConfettiEnabled: false,
-      autoPublishToCommunity: false,
       hidePublishWarning: false,
       hasSeenPublishWarning: false,
       hasSeenCommunityIntro: false,
@@ -106,7 +96,6 @@ class UserSettings {
 
   /// 从 JSON 创建 UserSettings（本地存储格式）
   factory UserSettings.fromJson(Map<String, dynamic> json) {
-    // 解析签到提醒时间
     final reminderTimeData = json['checkInReminderTime'];
     final Map<String, dynamic>? reminderTimeMap = reminderTimeData != null
         ? Map<String, dynamic>.from(reminderTimeData as Map)
@@ -116,7 +105,7 @@ class UserSettings {
             hour: reminderTimeMap['hour'] as int,
             minute: reminderTimeMap['minute'] as int,
           )
-        : const TimeOfDay(hour: 20, minute: 0); // 默认 20:00
+        : const TimeOfDay(hour: 20, minute: 0);
     
     return UserSettings(
       id: json['id'] as String,
@@ -137,11 +126,10 @@ class UserSettings {
         (e) => e.value == json['dialogAnimation'] as String,
         orElse: () => DialogAnimationType.random,
       ),
-      cloudSyncEnabled: json['cloudSyncEnabled'] as bool,
-      biometricLockEnabled: json['biometricLockEnabled'] as bool,
-      passwordLockEnabled: json['passwordLockEnabled'] as bool,
+      biometricLockEnabled: json['biometricLockEnabled'] as bool? ?? false,
+      passwordLockEnabled: json['passwordLockEnabled'] as bool? ?? false,
       passwordHash: json['passwordHash'] as String?,
-      hiddenRecordIds: (json['hiddenRecordIds'] as List)
+      hiddenRecordIds: (json['hiddenRecordIds'] as List? ?? [])
           .map((e) => e as String)
           .toList(),
       achievementNotification: json['achievementNotification'] as bool,
@@ -150,7 +138,6 @@ class UserSettings {
       checkInReminderTime: reminderTime,
       checkInVibrationEnabled: json['checkInVibrationEnabled'] as bool? ?? true,
       checkInConfettiEnabled: json['checkInConfettiEnabled'] as bool? ?? true,
-      autoPublishToCommunity: json['autoPublishToCommunity'] as bool,
       hidePublishWarning: json['hidePublishWarning'] as bool? ?? false,
       hasSeenPublishWarning: json['hasSeenPublishWarning'] as bool? ?? false,
       hasSeenCommunityIntro: json['hasSeenCommunityIntro'] as bool? ?? false,
@@ -160,28 +147,7 @@ class UserSettings {
   }
 
   /// 从后端 DTO 创建 UserSettings
-  /// 
-  /// 后端返回的 UserSettingsDto 格式：
-  /// ```json
-  /// {
-  ///   "theme": "system",
-  ///   "pageTransition": "random",
-  ///   "dialogAnimation": "random",
-  ///   "notifications": {
-  ///     "checkInReminder": true,
-  ///     "checkInReminderTime": "20:00",
-  ///     "achievementUnlocked": true
-  ///   },
-  ///   "checkIn": {
-  ///     "vibrationEnabled": true,
-  ///     "confettiEnabled": true
-  ///   }
-  /// }
-  /// ```
-  /// 
-  /// 调用者：CustomServerRemoteDataRepository.downloadSettings()
   factory UserSettings.fromServerDto(Map<String, dynamic> dto, String userId) {
-    // 解析签到提醒时间（格式："HH:mm"）
     final notifications = dto['notifications'] as Map<String, dynamic>;
     final reminderTimeStr = notifications['checkInReminderTime'] as String;
     final timeParts = reminderTimeStr.split(':');
@@ -207,7 +173,6 @@ class UserSettings {
         (e) => e.value == dto['dialogAnimation'] as String,
         orElse: () => DialogAnimationType.random,
       ),
-      cloudSyncEnabled: true,
       biometricLockEnabled: false,
       passwordLockEnabled: false,
       passwordHash: null,
@@ -218,7 +183,6 @@ class UserSettings {
       checkInReminderTime: TimeOfDay(hour: reminderHour, minute: reminderMinute),
       checkInVibrationEnabled: checkIn['vibrationEnabled'] as bool,
       checkInConfettiEnabled: checkIn['confettiEnabled'] as bool,
-      autoPublishToCommunity: false,
       hidePublishWarning: dto['hidePublishWarning'] as bool? ?? false,
       hasSeenPublishWarning: dto['hasSeenPublishWarning'] as bool? ?? false,
       hasSeenCommunityIntro: dto['hasSeenCommunityIntro'] as bool? ?? false,
@@ -238,7 +202,6 @@ class UserSettings {
       'accentColor': accentColor,
       'pageTransition': pageTransition.value,
       'dialogAnimation': dialogAnimation.value,
-      'cloudSyncEnabled': cloudSyncEnabled,
       'biometricLockEnabled': biometricLockEnabled,
       'passwordLockEnabled': passwordLockEnabled,
       'passwordHash': passwordHash,
@@ -252,7 +215,6 @@ class UserSettings {
       },
       'checkInVibrationEnabled': checkInVibrationEnabled,
       'checkInConfettiEnabled': checkInConfettiEnabled,
-      'autoPublishToCommunity': autoPublishToCommunity,
       'hidePublishWarning': hidePublishWarning,
       'hasSeenPublishWarning': hasSeenPublishWarning,
       'hasSeenCommunityIntro': hasSeenCommunityIntro,
@@ -262,8 +224,6 @@ class UserSettings {
   }
 
   /// 转换为后端 DTO 格式（用于上传）
-  /// 
-  /// 调用者：CustomServerRemoteDataRepository.uploadSettings()
   Map<String, dynamic> toServerDto() {
     final hour = checkInReminderTime.hour.toString().padLeft(2, '0');
     final minute = checkInReminderTime.minute.toString().padLeft(2, '0');
@@ -288,24 +248,6 @@ class UserSettings {
     };
   }
 
-  /// 复制并修改部分字段
-  /// 
-  /// 对于可空字段（accentColor, passwordHash），使用函数包装来区分"未传递"和"传递 null"：
-  /// - 不传参数：保持原值
-  /// - 传递函数返回 null：清空字段
-  /// - 传递函数返回新值：更新字段
-  /// 
-  /// 示例：
-  /// ```dart
-  /// // 清空强调色
-  /// settings.copyWith(accentColor: () => null)
-  /// 
-  /// // 修改强调色
-  /// settings.copyWith(accentColor: () => '#FF5722')
-  /// 
-  /// // 保持强调色不变
-  /// settings.copyWith(theme: ThemeOption.dark)
-  /// ```
   UserSettings copyWith({
     String? id,
     String? userId,
@@ -313,7 +255,6 @@ class UserSettings {
     String? Function()? accentColor,
     PageTransitionType? pageTransition,
     DialogAnimationType? dialogAnimation,
-    bool? cloudSyncEnabled,
     bool? biometricLockEnabled,
     bool? passwordLockEnabled,
     String? Function()? passwordHash,
@@ -324,7 +265,6 @@ class UserSettings {
     TimeOfDay? checkInReminderTime,
     bool? checkInVibrationEnabled,
     bool? checkInConfettiEnabled,
-    bool? autoPublishToCommunity,
     bool? hidePublishWarning,
     bool? hasSeenPublishWarning,
     bool? hasSeenCommunityIntro,
@@ -338,7 +278,6 @@ class UserSettings {
       accentColor: accentColor != null ? accentColor() : this.accentColor,
       pageTransition: pageTransition ?? this.pageTransition,
       dialogAnimation: dialogAnimation ?? this.dialogAnimation,
-      cloudSyncEnabled: cloudSyncEnabled ?? this.cloudSyncEnabled,
       biometricLockEnabled: biometricLockEnabled ?? this.biometricLockEnabled,
       passwordLockEnabled: passwordLockEnabled ?? this.passwordLockEnabled,
       passwordHash: passwordHash != null ? passwordHash() : this.passwordHash,
@@ -349,7 +288,6 @@ class UserSettings {
       checkInReminderTime: checkInReminderTime ?? this.checkInReminderTime,
       checkInVibrationEnabled: checkInVibrationEnabled ?? this.checkInVibrationEnabled,
       checkInConfettiEnabled: checkInConfettiEnabled ?? this.checkInConfettiEnabled,
-      autoPublishToCommunity: autoPublishToCommunity ?? this.autoPublishToCommunity,
       hidePublishWarning: hidePublishWarning ?? this.hidePublishWarning,
       hasSeenPublishWarning: hasSeenPublishWarning ?? this.hasSeenPublishWarning,
       hasSeenCommunityIntro: hasSeenCommunityIntro ?? this.hasSeenCommunityIntro,
@@ -360,7 +298,7 @@ class UserSettings {
 
   @override
   String toString() {
-    return 'UserSettings(id: $id, theme: ${theme.label}, checkInReminderEnabled: $checkInReminderEnabled)';
+    return 'UserSettings(id: \$id, theme: \${theme.label}, checkInReminderEnabled: \$checkInReminderEnabled)';
   }
 
   @override
@@ -374,7 +312,6 @@ class UserSettings {
         other.accentColor == accentColor &&
         other.pageTransition == pageTransition &&
         other.dialogAnimation == dialogAnimation &&
-        other.cloudSyncEnabled == cloudSyncEnabled &&
         other.biometricLockEnabled == biometricLockEnabled &&
         other.passwordLockEnabled == passwordLockEnabled &&
         other.passwordHash == passwordHash &&
@@ -385,7 +322,6 @@ class UserSettings {
         other.checkInReminderTime == checkInReminderTime &&
         other.checkInVibrationEnabled == checkInVibrationEnabled &&
         other.checkInConfettiEnabled == checkInConfettiEnabled &&
-        other.autoPublishToCommunity == autoPublishToCommunity &&
         other.hidePublishWarning == hidePublishWarning &&
         other.hasSeenPublishWarning == hasSeenPublishWarning &&
         other.hasSeenCommunityIntro == hasSeenCommunityIntro &&
@@ -401,7 +337,6 @@ class UserSettings {
         accentColor.hashCode ^
         pageTransition.hashCode ^
         dialogAnimation.hashCode ^
-        cloudSyncEnabled.hashCode ^
         biometricLockEnabled.hashCode ^
         passwordLockEnabled.hashCode ^
         passwordHash.hashCode ^
@@ -412,7 +347,6 @@ class UserSettings {
         checkInReminderTime.hashCode ^
         checkInVibrationEnabled.hashCode ^
         checkInConfettiEnabled.hashCode ^
-        autoPublishToCommunity.hashCode ^
         hidePublishWarning.hashCode ^
         hasSeenPublishWarning.hashCode ^
         hasSeenCommunityIntro.hashCode ^
@@ -420,4 +354,3 @@ class UserSettings {
         updatedAt.hashCode;
   }
 }
-
