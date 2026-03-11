@@ -1151,7 +1151,6 @@ void checkConsecutiveDaysAchievement(User user) {
 - 云同步（所有用户数据存自建服务器）
   - 免费版：单设备登录（换设备会踢下线旧设备）
   - 会员版：多设备同步（无限设备）
-- 密码锁 / 生物识别锁
 - 隐藏敏感记录
 
 #### 8.3 通知设置
@@ -1741,11 +1740,6 @@ class UserSettings {
   String? accentColor;          // 强调色（会员专属）
   PageTransitionType pageTransition; // 页面切换动画类型
   DialogAnimationType dialogAnimation; // 对话框动画类型
-  
-  // 隐私设置
-  bool biometricLockEnabled;    // 是否启用生物识别锁
-  bool passwordLockEnabled;     // 是否启用密码锁
-  String? passwordHash;         // 密码哈希（如果启用密码锁）
   
   // 通知设置
   bool achievementNotification; // 成就解锁通知

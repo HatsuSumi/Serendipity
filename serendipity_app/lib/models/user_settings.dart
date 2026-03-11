@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'enums.dart';
 
@@ -12,12 +11,6 @@ class UserSettings {
   final String? accentColor;
   final PageTransitionType pageTransition;
   final DialogAnimationType dialogAnimation;
-  
-  // 隐私设置
-  final bool biometricLockEnabled;
-  final bool passwordLockEnabled;
-  final String? passwordHash;
-  final List<String> hiddenRecordIds;
   
   // 通知设置
   final bool achievementNotification;
@@ -44,10 +37,6 @@ class UserSettings {
     this.accentColor,
     required this.pageTransition,
     required this.dialogAnimation,
-    required this.biometricLockEnabled,
-    required this.passwordLockEnabled,
-    this.passwordHash,
-    required this.hiddenRecordIds,
     required this.achievementNotification,
     required this.anniversaryReminder,
     required this.checkInReminderEnabled,
@@ -62,9 +51,7 @@ class UserSettings {
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
        assert(userId.isNotEmpty, 'User ID cannot be empty'),
        assert(accentColor == null || accentColor.startsWith('#'), 
-         'Accent color must be a valid hex color starting with #'),
-       assert(!passwordLockEnabled || passwordHash != null,
-         'Password hash is required when password lock is enabled');
+         'Accent color must be a valid hex color starting with #');
 
   /// 创建默认设置
   factory UserSettings.createDefault({required String userId}) {
@@ -76,10 +63,6 @@ class UserSettings {
       accentColor: null,
       pageTransition: PageTransitionType.random,
       dialogAnimation: DialogAnimationType.random,
-      biometricLockEnabled: false,
-      passwordLockEnabled: false,
-      passwordHash: null,
-      hiddenRecordIds: [],
       achievementNotification: true,
       anniversaryReminder: true,
       checkInReminderEnabled: true,
@@ -126,12 +109,6 @@ class UserSettings {
         (e) => e.value == json['dialogAnimation'] as String,
         orElse: () => DialogAnimationType.random,
       ),
-      biometricLockEnabled: json['biometricLockEnabled'] as bool? ?? false,
-      passwordLockEnabled: json['passwordLockEnabled'] as bool? ?? false,
-      passwordHash: json['passwordHash'] as String?,
-      hiddenRecordIds: (json['hiddenRecordIds'] as List? ?? [])
-          .map((e) => e as String)
-          .toList(),
       achievementNotification: json['achievementNotification'] as bool,
       anniversaryReminder: json['anniversaryReminder'] as bool,
       checkInReminderEnabled: json['checkInReminderEnabled'] as bool? ?? true,
@@ -173,10 +150,6 @@ class UserSettings {
         (e) => e.value == dto['dialogAnimation'] as String,
         orElse: () => DialogAnimationType.random,
       ),
-      biometricLockEnabled: false,
-      passwordLockEnabled: false,
-      passwordHash: null,
-      hiddenRecordIds: [],
       achievementNotification: notifications['achievementUnlocked'] as bool,
       anniversaryReminder: notifications['anniversaryReminder'] as bool? ?? true,
       checkInReminderEnabled: notifications['checkInReminder'] as bool,
@@ -202,10 +175,6 @@ class UserSettings {
       'accentColor': accentColor,
       'pageTransition': pageTransition.value,
       'dialogAnimation': dialogAnimation.value,
-      'biometricLockEnabled': biometricLockEnabled,
-      'passwordLockEnabled': passwordLockEnabled,
-      'passwordHash': passwordHash,
-      'hiddenRecordIds': hiddenRecordIds,
       'achievementNotification': achievementNotification,
       'anniversaryReminder': anniversaryReminder,
       'checkInReminderEnabled': checkInReminderEnabled,
@@ -255,10 +224,6 @@ class UserSettings {
     String? Function()? accentColor,
     PageTransitionType? pageTransition,
     DialogAnimationType? dialogAnimation,
-    bool? biometricLockEnabled,
-    bool? passwordLockEnabled,
-    String? Function()? passwordHash,
-    List<String>? hiddenRecordIds,
     bool? achievementNotification,
     bool? anniversaryReminder,
     bool? checkInReminderEnabled,
@@ -278,10 +243,6 @@ class UserSettings {
       accentColor: accentColor != null ? accentColor() : this.accentColor,
       pageTransition: pageTransition ?? this.pageTransition,
       dialogAnimation: dialogAnimation ?? this.dialogAnimation,
-      biometricLockEnabled: biometricLockEnabled ?? this.biometricLockEnabled,
-      passwordLockEnabled: passwordLockEnabled ?? this.passwordLockEnabled,
-      passwordHash: passwordHash != null ? passwordHash() : this.passwordHash,
-      hiddenRecordIds: hiddenRecordIds ?? this.hiddenRecordIds,
       achievementNotification: achievementNotification ?? this.achievementNotification,
       anniversaryReminder: anniversaryReminder ?? this.anniversaryReminder,
       checkInReminderEnabled: checkInReminderEnabled ?? this.checkInReminderEnabled,
@@ -312,10 +273,6 @@ class UserSettings {
         other.accentColor == accentColor &&
         other.pageTransition == pageTransition &&
         other.dialogAnimation == dialogAnimation &&
-        other.biometricLockEnabled == biometricLockEnabled &&
-        other.passwordLockEnabled == passwordLockEnabled &&
-        other.passwordHash == passwordHash &&
-        listEquals(other.hiddenRecordIds, hiddenRecordIds) &&
         other.achievementNotification == achievementNotification &&
         other.anniversaryReminder == anniversaryReminder &&
         other.checkInReminderEnabled == checkInReminderEnabled &&
@@ -337,10 +294,6 @@ class UserSettings {
         accentColor.hashCode ^
         pageTransition.hashCode ^
         dialogAnimation.hashCode ^
-        biometricLockEnabled.hashCode ^
-        passwordLockEnabled.hashCode ^
-        passwordHash.hashCode ^
-        hiddenRecordIds.hashCode ^
         achievementNotification.hashCode ^
         anniversaryReminder.hashCode ^
         checkInReminderEnabled.hashCode ^
