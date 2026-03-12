@@ -511,6 +511,9 @@ export class AuthService implements IAuthService {
     const accessToken = this.jwtService.generateToken(payload);
     const refreshToken = this.jwtService.generateRefreshToken(payload);
 
+    // 删除该用户的旧刷新令牌（防止唯一约束冲突）
+    await this.refreshTokenRepository.deleteByUserId(user.id);
+
     // 保存刷新令牌
     const expiresAt = new Date(
       Date.now() + AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
@@ -551,6 +554,9 @@ export class AuthService implements IAuthService {
 
     const accessToken = this.jwtService.generateToken(payload);
     const refreshToken = this.jwtService.generateRefreshToken(payload);
+
+    // 删除该用户的旧刷新令牌（防止唯一约束冲突）
+    await this.refreshTokenRepository.deleteByUserId(user.id);
 
     // 保存刷新令牌
     const expiresAt = new Date(
