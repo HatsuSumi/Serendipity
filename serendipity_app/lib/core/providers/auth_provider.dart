@@ -12,6 +12,7 @@ import 'records_provider.dart';
 import 'story_lines_provider.dart';
 import 'check_in_provider.dart';
 import 'achievement_provider.dart';
+import 'community_provider.dart';
 
 /// 存储服务 Provider
 final storageServiceProvider = Provider<IStorageService>((ref) {
@@ -109,11 +110,28 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 数据同步完成后
   /// 
   /// 作用：强制 Provider 重新从存储加载数据
+  /// 刷新所有数据 Provider（清除内存缓存）
+  /// 
+  /// 调用时机：
+  /// - 清空本地数据后
+  /// - 数据同步完成后
+  /// 
+  /// 作用：强制 Provider 重新从存储加载数据
+  /// 
+  /// 设计说明：
+  /// - 所有数据 Provider（recordsProvider、storyLinesProvider、checkInProvider）
+  ///   都是 AsyncNotifier，在 build() 里 watch(syncCompletedProvider)
+  /// - invalidate 后，Provider 重建，自动以新 userId 加载数据
+  /// - 无需显式调用 refresh()，架构完全信号驱动
   void _invalidateDataProviders() {
     ref.invalidate(recordsProvider);
     ref.invalidate(storyLinesProvider);
     ref.invalidate(checkInProvider);
     ref.invalidate(achievementsProvider);
+    // 社区列表携带 isOwner 字段，用户切换时必须重新以新身份加载
+    // 否则登出后匿名刷新的结果（isOwner=false）会在重新登录后持续显示
+    ref.invalidate(communityProvider);
+    ref.invalidate(myPostsProvider);
   }
 
   /// 获取当前用户
@@ -368,23 +386,33 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 登出流程：
   /// 1. 调用 AuthRepository 登出（清除 Token）
-  /// 2. 刷新所有数据 Provider（切换到离线数据视图）
-  /// 3. 更新认证状态为 null
+  /// 2. 清空认证数据（只清空 Token 等认证信息，保留业务数据）
+  /// 3. 刷新所有数据 Provider
+  /// 4. 更新认证状态为 null
   /// 
-  /// 注意：不清空本地数据，支持离线使用
+  /// 设计说明：
+  /// - 支持多用户离线使用
+  /// - 用户 A 登出后，A 的数据仍在本地（离线可用）
+  /// - 用户 B 登录，只看到 B 的数据（通过 ownerId 过滤）
+  /// - 用户 A 重新登录，数据立即可用（无需等待同步）
   /// 
   /// Fail Fast：登出失败立即抛异常
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     
     try {
-      // 1. 调用 AuthRepository 登出
+      // 1. 调用 AuthRepository 登出（清除 Token）
       await _repository.signOut();
       
-      // 2. 刷新所有数据 Provider（切换到离线数据视图）
+      // 2. 清空认证数据（只清空 Token 等认证信息）
+      // 保留所有业务数据，支持多用户离线使用
+      final storageService = ref.read(storageServiceProvider);
+      await storageService.clearAuthData();
+      
+      // 3. 刷新所有数据 Provider
       _invalidateDataProviders();
       
-      // 3. 更新认证状态
+      // 4. 更新认证状态
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);

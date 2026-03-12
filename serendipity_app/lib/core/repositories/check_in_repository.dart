@@ -25,12 +25,8 @@ class CheckInRepository {
   /// 
   /// 调用者：CheckInProvider.checkIn()
   Future<CheckInRecord> checkIn({String? userId}) async {
-    final today = _getTodayDate();
-    final todayId = today.millisecondsSinceEpoch.toString();
-    
-    // 检查今天是否已经签到
-    final existingCheckIn = _storageService.getCheckIn(todayId);
-    if (existingCheckIn != null) {
+    // 按用户+日期去重，避免不同用户互相覆盖
+    if (hasCheckedInToday(userId: userId)) {
       throw StateError('Already checked in today');
     }
     
@@ -42,20 +38,31 @@ class CheckInRepository {
   }
 
   /// 检查今天是否已签到
-  bool hasCheckedInToday() {
+  /// 
+  /// 参数：
+  /// - userId: 用户ID（可选，未登录时为 null）
+  /// 
+  /// 修复：按用户过滤，避免用户 A 签到后用户 B 误判为已签到
+  bool hasCheckedInToday({String? userId}) {
     final today = _getTodayDate();
-    final todayId = today.millisecondsSinceEpoch.toString();
-    return _storageService.getCheckIn(todayId) != null;
+    final userCheckIns = _storageService.getCheckInsByUser(userId);
+    return userCheckIns.any((c) => c.date == today);
   }
 
-  /// 获取所有签到记录
-  List<CheckInRecord> getAllCheckIns() {
-    return _storageService.getAllCheckIns();
+  /// 获取指定用户的所有签到记录
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  List<CheckInRecord> getAllCheckInsByUser(String? userId) {
+    return _storageService.getCheckInsByUser(userId);
   }
 
   /// 获取签到记录列表（按日期倒序）
-  List<CheckInRecord> getCheckInsSortedByDate() {
-    return _storageService.getCheckInsSortedByDate();
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
+  List<CheckInRecord> getCheckInsSortedByDate({String? userId}) {
+    return _storageService.getCheckInsByUser(userId);
   }
   
   /// 获取指定用户的签到记录列表（按日期倒序）
@@ -63,7 +70,7 @@ class CheckInRepository {
   /// 参数：
   /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
   /// 
-  /// 调用者：CheckInProvider（未来可能需要）
+  /// 调用者：CheckInProvider
   List<CheckInRecord> getCheckInsByUser(String? userId) {
     return _storageService.getCheckInsByUser(userId);
   }
@@ -73,9 +80,12 @@ class CheckInRepository {
   /// 从今天往前推，连续有签到的天数
   /// 如果今天没有签到，返回0
   /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示离线数据
+  /// 
   /// 时间复杂度：O(n)，其中 n 是签到记录总数
-  int calculateConsecutiveDays() {
-    final checkIns = getAllCheckIns();
+  int calculateConsecutiveDays({String? userId}) {
+    final checkIns = _storageService.getCheckInsByUser(userId);
     if (checkIns.isEmpty) return 0;
 
     // 使用 Set 提高查找效率（O(1) vs O(n)）
@@ -106,14 +116,20 @@ class CheckInRepository {
   }
 
   /// 获取累计签到天数
-  int getTotalCheckInDays() {
-    return getAllCheckIns().length;
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示离线数据
+  int getTotalCheckInDays({String? userId}) {
+    return _storageService.getCheckInsByUser(userId).length;
   }
 
   /// 获取本月签到天数
-  int getCurrentMonthCheckInDays() {
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示离线数据
+  int getCurrentMonthCheckInDays({String? userId}) {
     final now = DateTime.now();
-    final checkIns = getAllCheckIns();
+    final checkIns = _storageService.getCheckInsByUser(userId);
     
     return checkIns.where((c) {
       return c.date.year == now.year && c.date.month == now.month;
@@ -121,8 +137,11 @@ class CheckInRepository {
   }
 
   /// 获取指定月份的签到日期列表
-  List<DateTime> getCheckInDatesInMonth(int year, int month) {
-    final checkIns = getAllCheckIns();
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示离线数据
+  List<DateTime> getCheckInDatesInMonth(int year, int month, {String? userId}) {
+    final checkIns = _storageService.getCheckInsByUser(userId);
     
     return checkIns
         .where((c) => c.date.year == year && c.date.month == month)
@@ -137,11 +156,10 @@ class CheckInRepository {
   }
 
   /// 重置所有签到记录（开发者功能）
-  Future<void> resetAllCheckIns() async {
-    final allCheckIns = getAllCheckIns();
+  Future<void> resetAllCheckIns({String? userId}) async {
+    final allCheckIns = _storageService.getCheckInsByUser(userId);
     for (final checkIn in allCheckIns) {
       await _storageService.deleteCheckIn(checkIn.id);
     }
   }
 }
-

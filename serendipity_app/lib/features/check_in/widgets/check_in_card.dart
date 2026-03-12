@@ -32,10 +32,19 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
 
   @override
   Widget build(BuildContext context) {
-    final checkInState = ref.watch(checkInProvider);
+    final checkInStateAsync = ref.watch(checkInProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    return checkInStateAsync.when(
+      data: (checkInState) => _buildCard(context, checkInState, colorScheme),
+      loading: () => _buildLoadingCard(colorScheme),
+      error: (error, stack) => _buildErrorCard(colorScheme),
+    );
+  }
+
+  /// 构建签到卡片
+  Widget _buildCard(BuildContext context, CheckInState checkInState, ColorScheme colorScheme) {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -133,6 +142,67 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 加载中卡片
+  Widget _buildLoadingCard(ColorScheme colorScheme) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primaryContainer,
+            colorScheme.secondaryContainer,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(
+          child: SizedBox(
+            height: 40,
+            width: 40,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 错误卡片
+  Widget _buildErrorCard(ColorScheme colorScheme) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.errorContainer,
+            colorScheme.errorContainer.withValues(alpha: 0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: colorScheme.error),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '签到数据加载失败',
+                style: TextStyle(color: colorScheme.onErrorContainer),
+              ),
+            ),
+          ],
         ),
       ),
     );

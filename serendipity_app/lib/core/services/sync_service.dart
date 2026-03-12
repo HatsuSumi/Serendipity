@@ -513,82 +513,103 @@ class SyncService {
     };
   }
   
-  /// 下载云端有变化的数据到本地（增量下载）
+  /// 下载云端有变化的数据到本地（全量或增量）
   /// 
   /// 调用者：syncAllData()
   /// 
   /// 参数：
-  /// - lastSyncTime：上次同步时间，如果为 null 则全量下载
+  /// - user：当前用户
+  /// - lastSyncTime：上次同步时间
+  ///   - null → 全量同步：下载所有数据，并删除云端已不存在的本地记录
+  ///   - 非 null → 增量同步：只下载 updatedAt > lastSyncTime 的数据
+  ///     注意：增量同步无法感知删除操作（被删除的记录不会出现在结果中）
+  ///     跨设备的删除同步依赖下一次全量同步（用户手动触发或 lastSyncTime 被清除）
   /// 
   /// 返回：下载和合并统计信息
   Future<Map<String, int>> _downloadRemoteData(User user, {DateTime? lastSyncTime}) async {
     int mergedRecords = 0;
     int mergedStoryLines = 0;
     int mergedCheckIns = 0;
-    
+    final isFullSync = lastSyncTime == null;
+
     // 下载云端记录（增量或全量）
-    final remoteRecords = lastSyncTime == null
+    final remoteRecords = isFullSync
         ? await _remoteRepository.downloadRecords(user.id)
         : await _remoteRepository.downloadRecordsSince(user.id, lastSyncTime);
-    
+
     // 合并到本地（最后更新时间优先）
     for (final remoteRecord in remoteRecords) {
       final localRecord = _storageService.getRecord(remoteRecord.id);
-      
-      // 如果本地不存在，或云端数据更新
-      if (localRecord == null || 
+      if (localRecord == null ||
           remoteRecord.updatedAt.isAfter(localRecord.updatedAt)) {
         await _storageService.saveRecord(remoteRecord);
-        
-        // 如果本地存在且云端数据更新，说明发生了冲突合并
-        if (localRecord != null) {
-          mergedRecords++;
+        if (localRecord != null) mergedRecords++;
+      }
+    }
+
+    // 全量同步：删除云端已不存在的本地记录（跨设备删除同步）
+    if (isFullSync) {
+      final remoteRecordIds = remoteRecords.map((r) => r.id).toSet();
+      final localRecords = _storageService.getRecordsByUser(user.id);
+      for (final local in localRecords) {
+        if (!remoteRecordIds.contains(local.id)) {
+          await _storageService.deleteRecord(local.id);
         }
       }
     }
-    
+
     // 下载云端故事线（增量或全量）
-    final remoteStoryLines = lastSyncTime == null
+    final remoteStoryLines = isFullSync
         ? await _remoteRepository.downloadStoryLines(user.id)
         : await _remoteRepository.downloadStoryLinesSince(user.id, lastSyncTime);
-    
+
     // 合并到本地（最后更新时间优先）
     for (final remoteStoryLine in remoteStoryLines) {
       final localStoryLine = _storageService.getStoryLine(remoteStoryLine.id);
-      
-      // 如果本地不存在，或云端数据更新
-      if (localStoryLine == null || 
+      if (localStoryLine == null ||
           remoteStoryLine.updatedAt.isAfter(localStoryLine.updatedAt)) {
         await _storageService.saveStoryLine(remoteStoryLine);
-        
-        // 如果本地存在且云端数据更新，说明发生了冲突合并
-        if (localStoryLine != null) {
-          mergedStoryLines++;
+        if (localStoryLine != null) mergedStoryLines++;
+      }
+    }
+
+    // 全量同步：删除云端已不存在的本地故事线
+    if (isFullSync) {
+      final remoteStoryLineIds = remoteStoryLines.map((s) => s.id).toSet();
+      final localStoryLines = _storageService.getStoryLinesByUser(user.id);
+      for (final local in localStoryLines) {
+        if (!remoteStoryLineIds.contains(local.id)) {
+          await _storageService.deleteStoryLine(local.id);
         }
       }
     }
-    
+
     // 下载云端签到记录（增量或全量）
-    final remoteCheckIns = lastSyncTime == null
+    final remoteCheckIns = isFullSync
         ? await _remoteRepository.downloadCheckIns(user.id)
         : await _remoteRepository.downloadCheckInsSince(user.id, lastSyncTime);
-    
+
     // 合并到本地（最后更新时间优先）
     for (final remoteCheckIn in remoteCheckIns) {
       final localCheckIn = _storageService.getCheckIn(remoteCheckIn.id);
-      
-      // 如果本地不存在，或云端数据更新
-      if (localCheckIn == null || 
+      if (localCheckIn == null ||
           remoteCheckIn.updatedAt.isAfter(localCheckIn.updatedAt)) {
         await _storageService.saveCheckIn(remoteCheckIn);
-        
-        // 如果本地存在且云端数据更新，说明发生了冲突合并
-        if (localCheckIn != null) {
-          mergedCheckIns++;
+        if (localCheckIn != null) mergedCheckIns++;
+      }
+    }
+
+    // 全量同步：删除云端已不存在的本地签到记录
+    if (isFullSync) {
+      final remoteCheckInIds = remoteCheckIns.map((c) => c.id).toSet();
+      final localCheckIns = _storageService.getCheckInsByUser(user.id);
+      for (final local in localCheckIns) {
+        if (!remoteCheckInIds.contains(local.id)) {
+          await _storageService.deleteCheckIn(local.id);
         }
       }
     }
-    
+
     return {
       'records': remoteRecords.length,
       'storyLines': remoteStoryLines.length,

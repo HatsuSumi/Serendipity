@@ -134,10 +134,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
             data: (records) {
               // 根据当前排序方式排序
               final sortedRecords = _sortRecords(records);
-              
-              return sortedRecords.isEmpty
-                  ? _buildEmptyState(context)
-                  : _buildRecordList(context, sortedRecords, ref);
+              // 无论有无记录，都渲染列表（签到卡片始终显示在顶部）
+              return _buildRecordList(context, sortedRecords, ref);
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => Center(
@@ -210,16 +208,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     return sorted;
   }
 
-  /// 空状态
-  Widget _buildEmptyState(BuildContext context) {
-    return const EmptyStateWidget(
-      icon: '💫',
-      title: '还没有记录',
-      description: '点击下方按钮开始记录',
-    );
-  }
-
-  /// 记录列表
+  /// 记录列表（签到卡片始终显示在顶部，记录为空时显示空状态占位）
   Widget _buildRecordList(BuildContext context, List<EncounterRecord> records, WidgetRef ref) {
     return RefreshIndicator(
       onRefresh: () async {
@@ -227,15 +216,28 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       },
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 16),
-        itemCount: records.length + 1, // +1 for check-in card
+        // index 0 = 签到卡片，index 1 = 空状态或第一条记录
+        itemCount: records.isEmpty ? 2 : records.length + 1,
         itemBuilder: (context, index) {
-          // 第一项显示签到卡片
+          // 第一项：签到卡片
           if (index == 0) {
             return CheckInCard(
               confettiController: _confettiController,
             );
           }
-          
+
+          // 无记录时显示空状态占位
+          if (records.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.only(top: 32),
+              child: EmptyStateWidget(
+                icon: '💫',
+                title: '还没有记录',
+                description: '点击下方按钮开始记录',
+              ),
+            );
+          }
+
           // 其他项显示记录卡片
           final record = records[index - 1];
           return Padding(

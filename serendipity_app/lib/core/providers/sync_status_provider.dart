@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/i_storage_service.dart';
 import '../services/sync_service.dart';
@@ -85,6 +86,9 @@ class SyncStatusInfo {
 class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
   final IStorageService _storage;
   
+  /// 自动重置计时器（持有引用以便 dispose 时取消）
+  Timer? _autoResetTimer;
+  
   static const String _lastManualSyncTimeKey = 'last_manual_sync_time';
   
   SyncStatusNotifier(this._storage) : super(SyncStatusInfo(
@@ -100,6 +104,12 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
     } catch (_) {
       return null;
     }
+  }
+  
+  @override
+  void dispose() {
+    _autoResetTimer?.cancel();
+    super.dispose();
   }
   
   /// 开始同步
@@ -131,7 +141,9 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
     );
     
     // 3 秒后自动切换回空闲状态
-    Future.delayed(const Duration(seconds: 3), () {
+    // 使用 Timer 持有引用，确保 dispose 时可以取消
+    _autoResetTimer?.cancel();
+    _autoResetTimer = Timer(const Duration(seconds: 3), () {
       if (mounted && state.status == SyncStatus.success) {
         state = state.copyWith(status: SyncStatus.idle);
       }
@@ -157,7 +169,9 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
     );
     
     // 5 秒后自动切换回空闲状态
-    Future.delayed(const Duration(seconds: 5), () {
+    // 使用 Timer 持有引用，确保 dispose 时可以取消
+    _autoResetTimer?.cancel();
+    _autoResetTimer = Timer(const Duration(seconds: 5), () {
       if (mounted && state.status == SyncStatus.error) {
         state = state.copyWith(status: SyncStatus.idle);
       }

@@ -202,21 +202,22 @@ abstract class IStorageService {
   /// 调用者：AuthNotifier（用户选择不绑定离线数据时）
   Future<void> deleteOfflineData();
   
-  /// 清空用户数据（登出时调用）
+  /// 清空认证数据（登出时调用）
   /// 
   /// 清空内容：
-  /// - 记录
-  /// - 故事线
-  /// - 签到记录
-  /// - 成就
-  /// - 用户设置
-  /// - 同步历史
+  /// - 用户设置（包含 Token 等认证信息）
   /// 
   /// 保留内容：
-  /// - Token（由 AuthRepository 管理）
-  /// - 首次启动标记
+  /// - 所有业务数据（记录、故事线、签到、成就）
+  /// - 同步历史和 lastSyncTime
+  /// 
+  /// 设计说明：
+  /// - 支持多用户离线使用
+  /// - 用户 A 登出后，A 的数据仍在本地（离线可用）
+  /// - 用户 B 登录，只看到 B 的数据（通过 ownerId 过滤）
+  /// - 用户 A 重新登录，数据立即可用（无需等待同步）
   /// 
   /// 调用者：AuthNotifier.signOut()
-  Future<void> clearUserData();
+  Future<void> clearAuthData();
 }
 

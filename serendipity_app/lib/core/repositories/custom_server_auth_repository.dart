@@ -47,9 +47,12 @@ class CustomServerAuthRepository implements IAuthRepository {
     // 立即发出当前用户状态（不等待轮询周期）
     yield await currentUser;
     
-    // 然后每 5 秒轮询一次
+    // 每 300 秒轮询一次，验证 Token 有效性
+    // Token 的实时有效性由 HttpClientService 的自动刷新机制保证，
+    // 无需高频轮询。高频轮询（如 5 秒）会导致所有 watch(authProvider)
+    // 的 Widget 每轮询一次就 rebuild 一次，影响性能。
     yield* Stream.periodic(
-      const Duration(seconds: 5),
+      const Duration(seconds: 300),
       (_) => currentUser,
     ).asyncMap((future) => future);
   }

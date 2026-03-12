@@ -563,35 +563,23 @@ class StorageService implements IStorageService {
     }
   }
   
-  /// 清空用户数据（登出时调用）
+  /// 清空认证数据（登出时调用）
   /// 
   /// 调用者：AuthNotifier.signOut()
   /// 
   /// 清空策略：
-  /// - 清空所有用户相关数据
-  /// - 保留 Token（由 AuthRepository 管理）
-  /// - 保留首次启动标记
+  /// - 只清空 Token 和认证相关信息
+  /// - 保留所有用户的业务数据（记录、故事线、签到、成就等）
+  /// 
+  /// 设计说明：
+  /// - 支持多用户场景：用户 A 登出后，A 的数据保留在本地
+  /// - 用户 B 登录，只看到 B 的数据（通过 ownerId 过滤）
+  /// - 用户 A 重新登录，数据立即可用（无需等待同步）
   /// 
   /// Fail Fast：
   /// - Box 未初始化：抛出 StateError
   @override
-  Future<void> clearUserData() async {
-    // 清空记录
-    await _recordsBoxOrThrow.clear();
-    
-    // 清空故事线
-    await _storyLinesBoxOrThrow.clear();
-    
-    // 清空签到记录
-    await _checkInsBoxOrThrow.clear();
-    
-    // 清空成就
-    await _achievementsBoxOrThrow.clear();
-    
-    // 清空同步历史
-    await _syncHistoriesBoxOrThrow.clear();
-    
-    // 清空用户设置（但保留其他全局设置）
+  Future<void> clearAuthData() async {
     await _settingsBoxOrThrow.delete('user_settings');
   }
 }

@@ -41,7 +41,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
 
   @override
   Widget build(BuildContext context) {
-    final checkInState = ref.watch(checkInProvider);
+    final checkInStateAsync = ref.watch(checkInProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -50,43 +50,61 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
         title: const Text('每日签到'),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          // 主内容
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                // 签到按钮区域
-                _buildCheckInSection(checkInState, colorScheme),
-                
-                const SizedBox(height: 16),
-                
-                // 统计数据
-                _buildStatsSection(checkInState, colorScheme),
-                
-                const SizedBox(height: 24),
-                
-                // 签到日历
-                _buildCalendarSection(checkInState, colorScheme),
-                
-                const SizedBox(height: 24),
-              ],
-            ),
+      body: checkInStateAsync.when(
+        data: (checkInState) => _buildContent(checkInState, colorScheme),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+              const SizedBox(height: 16),
+              Text('加载失败：$error'),
+            ],
           ),
-          // 粒子效果（覆盖在整个页面最顶层）
-          if (_confettiController != null)
-            Positioned(
-              top: 100,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                child: CheckInAnimationHelper.createConfettiWidget(
-                  controller: _confettiController!,
-                ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建主内容
+  Widget _buildContent(CheckInState checkInState, ColorScheme colorScheme) {
+    return Stack(
+      children: [
+        // 主内容
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              // 签到按钮区域
+              _buildCheckInSection(checkInState, colorScheme),
+              
+              const SizedBox(height: 16),
+              
+              // 统计数据
+              _buildStatsSection(checkInState, colorScheme),
+              
+              const SizedBox(height: 24),
+              
+              // 签到日历
+              _buildCalendarSection(checkInState, colorScheme),
+              
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+        // 粒子效果（覆盖在整个页面最顶层）
+        if (_confettiController != null)
+          Positioned(
+            top: 100,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: CheckInAnimationHelper.createConfettiWidget(
+                controller: _confettiController!,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 

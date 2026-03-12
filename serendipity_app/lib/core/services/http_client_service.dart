@@ -327,4 +327,3 @@ class HttpException implements Exception {
     return 'HttpException: $message (statusCode: $statusCode, errorCode: $errorCode)';
   }
 }
-
