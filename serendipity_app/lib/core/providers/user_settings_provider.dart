@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user_settings.dart';
 import '../../models/user.dart';
 import '../../models/enums.dart';
-import 'records_provider.dart';
 import '../services/i_storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/sync_service.dart';
 import 'auth_provider.dart';
+import 'records_provider.dart' show syncCompletedProvider;
 import 'check_in_provider.dart' show checkInRepositoryProvider;
 
 /// NotificationService Provider
@@ -138,6 +138,8 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 调用者：所有设置更新方法
   /// 
   /// 注意：上传失败不影响本地保存，静默失败
+  /// 
+  /// 架构说明：通过 SyncService 上传，遵循 Provider → SyncService → Repository 分层约束
   Future<void> _uploadToCloud(UserSettings settings) async {
     try {
       // 检查用户是否登录
@@ -149,9 +151,9 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
         return;
       }
       
-      // 上传到云端，获取服务端返回的最新设置（含服务端生成的 updatedAt）
-      final remoteRepository = _ref.read(remoteDataRepositoryProvider);
-      final serverSettings = await remoteRepository.uploadSettings(settings);
+      // 通过 SyncService 上传，遵循 Provider → SyncService → Repository 分层约束
+      final syncService = _ref.read(syncServiceProvider);
+      final serverSettings = await syncService.uploadSettings(settings);
       
       // 用服务端的 updatedAt 更新本地，确保下次同步时时间戳对齐
       await _storageService.saveUserSettings(serverSettings);

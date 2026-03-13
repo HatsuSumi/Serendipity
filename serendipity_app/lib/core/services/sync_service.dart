@@ -232,6 +232,24 @@ class SyncService {
     await _remoteRepository.deleteRecord(user.id, recordId);
   }
   
+  /// 上传用户设置到云端
+  /// 
+  /// 调用者：
+  /// - UserSettingsNotifier：设置变更时即时上传
+  /// - SyncService._handleRemoteSettingsNotFound()（全量同步）
+  /// 
+  /// 返回：服务端返回的最新设置（含服务端生成的 updatedAt）
+  /// 
+  /// Fail Fast：
+  /// - settings.userId 为空：抛出 ArgumentError
+  /// - 网络错误：向上抛出异常
+  Future<UserSettings> uploadSettings(UserSettings settings) async {
+    if (settings.userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    return await _remoteRepository.uploadSettings(settings);
+  }
+
   /// 上传成就解锁记录到云端
   /// 
   /// 调用者：

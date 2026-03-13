@@ -114,13 +114,6 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 数据同步完成后
   /// 
   /// 作用：强制 Provider 重新从存储加载数据
-  /// 刷新所有数据 Provider（清除内存缓存）
-  /// 
-  /// 调用时机：
-  /// - 清空本地数据后
-  /// - 数据同步完成后
-  /// 
-  /// 作用：强制 Provider 重新从存储加载数据
   /// 
   /// 设计说明：
   /// - 所有数据 Provider（recordsProvider、storyLinesProvider、checkInProvider）

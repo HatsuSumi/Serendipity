@@ -249,6 +249,17 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     );
     
     await _repository.updateRecord(updatedRecord);
+
+    // 同步到云端（置顶状态需要跨设备一致）
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      try {
+        await _syncService.updateRecord(currentUser, updatedRecord);
+      } catch (_) {
+        // 云端同步失败不影响本地置顶，用户可稍后手动同步
+      }
+    }
+
     await refresh();
   }
 
@@ -265,6 +276,17 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     );
     
     await _repository.updateRecord(updatedRecord);
+
+    // 同步到云端（置顶状态需要跨设备一致）
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      try {
+        await _syncService.updateRecord(currentUser, updatedRecord);
+      } catch (_) {
+        // 云端同步失败不影响本地取消置顶，用户可稍后手动同步
+      }
+    }
+
     await refresh();
   }
 

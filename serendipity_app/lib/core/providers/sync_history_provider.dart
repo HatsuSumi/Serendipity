@@ -20,7 +20,7 @@ final syncHistoriesProvider = Provider<List<SyncHistory>>((ref) {
   // 监听同步完成信号，每次同步完成后自动重建
   ref.watch(syncCompletedProvider);
 
-  final storage = ref.read(storageServiceProvider);
+  final storage = ref.watch(storageServiceProvider);
   return storage.getAllSyncHistories();
 });
 
