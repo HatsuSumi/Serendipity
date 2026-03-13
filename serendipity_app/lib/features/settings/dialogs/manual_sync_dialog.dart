@@ -55,17 +55,6 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       final user = await ref.read(authProvider.notifier).currentUser;
       if (user == null) throw StateError('用户未登录');
 
-      if (!mounted) return;
-      setState(() { _currentStep = '正在上传本地数据...'; });
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) return;
-      setState(() { _currentStep = '正在下载云端数据...'; });
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) return;
-      setState(() { _currentStep = '正在合并数据...'; });
-
       // 从 SyncService 读取持久化的上次同步时间，自动判断全量/增量
       final syncService = ref.read(syncServiceProvider);
       final lastSyncTime = await syncService.getLastSyncTime(user.id);
@@ -74,6 +63,14 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
         user,
         lastSyncTime: lastSyncTime,
         source: SyncSource.manual,
+        onProgress: (step) {
+          // 进度回调：更新 UI 显示当前步骤
+          if (mounted) {
+            setState(() {
+              _currentStep = step;
+            });
+          }
+        },
       );
 
       if (!mounted) return;

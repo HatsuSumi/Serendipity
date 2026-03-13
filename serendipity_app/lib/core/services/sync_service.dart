@@ -362,6 +362,7 @@ class SyncService {
   /// - lastSyncTime：上次同步时间（null 表示全量下载）
   /// - skipDownload：是否跳过下载（注册场景传 true，其他场景不传）
   /// - source：同步来源（默认手动同步）
+  /// - onProgress：同步进度回调（可选，用于 UI 展示进度）
   /// 
   /// 返回：同步结果统计
   /// 
@@ -373,6 +374,7 @@ class SyncService {
     DateTime? lastSyncTime,
     bool skipDownload = false,
     SyncSource source = SyncSource.manual,
+    void Function(String)? onProgress,
   }) async {
     // Fail Fast：参数验证
     if (user.id.isEmpty) {
@@ -384,19 +386,23 @@ class SyncService {
     
     try {
       // 1. 上传本地有变化的数据
+      onProgress?.call('正在上传本地数据...');
       final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
       
       // 2. 下载云端有变化的数据
       // skipDownload == true（注册场景）：跳过下载，新用户云端确实没数据
       // 其他场景：lastSyncTime == null 全量下载，否则增量下载
+      onProgress?.call('正在下载云端数据...');
       final downloadStats = skipDownload
           ? {'records': 0, 'storyLines': 0, 'checkIns': 0, 'mergedRecords': 0, 'mergedStoryLines': 0, 'mergedCheckIns': 0}
           : await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
       
       // 3. 同步用户设置
+      onProgress?.call('正在同步用户设置...');
       await _syncUserSettings(user);
       
       // 4. 同步成就解锁状态（静默，不触发通知）
+      onProgress?.call('正在同步成就...');
       final syncedAchievements = await _syncAchievementUnlocks(user);
       
       // 5. 构建同步结果统计
@@ -428,6 +434,7 @@ class SyncService {
       await _saveLastSyncTime(user.id, syncStartTime);
       
       // 8. 返回同步结果统计
+      onProgress?.call('同步完成');
       return result;
     } catch (e) {
       // 保存同步历史记录（失败）
@@ -692,14 +699,19 @@ class SyncService {
     }
   }
   
-  /// 解决用户设置冲突
+  /// 解决用户设置冲突（字段级别的 Last Write Wins）
   /// 
   /// 调用者：_syncUserSettings()
   /// 
-  /// 冲突解决策略：
+  /// 冲突解决策略（字段级别）：
   /// - 场景1：云端不存在 → 上传本地设置（或创建默认设置）
   /// - 场景2：本地不存在 → 使用云端设置
-  /// - 场景3：两边都存在 → 比较 updatedAt，使用最新的版本
+  /// - 场景3：两边都存在 → 比较每个字段的 updatedAt，取最新版本
+  /// 
+  /// 优点：
+  /// - 不会因为单一时间戳相同而丢失其他字段的修改
+  /// - 支持多设备独立修改不同字段
+  /// - 冲突解决更精细
   /// 
   /// 遵循原则：
   /// - 单一职责：只负责冲突解决逻辑
@@ -722,7 +734,7 @@ class SyncService {
       return;
     }
     
-    // 场景3：两边都存在，比较 updatedAt
+    // 场景3：两边都存在，字段级别比较
     await _handleSettingsConflict(localSettings, remoteSettings);
   }
   
@@ -751,29 +763,103 @@ class SyncService {
     await _storageService.saveUserSettings(remoteSettings);
   }
   
-  /// 处理本地和云端设置都存在的冲突
+  /// 处理本地和云端设置都存在的冲突（字段级别合并）
   /// 
   /// 调用者：_resolveSettingsConflict()
   /// 
-  /// 策略：比较 updatedAt，使用最新的版本（Last Write Wins）
-  /// - 本地更新 → 上传本地设置（服务端返回对齐后的 updatedAt，保存到本地）
-  /// - 云端更新 → 使用云端设置
-  /// - 时间相同 → 使用云端设置（保守策略）
+  /// 策略：比较每个字段的 updatedAt，使用最新版本（Last Write Wins）
   /// 
-  /// 时间戳对齐：上传后用服务端返回的 updatedAt 更新本地，
+  /// 字段分组：
+  /// 1. 主题设置（theme, pageTransition, dialogAnimation）→ themeUpdatedAt
+  /// 2. 强调色设置（accentColor）→ accentColorUpdatedAt（独立追踪）
+  /// 3. 通知设置（achievementNotification, checkInReminderEnabled 等）→ notificationsUpdatedAt
+  /// 4. 签到设置（checkInVibrationEnabled, checkInConfettiEnabled）→ checkInUpdatedAt
+  /// 5. 社区设置（hidePublishWarning, hasSeenPublishWarning 等）→ communityUpdatedAt
+  /// 
+  /// 合并后上传到云端，用服务端返回的 updatedAt 更新本地，
   /// 确保下次同步时 LWW 策略能正确工作。
   Future<void> _handleSettingsConflict(
     UserSettings localSettings,
     UserSettings remoteSettings,
   ) async {
-    if (localSettings.updatedAt.isAfter(remoteSettings.updatedAt)) {
-      // 本地更新：上传到云端，用服务端返回的 updatedAt 更新本地
-      final serverSettings = await _remoteRepository.uploadSettings(localSettings);
-      await _storageService.saveUserSettings(serverSettings);
-    } else {
-      // 云端更新或时间相同：使用云端设置
-      await _storageService.saveUserSettings(remoteSettings);
-    }
+    // 字段级别的 Last Write Wins 合并
+    final merged = UserSettings(
+      id: localSettings.id,
+      userId: localSettings.userId,
+      
+      // 主题设置：比较 themeUpdatedAt
+      theme: localSettings.themeUpdatedAt.isAfter(remoteSettings.themeUpdatedAt)
+          ? localSettings.theme
+          : remoteSettings.theme,
+      pageTransition: localSettings.themeUpdatedAt.isAfter(remoteSettings.themeUpdatedAt)
+          ? localSettings.pageTransition
+          : remoteSettings.pageTransition,
+      dialogAnimation: localSettings.themeUpdatedAt.isAfter(remoteSettings.themeUpdatedAt)
+          ? localSettings.dialogAnimation
+          : remoteSettings.dialogAnimation,
+      themeUpdatedAt: localSettings.themeUpdatedAt.isAfter(remoteSettings.themeUpdatedAt)
+          ? localSettings.themeUpdatedAt
+          : remoteSettings.themeUpdatedAt,
+      
+      // 强调色设置：比较 accentColorUpdatedAt（独立追踪）
+      accentColor: localSettings.accentColorUpdatedAt.isAfter(remoteSettings.accentColorUpdatedAt)
+          ? localSettings.accentColor
+          : remoteSettings.accentColor,
+      accentColorUpdatedAt: localSettings.accentColorUpdatedAt.isAfter(remoteSettings.accentColorUpdatedAt)
+          ? localSettings.accentColorUpdatedAt
+          : remoteSettings.accentColorUpdatedAt,
+      
+      // 通知设置：比较 notificationsUpdatedAt
+      achievementNotification: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
+          ? localSettings.achievementNotification
+          : remoteSettings.achievementNotification,
+      anniversaryReminder: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
+          ? localSettings.anniversaryReminder
+          : remoteSettings.anniversaryReminder,
+      checkInReminderEnabled: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
+          ? localSettings.checkInReminderEnabled
+          : remoteSettings.checkInReminderEnabled,
+      checkInReminderTime: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
+          ? localSettings.checkInReminderTime
+          : remoteSettings.checkInReminderTime,
+      notificationsUpdatedAt: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
+          ? localSettings.notificationsUpdatedAt
+          : remoteSettings.notificationsUpdatedAt,
+      
+      // 签到设置：比较 checkInUpdatedAt
+      checkInVibrationEnabled: localSettings.checkInUpdatedAt.isAfter(remoteSettings.checkInUpdatedAt)
+          ? localSettings.checkInVibrationEnabled
+          : remoteSettings.checkInVibrationEnabled,
+      checkInConfettiEnabled: localSettings.checkInUpdatedAt.isAfter(remoteSettings.checkInUpdatedAt)
+          ? localSettings.checkInConfettiEnabled
+          : remoteSettings.checkInConfettiEnabled,
+      checkInUpdatedAt: localSettings.checkInUpdatedAt.isAfter(remoteSettings.checkInUpdatedAt)
+          ? localSettings.checkInUpdatedAt
+          : remoteSettings.checkInUpdatedAt,
+      
+      // 社区设置：比较 communityUpdatedAt
+      hidePublishWarning: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
+          ? localSettings.hidePublishWarning
+          : remoteSettings.hidePublishWarning,
+      hasSeenPublishWarning: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
+          ? localSettings.hasSeenPublishWarning
+          : remoteSettings.hasSeenPublishWarning,
+      hasSeenCommunityIntro: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
+          ? localSettings.hasSeenCommunityIntro
+          : remoteSettings.hasSeenCommunityIntro,
+      communityUpdatedAt: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
+          ? localSettings.communityUpdatedAt
+          : remoteSettings.communityUpdatedAt,
+      
+      createdAt: localSettings.createdAt,
+      updatedAt: DateTime.now(),
+    );
+    
+    // 上传合并后的设置到云端
+    final serverSettings = await _remoteRepository.uploadSettings(merged);
+    
+    // 用服务端返回的最新设置（含服务端生成的 updatedAt）更新本地
+    await _storageService.saveUserSettings(serverSettings);
   }
 }
 

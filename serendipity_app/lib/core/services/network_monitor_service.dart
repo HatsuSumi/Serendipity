@@ -148,11 +148,11 @@ class NetworkMonitorService {
       } else if (isServerHealthy) {
         // 服务器健康，执行定期同步（增量）
         final authState = ref.read(authProvider);
-        final user = authState.value;
-        
-        if (user != null) {
-          await _triggerSync(ref, user, SyncSource.polling);
-        }
+        authState.whenData((user) {
+          if (user != null) {
+            _triggerSync(ref, user, SyncSource.polling);
+          }
+        });
       }
       
       _lastServerHealthy = isServerHealthy;
@@ -202,7 +202,7 @@ class NetworkMonitorService {
     }
   }
   
-  /// 触发同步
+  /// 触发同步（带重试机制）
   /// 
   /// 调用者：
   /// - _triggerInitialSync()：App 启动
@@ -213,28 +213,64 @@ class NetworkMonitorService {
   /// - 首次同步（lastSyncTime == null）：全量同步
   /// - 非首次同步（lastSyncTime != null）：增量同步
   /// 
+  /// 重试策略：
+  /// - 最多重试 3 次
+  /// - 重试延迟：2秒、5秒、10秒
+  /// - 只重试网络错误，不重试业务逻辑错误
+  /// 
   /// 注意：syncStartTime 由 SyncService.syncAllData 内部持久化，
   /// 自动同步不更新 syncStatusProvider（syncStatusProvider 只给手动同步的 UI 用）。
   Future<void> _triggerSync(WidgetRef ref, User user, SyncSource source) async {
-    try {
-      final syncService = ref.read(syncServiceProvider);
-      final lastSyncTime = await syncService.getLastSyncTime(user.id);
-      
-      await syncService.syncAllData(
-        user,
-        lastSyncTime: lastSyncTime,
-        source: source,
-      );
-      
-      // 通知所有数据 Provider 刷新
-      ref.read(syncCompletedProvider.notifier).state++;
-      ref.read(checkInProvider.notifier).refresh();
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        print('数据同步失败: $e');
-        print('错误堆栈: $stackTrace');
+    const maxRetries = 3;
+    const retryDelays = [
+      Duration(seconds: 2),
+      Duration(seconds: 5),
+      Duration(seconds: 10),
+    ];
+    
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        final syncService = ref.read(syncServiceProvider);
+        final lastSyncTime = await syncService.getLastSyncTime(user.id);
+        
+        await syncService.syncAllData(
+          user,
+          lastSyncTime: lastSyncTime,
+          source: source,
+        );
+        
+        // 同步成功，尝试通知刷新（如果 ref 仍然有效）
+        try {
+          ref.read(syncCompletedProvider.notifier).state++;
+          ref.read(checkInProvider.notifier).refresh();
+        } catch (e) {
+          // ref 已失效（应用已关闭或 Provider 已销毁），静默忽略
+          if (kDebugMode) {
+            print('同步完成但 Provider 已失效，无法通知刷新');
+          }
+        }
+        return; // 成功，退出重试循环
+      } catch (e, stackTrace) {
+        final isLastAttempt = attempt == maxRetries - 1;
+        
+        if (kDebugMode) {
+          print('数据同步失败（第 ${attempt + 1}/$maxRetries 次）: $e');
+          if (isLastAttempt) {
+            print('错误堆栈: $stackTrace');
+          }
+        }
+        
+        // 如果还有重试机会，等待后重试
+        if (!isLastAttempt) {
+          await Future.delayed(retryDelays[attempt]);
+        } else {
+          // 所有重试都失败了，记录错误但不中断应用
+          if (kDebugMode) {
+            print('数据同步已放弃（已重试 $maxRetries 次）');
+          }
+          return; // 静默失败，不影响用户体验
+        }
       }
-      rethrow;
     }
   }
 

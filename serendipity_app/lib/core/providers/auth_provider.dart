@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
 import '../repositories/i_auth_repository.dart';
@@ -99,7 +100,10 @@ class AuthNotifier extends StreamNotifier<User?> {
       // 同时递增信号，确保 watch(syncCompletedProvider) 的 Provider 也重建
       ref.read(syncCompletedProvider.notifier).state++;
     } catch (e) {
-      // 同步失败不影响用户使用
+      // 同步失败不影响用户使用，但记录日志便于调试
+      if (kDebugMode) {
+        print('登录/注册后数据同步失败: $e');
+      }
     }
   }
   
