@@ -53,6 +53,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 
   /// 单一职责：只负责创建默认配置
   static UserSettings _createDefaultSettings() {
+    final now = DateTime.now();
     return UserSettings(
       id: 'default',
       userId: 'guest',
@@ -68,8 +69,13 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       hidePublishWarning: false,
       hasSeenPublishWarning: false,
       hasSeenCommunityIntro: false,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      themeUpdatedAt: now,
+      accentColorUpdatedAt: now,
+      notificationsUpdatedAt: now,
+      checkInUpdatedAt: now,
+      communityUpdatedAt: now,
+      createdAt: now,
+      updatedAt: now,
     );
   }
 
@@ -157,9 +163,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
   /// 更新主题
   Future<void> updateTheme(ThemeOption theme) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       theme: theme,
-      updatedAt: DateTime.now(),
+      themeUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -171,9 +179,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
   /// 更新页面切换动画
   Future<void> updatePageTransition(PageTransitionType type) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       pageTransition: type,
-      updatedAt: DateTime.now(),
+      themeUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -185,9 +195,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
   /// 更新对话框动画
   Future<void> updateDialogAnimation(DialogAnimationType type) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       dialogAnimation: type,
-      updatedAt: DateTime.now(),
+      themeUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -203,9 +215,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 
   /// 如果启用，会调度通知；如果禁用，会取消通知
   Future<void> updateCheckInReminderEnabled(bool enabled) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       checkInReminderEnabled: enabled,
-      updatedAt: DateTime.now(),
+      notificationsUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -231,9 +245,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     // Fail Fast：参数校验
     ArgumentError.checkNotNull(time, 'time');
 
+    final now = DateTime.now();
     final updated = state.copyWith(
       checkInReminderTime: time,
-      updatedAt: DateTime.now(),
+      notificationsUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -250,9 +266,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
   /// 更新签到震动开关
   Future<void> updateCheckInVibrationEnabled(bool enabled) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       checkInVibrationEnabled: enabled,
-      updatedAt: DateTime.now(),
+      checkInUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -264,9 +282,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
   /// 更新签到粒子特效开关
   Future<void> updateCheckInConfettiEnabled(bool enabled) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       checkInConfettiEnabled: enabled,
-      updatedAt: DateTime.now(),
+      checkInUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -283,9 +303,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 调用者：
   /// - PublishWarningDialog（用户勾选"不再提示"时）
   Future<void> updateHidePublishWarning(bool hide) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       hidePublishWarning: hide,
-      updatedAt: DateTime.now(),
+      communityUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -302,10 +324,12 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 调用者：
   /// - SettingsPage（重置对话框提醒时）
   Future<void> resetPublishWarning() async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       hidePublishWarning: false,
       hasSeenPublishWarning: false,
-      updatedAt: DateTime.now(),
+      communityUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -323,9 +347,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// - PublishWarningDialog（倒计时结束时）
   /// - SettingsPage（重置对话框提醒时）
   Future<void> markPublishWarningSeen([bool seen = true]) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       hasSeenPublishWarning: seen,
-      updatedAt: DateTime.now(),
+      communityUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
@@ -342,9 +368,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 调用者：
   /// - CommunityIntroDialog（用户点击"我知道了"时）
   Future<void> markCommunityIntroSeen([bool seen = true]) async {
+    final now = DateTime.now();
     final updated = state.copyWith(
       hasSeenCommunityIntro: seen,
-      updatedAt: DateTime.now(),
+      communityUpdatedAt: now,
+      updatedAt: now,
     );
 
     await _storageService.saveUserSettings(updated);
