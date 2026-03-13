@@ -472,48 +472,33 @@ class SyncService {
     int uploadedCheckIns = 0;
     
     // 上传记录（只上传当前用户的）
-    try {
-      final userRecords = _storageService.getRecordsByUser(user.id);
-      final changedRecords = lastSyncTime == null
-          ? userRecords
-          : userRecords.where((r) => r.updatedAt.isAfter(lastSyncTime)).toList();
-      
-      if (changedRecords.isNotEmpty) {
-        await _remoteRepository.uploadRecords(user.id, changedRecords);
-        uploadedRecords = changedRecords.length;
-      }
-    } catch (e) {
-      rethrow;
+    final userRecords = _storageService.getRecordsByUser(user.id);
+    final changedRecords = lastSyncTime == null
+        ? userRecords
+        : userRecords.where((r) => r.updatedAt.isAfter(lastSyncTime)).toList();
+    if (changedRecords.isNotEmpty) {
+      await _remoteRepository.uploadRecords(user.id, changedRecords);
+      uploadedRecords = changedRecords.length;
     }
-    
+
     // 上传故事线（只上传当前用户的）
-    try {
-      final userStoryLines = _storageService.getStoryLinesByUser(user.id);
-      final changedStoryLines = lastSyncTime == null
-          ? userStoryLines
-          : userStoryLines.where((s) => s.updatedAt.isAfter(lastSyncTime)).toList();
-      
-      if (changedStoryLines.isNotEmpty) {
-        await _remoteRepository.uploadStoryLines(user.id, changedStoryLines);
-        uploadedStoryLines = changedStoryLines.length;
-      }
-    } catch (e) {
-      rethrow;
+    final userStoryLines = _storageService.getStoryLinesByUser(user.id);
+    final changedStoryLines = lastSyncTime == null
+        ? userStoryLines
+        : userStoryLines.where((s) => s.updatedAt.isAfter(lastSyncTime)).toList();
+    if (changedStoryLines.isNotEmpty) {
+      await _remoteRepository.uploadStoryLines(user.id, changedStoryLines);
+      uploadedStoryLines = changedStoryLines.length;
     }
-    
+
     // 上传签到记录（只上传当前用户的）
-    try {
-      final userCheckIns = _storageService.getCheckInsByUser(user.id);
-      final changedCheckIns = lastSyncTime == null
-          ? userCheckIns
-          : userCheckIns.where((c) => c.updatedAt.isAfter(lastSyncTime)).toList();
-      
-      if (changedCheckIns.isNotEmpty) {
-        await _remoteRepository.uploadCheckIns(user.id, changedCheckIns);
-        uploadedCheckIns = changedCheckIns.length;
-      }
-    } catch (e) {
-      rethrow;
+    final userCheckIns = _storageService.getCheckInsByUser(user.id);
+    final changedCheckIns = lastSyncTime == null
+        ? userCheckIns
+        : userCheckIns.where((c) => c.updatedAt.isAfter(lastSyncTime)).toList();
+    if (changedCheckIns.isNotEmpty) {
+      await _remoteRepository.uploadCheckIns(user.id, changedCheckIns);
+      uploadedCheckIns = changedCheckIns.length;
     }
     
     return {

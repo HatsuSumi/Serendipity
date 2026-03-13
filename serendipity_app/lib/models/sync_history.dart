@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 import '../core/services/sync_service.dart';
 
 part 'sync_history.g.dart';
@@ -50,7 +51,7 @@ enum SyncSource {
 /// - Fail Fast：构造函数验证必填字段
 @HiveType(typeId: 33)
 class SyncHistory {
-  /// 同步记录 ID（使用时间戳生成）
+  /// 同步记录 ID（UUID v4）
   @HiveField(0)
   final String id;
   
@@ -189,7 +190,7 @@ class SyncHistory {
     final durationMs = syncEndTime.difference(syncStartTime).inMilliseconds;
     
     return SyncHistory(
-      id: syncStartTime.millisecondsSinceEpoch.toString(),
+      id: const Uuid().v4(),
       syncTime: syncStartTime,
       isManual: source == SyncSource.manual,
       success: true,
@@ -236,7 +237,7 @@ class SyncHistory {
     final durationMs = syncEndTime.difference(syncStartTime).inMilliseconds;
     
     return SyncHistory(
-      id: syncStartTime.millisecondsSinceEpoch.toString(),
+      id: const Uuid().v4(),
       syncTime: syncStartTime,
       isManual: source == SyncSource.manual,
       success: false,

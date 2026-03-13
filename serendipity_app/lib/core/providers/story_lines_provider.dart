@@ -246,6 +246,17 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
     );
     
     await _repository.updateStoryLine(updatedStoryLine);
+
+    // 同步到云端（置顶状态需要跨设备一致）
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      try {
+        await _syncService.updateStoryLine(currentUser, updatedStoryLine);
+      } catch (_) {
+        // 云端同步失败不影响本地置顶，用户可稍后手动同步
+      }
+    }
+
     await refresh();
   }
 
@@ -262,6 +273,17 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
     );
     
     await _repository.updateStoryLine(updatedStoryLine);
+
+    // 同步到云端（置顶状态需要跨设备一致）
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      try {
+        await _syncService.updateStoryLine(currentUser, updatedStoryLine);
+      } catch (_) {
+        // 云端同步失败不影响本地取消置顶，用户可稍后手动同步
+      }
+    }
+
     await refresh();
   }
 

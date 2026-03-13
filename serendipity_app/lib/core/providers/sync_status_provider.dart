@@ -140,14 +140,7 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
       errorMessage: null,
     );
     
-    // 3 秒后自动切换回空闲状态
-    // 使用 Timer 持有引用，确保 dispose 时可以取消
-    _autoResetTimer?.cancel();
-    _autoResetTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && state.status == SyncStatus.success) {
-        state = state.copyWith(status: SyncStatus.idle);
-      }
-    });
+    _scheduleAutoReset(const Duration(seconds: 3), SyncStatus.success);
   }
   
   /// 同步失败
@@ -168,11 +161,16 @@ class SyncStatusNotifier extends StateNotifier<SyncStatusInfo> {
       errorMessage: errorMessage,
     );
     
-    // 5 秒后自动切换回空闲状态
-    // 使用 Timer 持有引用，确保 dispose 时可以取消
+    _scheduleAutoReset(const Duration(seconds: 5), SyncStatus.error);
+  }
+  
+  /// 延迟后自动切换回空闲状态
+  /// 
+  /// 调用者：syncSuccess()、syncError()
+  void _scheduleAutoReset(Duration delay, SyncStatus expectedStatus) {
     _autoResetTimer?.cancel();
-    _autoResetTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted && state.status == SyncStatus.error) {
+    _autoResetTimer = Timer(delay, () {
+      if (mounted && state.status == expectedStatus) {
         state = state.copyWith(status: SyncStatus.idle);
       }
     });
