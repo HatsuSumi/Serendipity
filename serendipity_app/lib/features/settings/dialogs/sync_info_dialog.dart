@@ -58,7 +58,7 @@ class SyncInfoDialog extends StatelessWidget {
             ),
             _buildInfoText(
               context,
-              '5. 每 60 秒轮询一次（增量同步，后台自动）',
+              '5. 每 60 秒轮询一次服务器健康状态（如果服务器从故障恢复则触发同步）',
             ),
             const SizedBox(height: 16),
             _buildInfoText(
