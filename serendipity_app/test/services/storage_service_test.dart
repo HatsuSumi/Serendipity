@@ -29,8 +29,6 @@ void main() {
       Hive.registerAdapter(AuthProviderAdapter());
       Hive.registerAdapter(MembershipTierAdapter());
       Hive.registerAdapter(MembershipStatusAdapter());
-      Hive.registerAdapter(PaymentMethodAdapter());
-      Hive.registerAdapter(PaymentStatusAdapter());
       Hive.registerAdapter(ThemeOptionAdapter());
       Hive.registerAdapter(AchievementCategoryAdapter());
       Hive.registerAdapter(TagWithNoteAdapter());

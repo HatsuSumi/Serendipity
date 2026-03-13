@@ -9,7 +9,6 @@ import 'package:serendipity_app/models/story_line.dart';
 import 'package:serendipity_app/models/achievement.dart';
 import 'package:serendipity_app/models/check_in_record.dart';
 import 'package:serendipity_app/models/user_settings.dart';
-import 'package:serendipity_app/models/enums.dart';
 
 /// Mock 存储服务
 class MockStorageService implements IStorageService {
@@ -182,6 +181,10 @@ class MockStorageService implements IStorageService {
 
   @override
   Future<void> saveUserSettings(UserSettings settings) async {}
+
+  // IStorageService の残りの抽象メソッドは noSuchMethod で委譲
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -212,10 +215,9 @@ void main() {
         expect(state.errorMessage, null);
       });
 
-      test('应该从存储加载上次同步时间', () async {
+      test('应该从存储加载上次手动同步时间', () async {
         final lastSyncTime = DateTime(2026, 3, 1, 10, 30);
         await mockStorage.set('last_manual_sync_time', lastSyncTime.toIso8601String());
-        await mockStorage.set('last_full_sync_time', lastSyncTime.toIso8601String());
 
         // 重新创建 container 以触发初始化
         container.dispose();
@@ -231,7 +233,6 @@ void main() {
         expect(state.lastManualSyncTime!.year, 2026);
         expect(state.lastManualSyncTime!.month, 3);
         expect(state.lastManualSyncTime!.day, 1);
-        expect(state.lastFullSyncTime, isNotNull);
       });
     });
 
@@ -248,7 +249,6 @@ void main() {
 
     group('syncSuccess', () {
       test('应该将状态设置为成功并保存同步结果', () {
-        final syncStartTime = DateTime.now();
         final result = SyncResult(
           uploadedRecords: 5,
           uploadedStoryLines: 2,
@@ -259,20 +259,19 @@ void main() {
           mergedRecords: 1,
           mergedStoryLines: 0,
           mergedCheckIns: 2,
+          syncedAchievements: 0,
         );
 
-        container.read(syncStatusProvider.notifier).syncSuccess(result, syncStartTime);
+        container.read(syncStatusProvider.notifier).syncSuccess(result);
         final state = container.read(syncStatusProvider);
 
         expect(state.status, SyncStatus.success);
         expect(state.syncResult, result);
         expect(state.errorMessage, null);
         expect(state.lastManualSyncTime, isNotNull);
-        expect(state.lastFullSyncTime, syncStartTime);
       });
 
-      test('应该保存上次同步时间到存储', () async {
-        final syncStartTime = DateTime.now();
+      test('应该保存上次手动同步时间到存储', () async {
         final result = SyncResult(
           uploadedRecords: 0,
           uploadedStoryLines: 0,
@@ -283,24 +282,20 @@ void main() {
           mergedRecords: 0,
           mergedStoryLines: 0,
           mergedCheckIns: 0,
+          syncedAchievements: 0,
         );
 
-        container.read(syncStatusProvider.notifier).syncSuccess(result, syncStartTime);
+        container.read(syncStatusProvider.notifier).syncSuccess(result);
 
-        final savedManualTime = await mockStorage.get<String>('last_manual_sync_time');
-        final savedFullTime = await mockStorage.get<String>('last_full_sync_time');
+        final savedManualTime = mockStorage.get<String>('last_manual_sync_time');
         expect(savedManualTime, isNotNull);
-        expect(savedFullTime, isNotNull);
-        
+
         final parsedManualTime = DateTime.parse(savedManualTime!);
-        final parsedFullTime = DateTime.parse(savedFullTime!);
         final now = DateTime.now();
         expect(parsedManualTime.difference(now).inSeconds.abs(), lessThan(2));
-        expect(parsedFullTime, syncStartTime);
       });
 
       test('3秒后应该自动切换回空闲状态', () async {
-        final syncStartTime = DateTime.now();
         final result = SyncResult(
           uploadedRecords: 0,
           uploadedStoryLines: 0,
@@ -311,10 +306,11 @@ void main() {
           mergedRecords: 0,
           mergedStoryLines: 0,
           mergedCheckIns: 0,
+          syncedAchievements: 0,
         );
 
-        container.read(syncStatusProvider.notifier).syncSuccess(result, syncStartTime);
-        
+        container.read(syncStatusProvider.notifier).syncSuccess(result);
+
         var state = container.read(syncStatusProvider);
         expect(state.status, SyncStatus.success);
 
@@ -345,7 +341,7 @@ void main() {
 
       test('5秒后应该自动切换回空闲状态', () async {
         container.read(syncStatusProvider.notifier).syncError('测试错误');
-        
+
         var state = container.read(syncStatusProvider);
         expect(state.status, SyncStatus.error);
 
@@ -361,14 +357,14 @@ void main() {
       test('应该重置状态为空闲', () {
         // 先设置为错误状态
         container.read(syncStatusProvider.notifier).syncError('测试错误');
-        
+
         var state = container.read(syncStatusProvider);
         expect(state.status, SyncStatus.error);
         expect(state.errorMessage, '测试错误');
 
         // 重置
         container.read(syncStatusProvider.notifier).reset();
-        
+
         state = container.read(syncStatusProvider);
         expect(state.status, SyncStatus.idle);
         expect(state.errorMessage, null);
@@ -388,6 +384,7 @@ void main() {
           mergedRecords: 0,
           mergedStoryLines: 0,
           mergedCheckIns: 0,
+          syncedAchievements: 0,
         );
         expect(result.hasChanges, false);
 
@@ -402,6 +399,7 @@ void main() {
           mergedRecords: 0,
           mergedStoryLines: 0,
           mergedCheckIns: 0,
+          syncedAchievements: 0,
         );
         expect(result.hasChanges, true);
 
@@ -416,6 +414,7 @@ void main() {
           mergedRecords: 0,
           mergedStoryLines: 0,
           mergedCheckIns: 0,
+          syncedAchievements: 0,
         );
         expect(result.hasChanges, true);
 
@@ -430,10 +429,10 @@ void main() {
           mergedRecords: 1,
           mergedStoryLines: 0,
           mergedCheckIns: 0,
+          syncedAchievements: 0,
         );
         expect(result.hasChanges, true);
       });
     });
   });
 }
-

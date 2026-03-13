@@ -23,6 +23,7 @@ void main() {
       
       final history = SyncHistory.fromSuccess(
         result: result,
+        userId: 'user123',
         syncStartTime: syncStartTime,
         syncEndTime: syncEndTime,
         source: SyncSource.manual,
@@ -45,6 +46,7 @@ void main() {
       
       final history = SyncHistory.fromError(
         errorMessage: 'Network error',
+        userId: 'user123',
         syncStartTime: syncStartTime,
         syncEndTime: syncEndTime,
         source: SyncSource.polling,
@@ -67,6 +69,7 @@ void main() {
       expect(
         () => SyncHistory.fromError(
           errorMessage: '',
+          userId: 'user123',
           syncStartTime: syncStartTime,
           syncEndTime: syncEndTime,
           source: SyncSource.manual,
@@ -99,6 +102,7 @@ void main() {
       for (final entry in testCases.entries) {
         final history = SyncHistory.fromSuccess(
           result: _createEmptyResult(),
+          userId: 'user123',
           syncStartTime: DateTime.now(),
           syncEndTime: DateTime.now(),
           source: entry.key,
@@ -136,6 +140,7 @@ void main() {
     test('should format duration in milliseconds', () {
       final history = SyncHistory.fromSuccess(
         result: _createEmptyResult(),
+        userId: 'user123',
         syncStartTime: DateTime(2026, 3, 9, 14, 30, 0, 0),
         syncEndTime: DateTime(2026, 3, 9, 14, 30, 0, 500),
         source: SyncSource.manual,
@@ -147,6 +152,7 @@ void main() {
     test('should format duration in seconds', () {
       final history = SyncHistory.fromSuccess(
         result: _createEmptyResult(),
+        userId: 'user123',
         syncStartTime: DateTime(2026, 3, 9, 14, 30, 0),
         syncEndTime: DateTime(2026, 3, 9, 14, 30, 3, 500),
         source: SyncSource.manual,
@@ -160,6 +166,7 @@ void main() {
     test('should identify manual sync', () {
       final manualHistory = SyncHistory.fromSuccess(
         result: _createEmptyResult(),
+        userId: 'user123',
         syncStartTime: DateTime.now(),
         syncEndTime: DateTime.now(),
         source: SyncSource.manual,
@@ -168,6 +175,7 @@ void main() {
       
       final autoHistory = SyncHistory.fromSuccess(
         result: _createEmptyResult(),
+        userId: 'user123',
         syncStartTime: DateTime.now(),
         syncEndTime: DateTime.now(),
         source: SyncSource.polling,
@@ -191,4 +199,3 @@ SyncResult _createEmptyResult() {
     syncedAchievements: 0,
   );
 }
-
