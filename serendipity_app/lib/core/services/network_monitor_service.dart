@@ -112,50 +112,31 @@ class NetworkMonitorService {
     
     if (isOnline && _wasOffline) {
       _onNetworkRestored(ref);
-    } else if (isOnline && !_wasOffline) {
-      _verifyNetworkConnection(ref);
     }
     
     _wasOffline = !isOnline;
-  }
-  
-  /// 验证网络连接
-  Future<void> _verifyNetworkConnection(WidgetRef ref) async {
-    Future.microtask(() async {
-      try {
-        final isServerHealthy = await _checkServerHealth();
-        if (isServerHealthy) {
-          if (_wasOffline) {
-            _onNetworkRestored(ref);
-          }
-        } else {
-          _wasOffline = true;
-        }
-      } catch (e) {
-        // 静默失败
-      }
-    });
   }
   
   /// 轮询网络状态
   /// 
   /// 调用者：startMonitoring() 的 Timer.periodic
   /// 
-  /// 同步策略：使用增量同步，只同步有变化的数据
+  /// 同步策略：
+  /// - 只检查服务器健康状态
+  /// - 如果从不健康恢复到健康，触发一次同步
+  /// - 不在轮询中主动触发同步（避免频繁同步）
+  /// 
+  /// 注意：完整的数据同步由以下场景触发：
+  /// - appStartup：App 启动时
+  /// - networkReconnect：网络从离线恢复到在线时
+  /// - manual：用户手动同步时
   Future<void> _pollNetworkStatus(WidgetRef ref) async {
     try {
       final isServerHealthy = await _checkServerHealth();
       
+      // 只在服务器从不健康恢复到健康时触发同步
       if (isServerHealthy && !_lastServerHealthy) {
         _onNetworkRestored(ref);
-      } else if (isServerHealthy) {
-        // 服务器健康，执行定期同步（增量）
-        final authState = ref.read(authProvider);
-        authState.whenData((user) {
-          if (user != null) {
-            _triggerSync(ref, user, SyncSource.polling);
-          }
-        });
       }
       
       _lastServerHealthy = isServerHealthy;
@@ -177,12 +158,12 @@ class NetworkMonitorService {
           return;
         }
         
-        final authState = ref.read(authProvider);
-        final user = authState.value;
-        
-        if (user != null) {
-          await _triggerSync(ref, user, SyncSource.networkReconnect);
-        }
+        // 使用 whenData 安全处理 AsyncValue，避免在 loading/error 状态时访问 .value
+        ref.read(authProvider).whenData((user) {
+          if (user != null) {
+            _triggerSync(ref, user, SyncSource.networkReconnect);
+          }
+        });
       } catch (e) {
         // 静默失败
       }
@@ -249,10 +230,10 @@ class NetworkMonitorService {
             source: source,
           );
 
-          // 同步成功，尝试通知刷新（如果 ref 仍然有效）
+          // 同步成功，递增信号通知所有监听 syncCompletedProvider 的 Provider 重建
+          // checkInProvider 在 build() 里 watch(syncCompletedProvider)，会自动重建
           try {
             ref.read(syncCompletedProvider.notifier).state++;
-            ref.read(checkInProvider.notifier).refresh();
           } catch (e) {
             // ref 已失效（应用已关闭或 Provider 已销毁），静默忽略
             if (kDebugMode) {

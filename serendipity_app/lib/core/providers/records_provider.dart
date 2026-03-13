@@ -210,17 +210,18 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     await _repository.deleteRecord(id);
     
     // 3. 如果用户已登录，删除云端记录并联动删除社区帖子
+    Exception? syncException;
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
         await _syncService.deleteRecord(currentUser, id);
       } catch (e) {
-        // 云端同步失败不影响本地操作
-        // 但需要向上抛出异常，让 UI 层显示提示
-        rethrow;
+        // 先保存异常，确保后续步骤（社区联动、刷新）不被中断
+        syncException = e is Exception ? e : Exception(e.toString());
       }
       
       // 联动删除对应的社区帖子（幂等，帖子不存在时静默成功）
+      // 无论云端删除是否成功都要执行，保持本地一致性
       try {
         final communityRepo = ref.read(communityRepositoryProvider);
         await communityRepo.deletePostByRecordId(id);
@@ -232,8 +233,11 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 4. 刷新记录列表
+    // 4. 无论云端是否成功，UI 都刷新
     await refresh();
+    
+    // 5. 云端失败时再向上抛出，让 UI 层显示提示
+    if (syncException != null) throw syncException;
   }
 
   /// 置顶记录
