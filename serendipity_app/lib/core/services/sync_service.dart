@@ -64,6 +64,8 @@ class SyncResult {
   });
   
   /// 是否有数据变化
+  /// 
+  /// 注意：不包括 syncedAchievements，因为成就同步是静默的，不算作"有变化"
   bool get hasChanges {
     return uploadedRecords > 0 ||
            uploadedStoryLines > 0 ||
@@ -73,8 +75,7 @@ class SyncResult {
            downloadedCheckIns > 0 ||
            mergedRecords > 0 ||
            mergedStoryLines > 0 ||
-           mergedCheckIns > 0 ||
-           syncedAchievements > 0;
+           mergedCheckIns > 0;
   }
 }
 
@@ -456,6 +457,8 @@ class SyncService {
   /// 返回：上传统计信息
   /// 
   /// 注意：只上传属于当前用户的数据（ownerId == user.id）
+  /// 
+  /// 错误处理：网络错误直接抛出，让用户看到错误提示
   Future<Map<String, int>> _uploadLocalData(User user, {DateTime? lastSyncTime}) async {
     int uploadedRecords = 0;
     int uploadedStoryLines = 0;
@@ -473,7 +476,7 @@ class SyncService {
         uploadedRecords = changedRecords.length;
       }
     } catch (e) {
-      // 上传失败不影响其他数据同步
+      rethrow;
     }
     
     // 上传故事线（只上传当前用户的）
@@ -488,7 +491,7 @@ class SyncService {
         uploadedStoryLines = changedStoryLines.length;
       }
     } catch (e) {
-      // 上传失败不影响其他数据同步
+      rethrow;
     }
     
     // 上传签到记录（只上传当前用户的）
@@ -503,7 +506,7 @@ class SyncService {
         uploadedCheckIns = changedCheckIns.length;
       }
     } catch (e) {
-      // 上传失败不影响其他数据同步
+      rethrow;
     }
     
     return {
@@ -526,6 +529,8 @@ class SyncService {
   ///     跨设备的删除同步依赖下一次全量同步（用户手动触发或 lastSyncTime 被清除）
   /// 
   /// 返回：下载和合并统计信息
+  /// 
+  /// 错误处理：网络错误直接抛出，让用户看到错误提示
   Future<Map<String, int>> _downloadRemoteData(User user, {DateTime? lastSyncTime}) async {
     int mergedRecords = 0;
     int mergedStoryLines = 0;
