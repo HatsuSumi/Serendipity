@@ -377,14 +377,20 @@ class SettingsPage extends ConsumerWidget {
                       title: const Text('修改密码'),
                       onTap: () => _showUpdatePasswordDialog(context, ref),
                     ),
-                    // 更换邮箱（仅邮箱登录用户）
-                    if (user.email != null)
-                      ListTile(
-                        leading: const Icon(Icons.email_outlined),
-                        title: const Text('更换邮箱'),
-                        subtitle: Text(user.email!),
-                        onTap: () => _showUpdateEmailDialog(context, ref),
-                      ),
+                    // 更换/绑定邮箱（所有用户）
+                    Builder(
+                      builder: (context) {
+                        final hasEmail = user.email != null;
+                        return ListTile(
+                          leading: const Icon(Icons.email_outlined),
+                          title: Text(hasEmail ? '更换邮箱' : '绑定邮箱'),
+                          subtitle: hasEmail 
+                              ? Text(user.email!) 
+                              : const Text('未绑定'),
+                          onTap: () => _showUpdateEmailDialog(context, ref, hasEmail),
+                        );
+                      },
+                    ),
                     // 更换/绑定手机号（所有用户）
                     Builder(
                       builder: (context) {
@@ -857,9 +863,9 @@ class SettingsPage extends ConsumerWidget {
     );
   }
   
-  /// 显示更换邮箱对话框
-  void _showUpdateEmailDialog(BuildContext context, WidgetRef ref) {
-    final newEmailController = TextEditingController();
+  /// 显示更换/绑定邮箱对话框
+  void _showUpdateEmailDialog(BuildContext context, WidgetRef ref, bool hasEmail) {
+    final emailController = TextEditingController();
     final passwordController = TextEditingController();
     bool passwordVisible = false;
     
@@ -868,16 +874,17 @@ class SettingsPage extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text('更换邮箱'),
+            title: Text(hasEmail ? '更换邮箱' : '绑定邮箱'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: newEmailController,
+                  controller: emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: '新邮箱',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: hasEmail ? '新邮箱' : '邮箱',
+                    hintText: '请输入邮箱',
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -886,6 +893,7 @@ class SettingsPage extends ConsumerWidget {
                   obscureText: !passwordVisible,
                   decoration: InputDecoration(
                     labelText: '当前密码',
+                    hintText: '请输入当前密码',
                     border: const OutlineInputBorder(),
                     helperText: '需要验证身份',
                     suffixIcon: IconButton(
@@ -909,12 +917,12 @@ class SettingsPage extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () async {
-                  final newEmail = newEmailController.text.trim();
+                  final email = emailController.text.trim();
                   final password = passwordController.text.trim();
                   
                   // Fail Fast：验证输入
-                  if (newEmail.isEmpty) {
-                    MessageHelper.showError(context, '请输入新邮箱');
+                  if (email.isEmpty) {
+                    MessageHelper.showError(context, '请输入邮箱');
                     return;
                   }
                   if (password.isEmpty) {
@@ -926,11 +934,11 @@ class SettingsPage extends ConsumerWidget {
                   final success = await AsyncActionHelper.execute(
                     context,
                     action: () => ref.read(authProvider.notifier).updateEmail(
-                      newEmail,
+                      email,
                       password,
                     ),
-                    successMessage: '邮箱更换成功',
-                    errorMessagePrefix: '更换邮箱失败',
+                    successMessage: hasEmail ? '邮箱更换成功' : '邮箱绑定成功',
+                    errorMessagePrefix: hasEmail ? '更换邮箱失败' : '绑定邮箱失败',
                   );
                   
                   if (success && context.mounted) {
