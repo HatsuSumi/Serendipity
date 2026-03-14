@@ -1,6 +1,5 @@
 import 'package:hive/hive.dart';
 import 'enums.dart';
-import '../core/utils/json_helper.dart';
 
 part 'encounter_record.g.dart';
 
@@ -15,38 +14,21 @@ class TagWithNote {
   TagWithNote({
     required this.tag,
     this.note,
-  }) {
-    // 类型验证（不使用 assert，确保在 Release 模式下也生效）
-    if (tag.isEmpty) {
-      throw ArgumentError('Tag cannot be empty');
-    }
-    if (tag is! String) {
-      throw FormatException('Field "tag.tag" expected String but got ${tag.runtimeType} ($tag)');
-    }
-    if (note != null && note is! String) {
-      throw FormatException('Field "tag.note" expected String? but got ${note.runtimeType} ($note)');
-    }
-    final noteValue = note;
-    if (noteValue != null && noteValue.length > 50) {
-      throw ArgumentError('Note must be at most 50 characters, got ${noteValue.length}');
-    }
-  }
+  }) : assert(tag.isNotEmpty, 'Tag cannot be empty'),
+       assert(note == null || note.length <= 50, 
+         'Note must be at most 50 characters, got ${note.length}');
 
   Map<String, dynamic> toJson() {
-    try {
-      final json = <String, dynamic>{
-        'tag': JsonHelper.validateField('tag.tag', tag, String),
-      };
-      
-      // 只添加非空的 note
-      if (note != null && note!.isNotEmpty) {
-        json['note'] = JsonHelper.validateField('tag.note', note, String);
-      }
-      
-      return json;
-    } catch (e) {
-      throw FormatException('TagWithNote.toJson() failed: $e');
+    final json = <String, dynamic>{
+      'tag': tag,
+    };
+    
+    // 只添加非空的 note
+    if (note != null && note!.isNotEmpty) {
+      json['note'] = note;
     }
+    
+    return json;
   }
 
   factory TagWithNote.fromJson(Map<String, dynamic> json) {
@@ -77,42 +59,29 @@ class Location {
     this.address,
     this.placeName,
     this.placeType,
-  }) {
-    // 类型验证（不使用 assert，确保在 Release 模式下也生效）
-    if (address != null && address is! String) {
-      throw FormatException('Field "location.address" expected String? but got ${address.runtimeType} ($address)');
-    }
-    if (placeName != null && placeName is! String) {
-      throw FormatException('Field "location.placeName" expected String? but got ${placeName.runtimeType} ($placeName)');
-    }
-  }
+  });
 
   Map<String, dynamic> toJson() {
-    try {
-      final json = <String, dynamic>{};
-      
-      // 只添加非空字段（带类型验证）
-      if (latitude != null) {
-        json['latitude'] = latitude;
-      }
-      if (longitude != null) {
-        json['longitude'] = longitude;
-      }
-      if (address != null && address!.isNotEmpty) {
-        json['address'] = JsonHelper.validateField('location.address', address, String);
-      }
-      if (placeName != null && placeName!.isNotEmpty) {
-        json['placeName'] = JsonHelper.validateField('location.placeName', placeName, String);
-      }
-      if (placeType != null) {
-        final placeTypeValue = placeType!.value;
-        json['placeType'] = JsonHelper.validateField('location.placeType', placeTypeValue, String);
-      }
-      
-      return json;
-    } catch (e) {
-      throw FormatException('Location.toJson() failed: $e');
+    final json = <String, dynamic>{};
+    
+    // 只添加非空字段
+    if (latitude != null) {
+      json['latitude'] = latitude;
     }
+    if (longitude != null) {
+      json['longitude'] = longitude;
+    }
+    if (address != null && address!.isNotEmpty) {
+      json['address'] = address;
+    }
+    if (placeName != null && placeName!.isNotEmpty) {
+      json['placeName'] = placeName;
+    }
+    if (placeType != null) {
+      json['placeType'] = placeType!.value;
+    }
+    
+    return json;
   }
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -206,85 +175,50 @@ class EncounterRecord {
     required this.updatedAt,
     this.isPinned = false,
     this.ownerId,
-  }) {
-    // 类型验证（不使用 assert，确保在 Release 模式下也生效）
-    if (id.isEmpty) {
-      throw ArgumentError('ID cannot be empty');
-    }
-    if (id is! String) {
-      throw TypeError();
-    }
-    if (description != null && description is! String) {
-      throw FormatException('Field "description" expected String? but got ${description.runtimeType} ($description)');
-    }
-    final descriptionValue = description;
-    if (descriptionValue != null && descriptionValue.length > 500) {
-      throw ArgumentError('Description must be at most 500 characters, got ${descriptionValue.length}');
-    }
-    if (storyLineId != null && storyLineId is! String) {
-      throw FormatException('Field "storyLineId" expected String? but got ${storyLineId.runtimeType} ($storyLineId)');
-    }
-    if (ifReencounter != null && ifReencounter is! String) {
-      throw FormatException('Field "ifReencounter" expected String? but got ${ifReencounter.runtimeType} ($ifReencounter)');
-    }
-    if (conversationStarter != null && conversationStarter is! String) {
-      throw FormatException('Field "conversationStarter" expected String? but got ${conversationStarter.runtimeType} ($conversationStarter)');
-    }
-    final conversationStarterValue = conversationStarter;
-    if (conversationStarterValue != null && conversationStarterValue.length > 500) {
-      throw ArgumentError('ConversationStarter must be at most 500 characters, got ${conversationStarterValue.length}');
-    }
-    if (backgroundMusic != null && backgroundMusic is! String) {
-      throw FormatException('Field "backgroundMusic" expected String? but got ${backgroundMusic.runtimeType} ($backgroundMusic)');
-    }
-    if (ownerId != null && ownerId is! String) {
-      throw FormatException('Field "ownerId" expected String? but got ${ownerId.runtimeType} ($ownerId)');
-    }
-  }
+  }) : assert(id.isNotEmpty, 'ID cannot be empty'),
+       assert(description == null || description.length <= 500, 
+         'Description must be at most 500 characters, got ${description.length}'),
+       assert(conversationStarter == null || conversationStarter.length <= 500, 
+         'ConversationStarter must be at most 500 characters, got ${conversationStarter.length}');
 
   Map<String, dynamic> toJson() {
-    try {
-      // 构建基础 JSON（带类型验证）
-      final json = <String, dynamic>{
-        'id': JsonHelper.validateField('id', id, String),
-        'timestamp': JsonHelper.validateField('timestamp', timestamp.toIso8601String(), String),
-        'location': location.toJson(),
-        'tags': tags.map((t) => t.toJson()).toList(),
-        'status': JsonHelper.validateField('status', status.name, String),
-        'weather': weather.map((w) => w.value.toString()).toList(),
-        'createdAt': JsonHelper.validateField('createdAt', createdAt.toIso8601String(), String),
-        'updatedAt': JsonHelper.validateField('updatedAt', updatedAt.toIso8601String(), String),
-        'isPinned': JsonHelper.validateField('isPinned', isPinned, bool),
-      };
-      
-      // 只添加非空的可选字段（带类型验证）
-      if (description != null && description!.isNotEmpty) {
-        json['description'] = JsonHelper.validateField('description', description, String);
-      }
-      if (emotion != null) {
-        json['emotion'] = JsonHelper.validateField('emotion', emotion!.name, String);
-      }
-      if (storyLineId != null && storyLineId!.isNotEmpty) {
-        json['storyLineId'] = JsonHelper.validateField('storyLineId', storyLineId, String);
-      }
-      if (ifReencounter != null && ifReencounter!.isNotEmpty) {
-        json['ifReencounter'] = JsonHelper.validateField('ifReencounter', ifReencounter, String);
-      }
-      if (conversationStarter != null && conversationStarter!.isNotEmpty) {
-        json['conversationStarter'] = JsonHelper.validateField('conversationStarter', conversationStarter, String);
-      }
-      if (backgroundMusic != null && backgroundMusic!.isNotEmpty) {
-        json['backgroundMusic'] = JsonHelper.validateField('backgroundMusic', backgroundMusic, String);
-      }
-      if (ownerId != null) {
-        json['ownerId'] = JsonHelper.validateField('ownerId', ownerId, String);
-      }
-      
-      return json;
-    } catch (e) {
-      // 重新抛出，带上更多上下文信息
-      throw FormatException('EncounterRecord.toJson() failed: $e');
+    // 构建基础 JSON
+    final json = <String, dynamic>{
+      'id': id,
+      'timestamp': timestamp.toIso8601String(),
+      'location': location.toJson(),
+      'tags': tags.map((t) => t.toJson()).toList(),
+      'status': status.name,
+      'weather': weather.map((w) => w.value.toString()).toList(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'isPinned': isPinned,
+    };
+    
+    // 只添加非空的可选字段
+    if (description != null && description!.isNotEmpty) {
+      json['description'] = description;
     }
+    if (emotion != null) {
+      json['emotion'] = emotion!.name;
+    }
+    if (storyLineId != null && storyLineId!.isNotEmpty) {
+      json['storyLineId'] = storyLineId;
+    }
+    if (ifReencounter != null && ifReencounter!.isNotEmpty) {
+      json['ifReencounter'] = ifReencounter;
+    }
+    if (conversationStarter != null && conversationStarter!.isNotEmpty) {
+      json['conversationStarter'] = conversationStarter;
+    }
+    if (backgroundMusic != null && backgroundMusic!.isNotEmpty) {
+      json['backgroundMusic'] = backgroundMusic;
+    }
+    if (ownerId != null) {
+      json['ownerId'] = ownerId;
+    }
+    
+    return json;
   }
 
   factory EncounterRecord.fromJson(Map<String, dynamic> json) {
