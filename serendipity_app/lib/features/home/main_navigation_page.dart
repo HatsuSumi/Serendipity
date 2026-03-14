@@ -97,8 +97,13 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
     // 监听成就解锁通知
     ref.listen<List<String>>(newlyUnlockedAchievementsProvider, (previous, next) {
       if (next.isNotEmpty) {
-        // 显示成就解锁对话框并处理结果
-        _showAchievementDialog(next);
+        // 延迟显示成就解锁对话框，确保其他页面（如 create_record_page）已经完全关闭
+        // 避免对话框导航栈混乱导致的类型错误
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _showAchievementDialog(next);
+          }
+        });
         
         // 清空通知列表
         ref.read(newlyUnlockedAchievementsProvider.notifier).clear();
