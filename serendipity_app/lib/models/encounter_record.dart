@@ -19,10 +19,16 @@ class TagWithNote {
          'Note must be at most 50 characters, got ${note.length}');
 
   Map<String, dynamic> toJson() {
-    return {
+    final json = <String, dynamic>{
       'tag': tag,
-      'note': note,
     };
+    
+    // 只添加非空的 note
+    if (note != null && note!.isNotEmpty) {
+      json['note'] = note;
+    }
+    
+    return json;
   }
 
   factory TagWithNote.fromJson(Map<String, dynamic> json) {
