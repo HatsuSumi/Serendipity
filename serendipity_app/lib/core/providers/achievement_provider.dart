@@ -92,7 +92,10 @@ class AchievementsNotifier extends AsyncNotifier<List<Achievement>> {
   /// 重置所有成就（开发者功能）
   Future<void> resetAllAchievements() async {
     await _repository.resetAllAchievements();
-    await refresh();
+    // 直接更新状态，不使用 invalidate 避免循环依赖
+    state = await AsyncValue.guard(() async {
+      return _repository.getAllAchievements();
+    });
   }
 }
 
