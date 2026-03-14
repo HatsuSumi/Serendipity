@@ -6,6 +6,7 @@ import '../../core/providers/achievement_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/achievement_unlocked_dialog.dart';
+import '../../models/encounter_record.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';
 import '../community/community_page.dart';
