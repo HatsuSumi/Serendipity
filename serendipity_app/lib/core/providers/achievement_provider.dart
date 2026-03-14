@@ -40,20 +40,9 @@ class AchievementsNotifier extends AsyncNotifier<List<Achievement>> {
 
   /// 刷新成就列表
   Future<void> refresh() async {
-    print('=== 刷新成就列表 ===');
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final achievements = await _repository.getAllAchievements();
-      print('读取到 ${achievements.length} 个成就');
-      
-      // 显示所有已解锁的成就
-      final unlockedAchievements = achievements.where((a) => a.unlocked).toList();
-      print('已解锁成就数量: ${unlockedAchievements.length}');
-      for (final a in unlockedAchievements) {
-        print('  - ${a.id} (${a.name}): unlocked=${a.unlocked}, unlockedAt=${a.unlockedAt}');
-      }
-      
-      return achievements;
+      return _repository.getAllAchievements();
     });
   }
 
@@ -91,18 +80,11 @@ class AchievementsNotifier extends AsyncNotifier<List<Achievement>> {
 
   /// 重置所有成就（开发者功能）
   Future<void> resetAllAchievements() async {
-    print('=== 开始重置所有成就 ===');
     await _repository.resetAllAchievements();
-    print('数据库重置完成，开始更新 Provider 状态');
     // 直接更新状态，不使用 invalidate 避免循环依赖
     state = await AsyncValue.guard(() async {
-      final achievements = await _repository.getAllAchievements();
-      print('重新加载了 ${achievements.length} 个成就');
-      final unlockedCount = achievements.where((a) => a.unlocked).length;
-      print('已解锁成就数量: $unlockedCount');
-      return achievements;
+      return _repository.getAllAchievements();
     });
-    print('=== 重置完成，Provider 状态已更新 ===');
   }
 }
 
