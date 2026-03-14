@@ -16,6 +16,9 @@ class TagWithNote {
     required this.tag,
     this.note,
   }) : assert(tag.isNotEmpty, 'Tag cannot be empty'),
+       assert(tag is String, 'Field "tag.tag" expected String but got ${tag.runtimeType} ($tag)'),
+       assert(note == null || note is String,
+         'Field "tag.note" expected String? but got ${note.runtimeType} ($note)'),
        assert(note == null || note.length <= 50, 
          'Note must be at most 50 characters, got ${note.length}');
 
@@ -64,7 +67,10 @@ class Location {
     this.address,
     this.placeName,
     this.placeType,
-  });
+  }) : assert(address == null || address is String,
+         'Field "location.address" expected String? but got ${address.runtimeType} ($address)'),
+       assert(placeName == null || placeName is String,
+         'Field "location.placeName" expected String? but got ${placeName.runtimeType} ($placeName)');
 
   Map<String, dynamic> toJson() {
     try {
@@ -186,10 +192,23 @@ class EncounterRecord {
     this.isPinned = false,
     this.ownerId,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
+       assert(id is String, 'Field "id" expected String but got ${id.runtimeType} ($id)'),
+       assert(description == null || description is String, 
+         'Field "description" expected String? but got ${description.runtimeType} ($description)'),
        assert(description == null || description.length <= 500, 
          'Description must be at most 500 characters, got ${description.length}'),
+       assert(storyLineId == null || storyLineId is String,
+         'Field "storyLineId" expected String? but got ${storyLineId.runtimeType} ($storyLineId)'),
+       assert(ifReencounter == null || ifReencounter is String,
+         'Field "ifReencounter" expected String? but got ${ifReencounter.runtimeType} ($ifReencounter)'),
+       assert(conversationStarter == null || conversationStarter is String,
+         'Field "conversationStarter" expected String? but got ${conversationStarter.runtimeType} ($conversationStarter)'),
        assert(conversationStarter == null || conversationStarter.length <= 500, 
-         'ConversationStarter must be at most 500 characters, got ${conversationStarter.length}');
+         'ConversationStarter must be at most 500 characters, got ${conversationStarter.length}'),
+       assert(backgroundMusic == null || backgroundMusic is String,
+         'Field "backgroundMusic" expected String? but got ${backgroundMusic.runtimeType} ($backgroundMusic)'),
+       assert(ownerId == null || ownerId is String,
+         'Field "ownerId" expected String? but got ${ownerId.runtimeType} ($ownerId)');
 
   Map<String, dynamic> toJson() {
     try {
