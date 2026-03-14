@@ -15,12 +15,21 @@ class TagWithNote {
   TagWithNote({
     required this.tag,
     this.note,
-  }) : assert(tag.isNotEmpty, 'Tag cannot be empty'),
-       assert(tag is String, 'Field "tag.tag" expected String but got ${tag.runtimeType} ($tag)'),
-       assert(note == null || note is String,
-         'Field "tag.note" expected String? but got ${note.runtimeType} ($note)'),
-       assert(note == null || note.length <= 50, 
-         'Note must be at most 50 characters, got ${note.length}');
+  }) {
+    // 类型验证（不使用 assert，确保在 Release 模式下也生效）
+    if (tag.isEmpty) {
+      throw ArgumentError('Tag cannot be empty');
+    }
+    if (tag is! String) {
+      throw FormatException('Field "tag.tag" expected String but got ${tag.runtimeType} ($tag)');
+    }
+    if (note != null && note is! String) {
+      throw FormatException('Field "tag.note" expected String? but got ${note.runtimeType} ($note)');
+    }
+    if (note != null && note.length > 50) {
+      throw ArgumentError('Note must be at most 50 characters, got ${note.length}');
+    }
+  }
 
   Map<String, dynamic> toJson() {
     try {
@@ -67,10 +76,15 @@ class Location {
     this.address,
     this.placeName,
     this.placeType,
-  }) : assert(address == null || address is String,
-         'Field "location.address" expected String? but got ${address.runtimeType} ($address)'),
-       assert(placeName == null || placeName is String,
-         'Field "location.placeName" expected String? but got ${placeName.runtimeType} ($placeName)');
+  }) {
+    // 类型验证（不使用 assert，确保在 Release 模式下也生效）
+    if (address != null && address is! String) {
+      throw FormatException('Field "location.address" expected String? but got ${address.runtimeType} ($address)');
+    }
+    if (placeName != null && placeName is! String) {
+      throw FormatException('Field "location.placeName" expected String? but got ${placeName.runtimeType} ($placeName)');
+    }
+  }
 
   Map<String, dynamic> toJson() {
     try {
@@ -191,24 +205,39 @@ class EncounterRecord {
     required this.updatedAt,
     this.isPinned = false,
     this.ownerId,
-  }) : assert(id.isNotEmpty, 'ID cannot be empty'),
-       assert(id is String, 'Field "id" expected String but got ${id.runtimeType} ($id)'),
-       assert(description == null || description is String, 
-         'Field "description" expected String? but got ${description.runtimeType} ($description)'),
-       assert(description == null || description.length <= 500, 
-         'Description must be at most 500 characters, got ${description.length}'),
-       assert(storyLineId == null || storyLineId is String,
-         'Field "storyLineId" expected String? but got ${storyLineId.runtimeType} ($storyLineId)'),
-       assert(ifReencounter == null || ifReencounter is String,
-         'Field "ifReencounter" expected String? but got ${ifReencounter.runtimeType} ($ifReencounter)'),
-       assert(conversationStarter == null || conversationStarter is String,
-         'Field "conversationStarter" expected String? but got ${conversationStarter.runtimeType} ($conversationStarter)'),
-       assert(conversationStarter == null || conversationStarter.length <= 500, 
-         'ConversationStarter must be at most 500 characters, got ${conversationStarter.length}'),
-       assert(backgroundMusic == null || backgroundMusic is String,
-         'Field "backgroundMusic" expected String? but got ${backgroundMusic.runtimeType} ($backgroundMusic)'),
-       assert(ownerId == null || ownerId is String,
-         'Field "ownerId" expected String? but got ${ownerId.runtimeType} ($ownerId)');
+  }) {
+    // 类型验证（不使用 assert，确保在 Release 模式下也生效）
+    if (id.isEmpty) {
+      throw ArgumentError('ID cannot be empty');
+    }
+    if (id is! String) {
+      throw TypeError();
+    }
+    if (description != null && description is! String) {
+      throw FormatException('Field "description" expected String? but got ${description.runtimeType} ($description)');
+    }
+    if (description != null && description.length > 500) {
+      throw ArgumentError('Description must be at most 500 characters, got ${description.length}');
+    }
+    if (storyLineId != null && storyLineId is! String) {
+      throw FormatException('Field "storyLineId" expected String? but got ${storyLineId.runtimeType} ($storyLineId)');
+    }
+    if (ifReencounter != null && ifReencounter is! String) {
+      throw FormatException('Field "ifReencounter" expected String? but got ${ifReencounter.runtimeType} ($ifReencounter)');
+    }
+    if (conversationStarter != null && conversationStarter is! String) {
+      throw FormatException('Field "conversationStarter" expected String? but got ${conversationStarter.runtimeType} ($conversationStarter)');
+    }
+    if (conversationStarter != null && conversationStarter.length > 500) {
+      throw ArgumentError('ConversationStarter must be at most 500 characters, got ${conversationStarter.length}');
+    }
+    if (backgroundMusic != null && backgroundMusic is! String) {
+      throw FormatException('Field "backgroundMusic" expected String? but got ${backgroundMusic.runtimeType} ($backgroundMusic)');
+    }
+    if (ownerId != null && ownerId is! String) {
+      throw FormatException('Field "ownerId" expected String? but got ${ownerId.runtimeType} ($ownerId)');
+    }
+  }
 
   Map<String, dynamic> toJson() {
     try {
