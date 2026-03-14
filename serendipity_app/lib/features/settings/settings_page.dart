@@ -377,34 +377,22 @@ class SettingsPage extends ConsumerWidget {
                       title: const Text('修改密码'),
                       onTap: () => _showUpdatePasswordDialog(context, ref),
                     ),
-                    // 更换/绑定邮箱（所有用户）
-                    Builder(
-                      builder: (context) {
-                        final hasEmail = user.email != null;
-                        return ListTile(
-                          leading: const Icon(Icons.email_outlined),
-                          title: Text(hasEmail ? '更换邮箱' : '绑定邮箱'),
-                          subtitle: hasEmail 
-                              ? Text(user.email!) 
-                              : const Text('未绑定'),
-                          onTap: () => _showUpdateEmailDialog(context, ref, hasEmail),
-                        );
-                      },
-                    ),
-                    // 更换/绑定手机号（所有用户）
-                    Builder(
-                      builder: (context) {
-                        final hasPhone = user.phoneNumber != null;
-                        return ListTile(
-                          leading: const Icon(Icons.phone_outlined),
-                          title: Text(hasPhone ? '更换手机号' : '绑定手机号'),
-                          subtitle: hasPhone 
-                              ? Text(user.phoneNumber!) 
-                              : const Text('未绑定'),
-                          onTap: () => _showUpdatePhoneDialog(context, ref, hasPhone),
-                        );
-                      },
-                    ),
+                    // 更换邮箱（仅已有邮箱的用户）
+                    if (user.email != null)
+                      ListTile(
+                        leading: const Icon(Icons.email_outlined),
+                        title: const Text('更换邮箱'),
+                        subtitle: Text(user.email!),
+                        onTap: () => _showUpdateEmailDialog(context, ref),
+                      ),
+                    // 更换手机号（仅已有手机号的用户）
+                    if (user.phoneNumber != null)
+                      ListTile(
+                        leading: const Icon(Icons.phone_outlined),
+                        title: const Text('更换手机号'),
+                        subtitle: Text(user.phoneNumber!),
+                        onTap: () => _showUpdatePhoneDialog(context, ref),
+                      ),
                     // 恢复密钥管理（仅邮箱登录用户）
                     if (user.email != null)
                       ListTile(
@@ -863,9 +851,9 @@ class SettingsPage extends ConsumerWidget {
     );
   }
   
-  /// 显示更换/绑定邮箱对话框
-  void _showUpdateEmailDialog(BuildContext context, WidgetRef ref, bool hasEmail) {
-    final emailController = TextEditingController();
+  /// 显示更换邮箱对话框
+  void _showUpdateEmailDialog(BuildContext context, WidgetRef ref) {
+    final newEmailController = TextEditingController();
     final passwordController = TextEditingController();
     bool passwordVisible = false;
     
@@ -874,17 +862,17 @@ class SettingsPage extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: Text(hasEmail ? '更换邮箱' : '绑定邮箱'),
+            title: const Text('更换邮箱'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: emailController,
+                  controller: newEmailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: hasEmail ? '新邮箱' : '邮箱',
-                    hintText: '请输入邮箱',
-                    border: const OutlineInputBorder(),
+                  decoration: const InputDecoration(
+                    labelText: '新邮箱',
+                    hintText: '请输入新邮箱',
+                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -917,12 +905,12 @@ class SettingsPage extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () async {
-                  final email = emailController.text.trim();
+                  final newEmail = newEmailController.text.trim();
                   final password = passwordController.text.trim();
                   
                   // Fail Fast：验证输入
-                  if (email.isEmpty) {
-                    MessageHelper.showError(context, '请输入邮箱');
+                  if (newEmail.isEmpty) {
+                    MessageHelper.showError(context, '请输入新邮箱');
                     return;
                   }
                   if (password.isEmpty) {
@@ -934,11 +922,11 @@ class SettingsPage extends ConsumerWidget {
                   final success = await AsyncActionHelper.execute(
                     context,
                     action: () => ref.read(authProvider.notifier).updateEmail(
-                      email,
+                      newEmail,
                       password,
                     ),
-                    successMessage: hasEmail ? '邮箱更换成功' : '邮箱绑定成功',
-                    errorMessagePrefix: hasEmail ? '更换邮箱失败' : '绑定邮箱失败',
+                    successMessage: '邮箱更换成功',
+                    errorMessagePrefix: '更换邮箱失败',
                   );
                   
                   if (success && context.mounted) {
@@ -1110,8 +1098,8 @@ class SettingsPage extends ConsumerWidget {
     );
   }
   
-  /// 显示更换/绑定手机号对话框
-  void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref, bool hasPhone) {
+  /// 显示更换手机号对话框
+  void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref) {
     final phoneController = TextEditingController();
     final passwordController = TextEditingController();
     String countryCode = '+86';
@@ -1122,15 +1110,15 @@ class SettingsPage extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: Text(hasPhone ? '更换手机号' : '绑定手机号'),
+            title: const Text('更换手机号'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 AuthTextField(
                   type: AuthTextFieldType.phone,
                   controller: phoneController,
-                  label: hasPhone ? '新手机号' : '手机号',
-                  hint: '请输入手机号',
+                  label: '新手机号',
+                  hint: '请输入新手机号',
                   countryCode: countryCode,
                   onCountryCodeChanged: (code) {
                     setState(() {
@@ -1173,7 +1161,7 @@ class SettingsPage extends ConsumerWidget {
                   
                   // Fail Fast：验证输入
                   if (phone.isEmpty) {
-                    MessageHelper.showError(context, '请输入手机号');
+                    MessageHelper.showError(context, '请输入新手机号');
                     return;
                   }
                   if (password.isEmpty) {
@@ -1190,8 +1178,8 @@ class SettingsPage extends ConsumerWidget {
                       fullPhone,
                       password,
                     ),
-                    successMessage: hasPhone ? '手机号更换成功' : '手机号绑定成功',
-                    errorMessagePrefix: hasPhone ? '更换手机号失败' : '绑定手机号失败',
+                    successMessage: '手机号更换成功',
+                    errorMessagePrefix: '更换手机号失败',
                   );
                   
                   if (success && context.mounted) {

@@ -313,10 +313,10 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * 更换邮箱
+   * 更换邮箱（不支持绑定）
    * @param userId - 用户 ID
    * @param data - 更换邮箱数据（新邮箱、密码）
-   * @throws {AppError} 用户不存在、密码错误或邮箱已被使用
+   * @throws {AppError} 用户不存在、密码错误、未绑定邮箱或邮箱已被使用
    */
   async changeEmail(userId: string, data: ChangeEmailDto): Promise<void> {
     // Fail Fast：参数验证
@@ -346,8 +346,13 @@ export class AuthService implements IAuthService {
       throw new AppError('密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
+    // 检查是否已绑定邮箱（不支持绑定，只支持更换）
+    if (!user.email) {
+      throw new AppError('当前账号未绑定邮箱，无法更换', ErrorCode.VALIDATION_ERROR);
+    }
+
     // 检查新邮箱是否与当前邮箱相同
-    if (user.email && user.email === data.newEmail) {
+    if (user.email === data.newEmail) {
       throw new AppError('新邮箱不能与当前邮箱相同', ErrorCode.VALIDATION_ERROR);
     }
 
@@ -362,10 +367,10 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * 更换手机号
+   * 更换手机号（不支持绑定）
    * @param userId - 用户 ID
    * @param data - 更换手机号数据（新手机号、密码）
-   * @throws {AppError} 用户不存在、密码错误或手机号已被使用
+   * @throws {AppError} 用户不存在、密码错误、未绑定手机号或手机号已被使用
    */
   async changePhone(userId: string, data: ChangePhoneDto): Promise<void> {
     // Fail Fast：参数验证
@@ -395,8 +400,13 @@ export class AuthService implements IAuthService {
       throw new AppError('密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
+    // 检查是否已绑定手机号（不支持绑定，只支持更换）
+    if (!user.phoneNumber) {
+      throw new AppError('当前账号未绑定手机号，无法更换', ErrorCode.VALIDATION_ERROR);
+    }
+
     // 检查新手机号是否与当前手机号相同
-    if (user.phoneNumber && user.phoneNumber === data.newPhoneNumber) {
+    if (user.phoneNumber === data.newPhoneNumber) {
       throw new AppError('新手机号不能与当前手机号相同', ErrorCode.VALIDATION_ERROR);
     }
 
