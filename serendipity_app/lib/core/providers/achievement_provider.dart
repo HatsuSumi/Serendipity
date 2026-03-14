@@ -45,10 +45,14 @@ class AchievementsNotifier extends AsyncNotifier<List<Achievement>> {
     state = await AsyncValue.guard(() async {
       final achievements = await _repository.getAllAchievements();
       print('读取到 ${achievements.length} 个成就');
-      final first3 = achievements.take(3).toList();
-      for (final a in first3) {
-        print('成就: ${a.id} -> unlocked=${a.unlocked}, progress=${a.progress}');
+      
+      // 显示所有已解锁的成就
+      final unlockedAchievements = achievements.where((a) => a.unlocked).toList();
+      print('已解锁成就数量: ${unlockedAchievements.length}');
+      for (final a in unlockedAchievements) {
+        print('  - ${a.id} (${a.name}): unlocked=${a.unlocked}, unlockedAt=${a.unlockedAt}');
       }
+      
       return achievements;
     });
   }
