@@ -215,39 +215,33 @@ class RecordAchievementChecker extends BaseAchievementChecker {
 
     // 检测：地铁常客
     final subwayCount = allRecords.where((r) => r.location.placeType == PlaceType.subway).length;
-    if (subwayCount > 0) {
-      final justUnlocked = await achievementRepository.updateProgress(
-        'subway_regular',
-        subwayCount,
-      );
-      if (justUnlocked) {
-        unlockedAchievements.add('subway_regular');
-      }
+    final subwayUnlocked = await achievementRepository.updateProgress(
+      'subway_regular',
+      subwayCount,
+    );
+    if (subwayUnlocked) {
+      unlockedAchievements.add('subway_regular');
     }
 
     // 检测：咖啡馆邂逅
     final coffeeShopMetCount = allRecords.where((r) =>
         r.location.placeType == PlaceType.coffeeShop && r.status == EncounterStatus.met).length;
-    if (coffeeShopMetCount > 0) {
-      final justUnlocked = await achievementRepository.updateProgress(
-        'coffee_shop_met',
-        coffeeShopMetCount,
-      );
-      if (justUnlocked) {
-        unlockedAchievements.add('coffee_shop_met');
-      }
+    final coffeeUnlocked = await achievementRepository.updateProgress(
+      'coffee_shop_met',
+      coffeeShopMetCount,
+    );
+    if (coffeeUnlocked) {
+      unlockedAchievements.add('coffee_shop_met');
     }
 
     // 检测：城市漫游者
     final cityCount = AddressHelper.countUniqueCities(allRecords);
-    if (cityCount > 0) {
-      final justUnlocked = await achievementRepository.updateProgress(
-        'city_wanderer',
-        cityCount,
-      );
-      if (justUnlocked) {
-        unlockedAchievements.add('city_wanderer');
-      }
+    final cityUnlocked = await achievementRepository.updateProgress(
+      'city_wanderer',
+      cityCount,
+    );
+    if (cityUnlocked) {
+      unlockedAchievements.add('city_wanderer');
     }
 
     return unlockedAchievements;

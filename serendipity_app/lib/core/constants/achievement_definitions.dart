@@ -227,7 +227,7 @@ class AchievementDefinitions {
     Achievement(
       id: 'new_beginning',
       name: '重新开始',
-      description: '从"别离"状态再次标记"邂逅"',
+      description: '从"别离"状态再次标记"重逢"',
       icon: '🌈',
       category: AchievementCategory.emotional,
     ),

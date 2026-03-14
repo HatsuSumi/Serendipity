@@ -1,4 +1,5 @@
 import '../../repositories/story_line_repository.dart';
+import '../../../models/enums.dart';
 import 'base_achievement_checker.dart';
 
 /// 故事线成就检测器
@@ -8,6 +9,7 @@ import 'base_achievement_checker.dart';
 /// - 故事收集者（3条故事线）
 /// - 故事大师（10条故事线）
 /// - 真爱无价（同一个人的故事线达到10条记录）
+/// - 重新开始（从"别离"到"重逢"）
 /// 
 /// 调用者：
 /// - AchievementDetector：协调器
@@ -54,12 +56,54 @@ class StoryLineAchievementChecker extends BaseAchievementChecker {
     );
 
     // 检测：真爱无价（同一个人的故事线达到10条记录）
-    for (final storyLine in allStoryLines) {
-      if (storyLine.recordIds.length >= 10) {
-        final justUnlocked = await achievementRepository.unlockAchievement('true_love');
-        if (justUnlocked) {
-          unlockedAchievements.add('true_love');
-          break; // 只需要解锁一次
+    // 找到记录数最多的故事线
+    final maxRecordCount = allStoryLines.isEmpty 
+        ? 0 
+        : allStoryLines.map((s) => s.recordIds.length).reduce((a, b) => a > b ? a : b);
+    
+    if (maxRecordCount > 0) {
+      final justUnlocked = await achievementRepository.updateProgress(
+        'true_love',
+        maxRecordCount,
+      );
+      if (justUnlocked) {
+        unlockedAchievements.add('true_love');
+      }
+    }
+
+    // 检测：重新开始（从"别离"到"重逢"）
+    unlockedAchievements.addAll(
+      await _checkNewBeginningAchievement(allStoryLines),
+    );
+
+    return unlockedAchievements;
+  }
+
+  /// 检测"重新开始"成就
+  /// 
+  /// 检测故事线中是否存在从"别离"到"重逢"的状态转换
+  /// 
+  /// 遵循原则：
+  /// - 单一职责：只检测一个成就
+  /// - DRY：复用 Repository 的方法获取记录
+  Future<List<String>> _checkNewBeginningAchievement(List storyLines) async {
+    final unlockedAchievements = <String>[];
+
+    // 遍历所有故事线
+    for (final storyLine in storyLines) {
+      // 获取故事线的所有记录，按时间排序
+      final records = _storyLineRepository.getRecordsByStoryLine(storyLine.id)
+        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+      // 检查相邻记录的状态转换
+      for (int i = 0; i < records.length - 1; i++) {
+        if (records[i].status == EncounterStatus.farewell &&
+            records[i + 1].status == EncounterStatus.reunion) {
+          final justUnlocked = await achievementRepository.unlockAchievement('new_beginning');
+          if (justUnlocked) {
+            unlockedAchievements.add('new_beginning');
+          }
+          return unlockedAchievements; // 只需要解锁一次
         }
       }
     }
