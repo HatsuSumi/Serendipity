@@ -1215,14 +1215,15 @@ class SettingsPage extends ConsumerWidget {
                 context,
                 action: () async {
                   await ref.read(achievementRepositoryProvider).resetAllAchievements();
+                  // 重置后立即刷新 Provider 状态
+                  await ref.read(achievementsProvider.notifier).refresh();
                 },
                 successMessage: '所有成就已重置',
                 errorMessagePrefix: '重置失败',
               );
               
               if (success) {
-                // 刷新成就列表
-                ref.invalidate(achievementsProvider);
+                // 不需要再次 invalidate，refresh() 已经更新了状态
               }
             },
             style: TextButton.styleFrom(
