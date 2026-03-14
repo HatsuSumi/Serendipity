@@ -20,16 +20,20 @@ class TagWithNote {
          'Note must be at most 50 characters, got ${note.length}');
 
   Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{
-      'tag': tag,
-    };
-    
-    // 只添加非空的 note
-    if (note != null && note!.isNotEmpty) {
-      json['note'] = note;
+    try {
+      final json = <String, dynamic>{
+        'tag': JsonHelper.validateField('tag.tag', tag, String),
+      };
+      
+      // 只添加非空的 note
+      if (note != null && note!.isNotEmpty) {
+        json['note'] = JsonHelper.validateField('tag.note', note, String);
+      }
+      
+      return json;
+    } catch (e) {
+      throw FormatException('TagWithNote.toJson() failed: $e');
     }
-    
-    return json;
   }
 
   factory TagWithNote.fromJson(Map<String, dynamic> json) {
@@ -63,26 +67,31 @@ class Location {
   });
 
   Map<String, dynamic> toJson() {
-    final json = <String, dynamic>{};
-    
-    // 只添加非空字段
-    if (latitude != null) {
-      json['latitude'] = latitude;
+    try {
+      final json = <String, dynamic>{};
+      
+      // 只添加非空字段（带类型验证）
+      if (latitude != null) {
+        json['latitude'] = latitude;
+      }
+      if (longitude != null) {
+        json['longitude'] = longitude;
+      }
+      if (address != null && address!.isNotEmpty) {
+        json['address'] = JsonHelper.validateField('location.address', address, String);
+      }
+      if (placeName != null && placeName!.isNotEmpty) {
+        json['placeName'] = JsonHelper.validateField('location.placeName', placeName, String);
+      }
+      if (placeType != null) {
+        final placeTypeValue = placeType!.value;
+        json['placeType'] = JsonHelper.validateField('location.placeType', placeTypeValue, String);
+      }
+      
+      return json;
+    } catch (e) {
+      throw FormatException('Location.toJson() failed: $e');
     }
-    if (longitude != null) {
-      json['longitude'] = longitude;
-    }
-    if (address != null && address!.isNotEmpty) {
-      json['address'] = address;
-    }
-    if (placeName != null && placeName!.isNotEmpty) {
-      json['placeName'] = placeName;
-    }
-    if (placeType != null) {
-      json['placeType'] = placeType!.value;
-    }
-    
-    return json;
   }
 
   factory Location.fromJson(Map<String, dynamic> json) {
