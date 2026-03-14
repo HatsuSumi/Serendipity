@@ -241,6 +241,11 @@ class StorageService implements IStorageService {
   @override
   Future<void> saveAchievement(Achievement achievement) async {
     assert(achievement.id.isNotEmpty, 'Achievement ID cannot be empty');
+    print('!!! saveAchievement: ${achievement.id}, unlocked=${achievement.unlocked}');
+    if (achievement.unlocked) {
+      print('!!! 警告：保存已解锁的成就！');
+      print(StackTrace.current);
+    }
     await _achievementsBoxOrThrow.put(achievement.id, achievement);
   }
   
@@ -261,6 +266,11 @@ class StorageService implements IStorageService {
   @override
   Future<void> updateAchievement(Achievement achievement) async {
     assert(achievement.id.isNotEmpty, 'Achievement ID cannot be empty');
+    print('!!! updateAchievement: ${achievement.id}, unlocked=${achievement.unlocked}');
+    if (achievement.unlocked) {
+      print('!!! 警告：更新为已解锁状态！');
+      print(StackTrace.current);
+    }
     await _achievementsBoxOrThrow.put(achievement.id, achievement);
   }
   
