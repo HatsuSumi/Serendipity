@@ -93,6 +93,7 @@ export interface UserMeDto {
   email?: string;
   phoneNumber?: string;
   displayName?: string;
+  authProvider: 'email' | 'phone';
   createdAt: Date;
   membership: {
     tier: string;

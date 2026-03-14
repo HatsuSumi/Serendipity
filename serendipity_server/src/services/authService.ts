@@ -440,6 +440,7 @@ export class AuthService implements IAuthService {
       email: user.email || undefined,
       phoneNumber: user.phoneNumber || undefined,
       displayName: user.displayName || undefined,
+      authProvider: user.authProvider as 'email' | 'phone',
       createdAt: user.createdAt,
       membership: {
         tier: 'free',
