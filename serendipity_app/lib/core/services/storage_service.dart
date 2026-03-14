@@ -96,20 +96,6 @@ class StorageService implements IStorageService {
     await _syncHistoriesBox?.close();
   }
   
-  /// 强制刷新所有 Box 到磁盘
-  /// 
-  /// 用于确保数据持久化，特别是在 Web 平台热重启前
-  Future<void> flush() async {
-    print('!!! flush() 开始');
-    await _recordsBox?.flush();
-    await _settingsBox?.flush();
-    await _storyLinesBox?.flush();
-    await _achievementsBox?.flush();
-    await _checkInsBox?.flush();
-    await _syncHistoriesBox?.flush();
-    print('!!! flush() 完成');
-  }
-  
   // ==================== 记录相关操作 ====================
   
   /// 保存记录
@@ -255,11 +241,6 @@ class StorageService implements IStorageService {
   @override
   Future<void> saveAchievement(Achievement achievement) async {
     assert(achievement.id.isNotEmpty, 'Achievement ID cannot be empty');
-    print('!!! saveAchievement: ${achievement.id}, unlocked=${achievement.unlocked}');
-    if (achievement.unlocked) {
-      print('!!! 警告：保存已解锁的成就！');
-      print(StackTrace.current);
-    }
     await _achievementsBoxOrThrow.put(achievement.id, achievement);
   }
   
@@ -280,11 +261,6 @@ class StorageService implements IStorageService {
   @override
   Future<void> updateAchievement(Achievement achievement) async {
     assert(achievement.id.isNotEmpty, 'Achievement ID cannot be empty');
-    print('!!! updateAchievement: ${achievement.id}, unlocked=${achievement.unlocked}');
-    if (achievement.unlocked) {
-      print('!!! 警告：更新为已解锁状态！');
-      print(StackTrace.current);
-    }
     await _achievementsBoxOrThrow.put(achievement.id, achievement);
   }
   

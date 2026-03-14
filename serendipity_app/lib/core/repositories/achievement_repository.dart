@@ -1,7 +1,6 @@
 import '../../models/achievement.dart';
 import '../../models/achievement_unlock.dart';
 import '../services/i_storage_service.dart';
-import '../services/storage_service.dart';
 import '../constants/achievement_definitions.dart';
 
 /// 成就仓储
@@ -24,13 +23,10 @@ class AchievementRepository {
   /// 如果本地没有成就数据，使用默认定义初始化
   /// 如果本地有数据，合并新增的成就定义
   Future<void> initialize() async {
-    print('!!! initialize() 开始');
     final existingAchievements = await getAllAchievements();
-    print('!!! 本地已有 ${existingAchievements.length} 个成就');
     
     // 如果本地没有数据，初始化所有成就
     if (existingAchievements.isEmpty) {
-      print('!!! 本地无数据，初始化所有成就');
       for (final achievement in AchievementDefinitions.all) {
         await _storageService.saveAchievement(achievement);
       }
@@ -41,12 +37,10 @@ class AchievementRepository {
     final existingIds = existingAchievements.map((a) => a.id).toSet();
     for (final achievement in AchievementDefinitions.all) {
       if (!existingIds.contains(achievement.id)) {
-        print('!!! 发现新成就: ${achievement.id}，添加到本地');
         // 新增的成就，保存到本地
         await _storageService.saveAchievement(achievement);
       }
     }
-    print('!!! initialize() 完成');
   }
 
   /// 获取所有成就
@@ -78,9 +72,6 @@ class AchievementRepository {
       return false;
     }
     
-    print('!!! 解锁成就: $id (${achievement.name})');
-    print('调用栈: ${StackTrace.current}');
-    
     final unlockedAchievement = achievement.copyWith(
       unlocked: true,
       unlockedAt: () => DateTime.now(),
@@ -107,8 +98,6 @@ class AchievementRepository {
     assert(id.isNotEmpty, 'Achievement ID cannot be empty');
     assert(progress >= 0, 'Progress cannot be negative');
     
-    print('!!! updateProgress: $id, progress=$progress');
-    
     final achievement = await getAchievement(id);
     if (achievement == null) {
       throw StateError('Achievement $id does not exist');
@@ -128,7 +117,6 @@ class AchievementRepository {
     
     // 如果达到目标，直接解锁（包含进度更新）
     if (clampedProgress >= achievement.target!) {
-      print('!!! 进度达到目标，自动解锁: $id');
       final justUnlocked = await unlockAchievement(id);
       return justUnlocked;
     }
@@ -225,28 +213,17 @@ class AchievementRepository {
   /// 
   /// 将所有成就重置为未解锁状态，进度清零
   Future<void> resetAllAchievements() async {
-    print('!!! resetAllAchievements() 开始');
     // 从数据库读取现有成就，而不是使用定义
     final existingAchievements = await getAllAchievements();
-    print('!!! 准备重置 ${existingAchievements.length} 个成就');
     
     for (final achievement in existingAchievements) {
-      print('!!! 重置成就: ${achievement.id}, 当前状态: unlocked=${achievement.unlocked}');
       final resetAchievement = achievement.copyWith(
         unlocked: false,
         unlockedAt: () => null,
         progress: () => 0,
       );
       await _storageService.updateAchievement(resetAchievement);
-      print('!!! 重置完成: ${achievement.id}, 新状态: unlocked=${resetAchievement.unlocked}');
     }
-    
-    // 强制刷新到磁盘，确保热重启时数据不丢失
-    if (_storageService is StorageService) {
-      await (_storageService as StorageService).flush();
-    }
-    
-    print('!!! resetAllAchievements() 完成');
   }
 }
 

@@ -40,13 +40,9 @@ class AchievementsNotifier extends AsyncNotifier<List<Achievement>> {
 
   /// 刷新成就列表
   Future<void> refresh() async {
-    print('=== refresh() 被调用 ===');
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final achievements = await _repository.getAllAchievements();
-      final unlockedCount = achievements.where((a) => a.unlocked).length;
-      print('刷新完成，已解锁成就数量: $unlockedCount');
-      return achievements;
+      return _repository.getAllAchievements();
     });
   }
 
