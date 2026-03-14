@@ -1201,7 +1201,7 @@ class SettingsPage extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('重置所有成就'),
-        content: const Text('确定要重置所有成就吗？\n\n这将清空所有已解锁的成就和进度，此操作不可恢复。'),
+        content: const Text('确定要重置所有成就吗？\n\n这将清空所有已解锁的成就和进度，此操作不可恢复。\n\n⚠️ 重置后请刷新页面（F5）以确保数据正确显示。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
@@ -1216,7 +1216,7 @@ class SettingsPage extends ConsumerWidget {
                 action: () async {
                   await ref.read(achievementsProvider.notifier).resetAllAchievements();
                 },
-                successMessage: '所有成就已重置',
+                successMessage: '所有成就已重置\n\n请刷新页面（F5）以查看效果',
                 errorMessagePrefix: '重置失败',
               );
             },
