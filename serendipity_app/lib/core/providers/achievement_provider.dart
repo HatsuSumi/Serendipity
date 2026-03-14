@@ -91,11 +91,18 @@ class AchievementsNotifier extends AsyncNotifier<List<Achievement>> {
 
   /// 重置所有成就（开发者功能）
   Future<void> resetAllAchievements() async {
+    print('=== 开始重置所有成就 ===');
     await _repository.resetAllAchievements();
+    print('数据库重置完成，开始更新 Provider 状态');
     // 直接更新状态，不使用 invalidate 避免循环依赖
     state = await AsyncValue.guard(() async {
-      return _repository.getAllAchievements();
+      final achievements = await _repository.getAllAchievements();
+      print('重新加载了 ${achievements.length} 个成就');
+      final unlockedCount = achievements.where((a) => a.unlocked).length;
+      print('已解锁成就数量: $unlockedCount');
+      return achievements;
     });
+    print('=== 重置完成，Provider 状态已更新 ===');
   }
 }
 
