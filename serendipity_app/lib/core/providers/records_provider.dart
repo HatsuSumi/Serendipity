@@ -135,6 +135,13 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   Future<void> checkAchievementsForRecord(EncounterRecord record) async {
     try {
       final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
+      
+      // 如果记录关联了故事线，也检测故事线成就（例如"重新开始"成就）
+      if (record.storyLineId != null) {
+        final storyLineAchievements = await _achievementDetector.checkStoryLineAchievements();
+        unlockedAchievements.addAll(storyLineAchievements);
+      }
+      
       if (unlockedAchievements.isNotEmpty) {
         // 通知UI层显示成就解锁通知
         ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
