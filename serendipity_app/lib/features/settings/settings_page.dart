@@ -1199,17 +1199,17 @@ class SettingsPage extends ConsumerWidget {
   void _showResetAchievementsDialog(BuildContext context, WidgetRef ref) {
     DialogHelper.show(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('重置所有成就'),
         content: const Text('确定要重置所有成就吗？\n\n这将清空所有已解锁的成就和进度，此操作不可恢复。'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('取消'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               
               final success = await AsyncActionHelper.execute(
                 context,
