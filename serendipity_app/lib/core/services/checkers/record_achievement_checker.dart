@@ -138,6 +138,25 @@ class RecordAchievementChecker extends BaseAchievementChecker {
       }
     }
 
+    // 检测"重新开始"成就：从"别离"状态再次标记"重逢"
+    if (record.status == EncounterStatus.reunion) {
+      final allRecords = _recordRepository.getAllRecords();
+      // 检查同一个人（同一故事线）是否曾经有过"别离"状态
+      if (record.storyLineId != null) {
+        final hasFarewell = allRecords.any((r) =>
+            r.storyLineId == record.storyLineId &&
+            r.status == EncounterStatus.farewell &&
+            r.id != record.id);
+        
+        if (hasFarewell) {
+          final justUnlocked = await achievementRepository.unlockAchievement('new_beginning');
+          if (justUnlocked) {
+            unlockedAchievements.add('new_beginning');
+          }
+        }
+      }
+    }
+
     return unlockedAchievements;
   }
 
