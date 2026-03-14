@@ -56,13 +56,26 @@ class Location {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'latitude': latitude,
-      'longitude': longitude,
-      'address': address,
-      'placeName': placeName,
-      'placeType': placeType?.value,
-    };
+    final json = <String, dynamic>{};
+    
+    // 只添加非空字段
+    if (latitude != null) {
+      json['latitude'] = latitude;
+    }
+    if (longitude != null) {
+      json['longitude'] = longitude;
+    }
+    if (address != null && address!.isNotEmpty) {
+      json['address'] = address;
+    }
+    if (placeName != null && placeName!.isNotEmpty) {
+      json['placeName'] = placeName;
+    }
+    if (placeType != null) {
+      json['placeType'] = placeType!.value;
+    }
+    
+    return json;
   }
 
   factory Location.fromJson(Map<String, dynamic> json) {
@@ -163,24 +176,43 @@ class EncounterRecord {
          'ConversationStarter must be at most 500 characters, got ${conversationStarter.length}');
 
   Map<String, dynamic> toJson() {
-    return {
+    // 构建基础 JSON
+    final json = <String, dynamic>{
       'id': id,
       'timestamp': timestamp.toIso8601String(),
       'location': location.toJson(),
-      'description': description,
       'tags': tags.map((t) => t.toJson()).toList(),
-      'emotion': emotion?.value,
       'status': status.name,
-      'storyLineId': storyLineId,
-      'ifReencounter': ifReencounter,
-      'conversationStarter': conversationStarter,
-      'backgroundMusic': backgroundMusic,
-      'weather': weather.map((w) => w.value).toList(),
+      'weather': weather.map((w) => w.value.toString()).toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'isPinned': isPinned,
-      'ownerId': ownerId,
     };
+    
+    // 只添加非空的可选字段
+    if (description != null && description!.isNotEmpty) {
+      json['description'] = description;
+    }
+    if (emotion != null) {
+      json['emotion'] = emotion!.name;
+    }
+    if (storyLineId != null && storyLineId!.isNotEmpty) {
+      json['storyLineId'] = storyLineId;
+    }
+    if (ifReencounter != null && ifReencounter!.isNotEmpty) {
+      json['ifReencounter'] = ifReencounter;
+    }
+    if (conversationStarter != null && conversationStarter!.isNotEmpty) {
+      json['conversationStarter'] = conversationStarter;
+    }
+    if (backgroundMusic != null && backgroundMusic!.isNotEmpty) {
+      json['backgroundMusic'] = backgroundMusic;
+    }
+    if (ownerId != null) {
+      json['ownerId'] = ownerId;
+    }
+    
+    return json;
   }
 
   factory EncounterRecord.fromJson(Map<String, dynamic> json) {
@@ -194,10 +226,10 @@ class EncounterRecord {
           .toList(),
       emotion: json['emotion'] != null
           ? EmotionIntensity.values.firstWhere(
-              (e) => e.value == json['emotion'],
+              (e) => e.name == json['emotion'],
               orElse: () => throw StateError(
                 'Invalid emotion value: ${json['emotion']}. '
-                'Expected one of: ${EmotionIntensity.values.map((e) => e.value).join(", ")}'
+                'Expected one of: ${EmotionIntensity.values.map((e) => e.name).join(", ")}'
               ),
             )
           : null,
@@ -214,13 +246,17 @@ class EncounterRecord {
       backgroundMusic: json['backgroundMusic'] as String?,
       weather: json['weather'] != null
           ? (json['weather'] as List)
-              .map((w) => Weather.values.firstWhere(
-                (e) => e.value == w,
-                orElse: () => throw StateError(
-                  'Invalid weather value: $w. '
-                  'Expected one of: ${Weather.values.map((e) => e.value).join(", ")}'
-                ),
-              ))
+              .map((w) {
+                // 处理字符串和整数两种格式
+                final value = w is String ? int.parse(w) : w as int;
+                return Weather.values.firstWhere(
+                  (e) => e.value == value,
+                  orElse: () => throw StateError(
+                    'Invalid weather value: $w. '
+                    'Expected one of: ${Weather.values.map((e) => e.value).join(", ")}'
+                  ),
+                );
+              })
               .toList()
           : [],
       createdAt: DateTime.parse(json['createdAt'] as String),
