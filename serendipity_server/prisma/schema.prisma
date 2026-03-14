@@ -11,6 +11,7 @@ model User {
   email             String?             @unique
   phoneNumber       String?             @unique @map("phone_number")
   passwordHash      String              @map("password_hash")
+  authProvider      String              @default("email") @map("auth_provider") @db.VarChar(20)
   recoveryKey       String?             @map("recovery_key")
   displayName       String?             @map("display_name") @db.VarChar(100)
   avatarUrl         String?             @map("avatar_url")
@@ -130,7 +131,7 @@ model Membership {
 model RefreshToken {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  token     String   @db.VarChar(255)
+  token     String   @unique @db.VarChar(255)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

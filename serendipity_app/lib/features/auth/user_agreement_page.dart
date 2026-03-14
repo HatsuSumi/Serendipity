@@ -94,7 +94,7 @@ class UserAgreementPage extends StatelessWidget {
 
             Text('5. 账号管理', style: sectionTitleStyle),
             Text(
-              '目前仅支持邮箱注册\n'
+              '目前支持邮箱注册和手机号注册\n'
               '注册时会生成恢复密钥，请务必保存好\n'
               '如果忘记密码，需要使用恢复密钥重置\n'
               '请妥善保管你的账号密码和恢复密钥',

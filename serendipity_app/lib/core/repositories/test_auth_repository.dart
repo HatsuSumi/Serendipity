@@ -290,6 +290,57 @@ class TestAuthRepository implements IAuthRepository {
   }
   
   @override
+  Future<User> signInWithPhonePassword(String phoneNumber, String password) async {
+    // Fail Fast：参数验证
+    ValidationHelper.validatePhoneNumberForRepository(phoneNumber);
+    ValidationHelper.validatePasswordForRepository(password);
+    
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // 检查用户是否存在
+    var user = _getUserByPhone(phoneNumber);
+    if (user == null) {
+      // 清空当前用户
+      _currentUser = null;
+      _authStateController.add(null);
+      throw Exception('该手机号尚未注册');
+    }
+    
+    // 检查密码（从 Hive 获取保存的密码）
+    final savedPassword = _getPassword(user.id);
+    
+    // Fail Fast: 密码必须存在
+    if (savedPassword == null) {
+      _currentUser = null;
+      _authStateController.add(null);
+      throw Exception('账号数据异常，请重新注册');
+    }
+    
+    // Fail Fast: 密码必须匹配
+    if (password != savedPassword) {
+      _currentUser = null;
+      _authStateController.add(null);
+      throw Exception('密码错误');
+    }
+    
+    // 确保 authProvider 是 phone（防止数据不一致）
+    if (user.authProvider != AuthProvider.phone) {
+      user = user.copyWith(authProvider: AuthProvider.phone);
+      await _saveUser(user);
+    }
+    
+    // 登录成功
+    _currentUser = user;
+    _authStateController.add(_currentUser);
+    
+    // 保存当前用户 ID 到 Hive
+    await _saveCurrentUserId(user.id);
+    
+    return _currentUser!;
+  }
+  
+  @override
   Future<User> signInWithPhone(
     String phoneNumber,
     String verificationCode,
@@ -328,6 +379,62 @@ class TestAuthRepository implements IAuthRepository {
     await _saveCurrentUserId(user.id);
     
     return _currentUser!;
+  }
+  
+  @override
+  Future<RegisterResult> signUpWithPhonePassword(
+    String phoneNumber,
+    String password,
+  ) async {
+    // Fail Fast：参数验证
+    ValidationHelper.validatePhoneNumberForRepository(phoneNumber);
+    ValidationHelper.validatePasswordForRepository(password);
+    
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // 检查手机号是否已注册
+    if (_getUserByPhone(phoneNumber) != null) {
+      throw Exception('该手机号已被注册');
+    }
+    
+    // 创建新用户
+    final user = User(
+      id: 'test-user-${DateTime.now().millisecondsSinceEpoch}',
+      phoneNumber: phoneNumber,
+      authProvider: AuthProvider.phone,
+      isEmailVerified: false,
+      isPhoneVerified: true, // 测试环境自动验证
+      lastLoginAt: DateTime.now(),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    
+    // 保存到 Hive
+    await _saveUser(user);
+    
+    // 保存密码到 Hive（仅测试环境）
+    await _savePassword(user.id, password);
+    
+    // 生成恢复密钥
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final recoveryKey = 'test-${timestamp.toString().substring(timestamp.toString().length - 8)}';
+    final formattedKey = '${recoveryKey.substring(0, 4)}-${recoveryKey.substring(4, 8)}-${recoveryKey.substring(8)}';
+    
+    // 保存恢复密钥到 Hive
+    await _passwordsBox.put('recovery_key_${user.id}', formattedKey);
+    
+    // 自动登录
+    _currentUser = user;
+    _authStateController.add(_currentUser);
+    
+    // 保存当前用户 ID 到 Hive
+    await _saveCurrentUserId(user.id);
+    
+    return RegisterResult(
+      user: user,
+      recoveryKey: formattedKey,
+    );
   }
   
   @override
@@ -560,16 +667,12 @@ class TestAuthRepository implements IAuthRepository {
   @override
   Future<void> updatePhoneNumber(
     String newPhoneNumber,
-    String verificationCode,
-    String verificationId,
+    String password,
   ) async {
     // Fail Fast：参数验证
     ValidationHelper.validatePhoneNumberForRepository(newPhoneNumber);
-    if (verificationCode.isEmpty) {
-      throw ArgumentError('验证码不能为空');
-    }
-    if (verificationId.isEmpty) {
-      throw ArgumentError('验证 ID 不能为空');
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
     }
     
     // Fail Fast：用户未登录
@@ -580,9 +683,10 @@ class TestAuthRepository implements IAuthRepository {
     // 模拟网络延迟
     await Future.delayed(const Duration(milliseconds: 500));
     
-    // 验证验证码（测试环境固定验证码：123456）
-    if (verificationCode != '123456') {
-      throw Exception('验证码错误');
+    // 验证密码
+    final savedPassword = _getPassword(_currentUser!.id);
+    if (savedPassword == null || savedPassword != password) {
+      throw Exception('密码错误');
     }
     
     // 检查新手机号是否已被使用

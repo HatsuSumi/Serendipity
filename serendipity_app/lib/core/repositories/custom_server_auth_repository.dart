@@ -98,7 +98,7 @@ class CustomServerAuthRepository implements IAuthRepository {
       _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
       return _currentUser!;
     } on HttpException catch (e) {
-      throw Exception('登录失败：${e.message}');
+      throw Exception(e.message);
     }
   }
   
@@ -138,7 +138,40 @@ class CustomServerAuthRepository implements IAuthRepository {
         recoveryKey: recoveryKey,
       );
     } on HttpException catch (e) {
-      throw Exception('注册失败：${e.message}');
+      throw Exception(e.message);
+    }
+  }
+  
+  @override
+  Future<User> signInWithPhonePassword(String phoneNumber, String password) async {
+    // Fail Fast：参数验证
+    if (phoneNumber.isEmpty) {
+      throw ArgumentError('手机号不能为空');
+    }
+    if (password.isEmpty || password.length < 6) {
+      throw ArgumentError('密码长度必须至少 6 位');
+    }
+    
+    try {
+      final response = await _httpClient.post(
+        ServerConfig.authLoginPhone,
+        body: {
+          'phoneNumber': phoneNumber,
+          'password': password,
+        },
+        skipAuth: true,
+      );
+      
+      final data = response['data'] as Map<String, dynamic>;
+      
+      // 保存 Token
+      await _saveTokensFromResponse(data);
+      
+      // 保存用户信息
+      _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
+      return _currentUser!;
+    } on HttpException catch (e) {
+      throw Exception('登录失败：${e.message}');
     }
   }
   
@@ -202,7 +235,47 @@ class CustomServerAuthRepository implements IAuthRepository {
       // 自建服务器不返回 verificationId，直接返回手机号作为标识
       return phoneNumber;
     } on HttpException catch (e) {
-      throw Exception('发送验证码失败：${e.message}');
+      throw Exception(e.message);
+    }
+  }
+  
+  @override
+  Future<RegisterResult> signUpWithPhonePassword(String phoneNumber, String password) async {
+    // Fail Fast：参数验证
+    if (phoneNumber.isEmpty) {
+      throw ArgumentError('手机号不能为空');
+    }
+    if (password.isEmpty || password.length < 6) {
+      throw ArgumentError('密码长度必须至少 6 位');
+    }
+    
+    try {
+      final response = await _httpClient.post(
+        ServerConfig.authRegisterPhone,
+        body: {
+          'phoneNumber': phoneNumber,
+          'password': password,
+        },
+        skipAuth: true,
+      );
+      
+      final data = response['data'] as Map<String, dynamic>;
+      
+      // 保存 Token
+      await _saveTokensFromResponse(data);
+      
+      // 保存用户信息
+      _currentUser = _convertToAppUser(data['user'] as Map<String, dynamic>);
+      
+      // 提取恢复密钥（仅在注册时返回）
+      final recoveryKey = data['recoveryKey'] as String?;
+      
+      return RegisterResult(
+        user: _currentUser!,
+        recoveryKey: recoveryKey,
+      );
+    } on HttpException catch (e) {
+      throw Exception('注册失败：${e.message}');
     }
   }
   
@@ -262,7 +335,7 @@ class CustomServerAuthRepository implements IAuthRepository {
         skipAuth: true,
       );
     } on HttpException catch (e) {
-      throw Exception('重置密码失败：${e.message}');
+      throw Exception(e.message);
     }
   }
   
@@ -280,7 +353,7 @@ class CustomServerAuthRepository implements IAuthRepository {
       final data = response['data'] as Map<String, dynamic>;
       return data['recoveryKey'] as String;
     } on HttpException catch (e) {
-      throw Exception('生成恢复密钥失败：${e.message}');
+      throw Exception(e.message);
     }
   }
   
@@ -298,7 +371,7 @@ class CustomServerAuthRepository implements IAuthRepository {
       final data = response['data'] as Map<String, dynamic>;
       return data['recoveryKey'] as String?;
     } on HttpException catch (e) {
-      throw Exception('获取恢复密钥失败：${e.message}');
+      throw Exception(e.message);
     }
   }
   
@@ -317,7 +390,7 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
     
     try {
-      await _httpClient.post(
+      await _httpClient.put(
         ServerConfig.authChangePassword,
         body: {
           'currentPassword': currentPassword,
@@ -325,7 +398,7 @@ class CustomServerAuthRepository implements IAuthRepository {
         },
       );
     } on HttpException catch (e) {
-      throw Exception('修改密码失败：${e.message}');
+      throw Exception(e.message);
     }
   }
   
@@ -352,26 +425,28 @@ class CustomServerAuthRepository implements IAuthRepository {
         },
       );
       
-      // 更新本地用户信息
-      final userData = response['data'] as Map<String, dynamic>;
-      _currentUser = _convertToAppUser(userData);
+      // 更新本地用户信息（只更新变化的字段）
+      final data = response['data'] as Map<String, dynamic>;
+      _currentUser = _currentUser!.copyWith(
+        email: () => data['email'] as String,
+        updatedAt: () => DateTime.parse(data['updatedAt'] as String),
+      );
     } on HttpException catch (e) {
-      throw Exception('更换邮箱失败：${e.message}');
+      throw Exception(e.message);
     }
   }
   
   @override
   Future<void> updatePhoneNumber(
     String newPhoneNumber,
-    String verificationCode,
-    String verificationId,
+    String password,
   ) async {
     // Fail Fast：参数验证
     if (newPhoneNumber.isEmpty) {
       throw ArgumentError('新手机号不能为空');
     }
-    if (verificationCode.isEmpty) {
-      throw ArgumentError('验证码不能为空');
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
     }
     
     if (_currentUser == null) {
@@ -383,15 +458,18 @@ class CustomServerAuthRepository implements IAuthRepository {
         ServerConfig.authChangePhone,
         body: {
           'newPhoneNumber': newPhoneNumber,
-          'verificationCode': verificationCode,
+          'password': password,
         },
       );
       
-      // 更新本地用户信息
-      final userData = response['data'] as Map<String, dynamic>;
-      _currentUser = _convertToAppUser(userData);
+      // 更新本地用户信息（只更新变化的字段）
+      final data = response['data'] as Map<String, dynamic>;
+      _currentUser = _currentUser!.copyWith(
+        phoneNumber: () => data['phoneNumber'] as String,
+        updatedAt: () => DateTime.parse(data['updatedAt'] as String),
+      );
     } on HttpException catch (e) {
-      throw Exception('更换手机号失败：${e.message}');
+      throw Exception(e.message);
     }
   }
   

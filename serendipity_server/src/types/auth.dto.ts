@@ -61,13 +61,12 @@ export interface ChangePasswordDto {
 export interface ChangeEmailDto {
   newEmail: string;
   password: string;
-  verificationCode: string;
 }
 
 // 更换/绑定手机号请求
 export interface ChangePhoneDto {
   newPhoneNumber: string;
-  verificationCode: string;
+  password: string;
 }
 
 // 认证响应
@@ -76,6 +75,7 @@ export interface AuthResponseDto {
     id: string;
     email?: string;
     phoneNumber?: string;
+    authProvider: 'email' | 'phone';
     createdAt: Date;
   };
   tokens: {

@@ -258,9 +258,59 @@ class AuthNotifier extends StreamNotifier<User?> {
     return await _repository.sendPhoneVerificationCode(phoneNumber);
   }
 
-  /// 手机号登录
+  /// 手机号密码登录
   /// 
   /// 调用者：LoginPage._handlePhoneLogin()
+  /// 
+  /// 登录流程：
+  /// 1. 调用 AuthRepository 登录
+  /// 2. 检查并绑定离线数据（如果有）
+  /// 3. 刷新所有数据 Provider
+  /// 4. 触发数据同步（从云端下载当前用户数据）
+  /// 
+  /// Fail Fast：
+  /// - 手机号格式错误立即抛异常
+  /// - 密码格式错误立即抛异常
+  /// - 登录失败立即抛异常
+  Future<void> signInWithPhonePassword(
+    String phoneNumber,
+    String password,
+  ) async {
+    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
+    if (phoneNumber.isEmpty) {
+      throw ArgumentError('手机号不能为空');
+    }
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+
+    state = const AsyncValue.loading();
+    
+    try {
+      // 1. 调用 AuthRepository 登录
+      await _repository.signInWithPhonePassword(phoneNumber, password);
+      final user = await _repository.currentUser;
+      state = AsyncValue.data(user);
+      
+      if (user != null) {
+        // 2. 绑定离线数据到当前用户
+        await _bindOfflineDataIfNeeded(user.id);
+        
+        // 3. 刷新所有数据 Provider
+        _invalidateDataProviders();
+        
+        // 4. 登录成功后触发数据同步
+        await _triggerSync(user);
+      }
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 重新抛出异常，让调用者可以捕获
+    }
+  }
+
+  /// 手机号登录（验证码方式）
+  /// 
+  /// 调用者：LoginPage._handlePhoneLogin()（已禁用）
   /// 
   /// 登录流程：
   /// 1. 调用 AuthRepository 登录
@@ -317,9 +367,60 @@ class AuthNotifier extends StreamNotifier<User?> {
     }
   }
 
-  /// 手机号注册
+  /// 手机号密码注册
   /// 
   /// 调用者：RegisterPage._handlePhoneRegister()
+  /// 
+  /// 注册流程：
+  /// 1. 调用 AuthRepository 注册
+  /// 2. 绑定离线数据到新账号
+  /// 3. 刷新所有数据 Provider
+  /// 4. 触发数据同步（上传到云端）
+  /// 
+  /// 返回：恢复密钥（仅在注册时返回一次）
+  /// 
+  /// Fail Fast：
+  /// - 手机号格式错误立即抛异常
+  /// - 密码格式错误立即抛异常
+  /// - 注册失败立即抛异常
+  Future<String?> signUpWithPhonePassword(
+    String phoneNumber,
+    String password,
+  ) async {
+    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
+    if (phoneNumber.isEmpty) {
+      throw ArgumentError('手机号不能为空');
+    }
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+
+    state = const AsyncValue.loading();
+    
+    try {
+      // 1. 调用 AuthRepository 注册
+      final result = await _repository.signUpWithPhonePassword(phoneNumber, password);
+      state = AsyncValue.data(result.user);
+      
+      // 2. 绑定离线数据到新账号
+      await _bindOfflineDataIfNeeded(result.user.id);
+      
+      // 3. 刷新所有数据 Provider
+      _invalidateDataProviders();
+      
+      // 4. 注册成功后触发数据同步
+      await _triggerSync(result.user, isRegister: true);
+      
+      return result.recoveryKey; // 返回恢复密钥
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow; // 重新抛出异常，让调用者可以捕获
+    }
+  }
+
+  /// 手机号注册（验证码方式）
+  /// 
+  /// 调用者：RegisterPage._handlePhoneRegister()（已禁用）
   /// 
   /// 注册流程：
   /// 1. 调用 AuthRepository 注册
@@ -522,7 +623,7 @@ class AuthNotifier extends StreamNotifier<User?> {
     
     await _repository.updateEmail(newEmail, password);
     
-    // 更新成功后刷新用户状态
+    // Repository 已经更新了 _currentUser，直接获取即可
     final user = await _repository.currentUser;
     state = AsyncValue.data(user);
   }
@@ -533,34 +634,28 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// Fail Fast：
   /// - 新手机号格式错误立即抛异常
-  /// - 验证码为空立即抛异常
-  /// - 验证 ID 为空立即抛异常
-  /// - 验证码错误立即抛异常
+  /// - 密码为空立即抛异常
+  /// - 密码错误立即抛异常
   /// - 手机号已被使用立即抛异常
   /// - 用户未登录立即抛异常
   Future<void> updatePhoneNumber(
     String newPhoneNumber,
-    String verificationCode,
-    String verificationId,
+    String password,
   ) async {
     // Fail Fast：参数验证
     if (newPhoneNumber.isEmpty) {
       throw ArgumentError('新手机号不能为空');
     }
-    if (verificationCode.isEmpty) {
-      throw ArgumentError('验证码不能为空');
-    }
-    if (verificationId.isEmpty) {
-      throw ArgumentError('验证 ID 不能为空');
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
     }
     
     await _repository.updatePhoneNumber(
       newPhoneNumber,
-      verificationCode,
-      verificationId,
+      password,
     );
     
-    // 更新成功后刷新用户状态
+    // Repository 已经更新了 _currentUser，直接获取即可
     final user = await _repository.currentUser;
     state = AsyncValue.data(user);
   }

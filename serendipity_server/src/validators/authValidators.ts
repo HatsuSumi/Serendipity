@@ -91,9 +91,6 @@ export const changeEmailValidation = [
   body('password')
     .notEmpty()
     .withMessage('密码不能为空'),
-  body('verificationCode')
-    .isLength({ min: 6, max: 6 })
-    .withMessage('验证码必须是6位数字'),
 ];
 
 // 更换手机号验证规则
@@ -101,7 +98,7 @@ export const changePhoneValidation = [
   body('newPhoneNumber')
     .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('手机号格式不正确'),
-  body('verificationCode')
-    .isLength({ min: 6, max: 6 })
-    .withMessage('验证码必须是6位数字'),
+  body('password')
+    .notEmpty()
+    .withMessage('密码不能为空'),
 ];

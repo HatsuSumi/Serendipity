@@ -68,6 +68,24 @@ abstract class IAuthRepository {
   /// - 邮箱已被注册：抛出具体的认证异常（由实现类定义）
   Future<RegisterResult> signUpWithEmail(String email, String password);
   
+  /// 使用手机号和密码登录
+  /// 
+  /// 参数：
+  /// - [phoneNumber]：手机号（包含国家代码，如 +86）
+  /// - [password]：用户密码
+  /// 
+  /// 返回：登录成功的用户对象
+  /// 
+  /// 调用者：
+  /// - AuthProvider.signInWithPhonePassword()
+  /// - LoginPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - phoneNumber 为空或格式不正确：抛出 ArgumentError
+  /// - password 长度小于 6：抛出 ArgumentError
+  /// - 认证失败：抛出具体的认证异常（由实现类定义）
+  Future<User> signInWithPhonePassword(String phoneNumber, String password);
+  
   /// 使用手机号和验证码登录
   /// 
   /// 参数：
@@ -79,7 +97,7 @@ abstract class IAuthRepository {
   /// 
   /// 调用者：
   /// - AuthProvider.signInWithPhone()
-  /// - LoginPage 通过 AuthProvider 调用
+  /// - LoginPage 通过 AuthProvider 调用（已禁用）
   /// 
   /// Fail Fast：
   /// - phoneNumber 为空或格式不正确：抛出 ArgumentError
@@ -108,6 +126,24 @@ abstract class IAuthRepository {
   /// - 发送失败：抛出具体的认证异常（由实现类定义）
   Future<String> sendPhoneVerificationCode(String phoneNumber);
   
+  /// 使用手机号和密码注册
+  /// 
+  /// 参数：
+  /// - [phoneNumber]：手机号（包含国家代码，如 +86）
+  /// - [password]：用户密码
+  /// 
+  /// 返回：注册结果（包含用户对象和恢复密钥）
+  /// 
+  /// 调用者：
+  /// - AuthProvider.signUpWithPhonePassword()
+  /// - RegisterPage 通过 AuthProvider 调用
+  /// 
+  /// Fail Fast：
+  /// - phoneNumber 为空或格式不正确：抛出 ArgumentError
+  /// - password 长度小于 6：抛出 ArgumentError
+  /// - 手机号已被注册：抛出具体的认证异常（由实现类定义）
+  Future<RegisterResult> signUpWithPhonePassword(String phoneNumber, String password);
+  
   /// 使用手机号和验证码注册
   /// 
   /// 参数：
@@ -119,7 +155,7 @@ abstract class IAuthRepository {
   /// 
   /// 调用者：
   /// - AuthProvider.signUpWithPhone()
-  /// - RegisterPage 通过 AuthProvider 调用
+  /// - RegisterPage 通过 AuthProvider 调用（已禁用）
   /// 
   /// Fail Fast：
   /// - phoneNumber 为空或格式不正确：抛出 ArgumentError
@@ -223,8 +259,7 @@ abstract class IAuthRepository {
   /// 
   /// 参数：
   /// - [newPhoneNumber]：新手机号（包含国家代码，如 +86）
-  /// - [verificationCode]：短信验证码
-  /// - [verificationId]：验证 ID（由 sendPhoneVerificationCode 返回）
+  /// - [password]：当前密码（用于验证身份）
   /// 
   /// 调用者：
   /// - AuthProvider.updatePhoneNumber()
@@ -232,15 +267,13 @@ abstract class IAuthRepository {
   /// 
   /// Fail Fast：
   /// - newPhoneNumber 为空或格式不正确：抛出 ArgumentError
-  /// - verificationCode 为空：抛出 ArgumentError
-  /// - verificationId 为空：抛出 ArgumentError
-  /// - 验证码错误：抛出具体的认证异常（由实现类定义）
+  /// - password 为空：抛出 ArgumentError
+  /// - 密码错误：抛出具体的认证异常（由实现类定义）
   /// - 手机号已被使用：抛出具体的认证异常（由实现类定义）
   /// - 用户未登录：抛出 StateError
   Future<void> updatePhoneNumber(
     String newPhoneNumber,
-    String verificationCode,
-    String verificationId,
+    String password,
   );
 }
 

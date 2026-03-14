@@ -371,13 +371,12 @@ class SettingsPage extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    // 修改密码（仅邮箱登录用户）
-                    if (user.email != null)
-                      ListTile(
-                        leading: const Icon(Icons.lock_outline),
-                        title: const Text('修改密码'),
-                        onTap: () => _showUpdatePasswordDialog(context, ref),
-                      ),
+                    // 修改密码（邮箱和手机号登录用户都支持）
+                    ListTile(
+                      leading: const Icon(Icons.lock_outline),
+                      title: const Text('修改密码'),
+                      onTap: () => _showUpdatePasswordDialog(context, ref),
+                    ),
                     // 更换邮箱（仅邮箱登录用户）
                     if (user.email != null)
                       ListTile(
@@ -1106,9 +1105,9 @@ class SettingsPage extends ConsumerWidget {
   /// 显示更换/绑定手机号对话框
   void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref, bool hasPhone) {
     final phoneController = TextEditingController();
-    final codeController = TextEditingController();
+    final passwordController = TextEditingController();
     String countryCode = '+86';
-    String? verificationId;
+    bool passwordVisible = false;
     
     DialogHelper.show(
       context: context,
@@ -1132,50 +1131,25 @@ class SettingsPage extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AuthTextField(
-                        type: AuthTextFieldType.verificationCode,
-                        controller: codeController,
-                        label: '验证码',
-                        hint: '请输入6位验证码',
-                        maxLength: 6,
+                TextField(
+                  controller: passwordController,
+                  obscureText: !passwordVisible,
+                  decoration: InputDecoration(
+                    labelText: '当前密码',
+                    hintText: '请输入当前密码',
+                    border: const OutlineInputBorder(),
+                    helperText: '需要验证身份',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        passwordVisible ? Icons.visibility : Icons.visibility_off,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    CountdownButton(
-                      text: '发送验证码',
-                      onPressed: () async {
-                        final phone = phoneController.text.trim();
-                        
-                        // Fail Fast：验证输入
-                        if (phone.isEmpty) {
-                          MessageHelper.showError(context, '请输入手机号');
-                          return false;
-                        }
-                        
-                        final fullPhone = PhoneHelper.formatWithCountryCode(countryCode, phone);
-                        
-                        final result = await AsyncActionHelper.executeWithResult<String>(
-                          context,
-                          action: () => ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhone),
-                          errorMessagePrefix: '发送验证码失败',
-                        );
-                        
-                        if (result != null) {
-                          setState(() {
-                            verificationId = result;
-                          });
-                          if (context.mounted) {
-                            MessageHelper.showSuccess(context, '验证码已发送');
-                          }
-                          return true;
-                        }
-                        return false;
+                      onPressed: () {
+                        setState(() {
+                          passwordVisible = !passwordVisible;
+                        });
                       },
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -1187,19 +1161,15 @@ class SettingsPage extends ConsumerWidget {
               TextButton(
                 onPressed: () async {
                   final phone = phoneController.text.trim();
-                  final code = codeController.text.trim();
+                  final password = passwordController.text.trim();
                   
                   // Fail Fast：验证输入
                   if (phone.isEmpty) {
                     MessageHelper.showError(context, '请输入手机号');
                     return;
                   }
-                  if (code.isEmpty) {
-                    MessageHelper.showError(context, '请输入验证码');
-                    return;
-                  }
-                  if (verificationId == null) {
-                    MessageHelper.showError(context, '请先发送验证码');
+                  if (password.isEmpty) {
+                    MessageHelper.showError(context, '请输入当前密码');
                     return;
                   }
                   
@@ -1210,8 +1180,7 @@ class SettingsPage extends ConsumerWidget {
                     context,
                     action: () => ref.read(authProvider.notifier).updatePhoneNumber(
                       fullPhone,
-                      code,
-                      verificationId!,
+                      password,
                     ),
                     successMessage: hasPhone ? '手机号更换成功' : '手机号绑定成功',
                     errorMessagePrefix: hasPhone ? '更换手机号失败' : '绑定手机号失败',

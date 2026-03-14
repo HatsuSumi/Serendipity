@@ -34,6 +34,13 @@ export const createAuthRoutes = (authController: AuthController): Router => {
   );
 
   router.post(
+    '/register/phone-password',
+    registerPhoneValidation,
+    validateRequest,
+    authController.registerPhonePassword
+  );
+
+  router.post(
     '/login/email',
     loginEmailValidation,
     validateRequest,
@@ -45,6 +52,13 @@ export const createAuthRoutes = (authController: AuthController): Router => {
     loginPhoneValidation,
     validateRequest,
     authController.loginPhone
+  );
+
+  router.post(
+    '/login/phone-password',
+    loginPhoneValidation,
+    validateRequest,
+    authController.loginPhonePassword
   );
 
   router.post(

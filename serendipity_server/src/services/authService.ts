@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import { User } from '@prisma/client';
 import { IUserRepository } from '../repositories/userRepository';
 import { IRefreshTokenRepository } from '../repositories/refreshTokenRepository';
-import { IVerificationService } from './verificationService';
 import { IPasswordHasher } from './passwordHasher';
 import { JwtService, JwtPayload } from './jwtService';
 import {
@@ -28,8 +27,10 @@ import { AUTH_CONFIG } from '../config/auth.config';
  */
 export interface IAuthService {
   registerEmail(data: RegisterEmailDto): Promise<AuthResponseDto>;
+  registerPhonePassword(data: RegisterPhoneDto): Promise<AuthResponseDto>;
   registerPhone(data: RegisterPhoneDto): Promise<AuthResponseDto>;
   loginEmail(data: LoginEmailDto): Promise<AuthResponseDto>;
+  loginPhonePassword(data: LoginPhoneDto): Promise<AuthResponseDto>;
   loginPhone(data: LoginPhoneDto): Promise<AuthResponseDto>;
   resetPassword(data: ResetPasswordDto): Promise<void>;
   changePassword(userId: string, data: ChangePasswordDto): Promise<void>;
@@ -50,7 +51,6 @@ export class AuthService implements IAuthService {
   constructor(
     private userRepository: IUserRepository,
     private refreshTokenRepository: IRefreshTokenRepository,
-    private verificationService: IVerificationService,
     private jwtService: JwtService,
     private passwordHasher: IPasswordHasher
   ) {}
@@ -78,6 +78,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.create({
       email: data.email,
       passwordHash,
+      authProvider: 'email',
     });
 
     // 自动生成恢复密钥
@@ -89,7 +90,44 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * 手机号注册
+   * 手机号密码注册
+   * @param data - 注册数据（手机号、密码）
+   * @returns 认证响应（用户信息、Token、恢复密钥）
+   * @throws {AppError} 手机号已存在
+   */
+  async registerPhonePassword(data: RegisterPhoneDto): Promise<AuthResponseDto> {
+    // Fail Fast：参数验证
+    this.validateRegisterData(data.phoneNumber, data.password);
+
+    // 检查手机号是否已存在
+    const existingUser = await this.userRepository.findByPhone(data.phoneNumber);
+    if (existingUser) {
+      throw new AppError(
+        '手机号已存在',
+        ErrorCode.PHONE_ALREADY_EXISTS
+      );
+    }
+
+    // 哈希密码
+    const passwordHash = await this.passwordHasher.hash(data.password);
+
+    // 创建用户
+    const user = await this.userRepository.create({
+      phoneNumber: data.phoneNumber,
+      passwordHash,
+      authProvider: 'phone',
+    });
+
+    // 自动生成恢复密钥
+    const recoveryKey = this.generateRecoveryKeyString();
+    await this.userRepository.updateRecoveryKey(user.id, recoveryKey);
+
+    // 生成 Token 并附带恢复密钥
+    return this.generateAuthResponseWithRecoveryKey(user, recoveryKey);
+  }
+
+  /**
+   * 手机号注册（验证码方式）
    * @param data - 注册数据（手机号、密码）
    * @returns 认证响应（用户信息、Token、恢复密钥）
    * @throws {AppError} 手机号已存在
@@ -114,6 +152,7 @@ export class AuthService implements IAuthService {
     const user = await this.userRepository.create({
       phoneNumber: data.phoneNumber,
       passwordHash,
+      authProvider: 'phone',
     });
 
     // 自动生成恢复密钥
@@ -146,7 +185,28 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * 手机号登录
+   * 手机号密码登录
+   * @param data - 登录数据（手机号、密码）
+   * @returns 认证响应（用户信息、Token）
+   * @throws {AppError} 手机号或密码错误
+   */
+  async loginPhonePassword(data: LoginPhoneDto): Promise<AuthResponseDto> {
+    // Fail Fast：参数验证
+    this.validateLoginData(data.phoneNumber, data.password);
+
+    // 查找用户并验证密码
+    const user = await this.userRepository.findByPhone(data.phoneNumber);
+    const validatedUser = await this.validateUserCredentials(user, data.password, '手机号或密码错误');
+
+    // 更新最后登录时间
+    await this.userRepository.updateLastLogin(validatedUser.id);
+
+    // 生成 Token
+    return this.generateAuthResponse(validatedUser);
+  }
+
+  /**
+   * 手机号登录（验证码方式）
    * @param data - 登录数据（手机号、密码）
    * @returns 认证响应（用户信息、Token）
    * @throws {AppError} 手机号或密码错误
@@ -226,7 +286,7 @@ export class AuthService implements IAuthService {
       throw new AppError('当前密码不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
     if (!data.newPassword || data.newPassword.length < 6) {
-      throw new AppError('新密码长度必须至少 6 位', ErrorCode.INVALID_CREDENTIALS);
+      throw new AppError('密码长度必须至少 6 位', ErrorCode.INVALID_CREDENTIALS);
     }
 
     const user = await this.userRepository.findById(userId);
@@ -242,10 +302,7 @@ export class AuthService implements IAuthService {
     );
 
     if (!isPasswordValid) {
-      throw new AppError(
-        '当前密码错误',
-        ErrorCode.INVALID_CREDENTIALS
-      );
+      throw new AppError('当前密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
     // 哈希新密码
@@ -253,15 +310,12 @@ export class AuthService implements IAuthService {
 
     // 更新密码
     await this.userRepository.updatePassword(userId, passwordHash);
-
-    // 删除所有刷新令牌（强制重新登录）
-    await this.refreshTokenRepository.deleteByUserId(userId);
   }
 
   /**
    * 更换邮箱
    * @param userId - 用户 ID
-   * @param data - 更换邮箱数据（新邮箱、密码、验证码）
+   * @param data - 更换邮箱数据（新邮箱、密码）
    * @throws {AppError} 用户不存在、密码错误或邮箱已被使用
    */
   async changeEmail(userId: string, data: ChangeEmailDto): Promise<void> {
@@ -274,9 +328,6 @@ export class AuthService implements IAuthService {
     }
     if (!data.password) {
       throw new AppError('密码不能为空', ErrorCode.INVALID_CREDENTIALS);
-    }
-    if (!data.verificationCode) {
-      throw new AppError('验证码不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
 
     const user = await this.userRepository.findById(userId);
@@ -295,12 +346,10 @@ export class AuthService implements IAuthService {
       throw new AppError('密码错误', ErrorCode.INVALID_CREDENTIALS);
     }
 
-    // 验证验证码
-    await this.verificationService.verifyCode(
-      data.newEmail,
-      data.verificationCode,
-      'register'
-    );
+    // 检查新邮箱是否与当前邮箱相同
+    if (user.email && user.email === data.newEmail) {
+      throw new AppError('新邮箱不能与当前邮箱相同', ErrorCode.VALIDATION_ERROR);
+    }
 
     // 检查新邮箱是否已被使用
     const existingUser = await this.userRepository.findByEmail(data.newEmail);
@@ -315,8 +364,8 @@ export class AuthService implements IAuthService {
   /**
    * 更换手机号
    * @param userId - 用户 ID
-   * @param data - 更换手机号数据（新手机号、验证码）
-   * @throws {AppError} 用户不存在或手机号已被使用
+   * @param data - 更换手机号数据（新手机号、密码）
+   * @throws {AppError} 用户不存在、密码错误或手机号已被使用
    */
   async changePhone(userId: string, data: ChangePhoneDto): Promise<void> {
     // Fail Fast：参数验证
@@ -326,8 +375,8 @@ export class AuthService implements IAuthService {
     if (!data.newPhoneNumber) {
       throw new AppError('新手机号不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
-    if (!data.verificationCode) {
-      throw new AppError('验证码不能为空', ErrorCode.INVALID_CREDENTIALS);
+    if (!data.password) {
+      throw new AppError('密码不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
 
     const user = await this.userRepository.findById(userId);
@@ -336,12 +385,20 @@ export class AuthService implements IAuthService {
       throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
     }
 
-    // 验证验证码
-    await this.verificationService.verifyCode(
-      data.newPhoneNumber,
-      data.verificationCode,
-      'register'
+    // 验证密码
+    const isPasswordValid = await this.passwordHasher.compare(
+      data.password,
+      user.passwordHash
     );
+
+    if (!isPasswordValid) {
+      throw new AppError('密码错误', ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // 检查新手机号是否与当前手机号相同
+    if (user.phoneNumber && user.phoneNumber === data.newPhoneNumber) {
+      throw new AppError('新手机号不能与当前手机号相同', ErrorCode.VALIDATION_ERROR);
+    }
 
     // 检查新手机号是否已被使用
     const existingUser = await this.userRepository.findByPhone(
@@ -522,6 +579,7 @@ export class AuthService implements IAuthService {
         id: user.id,
         email: user.email || undefined,
         phoneNumber: user.phoneNumber || undefined,
+        authProvider: user.authProvider as 'email' | 'phone',
         createdAt: user.createdAt,
       },
       tokens: {
@@ -563,6 +621,7 @@ export class AuthService implements IAuthService {
         id: user.id,
         email: user.email || undefined,
         phoneNumber: user.phoneNumber || undefined,
+        authProvider: user.authProvider as 'email' | 'phone',
         createdAt: user.createdAt,
       },
       tokens: {

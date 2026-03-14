@@ -46,6 +46,8 @@ class ServerConfig {
   // 认证相关
   static const String authRegister = '/auth/register/email';
   static const String authLogin = '/auth/login/email';
+  static const String authRegisterPhone = '/auth/register/phone';
+  static const String authLoginPhone = '/auth/login/phone-password';
   static const String authLoginCode = '/auth/login/phone';
   static const String authVerificationCode = '/auth/send-verification-code';
   static const String authResetPassword = '/auth/reset-password';

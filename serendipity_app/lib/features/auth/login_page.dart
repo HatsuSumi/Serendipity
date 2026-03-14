@@ -5,7 +5,6 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/phone_helper.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../core/widgets/countdown_button.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
 import 'widgets/agreement_notice.dart';
@@ -34,23 +33,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _verificationCodeController = TextEditingController();
   
   // 状态
   bool _isLoading = false;
-  final bool _isEmailLogin = true; // true: 邮箱登录, false: 手机号登录
-  bool _isCodeSent = false; // 验证码是否已发送
+  bool _isEmailLogin = true; // true: 邮箱登录, false: 手机号登录
   String _countryCode = '+86'; // 国家代码，默认中国
-  String? _verificationId; // 验证 ID（由 sendPhoneVerificationCode 返回）
   
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
-    _verificationCodeController.dispose();
-    // 清空验证 ID，防止内存泄漏
-    _verificationId = null;
     super.dispose();
   }
 
@@ -82,7 +75,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 
                 // 登录按钮
                 AuthButton.primary(
-                  text: _isEmailLogin ? '登录' : (_isCodeSent ? '登录' : '发送验证码'),
+                  text: '登录',
                   onPressed: _handleLogin,
                   isLoading: _isLoading,
                 ),
@@ -113,29 +106,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   /// 
   /// 调用者：build()
   Widget _buildLoginTypeTabs() {
-    // 暂时只显示邮箱登录，手机号登录需要配置 SMS 服务
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2,
-          ),
-        ),
-      ),
-      child: Text(
-        '邮箱登录',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-    );
-    
-    /* 手机号登录暂时禁用，需要配置 SMS 服务
     return Row(
       children: [
         Expanded(
@@ -144,9 +114,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               if (!_isEmailLogin) {
                 setState(() {
                   _isEmailLogin = true;
-                  _isCodeSent = false;
-                  _verificationId = null;
-                  _verificationCodeController.clear();
                 });
               }
             },
@@ -182,10 +149,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               if (_isEmailLogin) {
                 setState(() {
                   _isEmailLogin = false;
-                  _isCodeSent = false;
-                  _verificationId = null;
-                  _phoneController.clear();
-                  _verificationCodeController.clear();
                 });
               }
             },
@@ -217,7 +180,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ),
       ],
     );
-    */
   }
   
   /// 构建邮箱登录表单
@@ -264,46 +226,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             });
           },
         ),
-        if (_isCodeSent) ...[
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: AuthTextField(
-                  type: AuthTextFieldType.verificationCode,
-                  controller: _verificationCodeController,
-                  label: '验证码',
-                  hint: '请输入6位验证码',
-                  enabled: !_isLoading,
-                  maxLength: 6,
-                ),
-              ),
-              const SizedBox(width: 8),
-              CountdownButton(
-                text: '重新发送',
-                onPressed: () async {
-                  final fullPhoneNumber = PhoneHelper.formatWithCountryCode(
-                    _countryCode,
-                    _phoneController.text,
-                  );
-                  
-                  try {
-                    _verificationId = await ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhoneNumber);
-                    if (mounted) {
-                      MessageHelper.showSuccess(context, '验证码已发送');
-                    }
-                    return true;
-                  } catch (e) {
-                    if (mounted) {
-                      MessageHelper.showError(context, AuthErrorHelper.extractErrorMessage(e));
-                    }
-                    return false;
-                  }
-                },
-              ),
-            ],
-          ),
-        ],
+        const SizedBox(height: 16),
+        AuthTextField(
+          type: AuthTextFieldType.password,
+          controller: _passwordController,
+          label: '密码',
+          hint: '请输入密码',
+          enabled: !_isLoading,
+        ),
       ],
     );
   }
@@ -354,11 +284,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (_isEmailLogin) {
       await _handleEmailLogin();
     } else {
-      if (_isCodeSent) {
-        await _handlePhoneLogin();
-      } else {
-        await _sendVerificationCode();
-      }
+      await _handlePhoneLogin();
     }
   }
   
@@ -399,55 +325,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
   }
   
-  /// 发送验证码
-  /// 
-  /// 调用者：_handleLogin()
-  Future<void> _sendVerificationCode() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      // 拼接完整手机号（国家代码 + 手机号）
-      final fullPhoneNumber = PhoneHelper.formatWithCountryCode(
-        _countryCode,
-        _phoneController.text,
-      );
-      
-      // 调用 AuthProvider 发送验证码，并保存返回的 verificationId
-      _verificationId = await ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhoneNumber);
-      
-      // 验证码发送成功
-      if (mounted) {
-        setState(() {
-          _isCodeSent = true;
-        });
-        MessageHelper.showSuccess(context, '验证码已发送');
-      }
-    } catch (e) {
-      // 显示错误信息
-      if (mounted) {
-        MessageHelper.showError(context, AuthErrorHelper.extractErrorMessage(e));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-  
   /// 处理手机号登录
   /// 
   /// 调用者：_handleLogin()
   Future<void> _handlePhoneLogin() async {
-    // Fail Fast：必须先发送验证码
-    if (_verificationId == null) {
-      MessageHelper.showError(context, '请先发送验证码');
-      return;
-    }
-    
     setState(() {
       _isLoading = true;
     });
@@ -459,11 +340,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         _phoneController.text,
       );
       
-      // 调用 AuthProvider 登录，传入 verificationId
-      await ref.read(authProvider.notifier).signInWithPhone(
+      // 调用 AuthProvider 登录
+      await ref.read(authProvider.notifier).signInWithPhonePassword(
         fullPhoneNumber,
-        _verificationCodeController.text.trim(),
-        _verificationId!,
+        _passwordController.text,
       );
       
       // 登录成功，跳转到主页并显示消息

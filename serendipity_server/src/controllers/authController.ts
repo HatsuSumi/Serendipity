@@ -50,6 +50,20 @@ export class AuthController {
     }
   };
 
+  registerPhonePassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const data: RegisterPhoneDto = req.body;
+      const result = await this.authService.registerPhonePassword(data);
+      sendSuccess(res, result, 'User registered successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   loginEmail = async (
     req: Request,
     res: Response,
@@ -72,6 +86,20 @@ export class AuthController {
     try {
       const data: LoginPhoneDto = req.body;
       const result = await this.authService.loginPhone(data);
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  loginPhonePassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const data: LoginPhoneDto = req.body;
+      const result = await this.authService.loginPhonePassword(data);
       sendSuccess(res, result);
     } catch (error) {
       next(error);

@@ -182,7 +182,6 @@ export const initializeContainer = (): Container => {
   const authService = new AuthService(
     userRepository,
     refreshTokenRepository,
-    verificationService,
     jwtService,
     passwordHasher
   );

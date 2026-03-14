@@ -5,7 +5,6 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/phone_helper.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../core/widgets/countdown_button.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
 import 'widgets/agreement_notice.dart';
@@ -32,13 +31,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _verificationCodeController = TextEditingController();
   
   bool _isLoading = false;
-  final bool _isEmailRegister = true;
-  bool _isCodeSent = false;
+  bool _isEmailRegister = true;
   String _countryCode = '+86'; // 国家代码，默认中国
-  String? _verificationId; // 验证 ID（由 sendPhoneVerificationCode 返回）
   
   @override
   void dispose() {
@@ -46,9 +42,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _phoneController.dispose();
-    _verificationCodeController.dispose();
-    // 清空验证 ID，防止内存泄漏
-    _verificationId = null;
     super.dispose();
   }
 
@@ -72,7 +65,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 _isEmailRegister ? _buildEmailRegisterForm() : _buildPhoneRegisterForm(),
                 const SizedBox(height: 24),
                 AuthButton.primary(
-                  text: _isEmailRegister ? '注册' : (_isCodeSent ? '注册' : '发送验证码'),
+                  text: '注册',
                   onPressed: _handleRegister,
                   isLoading: _isLoading,
                 ),
@@ -92,29 +85,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
   
   Widget _buildRegisterTypeTabs() {
-    // 暂时只显示邮箱注册，手机号注册需要配置 SMS 服务
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2,
-          ),
-        ),
-      ),
-      child: Text(
-        '邮箱注册',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-    );
-    
-    /* 手机号注册暂时禁用，需要配置 SMS 服务
     return Row(
       children: [
         Expanded(
@@ -123,9 +93,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               if (!_isEmailRegister) {
                 setState(() {
                   _isEmailRegister = true;
-                  _isCodeSent = false;
-                  _verificationId = null;
-                  _verificationCodeController.clear();
                 });
               }
             },
@@ -161,10 +128,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               if (_isEmailRegister) {
                 setState(() {
                   _isEmailRegister = false;
-                  _isCodeSent = false;
-                  _verificationId = null;
-                  _phoneController.clear();
-                  _verificationCodeController.clear();
                 });
               }
             },
@@ -196,7 +159,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ),
       ],
     );
-    */
   }
   
   Widget _buildEmailRegisterForm() {
@@ -254,46 +216,31 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             });
           },
         ),
-        if (_isCodeSent) ...[
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: AuthTextField(
-                  type: AuthTextFieldType.verificationCode,
-                  controller: _verificationCodeController,
-                  label: '验证码',
-                  hint: '请输入6位验证码',
-                  enabled: !_isLoading,
-                  maxLength: 6,
-                ),
-              ),
-              const SizedBox(width: 8),
-              CountdownButton(
-                text: '重新发送',
-                onPressed: () async {
-                  final fullPhoneNumber = PhoneHelper.formatWithCountryCode(
-                    _countryCode,
-                    _phoneController.text,
-                  );
-                  
-                  try {
-                    _verificationId = await ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhoneNumber);
-                    if (mounted) {
-                      MessageHelper.showSuccess(context, '验证码已发送');
-                    }
-                    return true;
-                  } catch (e) {
-                    if (mounted) {
-                      MessageHelper.showError(context, AuthErrorHelper.extractErrorMessage(e));
-                    }
-                    return false;
-                  }
-                },
-              ),
-            ],
-          ),
-        ],
+        const SizedBox(height: 16),
+        AuthTextField(
+          type: AuthTextFieldType.password,
+          controller: _passwordController,
+          label: '密码',
+          hint: '请输入密码（至少6位）',
+          enabled: !_isLoading,
+        ),
+        const SizedBox(height: 16),
+        AuthTextField(
+          type: AuthTextFieldType.password,
+          controller: _confirmPasswordController,
+          label: '确认密码',
+          hint: '请再次输入密码',
+          enabled: !_isLoading,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return '确认密码不能为空';
+            }
+            if (value != _passwordController.text) {
+              return '两次输入的密码不一致';
+            }
+            return null;
+          },
+        ),
       ],
     );
   }
@@ -324,11 +271,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (_isEmailRegister) {
       await _handleEmailRegister();
     } else {
-      if (_isCodeSent) {
-        await _handlePhoneRegister();
-      } else {
-        await _sendVerificationCode();
-      }
+      await _handlePhoneRegister();
     }
   }
   
@@ -377,47 +320,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
   }
   
-  Future<void> _sendVerificationCode() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      // 拼接完整手机号（国家代码 + 手机号）
-      final fullPhoneNumber = PhoneHelper.formatWithCountryCode(
-        _countryCode,
-        _phoneController.text,
-      );
-      
-      // 调用 AuthProvider 发送验证码，并保存返回的 verificationId
-      _verificationId = await ref.read(authProvider.notifier).sendPhoneVerificationCode(fullPhoneNumber);
-      
-      if (mounted) {
-        setState(() {
-          _isCodeSent = true;
-        });
-        MessageHelper.showSuccess(context, '验证码已发送');
-      }
-    } catch (e) {
-      if (mounted) {
-        MessageHelper.showError(context, AuthErrorHelper.extractErrorMessage(e));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-  
   Future<void> _handlePhoneRegister() async {
-    // Fail Fast：必须先发送验证码
-    if (_verificationId == null) {
-      MessageHelper.showError(context, '请先发送验证码');
-      return;
-    }
-    
     setState(() {
       _isLoading = true;
     });
@@ -430,10 +333,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       );
       
       // 调用 AuthProvider 注册，获取恢复密钥
-      final recoveryKey = await ref.read(authProvider.notifier).signUpWithPhone(
+      final recoveryKey = await ref.read(authProvider.notifier).signUpWithPhonePassword(
         fullPhoneNumber,
-        _verificationCodeController.text.trim(),
-        _verificationId!,
+        _passwordController.text,
       );
       
       // 注册成功

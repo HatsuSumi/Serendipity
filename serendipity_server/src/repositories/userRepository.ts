@@ -8,6 +8,7 @@ export interface CreateUserData {
   phoneNumber?: string;
   passwordHash: string;
   displayName?: string;
+  authProvider?: string;
 }
 
 /**
@@ -97,6 +98,7 @@ export class UserRepository implements IUserRepository {
         phoneNumber: data.phoneNumber,
         passwordHash: data.passwordHash,
         displayName: data.displayName,
+        authProvider: data.authProvider || 'email',
       },
     });
   }
