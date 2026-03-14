@@ -240,6 +240,11 @@ class AchievementRepository {
       print('!!! 重置完成: ${achievement.id}, 新状态: unlocked=${resetAchievement.unlocked}');
     }
     
+    // 强制刷新到磁盘，确保热重启时数据不丢失
+    if (_storageService is StorageService) {
+      await (_storageService as StorageService).flush();
+    }
+    
     print('!!! resetAllAchievements() 完成');
   }
 }

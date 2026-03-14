@@ -96,6 +96,20 @@ class StorageService implements IStorageService {
     await _syncHistoriesBox?.close();
   }
   
+  /// 强制刷新所有 Box 到磁盘
+  /// 
+  /// 用于确保数据持久化，特别是在 Web 平台热重启前
+  Future<void> flush() async {
+    print('!!! flush() 开始');
+    await _recordsBox?.flush();
+    await _settingsBox?.flush();
+    await _storyLinesBox?.flush();
+    await _achievementsBox?.flush();
+    await _checkInsBox?.flush();
+    await _syncHistoriesBox?.flush();
+    print('!!! flush() 完成');
+  }
+  
   // ==================== 记录相关操作 ====================
   
   /// 保存记录
