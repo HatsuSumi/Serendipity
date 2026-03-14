@@ -1214,17 +1214,11 @@ class SettingsPage extends ConsumerWidget {
               final success = await AsyncActionHelper.execute(
                 context,
                 action: () async {
-                  await ref.read(achievementRepositoryProvider).resetAllAchievements();
-                  // 重置后立即刷新 Provider 状态
-                  await ref.read(achievementsProvider.notifier).refresh();
+                  await ref.read(achievementsProvider.notifier).resetAllAchievements();
                 },
                 successMessage: '所有成就已重置',
                 errorMessagePrefix: '重置失败',
               );
-              
-              if (success) {
-                // 不需要再次 invalidate，refresh() 已经更新了状态
-              }
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.orange,
