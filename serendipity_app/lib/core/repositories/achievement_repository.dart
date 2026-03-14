@@ -224,14 +224,23 @@ class AchievementRepository {
   /// 
   /// 将所有成就重置为未解锁状态，进度清零
   Future<void> resetAllAchievements() async {
-    for (final achievement in AchievementDefinitions.all) {
+    print('!!! resetAllAchievements() 开始');
+    // 从数据库读取现有成就，而不是使用定义
+    final existingAchievements = await getAllAchievements();
+    print('!!! 准备重置 ${existingAchievements.length} 个成就');
+    
+    for (final achievement in existingAchievements) {
+      print('!!! 重置成就: ${achievement.id}, 当前状态: unlocked=${achievement.unlocked}');
       final resetAchievement = achievement.copyWith(
         unlocked: false,
         unlockedAt: () => null,
         progress: () => 0,
       );
       await _storageService.updateAchievement(resetAchievement);
+      print('!!! 重置完成: ${achievement.id}, 新状态: unlocked=${resetAchievement.unlocked}');
     }
+    
+    print('!!! resetAllAchievements() 完成');
   }
 }
 
