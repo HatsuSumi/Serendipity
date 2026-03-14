@@ -186,7 +186,22 @@ class NetworkMonitorService {
     }
   }
   
-  /// 触发同步（带重试机制）
+  /// 检查并设置同步标志（原子操作）
+  /// 
+  /// 设计原则：
+  /// - 原子操作：检查和设置在一个方法内完成
+  /// - 防止竞态条件：多个并发调用只有一个能成功设置标志
+  /// 
+  /// 返回：
+  /// - true：成功设置标志，调用者应该执行同步
+  /// - false：标志已被设置，调用者应该跳过同步
+  bool _setSyncingIfNotAlready() {
+    if (_isSyncing) return false;
+    _isSyncing = true;
+    return true;
+  }
+  
+  /// 触发同步（带重试机制和并发保护）
   /// 
   /// 调用者：
   /// - _triggerInitialSync()：App 启动
@@ -202,14 +217,18 @@ class NetworkMonitorService {
   /// - 重试延迟：2秒、5秒、10秒
   /// - 只重试网络错误，不重试业务逻辑错误
   /// 
-  /// 并发保护：通过 _isSyncing 标志防止多个同步并发运行
+  /// 并发保护：
+  /// - 使用原子操作 _setSyncingIfNotAlready() 防止并发
+  /// - 多个并发调用只有一个能执行同步
+  /// - 其他调用直接返回，不阻塞
   /// 
   /// 注意：syncStartTime 由 SyncService.syncAllData 内部持久化，
   /// 自动同步不更新 syncStatusProvider（syncStatusProvider 只给手动同步的 UI 用）。
   Future<void> _triggerSync(WidgetRef ref, User user, SyncSource source) async {
-    // 并发保护：如果已有同步在进行中，直接跳过本次触发
-    if (_isSyncing) return;
-    _isSyncing = true;
+    // 并发保护：使用原子操作检查和设置标志
+    if (!_setSyncingIfNotAlready()) {
+      return; // 已有同步在进行中，直接跳过
+    }
 
     try {
       const maxRetries = 3;

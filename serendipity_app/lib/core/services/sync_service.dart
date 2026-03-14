@@ -112,6 +112,14 @@ class SyncService {
   final IStorageService _storageService;
   final AchievementRepository _achievementRepository;
   
+  // 同步时间存储键前缀（用于 IStorageService.setLastSyncTime/getLastSyncTime）
+  // 
+  // 设计说明：
+  // - IStorageService 已提供 getLastSyncTime(userId) 和 setLastSyncTime(userId, time) 方法
+  // - 这些方法内部使用 'last_sync_time_$userId' 作为键名
+  // - 此常量仅用于文档和代码可读性，实际键名由 IStorageService 管理
+  static const String _lastSyncTimeKeyPrefix = 'last_sync_time_';
+  
   SyncService({
     required IRemoteDataRepository remoteRepository,
     required IStorageService storageService,
@@ -547,83 +555,23 @@ class SyncService {
     int mergedCheckIns = 0;
     final isFullSync = lastSyncTime == null;
 
-    // 下载云端记录（增量或全量）
+    // 下载并合并记录
     final remoteRecords = isFullSync
         ? await _remoteRepository.downloadRecords(user.id)
         : await _remoteRepository.downloadRecordsSince(user.id, lastSyncTime);
+    mergedRecords = await _mergeRecords(remoteRecords, user.id, isFullSync);
 
-    // 合并到本地（最后更新时间优先）
-    for (final remoteRecord in remoteRecords) {
-      final localRecord = _storageService.getRecord(remoteRecord.id);
-      if (localRecord == null ||
-          remoteRecord.updatedAt.isAfter(localRecord.updatedAt)) {
-        await _storageService.saveRecord(remoteRecord);
-        if (localRecord != null) mergedRecords++;
-      }
-    }
-
-    // 全量同步：删除云端已不存在的本地记录（跨设备删除同步）
-    if (isFullSync) {
-      final remoteRecordIds = remoteRecords.map((r) => r.id).toSet();
-      final localRecords = _storageService.getRecordsByUser(user.id);
-      for (final local in localRecords) {
-        if (!remoteRecordIds.contains(local.id)) {
-          await _storageService.deleteRecord(local.id);
-        }
-      }
-    }
-
-    // 下载云端故事线（增量或全量）
+    // 下载并合并故事线
     final remoteStoryLines = isFullSync
         ? await _remoteRepository.downloadStoryLines(user.id)
         : await _remoteRepository.downloadStoryLinesSince(user.id, lastSyncTime);
+    mergedStoryLines = await _mergeStoryLines(remoteStoryLines, user.id, isFullSync);
 
-    // 合并到本地（最后更新时间优先）
-    for (final remoteStoryLine in remoteStoryLines) {
-      final localStoryLine = _storageService.getStoryLine(remoteStoryLine.id);
-      if (localStoryLine == null ||
-          remoteStoryLine.updatedAt.isAfter(localStoryLine.updatedAt)) {
-        await _storageService.saveStoryLine(remoteStoryLine);
-        if (localStoryLine != null) mergedStoryLines++;
-      }
-    }
-
-    // 全量同步：删除云端已不存在的本地故事线
-    if (isFullSync) {
-      final remoteStoryLineIds = remoteStoryLines.map((s) => s.id).toSet();
-      final localStoryLines = _storageService.getStoryLinesByUser(user.id);
-      for (final local in localStoryLines) {
-        if (!remoteStoryLineIds.contains(local.id)) {
-          await _storageService.deleteStoryLine(local.id);
-        }
-      }
-    }
-
-    // 下载云端签到记录（增量或全量）
+    // 下载并合并签到记录
     final remoteCheckIns = isFullSync
         ? await _remoteRepository.downloadCheckIns(user.id)
         : await _remoteRepository.downloadCheckInsSince(user.id, lastSyncTime);
-
-    // 合并到本地（最后更新时间优先）
-    for (final remoteCheckIn in remoteCheckIns) {
-      final localCheckIn = _storageService.getCheckIn(remoteCheckIn.id);
-      if (localCheckIn == null ||
-          remoteCheckIn.updatedAt.isAfter(localCheckIn.updatedAt)) {
-        await _storageService.saveCheckIn(remoteCheckIn);
-        if (localCheckIn != null) mergedCheckIns++;
-      }
-    }
-
-    // 全量同步：删除云端已不存在的本地签到记录
-    if (isFullSync) {
-      final remoteCheckInIds = remoteCheckIns.map((c) => c.id).toSet();
-      final localCheckIns = _storageService.getCheckInsByUser(user.id);
-      for (final local in localCheckIns) {
-        if (!remoteCheckInIds.contains(local.id)) {
-          await _storageService.deleteCheckIn(local.id);
-        }
-      }
-    }
+    mergedCheckIns = await _mergeCheckIns(remoteCheckIns, user.id, isFullSync);
 
     return {
       'records': remoteRecords.length,
@@ -633,6 +581,129 @@ class SyncService {
       'mergedStoryLines': mergedStoryLines,
       'mergedCheckIns': mergedCheckIns,
     };
+  }
+  
+  /// 合并记录到本地（最后更新时间优先）
+  /// 
+  /// 调用者：_downloadRemoteData()
+  /// 
+  /// 参数：
+  /// - remoteRecords：云端记录列表
+  /// - userId：用户 ID
+  /// - isFullSync：是否全量同步
+  /// 
+  /// 返回：合并冲突的记录数量
+  Future<int> _mergeRecords(
+    List<EncounterRecord> remoteRecords,
+    String userId,
+    bool isFullSync,
+  ) async {
+    int mergedCount = 0;
+
+    // 合并到本地（最后更新时间优先）
+    for (final remoteRecord in remoteRecords) {
+      final localRecord = _storageService.getRecord(remoteRecord.id);
+      if (localRecord == null ||
+          remoteRecord.updatedAt.isAfter(localRecord.updatedAt)) {
+        await _storageService.saveRecord(remoteRecord);
+        if (localRecord != null) mergedCount++;
+      }
+    }
+
+    // 全量同步：删除云端已不存在的本地记录（跨设备删除同步）
+    if (isFullSync) {
+      final remoteRecordIds = remoteRecords.map((r) => r.id).toSet();
+      final localRecords = _storageService.getRecordsByUser(userId);
+      for (final local in localRecords) {
+        if (!remoteRecordIds.contains(local.id)) {
+          await _storageService.deleteRecord(local.id);
+        }
+      }
+    }
+
+    return mergedCount;
+  }
+  
+  /// 合并故事线到本地（最后更新时间优先）
+  /// 
+  /// 调用者：_downloadRemoteData()
+  /// 
+  /// 参数：
+  /// - remoteStoryLines：云端故事线列表
+  /// - userId：用户 ID
+  /// - isFullSync：是否全量同步
+  /// 
+  /// 返回：合并冲突的故事线数量
+  Future<int> _mergeStoryLines(
+    List<StoryLine> remoteStoryLines,
+    String userId,
+    bool isFullSync,
+  ) async {
+    int mergedCount = 0;
+
+    // 合并到本地（最后更新时间优先）
+    for (final remoteStoryLine in remoteStoryLines) {
+      final localStoryLine = _storageService.getStoryLine(remoteStoryLine.id);
+      if (localStoryLine == null ||
+          remoteStoryLine.updatedAt.isAfter(localStoryLine.updatedAt)) {
+        await _storageService.saveStoryLine(remoteStoryLine);
+        if (localStoryLine != null) mergedCount++;
+      }
+    }
+
+    // 全量同步：删除云端已不存在的本地故事线
+    if (isFullSync) {
+      final remoteStoryLineIds = remoteStoryLines.map((s) => s.id).toSet();
+      final localStoryLines = _storageService.getStoryLinesByUser(userId);
+      for (final local in localStoryLines) {
+        if (!remoteStoryLineIds.contains(local.id)) {
+          await _storageService.deleteStoryLine(local.id);
+        }
+      }
+    }
+
+    return mergedCount;
+  }
+  
+  /// 合并签到记录到本地（最后更新时间优先）
+  /// 
+  /// 调用者：_downloadRemoteData()
+  /// 
+  /// 参数：
+  /// - remoteCheckIns：云端签到记录列表
+  /// - userId：用户 ID
+  /// - isFullSync：是否全量同步
+  /// 
+  /// 返回：合并冲突的签到记录数量
+  Future<int> _mergeCheckIns(
+    List<CheckInRecord> remoteCheckIns,
+    String userId,
+    bool isFullSync,
+  ) async {
+    int mergedCount = 0;
+
+    // 合并到本地（最后更新时间优先）
+    for (final remoteCheckIn in remoteCheckIns) {
+      final localCheckIn = _storageService.getCheckIn(remoteCheckIn.id);
+      if (localCheckIn == null ||
+          remoteCheckIn.updatedAt.isAfter(localCheckIn.updatedAt)) {
+        await _storageService.saveCheckIn(remoteCheckIn);
+        if (localCheckIn != null) mergedCount++;
+      }
+    }
+
+    // 全量同步：删除云端已不存在的本地签到记录
+    if (isFullSync) {
+      final remoteCheckInIds = remoteCheckIns.map((c) => c.id).toSet();
+      final localCheckIns = _storageService.getCheckInsByUser(userId);
+      for (final local in localCheckIns) {
+        if (!remoteCheckInIds.contains(local.id)) {
+          await _storageService.deleteCheckIn(local.id);
+        }
+      }
+    }
+
+    return mergedCount;
   }
   
   /// 同步成就解锁状态（静默）

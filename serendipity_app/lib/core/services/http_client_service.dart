@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/server_config.dart';
@@ -7,7 +8,7 @@ import '../services/i_storage_service.dart';
 /// 
 /// 封装所有 HTTP 请求，统一处理：
 /// - JWT Token 管理（自动添加到请求头）
-/// - Token 自动刷新（过期前自动刷新）
+/// - Token 自动刷新（过期前自动刷新，防止竞态条件）
 /// - 错误处理（统一异常格式）
 /// - 请求/响应日志
 /// 
@@ -20,6 +21,9 @@ class HttpClientService {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _tokenExpiryKey = 'token_expiry';
+  
+  // Token 刷新锁（防止并发刷新）
+  Completer<void>? _refreshTokenCompleter;
   
   HttpClientService({
     required IStorageService storage,
@@ -209,7 +213,12 @@ class HttpClientService {
     return uri;
   }
   
-  /// 构建请求头
+  /// 构建请求头（带 Token 刷新锁，防止并发刷新）
+  /// 
+  /// 设计原则：
+  /// - 使用 Completer 实现单一 Token 刷新
+  /// - 多个并发请求共享同一个刷新操作
+  /// - 刷新失败时清除 Token，但不影响其他请求
   Future<Map<String, String>> _buildHeaders({bool skipAuth = false}) async {
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -220,11 +229,27 @@ class HttpClientService {
     if (!skipAuth) {
       // 检查 Token 是否即将过期
       if (await isTokenExpiringSoon()) {
-        try {
-          await refreshToken();
-        } catch (e) {
-          // Token 刷新失败，清除 Token，但不抛异常（允许匿名请求继续）
-          await clearTokens();
+        // 如果已有刷新在进行中，等待其完成
+        if (_refreshTokenCompleter != null) {
+          try {
+            await _refreshTokenCompleter!.future;
+          } catch (e) {
+            // 刷新失败，但不影响当前请求（可能是匿名请求）
+          }
+        } else {
+          // 创建新的刷新操作
+          _refreshTokenCompleter = Completer<void>();
+          try {
+            await refreshToken();
+            _refreshTokenCompleter!.complete();
+          } catch (e) {
+            // Token 刷新失败，清除 Token
+            await clearTokens();
+            _refreshTokenCompleter!.completeError(e);
+          } finally {
+            // 重置锁，允许下次刷新
+            _refreshTokenCompleter = null;
+          }
         }
       }
       
