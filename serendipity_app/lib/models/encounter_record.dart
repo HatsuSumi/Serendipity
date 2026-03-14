@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'enums.dart';
+import '../core/utils/json_helper.dart';
 
 part 'encounter_record.g.dart';
 
@@ -182,43 +183,48 @@ class EncounterRecord {
          'ConversationStarter must be at most 500 characters, got ${conversationStarter.length}');
 
   Map<String, dynamic> toJson() {
-    // 构建基础 JSON
-    final json = <String, dynamic>{
-      'id': id,
-      'timestamp': timestamp.toIso8601String(),
-      'location': location.toJson(),
-      'tags': tags.map((t) => t.toJson()).toList(),
-      'status': status.name,
-      'weather': weather.map((w) => w.value.toString()).toList(),
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'isPinned': isPinned,
-    };
-    
-    // 只添加非空的可选字段
-    if (description != null && description!.isNotEmpty) {
-      json['description'] = description;
+    try {
+      // 构建基础 JSON（带类型验证）
+      final json = <String, dynamic>{
+        'id': JsonHelper.validateField('id', id, String),
+        'timestamp': JsonHelper.validateField('timestamp', timestamp.toIso8601String(), String),
+        'location': location.toJson(),
+        'tags': tags.map((t) => t.toJson()).toList(),
+        'status': JsonHelper.validateField('status', status.name, String),
+        'weather': weather.map((w) => w.value.toString()).toList(),
+        'createdAt': JsonHelper.validateField('createdAt', createdAt.toIso8601String(), String),
+        'updatedAt': JsonHelper.validateField('updatedAt', updatedAt.toIso8601String(), String),
+        'isPinned': JsonHelper.validateField('isPinned', isPinned, bool),
+      };
+      
+      // 只添加非空的可选字段（带类型验证）
+      if (description != null && description!.isNotEmpty) {
+        json['description'] = JsonHelper.validateField('description', description, String);
+      }
+      if (emotion != null) {
+        json['emotion'] = JsonHelper.validateField('emotion', emotion!.name, String);
+      }
+      if (storyLineId != null && storyLineId!.isNotEmpty) {
+        json['storyLineId'] = JsonHelper.validateField('storyLineId', storyLineId, String);
+      }
+      if (ifReencounter != null && ifReencounter!.isNotEmpty) {
+        json['ifReencounter'] = JsonHelper.validateField('ifReencounter', ifReencounter, String);
+      }
+      if (conversationStarter != null && conversationStarter!.isNotEmpty) {
+        json['conversationStarter'] = JsonHelper.validateField('conversationStarter', conversationStarter, String);
+      }
+      if (backgroundMusic != null && backgroundMusic!.isNotEmpty) {
+        json['backgroundMusic'] = JsonHelper.validateField('backgroundMusic', backgroundMusic, String);
+      }
+      if (ownerId != null) {
+        json['ownerId'] = JsonHelper.validateField('ownerId', ownerId, String);
+      }
+      
+      return json;
+    } catch (e) {
+      // 重新抛出，带上更多上下文信息
+      throw FormatException('EncounterRecord.toJson() failed: $e');
     }
-    if (emotion != null) {
-      json['emotion'] = emotion!.name;
-    }
-    if (storyLineId != null && storyLineId!.isNotEmpty) {
-      json['storyLineId'] = storyLineId;
-    }
-    if (ifReencounter != null && ifReencounter!.isNotEmpty) {
-      json['ifReencounter'] = ifReencounter;
-    }
-    if (conversationStarter != null && conversationStarter!.isNotEmpty) {
-      json['conversationStarter'] = conversationStarter;
-    }
-    if (backgroundMusic != null && backgroundMusic!.isNotEmpty) {
-      json['backgroundMusic'] = backgroundMusic;
-    }
-    if (ownerId != null) {
-      json['ownerId'] = ownerId;
-    }
-    
-    return json;
   }
 
   factory EncounterRecord.fromJson(Map<String, dynamic> json) {
