@@ -72,6 +72,9 @@ class AchievementRepository {
       return false;
     }
     
+    print('!!! 解锁成就: $id (${achievement.name})');
+    print('调用栈: ${StackTrace.current}');
+    
     final unlockedAchievement = achievement.copyWith(
       unlocked: true,
       unlockedAt: () => DateTime.now(),
