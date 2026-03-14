@@ -5,25 +5,11 @@ import '../../core/providers/achievement_provider.dart';
 import '../../core/utils/date_time_helper.dart';
 
 /// 成就列表页面
-class AchievementsPage extends ConsumerStatefulWidget {
+class AchievementsPage extends ConsumerWidget {
   const AchievementsPage({super.key});
 
   @override
-  ConsumerState<AchievementsPage> createState() => _AchievementsPageState();
-}
-
-class _AchievementsPageState extends ConsumerState<AchievementsPage> {
-  @override
-  void initState() {
-    super.initState();
-    // 页面打开时刷新成就列表，确保显示最新数据
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(achievementsProvider.notifier).refresh();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final achievementsAsync = ref.watch(achievementsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
