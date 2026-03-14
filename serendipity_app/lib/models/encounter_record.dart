@@ -169,7 +169,7 @@ class EncounterRecord {
       'location': location.toJson(),
       'description': description,
       'tags': tags.map((t) => t.toJson()).toList(),
-      'emotion': emotion?.name,
+      'emotion': emotion?.value,
       'status': status.name,
       'storyLineId': storyLineId,
       'ifReencounter': ifReencounter,
@@ -194,10 +194,10 @@ class EncounterRecord {
           .toList(),
       emotion: json['emotion'] != null
           ? EmotionIntensity.values.firstWhere(
-              (e) => e.name == json['emotion'],
+              (e) => e.value == json['emotion'],
               orElse: () => throw StateError(
                 'Invalid emotion value: ${json['emotion']}. '
-                'Expected one of: ${EmotionIntensity.values.map((e) => e.name).join(", ")}'
+                'Expected one of: ${EmotionIntensity.values.map((e) => e.value).join(", ")}'
               ),
             )
           : null,
