@@ -26,8 +26,9 @@ class TagWithNote {
     if (note != null && note is! String) {
       throw FormatException('Field "tag.note" expected String? but got ${note.runtimeType} ($note)');
     }
-    if (note != null && note.length > 50) {
-      throw ArgumentError('Note must be at most 50 characters, got ${note.length}');
+    final noteValue = note;
+    if (noteValue != null && noteValue.length > 50) {
+      throw ArgumentError('Note must be at most 50 characters, got ${noteValue.length}');
     }
   }
 
@@ -216,8 +217,9 @@ class EncounterRecord {
     if (description != null && description is! String) {
       throw FormatException('Field "description" expected String? but got ${description.runtimeType} ($description)');
     }
-    if (description != null && description.length > 500) {
-      throw ArgumentError('Description must be at most 500 characters, got ${description.length}');
+    final descriptionValue = description;
+    if (descriptionValue != null && descriptionValue.length > 500) {
+      throw ArgumentError('Description must be at most 500 characters, got ${descriptionValue.length}');
     }
     if (storyLineId != null && storyLineId is! String) {
       throw FormatException('Field "storyLineId" expected String? but got ${storyLineId.runtimeType} ($storyLineId)');
@@ -228,8 +230,9 @@ class EncounterRecord {
     if (conversationStarter != null && conversationStarter is! String) {
       throw FormatException('Field "conversationStarter" expected String? but got ${conversationStarter.runtimeType} ($conversationStarter)');
     }
-    if (conversationStarter != null && conversationStarter.length > 500) {
-      throw ArgumentError('ConversationStarter must be at most 500 characters, got ${conversationStarter.length}');
+    final conversationStarterValue = conversationStarter;
+    if (conversationStarterValue != null && conversationStarterValue.length > 500) {
+      throw ArgumentError('ConversationStarter must be at most 500 characters, got ${conversationStarterValue.length}');
     }
     if (backgroundMusic != null && backgroundMusic is! String) {
       throw FormatException('Field "backgroundMusic" expected String? but got ${backgroundMusic.runtimeType} ($backgroundMusic)');
