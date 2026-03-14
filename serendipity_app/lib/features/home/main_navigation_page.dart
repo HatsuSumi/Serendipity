@@ -97,18 +97,11 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
     // 监听成就解锁通知
     ref.listen<List<String>>(newlyUnlockedAchievementsProvider, (previous, next) {
       if (next.isNotEmpty) {
-        // 延迟到下一帧显示对话框，避免在 build 期间显示
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          
-          // 显示成就解锁对话框并处理结果
-          _showAchievementDialog(next);
-        });
+        // 显示成就解锁对话框并处理结果
+        _showAchievementDialog(next);
         
         // 清空通知列表
-        Future.microtask(() {
-          ref.read(newlyUnlockedAchievementsProvider.notifier).clear();
-        });
+        ref.read(newlyUnlockedAchievementsProvider.notifier).clear();
       }
     });
     
