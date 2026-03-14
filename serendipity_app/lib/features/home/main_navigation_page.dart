@@ -97,13 +97,9 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
     // 监听成就解锁通知
     ref.listen<List<String>>(newlyUnlockedAchievementsProvider, (previous, next) {
       if (next.isNotEmpty) {
-        // 延迟显示成就解锁对话框，确保其他页面（如 create_record_page）已经完全关闭
-        // 避免对话框导航栈混乱导致的类型错误
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            _showAchievementDialog(next);
-          }
-        });
+        // 显示成就解锁对话框
+        // 由于成就检测现在在页面关闭后才触发，导航栈已经清晰，可以直接显示
+        _showAchievementDialog(next);
         
         // 清空通知列表
         ref.read(newlyUnlockedAchievementsProvider.notifier).clear();
@@ -161,7 +157,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
               heroTag: 'create_record_fab',
               onPressed: () async {
                 // 使用 Navigator.push 以便自定义动画
-                final result = await Navigator.of(context).push<bool>(
+                final result = await Navigator.of(context).push<dynamic>(
                   PageRouteBuilder(
                     opaque: false, // 允许透过新页面看到底层
                     barrierColor: Colors.black54, // 添加半透明遮罩
@@ -189,8 +185,28 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
                 );
                 
                 // 如果创建成功，让 Provider 失效并自动重新加载
-                if (result == true && mounted) {
+                if (result is bool && result == true && mounted) {
                   ref.invalidate(recordsProvider);
+                  
+                  // 页面已关闭，现在可以安全地检测成就
+                  // 注意：这里无法获取到 record 对象，所以需要从最新的记录列表中获取
+                  // 由于刚刚 invalidate，需要等待 Provider 重新加载
+                  final recordsAsync = await ref.read(recordsProvider.future);
+                  if (recordsAsync.isNotEmpty && mounted) {
+                    // 获取最新创建的记录（按 createdAt 排序，取最新的）
+                    final latestRecord = recordsAsync.reduce((a, b) => 
+                      a.createdAt.isAfter(b.createdAt) ? a : b
+                    );
+                    
+                    // 检测成就
+                    await ref.read(recordsProvider.notifier).checkAchievementsForRecord(latestRecord);
+                  }
+                } else if (result is EncounterRecord && mounted) {
+                  // 编辑模式返回了更新后的记录
+                  ref.invalidate(recordsProvider);
+                  
+                  // 页面已关闭，检测成就
+                  await ref.read(recordsProvider.notifier).checkAchievementsForRecord(result);
                 }
               },
               icon: const Icon(Icons.add),

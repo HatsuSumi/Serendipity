@@ -74,6 +74,10 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
 
   /// 保存记录（自动处理故事线关联）
   /// 
+  /// 架构优化：
+  /// - 不在此方法中检测成就，避免导航栈混乱
+  /// - 成就检测由调用者在页面关闭后手动触发 checkAchievementsForRecord()
+  /// 
   /// 集成云端同步：
   /// - 如果用户已登录，保存到本地后自动上传到云端
   /// - 如果用户未登录，只保存到本地（离线模式）
@@ -91,7 +95,44 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       ref.invalidate(storyLinesProvider);
     }
     
-    // 3. 检测成就（在云端同步之前，确保成就检测不受网络影响）
+    // 3. 如果用户已登录，上传到云端
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      try {
+        await _syncService.uploadRecord(currentUser, record);
+      } catch (e) {
+        // 云端同步失败不影响本地操作
+        // 不抛出异常，避免影响后续流程
+        // 用户可以稍后手动触发全量同步
+      }
+    }
+    
+    // 4. 刷新记录列表
+    await refresh();
+  }
+  
+  /// 检测记录的成就解锁（由调用者在页面关闭后手动触发）
+  /// 
+  /// 架构设计：
+  /// - 单一职责：只负责成就检测和通知
+  /// - 时序控制：由调用者决定何时触发，避免导航栈混乱
+  /// - 容错处理：检测失败不影响记录保存
+  /// 
+  /// 调用者：
+  /// - MainNavigationPage：在 CreateRecordPage 关闭后调用
+  /// 
+  /// 示例：
+  /// ```dart
+  /// // 保存记录
+  /// await ref.read(recordsProvider.notifier).saveRecord(record);
+  /// 
+  /// // 关闭页面
+  /// Navigator.of(context).pop(true);
+  /// 
+  /// // 页面关闭后检测成就
+  /// await ref.read(recordsProvider.notifier).checkAchievementsForRecord(record);
+  /// ```
+  Future<void> checkAchievementsForRecord(EncounterRecord record) async {
     try {
       final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
       if (unlockedAchievements.isNotEmpty) {
@@ -104,27 +145,16 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
         await _uploadAchievementUnlocks(unlockedAchievements);
       }
     } catch (e) {
-      // 成就检测失败不影响记录保存
-      // 但需要记录错误日志（生产环境）
+      // 成就检测失败不影响流程
+      // 生产环境应记录错误日志
     }
-    
-    // 4. 如果用户已登录，上传到云端
-    final currentUser = await ref.read(authProvider.notifier).currentUser;
-    if (currentUser != null) {
-      try {
-        await _syncService.uploadRecord(currentUser, record);
-      } catch (e) {
-        // 云端同步失败不影响本地操作
-        // 不抛出异常，避免影响后续流程
-        // 用户可以稍后手动触发全量同步
-      }
-    }
-    
-    // 5. 刷新记录列表
-    await refresh();
   }
 
   /// 更新记录（自动处理故事线关联变化）
+  /// 
+  /// 架构优化：
+  /// - 不在此方法中检测成就，避免导航栈混乱
+  /// - 成就检测由调用者在页面关闭后手动触发 checkAchievementsForRecord()
   /// 
   /// 集成云端同步：
   /// - 如果用户已登录，更新本地后自动上传到云端（使用 PUT API 增量更新）
@@ -157,21 +187,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       ref.invalidate(storyLinesProvider);
     }
     
-    // 4. 检测成就（在云端同步之前，确保成就检测不受网络影响）
-    try {
-      final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
-      if (unlockedAchievements.isNotEmpty) {
-        // 通知UI层显示成就解锁通知
-        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-        // 刷新成就列表
-        ref.invalidate(achievementsProvider);
-      }
-    } catch (e) {
-      // 成就检测失败不影响记录更新
-      // 但需要记录错误日志（生产环境）
-    }
-    
-    // 5. 如果用户已登录，使用 PUT API 更新云端（增量更新）
+    // 4. 如果用户已登录，使用 PUT API 更新云端（增量更新）
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
@@ -183,7 +199,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 6. 刷新记录列表
+    // 5. 刷新记录列表
     await refresh();
   }
 

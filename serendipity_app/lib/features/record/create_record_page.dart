@@ -342,16 +342,6 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       final currentUser = authState.value;
       final ownerId = currentUser?.id; // 未登录时为 null（离线数据）
       
-      // 调试：打印所有字段的类型
-      print('=== Debug: Field Types ===');
-      print('description: ${description.runtimeType} = "$description"');
-      print('conversationStarter: ${conversationStarter.runtimeType} = "$conversationStarter"');
-      print('backgroundMusic: ${backgroundMusic.runtimeType} = "$backgroundMusic"');
-      print('ifReencounter: ${ifReencounter.runtimeType} = "$ifReencounter"');
-      print('_selectedStoryLineId: ${_selectedStoryLineId.runtimeType} = "$_selectedStoryLineId"');
-      print('ownerId: ${ownerId.runtimeType} = "$ownerId"');
-      print('========================');
-      
       // 创建或更新记录
       final record = EncounterRecord(
         id: widget.recordToEdit?.id ?? const Uuid().v4(),
