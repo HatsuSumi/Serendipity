@@ -23,10 +23,13 @@ class AchievementRepository {
   /// 如果本地没有成就数据，使用默认定义初始化
   /// 如果本地有数据，合并新增的成就定义
   Future<void> initialize() async {
+    print('=== 初始化成就列表 ===');
     final existingAchievements = await getAllAchievements();
+    print('本地已有 ${existingAchievements.length} 个成就');
     
     // 如果本地没有数据，初始化所有成就
     if (existingAchievements.isEmpty) {
+      print('本地无数据，初始化所有成就');
       for (final achievement in AchievementDefinitions.all) {
         await _storageService.saveAchievement(achievement);
       }
@@ -37,10 +40,18 @@ class AchievementRepository {
     final existingIds = existingAchievements.map((a) => a.id).toSet();
     for (final achievement in AchievementDefinitions.all) {
       if (!existingIds.contains(achievement.id)) {
+        print('发现新成就: ${achievement.id}，添加到本地');
         // 新增的成就，保存到本地
         await _storageService.saveAchievement(achievement);
       }
     }
+    
+    // 打印前3个成就的状态
+    final first3 = existingAchievements.take(3).toList();
+    for (final a in first3) {
+      print('成就状态: ${a.id} -> unlocked=${a.unlocked}, progress=${a.progress}');
+    }
+    print('=== 初始化完成 ===');
   }
 
   /// 获取所有成就
@@ -213,14 +224,21 @@ class AchievementRepository {
   /// 
   /// 将所有成就重置为未解锁状态，进度清零
   Future<void> resetAllAchievements() async {
+    print('=== 开始重置所有成就 ===');
     for (final achievement in AchievementDefinitions.all) {
+      print('重置成就: ${achievement.id} (${achievement.name})');
       final resetAchievement = achievement.copyWith(
         unlocked: false,
         unlockedAt: () => null,
         progress: () => 0,
       );
       await _storageService.updateAchievement(resetAchievement);
+      
+      // 验证是否写入成功
+      final saved = await _storageService.getAchievement(achievement.id);
+      print('  -> 写入后状态: unlocked=${saved?.unlocked}, progress=${saved?.progress}');
     }
+    print('=== 重置完成 ===');
   }
 }
 
