@@ -91,9 +91,8 @@ class StoryLineAchievementChecker extends BaseAchievementChecker {
 
     // 遍历所有故事线
     for (final storyLine in storyLines) {
-      // 获取故事线的所有记录，按时间排序
-      final records = _storyLineRepository.getRecordsByStoryLine(storyLine.id)
-        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      // 获取故事线的所有记录（已按时间排序）
+      final records = _storyLineRepository.getRecordsInStoryLine(storyLine.id);
 
       // 检查相邻记录的状态转换
       for (int i = 0; i < records.length - 1; i++) {
