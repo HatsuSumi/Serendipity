@@ -2,22 +2,26 @@ import 'package:flutter/material.dart';
 import '../../../models/community_post.dart';
 import '../../../core/utils/record_helper.dart';
 import '../../../core/utils/date_time_helper.dart';
+import '../../../core/widgets/common_filter_widgets.dart';
 
 /// 社区帖子卡片
 /// 
 /// 职责：
 /// - 显示社区帖子内容
 /// - 支持删除操作（仅自己的帖子）
+/// - 支持标签高亮（筛选时）
 /// 
-/// 调用者：CommunityPage
+/// 调用者：CommunityPage、MyPostsPage
 class CommunityPostCard extends StatelessWidget {
   final CommunityPost post;
   final VoidCallback? onDelete;
+  final List<String>? highlightKeywords;
 
   const CommunityPostCard({
     super.key,
     required this.post,
     this.onDelete,
+    this.highlightKeywords,
   });
 
   @override
@@ -163,6 +167,11 @@ class CommunityPostCard extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: post.tags.map((tagWithNote) {
+        // 判断是否需要高亮这个标签
+        final shouldHighlight = highlightKeywords != null && 
+            highlightKeywords!.isNotEmpty &&
+            highlightKeywords!.any((keyword) => tagWithNote.tag.contains(keyword));
+        
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -174,10 +183,17 @@ class CommunityPostCard extends StatelessWidget {
                 color: theme.colorScheme.surface.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(
-                tagWithNote.tag,
-                style: theme.textTheme.bodySmall,
-              ),
+              child: shouldHighlight && highlightKeywords != null && highlightKeywords!.isNotEmpty
+                  ? buildHighlightedText(
+                      tagWithNote.tag,
+                      keyword: highlightKeywords!.first,
+                      highlightColor: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      textStyle: theme.textTheme.bodySmall,
+                    )
+                  : Text(
+                      tagWithNote.tag,
+                      style: theme.textTheme.bodySmall,
+                    ),
             ),
             
             // 标签备注（如果有）

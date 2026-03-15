@@ -556,6 +556,11 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       spacing: 8,
                       runSpacing: 8,
                       children: record.tags.take(3).map((tag) {
+                        // 判断是否需要高亮这个标签
+                        final shouldHighlight = filterCriteria.tags != null && 
+                            filterCriteria.tags!.isNotEmpty &&
+                            filterCriteria.tags!.any((keyword) => tag.tag.contains(keyword));
+                        
                         return Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -565,13 +570,23 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                             color: statusColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(
-                            _isMasked ? _maskText(tag.tag) : tag.tag,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: statusColor,
-                            ),
-                          ),
+                          child: shouldHighlight && filterCriteria.tags != null && filterCriteria.tags!.isNotEmpty
+                              ? buildHighlightedText(
+                                  _isMasked ? _maskText(tag.tag) : tag.tag,
+                                  keyword: _isMasked ? null : filterCriteria.tags!.first,
+                                  highlightColor: statusColor.withValues(alpha: 0.3),
+                                  textStyle: TextStyle(
+                                    fontSize: 12,
+                                    color: statusColor,
+                                  ),
+                                )
+                              : Text(
+                                  _isMasked ? _maskText(tag.tag) : tag.tag,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: statusColor,
+                                  ),
+                                ),
                         );
                       }).toList(),
                     ),

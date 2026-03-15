@@ -609,10 +609,7 @@ Widget buildHighlightedText(
   int? maxLines,
   TextOverflow? overflow,
 }) {
-  print('DEBUG buildHighlightedText: text=$text, keyword=$keyword, textStyle=$textStyle');
-  
   if (keyword == null || keyword.isEmpty) {
-    print('DEBUG buildHighlightedText: keyword is null or empty, returning plain Text');
     return Text(
       text,
       style: textStyle,
@@ -626,7 +623,6 @@ Widget buildHighlightedText(
   final matches = regex.allMatches(text);
   
   if (matches.isEmpty) {
-    print('DEBUG buildHighlightedText: no matches found, returning plain Text');
     return Text(
       text,
       style: textStyle,
@@ -660,8 +656,6 @@ Widget buildHighlightedText(
   if (lastMatchEnd < text.length) {
     children.add(TextSpan(text: text.substring(lastMatchEnd)));
   }
-  
-  print('DEBUG buildHighlightedText: children count=${children.length}');
   
   return RichText(
     maxLines: maxLines,

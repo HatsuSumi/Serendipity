@@ -153,8 +153,8 @@ class MyPostsPage extends ConsumerWidget {
 
       // 标签筛选（OR逻辑）
       if (filter.tags != null && filter.tags!.isNotEmpty) {
-        final postTags = post.tags ?? [];
-        final hasMatchingTag = filter.tags!.any((tag) => postTags.contains(tag));
+        final postTagNames = post.tags.map((t) => t.tag).toList();
+        final hasMatchingTag = filter.tags!.any((tag) => postTagNames.contains(tag));
         if (!hasMatchingTag) {
           return false;
         }
@@ -207,6 +207,7 @@ class MyPostsPage extends ConsumerWidget {
           return CommunityPostCard(
             post: post,
             onDelete: () => _deletePost(context, ref, post.id),
+            highlightKeywords: filterCriteria.tags,
           );
         },
       ),

@@ -287,6 +287,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
   Widget _buildPostsList(CommunityState communityState) {
     final posts = communityState.posts;
     final isFiltering = communityState.isFiltering;
+    final filterCriteria = ref.watch(communityFilterProvider);
     
     // 空状态
     if (posts.isEmpty) {
@@ -325,6 +326,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
           return CommunityPostCard(
             post: post,
             onDelete: post.isOwner ? () => _deletePost(post.id) : null,
+            highlightKeywords: filterCriteria.tags,
           );
         },
       ),
