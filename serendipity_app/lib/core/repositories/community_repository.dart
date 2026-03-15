@@ -215,7 +215,7 @@ class CommunityRepository {
     List<PlaceType>? placeTypes,
     List<String>? tags,
     List<EncounterStatus>? statuses,
-    String tagMatchMode = 'contains',
+    TagMatchMode tagMatchMode = TagMatchMode.contains,
     int limit = 20,
   }) async {
     // Fail Fast: 参数验证
@@ -241,7 +241,7 @@ class CommunityRepository {
       placeTypes: placeTypes?.map((t) => t.value).toList(),
       tags: tags,
       statuses: statuses?.map((s) => s.name).toList(),
-      tagMatchMode: tagMatchMode,
+      tagMatchMode: tagMatchMode.value,
       limit: limit,
     );
   }

@@ -94,7 +94,7 @@ abstract class ICommunityDataSource {
     List<String>? placeTypes,
     List<String>? tags,
     List<String>? statuses,
-    String tagMatchMode = 'contains',
+    String tagMatchMode = 'contains', // 后端接收 string，前端转换
     int limit = 20,
   });
 }
