@@ -481,7 +481,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       if (tags != null && tags.isNotEmpty) {
         queryParams['tags'] = tags.join(',');
       }
-      if (tagMatchMode.isNotEmpty) {
+      if (tagMatchMode == 'wholeWord') {
         queryParams['tagMatchMode'] = tagMatchMode;
       }
       if (statuses != null && statuses.isNotEmpty) {
