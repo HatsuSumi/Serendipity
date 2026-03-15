@@ -532,25 +532,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               // 描述（如果有）
               if (record.description != null && record.description!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    _isMasked
-                        ? Text(
-                            _maskText(record.description!),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          )
-                        : buildHighlightedText(
-                            record.description!,
-                            keyword: filterCriteria.descriptionKeyword,
-                            highlightColor: statusColor.withValues(alpha: 0.3),
-                            textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                    buildHighlightedText(
+                      _isMasked ? _maskText(record.description!) : record.description!,
+                      keyword: _isMasked ? null : filterCriteria.descriptionKeyword,
+                      highlightColor: statusColor.withValues(alpha: 0.3),
+                      textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                   
                   // 标签（如果有）
@@ -913,6 +904,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     String keyword,
     Color accentColor,
   ) {
+    final displayContent = _isMasked ? _maskText(content) : content;
+    final displayKeyword = _isMasked ? null : keyword;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -924,25 +918,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               ),
         ),
         const SizedBox(height: 4),
-        _isMasked
-            ? Text(
-                _maskText(content),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              )
-            : buildHighlightedText(
-                content,
-                keyword: keyword,
-                highlightColor: accentColor.withValues(alpha: 0.3),
-                textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+        buildHighlightedText(
+          displayContent,
+          keyword: displayKeyword,
+          highlightColor: accentColor.withValues(alpha: 0.3),
+          textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }
