@@ -5,6 +5,7 @@ import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import 'widgets/community_post_card.dart';
+import 'dialogs/my_posts_filter_dialog.dart';
 
 /// 我的发布页面
 /// 
@@ -68,17 +69,99 @@ class MyPostsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myPostsAsync = ref.watch(myPostsProvider);
+    final filterCriteria = ref.watch(myPostsFilterProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的发布'),
+        actions: [
+          // 筛选按钮
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: '筛选',
+            onPressed: () => MyPostsFilterDialog.show(context),
+          ),
+        ],
       ),
       body: myPostsAsync.when(
-        data: (posts) => _buildPostsList(context, ref, posts),
+        data: (posts) => _buildPostsList(context, ref, _applyFilter(posts, filterCriteria)),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _buildError(context, ref, error),
       ),
     );
+  }
+
+  /// 应用筛选条件到帖子列表
+  /// 
+  /// 调用者：build()
+  List<dynamic> _applyFilter(List<dynamic> posts, MyPostsFilterCriteria filter) {
+    if (!filter.hasAnyFilter) {
+      return posts;
+    }
+
+    return posts.where((post) {
+      // 错过时间范围筛选
+      if (filter.startDate != null || filter.endDate != null) {
+        final missedAt = post.missedAt;
+        if (missedAt != null) {
+          if (filter.startDate != null && missedAt.isBefore(filter.startDate!)) {
+            return false;
+          }
+          if (filter.endDate != null && missedAt.isAfter(filter.endDate!)) {
+            return false;
+          }
+        }
+      }
+
+      // 发布时间范围筛选
+      if (filter.publishStartDate != null || filter.publishEndDate != null) {
+        final publishedAt = post.publishedAt;
+        if (publishedAt != null) {
+          if (filter.publishStartDate != null && publishedAt.isBefore(filter.publishStartDate!)) {
+            return false;
+          }
+          if (filter.publishEndDate != null && publishedAt.isAfter(filter.publishEndDate!)) {
+            return false;
+          }
+        }
+      }
+
+      // 地点筛选
+      if (filter.province != null && post.province != filter.province) {
+        return false;
+      }
+      if (filter.city != null && post.city != filter.city) {
+        return false;
+      }
+      if (filter.area != null && post.area != filter.area) {
+        return false;
+      }
+
+      // 场所类型筛选（OR逻辑）
+      if (filter.placeTypes != null && filter.placeTypes!.isNotEmpty) {
+        if (!filter.placeTypes!.contains(post.placeType)) {
+          return false;
+        }
+      }
+
+      // 状态筛选（OR逻辑）
+      if (filter.statuses != null && filter.statuses!.isNotEmpty) {
+        if (!filter.statuses!.contains(post.status)) {
+          return false;
+        }
+      }
+
+      // 标签筛选（OR逻辑）
+      if (filter.tags != null && filter.tags!.isNotEmpty) {
+        final postTags = post.tags ?? [];
+        final hasMatchingTag = filter.tags!.any((tag) => postTags.contains(tag));
+        if (!hasMatchingTag) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
   }
 
   /// 构建帖子列表

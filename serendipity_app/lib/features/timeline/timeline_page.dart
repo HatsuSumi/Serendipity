@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/records_filter_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/utils/message_helper.dart';
@@ -22,6 +23,7 @@ import '../record/create_record_page.dart';
 import '../story_line/link_to_story_line_dialog.dart';
 import '../community/dialogs/publish_warning_dialog.dart';
 import '../check_in/widgets/check_in_card.dart';
+import 'record_filter_dialog.dart';
 
 /// 排序方式
 enum RecordSortType {
@@ -68,6 +70,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   Widget build(BuildContext context) {
     final recordsAsync = ref.watch(recordsProvider);
     final countAsync = ref.watch(recordsCountProvider);
+    final filterCriteria = ref.watch(recordsFilterProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -77,6 +80,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           error: (_, __) => const Text('TA'),
         ),
         actions: [
+          // 筛选按钮
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: '筛选',
+            onPressed: () => RecordFilterDialog.show(context),
+          ),
           // 排序按钮
           PopupMenuButton<RecordSortType>(
             icon: const Icon(Icons.sort),
@@ -137,8 +146,10 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           // 主内容
           recordsAsync.when(
             data: (records) {
+              // 应用筛选条件
+              final filteredRecords = _applyFilter(records, filterCriteria);
               // 根据当前排序方式排序
-              final sortedRecords = _sortRecords(records);
+              final sortedRecords = _sortRecords(filteredRecords);
               // 无论有无记录，都渲染列表（签到卡片始终显示在顶部）
               return _buildRecordList(context, sortedRecords, ref);
             },
@@ -183,6 +194,122 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         ],
       ),
     );
+  }
+
+  /// 应用筛选条件到记录列表
+  /// 
+  /// 调用者：build()
+  List<EncounterRecord> _applyFilter(List<EncounterRecord> records, RecordsFilterCriteria filter) {
+    if (!filter.isActive) {
+      return records;
+    }
+
+    return records.where((record) {
+      // 发生时间范围筛选
+      if (filter.startDate != null || filter.endDate != null) {
+        final timestamp = record.timestamp;
+        if (filter.startDate != null && timestamp.isBefore(filter.startDate!)) {
+          return false;
+        }
+        if (filter.endDate != null && timestamp.isAfter(filter.endDate!)) {
+          return false;
+        }
+      }
+
+      // 创建时间范围筛选
+      if (filter.createdStartDate != null || filter.createdEndDate != null) {
+        final createdAt = record.createdAt;
+        if (filter.createdStartDate != null && createdAt.isBefore(filter.createdStartDate!)) {
+          return false;
+        }
+        if (filter.createdEndDate != null && createdAt.isAfter(filter.createdEndDate!)) {
+          return false;
+        }
+      }
+
+      // 地点筛选
+      if (filter.province != null && record.location.province != filter.province) {
+        return false;
+      }
+      if (filter.city != null && record.location.city != filter.city) {
+        return false;
+      }
+      if (filter.area != null && record.location.area != filter.area) {
+        return false;
+      }
+
+      // 场所类型筛选（OR逻辑）
+      if (filter.placeTypes != null && filter.placeTypes!.isNotEmpty) {
+        if (!filter.placeTypes!.contains(record.location.placeType)) {
+          return false;
+        }
+      }
+
+      // 状态筛选（OR逻辑）
+      if (filter.statuses != null && filter.statuses!.isNotEmpty) {
+        if (!filter.statuses!.contains(record.status)) {
+          return false;
+        }
+      }
+
+      // 情绪强度筛选（OR逻辑）
+      if (filter.emotionIntensities != null && filter.emotionIntensities!.isNotEmpty) {
+        if (!filter.emotionIntensities!.contains(record.emotion)) {
+          return false;
+        }
+      }
+
+      // 天气筛选（OR逻辑）
+      if (filter.weathers != null && filter.weathers!.isNotEmpty) {
+        final hasMatchingWeather = record.weather.any((w) => filter.weathers!.contains(w));
+        if (!hasMatchingWeather) {
+          return false;
+        }
+      }
+
+      // 标签筛选（OR逻辑）
+      if (filter.tags != null && filter.tags!.isNotEmpty) {
+        final recordTags = record.tags.map((t) => t.tag).toList();
+        final hasMatchingTag = filter.tags!.any((tag) => recordTags.contains(tag));
+        if (!hasMatchingTag) {
+          return false;
+        }
+      }
+
+      // 描述关键词筛选
+      if (filter.descriptionKeyword != null && filter.descriptionKeyword!.isNotEmpty) {
+        final description = record.description ?? '';
+        if (!description.contains(filter.descriptionKeyword!)) {
+          return false;
+        }
+      }
+
+      // 如果再遇备忘关键词筛选
+      if (filter.ifReencounterKeyword != null && filter.ifReencounterKeyword!.isNotEmpty) {
+        final ifReencounter = record.ifReencounter ?? '';
+        if (!ifReencounter.contains(filter.ifReencounterKeyword!)) {
+          return false;
+        }
+      }
+
+      // 对话契机关键词筛选
+      if (filter.conversationStarterKeyword != null && filter.conversationStarterKeyword!.isNotEmpty) {
+        final conversationStarter = record.conversationStarter ?? '';
+        if (!conversationStarter.contains(filter.conversationStarterKeyword!)) {
+          return false;
+        }
+      }
+
+      // 背景音乐关键词筛选
+      if (filter.backgroundMusicKeyword != null && filter.backgroundMusicKeyword!.isNotEmpty) {
+        final backgroundMusic = record.backgroundMusic ?? '';
+        if (!backgroundMusic.contains(filter.backgroundMusicKeyword!)) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
   }
 
   /// 根据排序方式排序记录

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/enums.dart';
-import '../../models/region_data.dart';
-import '../../core/utils/dialog_helper.dart';
-import '../../core/widgets/common_filter_widgets.dart';
-import '../../core/providers/community_provider.dart';
-import '../../core/providers/my_posts_filter_provider.dart';
+import '../../../models/enums.dart';
+import '../../../models/region_data.dart';
+import '../../../core/utils/dialog_helper.dart';
+import '../../../core/widgets/common_filter_widgets.dart';
+import '../../../core/providers/community_provider.dart';
+import '../../../core/providers/my_posts_filter_provider.dart';
 
 /// 我的帖子筛选对话框
 /// 
@@ -94,8 +94,6 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AlertDialog(
       title: const Text('筛选我的帖子'),
       content: SingleChildScrollView(
@@ -183,24 +181,25 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
 
     final tags = parseTags(_tagController.text.trim());
 
-    await ref.read(myPostsProvider.notifier).filterPosts(
-          startDate: _startDate,
-          endDate: _endDate,
-          publishStartDate: _publishStartDate,
-          publishEndDate: _publishEndDate,
-          province: _selectedRegion?.province,
-          city: _selectedRegion?.city,
-          area: _selectedRegion?.area,
-          placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
-          statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
-          tags: tags,
-        );
+    // 更新筛选条件到 Provider
+    ref.read(myPostsFilterProvider.notifier).state = MyPostsFilterCriteria(
+      startDate: _startDate,
+      endDate: _endDate,
+      publishStartDate: _publishStartDate,
+      publishEndDate: _publishEndDate,
+      province: _selectedRegion?.province,
+      city: _selectedRegion?.city,
+      area: _selectedRegion?.area,
+      placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
+      statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
+      tags: tags,
+    );
   }
 
   /// 清除筛选
   Future<void> _clearFilter() async {
     Navigator.of(context).pop();
-    await ref.read(myPostsProvider.notifier).clearFilter();
+    ref.read(myPostsFilterProvider.notifier).state = MyPostsFilterCriteria.empty;
   }
 }
 

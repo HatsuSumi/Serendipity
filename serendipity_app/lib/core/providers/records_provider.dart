@@ -411,20 +411,38 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   Future<void> filterRecords({
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? createdStartDate,
+    DateTime? createdEndDate,
+    String? province,
+    String? city,
+    String? area,
     List<PlaceType>? placeTypes,
     List<EncounterStatus>? statuses,
     List<EmotionIntensity>? emotionIntensities,
     List<Weather>? weathers,
     List<String>? tags,
+    String? descriptionKeyword,
+    String? ifReencounterKeyword,
+    String? conversationStarterKeyword,
+    String? backgroundMusicKeyword,
   }) async {
     ref.read(recordsFilterProvider.notifier).state = RecordsFilterCriteria(
       startDate: startDate,
       endDate: endDate,
+      createdStartDate: createdStartDate,
+      createdEndDate: createdEndDate,
+      province: province,
+      city: city,
+      area: area,
       placeTypes: placeTypes,
       statuses: statuses,
       emotionIntensities: emotionIntensities,
       weathers: weathers,
       tags: tags,
+      descriptionKeyword: descriptionKeyword,
+      ifReencounterKeyword: ifReencounterKeyword,
+      conversationStarterKeyword: conversationStarterKeyword,
+      backgroundMusicKeyword: backgroundMusicKeyword,
     );
   }
 

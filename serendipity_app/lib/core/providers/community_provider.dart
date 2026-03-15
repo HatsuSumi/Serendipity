@@ -15,6 +15,7 @@ import 'community_filter_provider.dart';
 export 'community_publish_provider.dart';
 // 导出筛选 Provider
 export 'community_filter_provider.dart';
+export 'my_posts_filter_provider.dart';
 
 /// 社区数据源 Provider
 /// 

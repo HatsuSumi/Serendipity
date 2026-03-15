@@ -1,84 +1,110 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/enums.dart';
 
-/// 我的帖子筛选条件模型
+/// 我的帖子筛选条件
 /// 
-/// 职责：存储我的帖子筛选条件
+/// 职责：
+/// - 存储筛选条件
+/// - 判断是否有筛选条件
 /// 
-/// 调用者：MyPostsFilterDialog、MyPostsNotifier
+/// 设计原则：
+/// - 单一职责（SRP）：只负责筛选条件管理
+/// - 不可变对象：使用 copyWith 模式
 class MyPostsFilterCriteria {
   final DateTime? startDate;
   final DateTime? endDate;
   final DateTime? publishStartDate;
   final DateTime? publishEndDate;
-  final List<PlaceType>? placeTypes;
-  final List<EncounterStatus>? statuses;
-  final List<String>? tags;
   final String? province;
   final String? city;
   final String? area;
+  final List<PlaceType>? placeTypes;
+  final List<EncounterStatus>? statuses;
+  final List<String>? tags;
 
   const MyPostsFilterCriteria({
     this.startDate,
     this.endDate,
     this.publishStartDate,
     this.publishEndDate,
-    this.placeTypes,
-    this.statuses,
-    this.tags,
     this.province,
     this.city,
     this.area,
+    this.placeTypes,
+    this.statuses,
+    this.tags,
   });
 
-  /// 是否有活跃的筛选条件
-  bool get isActive {
+  /// 判断是否有任何筛选条件
+  bool get hasAnyFilter {
     return startDate != null ||
         endDate != null ||
         publishStartDate != null ||
         publishEndDate != null ||
-        (placeTypes?.isNotEmpty ?? false) ||
-        (statuses?.isNotEmpty ?? false) ||
-        (tags?.isNotEmpty ?? false) ||
         province != null ||
         city != null ||
-        area != null;
+        area != null ||
+        (placeTypes != null && placeTypes!.isNotEmpty) ||
+        (statuses != null && statuses!.isNotEmpty) ||
+        (tags != null && tags!.isNotEmpty);
   }
 
-  /// 复制并修改
+  /// 复制并修改筛选条件
   MyPostsFilterCriteria copyWith({
     DateTime? startDate,
     DateTime? endDate,
     DateTime? publishStartDate,
     DateTime? publishEndDate,
-    List<PlaceType>? placeTypes,
-    List<EncounterStatus>? statuses,
-    List<String>? tags,
     String? province,
     String? city,
     String? area,
+    List<PlaceType>? placeTypes,
+    List<EncounterStatus>? statuses,
+    List<String>? tags,
+    bool clearStartDate = false,
+    bool clearEndDate = false,
+    bool clearPublishStartDate = false,
+    bool clearPublishEndDate = false,
+    bool clearProvince = false,
+    bool clearCity = false,
+    bool clearArea = false,
+    bool clearPlaceTypes = false,
+    bool clearStatuses = false,
+    bool clearTags = false,
   }) {
     return MyPostsFilterCriteria(
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      publishStartDate: publishStartDate ?? this.publishStartDate,
-      publishEndDate: publishEndDate ?? this.publishEndDate,
-      placeTypes: placeTypes ?? this.placeTypes,
-      statuses: statuses ?? this.statuses,
-      tags: tags ?? this.tags,
-      province: province ?? this.province,
-      city: city ?? this.city,
-      area: area ?? this.area,
+      startDate: clearStartDate ? null : (startDate ?? this.startDate),
+      endDate: clearEndDate ? null : (endDate ?? this.endDate),
+      publishStartDate: clearPublishStartDate ? null : (publishStartDate ?? this.publishStartDate),
+      publishEndDate: clearPublishEndDate ? null : (publishEndDate ?? this.publishEndDate),
+      province: clearProvince ? null : (province ?? this.province),
+      city: clearCity ? null : (city ?? this.city),
+      area: clearArea ? null : (area ?? this.area),
+      placeTypes: clearPlaceTypes ? null : (placeTypes ?? this.placeTypes),
+      statuses: clearStatuses ? null : (statuses ?? this.statuses),
+      tags: clearTags ? null : (tags ?? this.tags),
     );
   }
+
+  /// 清空所有筛选条件
+  static const empty = MyPostsFilterCriteria();
 }
 
 /// 我的帖子筛选条件 Provider
 /// 
 /// 职责：管理我的帖子筛选条件状态
 /// 
-/// 调用者：MyPostsFilterDialog、MyPostsNotifier
+/// 使用示例：
+/// ```dart
+/// // 读取筛选条件
+/// final filter = ref.watch(myPostsFilterProvider);
+/// 
+/// // 更新筛选条件
+/// ref.read(myPostsFilterProvider.notifier).state = newCriteria;
+/// 
+/// // 清空筛选条件
+/// ref.read(myPostsFilterProvider.notifier).state = MyPostsFilterCriteria.empty;
+/// ```
 final myPostsFilterProvider = StateProvider<MyPostsFilterCriteria>((ref) {
-  return const MyPostsFilterCriteria();
+  return MyPostsFilterCriteria.empty;
 });
-

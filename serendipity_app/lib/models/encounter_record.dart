@@ -52,6 +52,12 @@ class Location {
   final String? placeName; // 用户手动输入，可选
   @HiveField(4)
   final PlaceType? placeType; // 场所类型，可选
+  @HiveField(5)
+  final String? province; // 省份，可选
+  @HiveField(6)
+  final String? city; // 城市，可选
+  @HiveField(7)
+  final String? area; // 区县，可选
 
   Location({
     this.latitude,
@@ -59,6 +65,9 @@ class Location {
     this.address,
     this.placeName,
     this.placeType,
+    this.province,
+    this.city,
+    this.area,
   });
 
   Map<String, dynamic> toJson() {
@@ -80,6 +89,15 @@ class Location {
     if (placeType != null) {
       json['placeType'] = placeType!.value;
     }
+    if (province != null && province!.isNotEmpty) {
+      json['province'] = province;
+    }
+    if (city != null && city!.isNotEmpty) {
+      json['city'] = city;
+    }
+    if (area != null && area!.isNotEmpty) {
+      json['area'] = area;
+    }
     
     return json;
   }
@@ -99,6 +117,9 @@ class Location {
               ),
             )
           : null,
+      province: json['province'] as String?,
+      city: json['city'] as String?,
+      area: json['area'] as String?,
     );
   }
 
@@ -111,6 +132,9 @@ class Location {
     String? Function()? address,
     String? Function()? placeName,
     PlaceType? Function()? placeType,
+    String? Function()? province,
+    String? Function()? city,
+    String? Function()? area,
   }) {
     return Location(
       latitude: latitude != null ? latitude() : this.latitude,
@@ -118,6 +142,9 @@ class Location {
       address: address != null ? address() : this.address,
       placeName: placeName != null ? placeName() : this.placeName,
       placeType: placeType != null ? placeType() : this.placeType,
+      province: province != null ? province() : this.province,
+      city: city != null ? city() : this.city,
+      area: area != null ? area() : this.area,
     );
   }
 }
