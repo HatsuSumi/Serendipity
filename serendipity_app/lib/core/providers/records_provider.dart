@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/encounter_record.dart';
 import '../../models/achievement_unlock.dart';
+import '../../models/enums.dart';
 import '../services/sync_service.dart';
 import '../services/achievement_detector.dart';
 import '../repositories/record_repository.dart';
@@ -9,6 +10,7 @@ import 'community_provider.dart';
 import 'story_lines_provider.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
+import 'records_filter_provider.dart';
 
 /// 自动同步完成信号
 /// 
@@ -396,6 +398,41 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
         // 生产环境应记录错误日志
       }
     }
+  }
+
+  /// 应用筛选条件
+  /// 
+  /// 调用者：RecordFilterDialog._applyFilter()
+  /// 
+  /// 设计说明：
+  /// - 保存筛选条件到 Provider
+  /// - 不直接修改列表，由 UI 层通过 watch 响应
+  /// - Fail Fast：参数验证由调用者负责
+  Future<void> filterRecords({
+    DateTime? startDate,
+    DateTime? endDate,
+    List<PlaceType>? placeTypes,
+    List<EncounterStatus>? statuses,
+    List<EmotionIntensity>? emotionIntensities,
+    List<Weather>? weathers,
+    List<String>? tags,
+  }) async {
+    ref.read(recordsFilterProvider.notifier).state = RecordsFilterCriteria(
+      startDate: startDate,
+      endDate: endDate,
+      placeTypes: placeTypes,
+      statuses: statuses,
+      emotionIntensities: emotionIntensities,
+      weathers: weathers,
+      tags: tags,
+    );
+  }
+
+  /// 清除筛选条件
+  /// 
+  /// 调用者：RecordFilterDialog._clearFilter()
+  Future<void> clearRecordsFilter() async {
+    ref.read(recordsFilterProvider.notifier).state = const RecordsFilterCriteria();
   }
 }
 
