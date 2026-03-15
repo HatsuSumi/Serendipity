@@ -77,7 +77,9 @@ export class CommunityPostController {
       // 如果有筛选参数，使用筛选逻辑
       if (hasFilterParams) {
         const tagMatchModeStr = getQueryAsString(req.query.tagMatchMode);
+        console.log('DEBUG controller: req.query.tagMatchMode=', req.query.tagMatchMode, 'tagMatchModeStr=', tagMatchModeStr);
         const tagMatchMode = isValidTagMatchMode(tagMatchModeStr) ? tagMatchModeStr : undefined;
+        console.log('DEBUG controller: tagMatchMode=', tagMatchMode);
         
         const query: FilterCommunityPostsQuery = {
           startDate: getQueryAsString(req.query.startDate),
