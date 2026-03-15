@@ -117,9 +117,9 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 发生时间
+            // 错过时间
             FilterSection(
-              title: '发生时间',
+              title: '错过时间',
               child: TimeRangeSelector(
                 startDate: _startDate,
                 endDate: _endDate,
