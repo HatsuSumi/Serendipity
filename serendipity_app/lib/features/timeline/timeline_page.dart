@@ -532,15 +532,20 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               // 描述（如果有）
               if (record.description != null && record.description!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    buildHighlightedText(
-                      _isMasked ? _maskText(record.description!) : record.description!,
-                      keyword: _isMasked ? null : filterCriteria.descriptionKeyword,
-                      highlightColor: statusColor.withValues(alpha: 0.3),
-                      textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Builder(
+                      builder: (context) {
+                        print('DEBUG description: description=${record.description}, keyword=${filterCriteria.descriptionKeyword}');
+                        return buildHighlightedText(
+                          _isMasked ? _maskText(record.description!) : record.description!,
+                          keyword: _isMasked ? null : filterCriteria.descriptionKeyword,
+                          highlightColor: statusColor.withValues(alpha: 0.3),
+                          textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
                   ],
                   
@@ -906,6 +911,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   ) {
     final displayContent = _isMasked ? _maskText(content) : content;
     final displayKeyword = _isMasked ? null : keyword;
+    
+    print('DEBUG _buildFilteredField: label=$label, content=$content, keyword=$keyword, displayContent=$displayContent, displayKeyword=$displayKeyword');
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

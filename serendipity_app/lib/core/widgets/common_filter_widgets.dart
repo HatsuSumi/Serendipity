@@ -609,7 +609,10 @@ Widget buildHighlightedText(
   int? maxLines,
   TextOverflow? overflow,
 }) {
+  print('DEBUG buildHighlightedText: text=$text, keyword=$keyword, textStyle=$textStyle');
+  
   if (keyword == null || keyword.isEmpty || !text.contains(keyword)) {
+    print('DEBUG buildHighlightedText: returning plain Text');
     return Text(
       text,
       style: textStyle,
@@ -621,23 +624,30 @@ Widget buildHighlightedText(
   final parts = text.split(RegExp('($keyword)', caseSensitive: false));
   final keywordLower = keyword.toLowerCase();
   
+  print('DEBUG buildHighlightedText: parts=$parts, keywordLower=$keywordLower');
+  
+  final children = parts.where((part) => part.isNotEmpty).map((part) {
+    final isKeyword = part.toLowerCase() == keywordLower;
+    print('DEBUG buildHighlightedText: part=$part, isKeyword=$isKeyword');
+    return TextSpan(
+      text: part,
+      style: isKeyword
+          ? TextStyle(
+              backgroundColor: highlightColor,
+              fontWeight: FontWeight.bold,
+            )
+          : null,
+    );
+  }).toList();
+  
+  print('DEBUG buildHighlightedText: children count=${children.length}');
+  
   return RichText(
     maxLines: maxLines,
     overflow: overflow ?? TextOverflow.clip,
     text: TextSpan(
       style: textStyle,
-      children: parts.where((part) => part.isNotEmpty).map((part) {
-        final isKeyword = part.toLowerCase() == keywordLower;
-        return TextSpan(
-          text: part,
-          style: isKeyword
-              ? TextStyle(
-                  backgroundColor: highlightColor,
-                  fontWeight: FontWeight.bold,
-                )
-              : null,
-        );
-      }).toList(),
+      children: children,
     ),
   );
 }
