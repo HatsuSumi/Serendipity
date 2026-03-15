@@ -10,6 +10,7 @@ import '../providers/records_provider.dart';
 import '../providers/check_in_provider.dart';
 import '../config/server_config.dart';
 import 'sync_service.dart';
+import 'sync_orchestrator.dart';
 
 /// 网络监听服务
 /// 
@@ -35,17 +36,15 @@ class NetworkMonitorService {
   bool _isMonitoring = false;
   bool _lastServerHealthy = true;
   
-  /// 同步进行中标志，防止并发触发多个 syncAllData
-  bool _isSyncing = false;
-  
   /// 开始监听网络状态
   /// 
   /// 调用者：main.dart 的 MyApp.initState()
   /// 
   /// 功能：
   /// 1. 启动网络状态监听
-  /// 2. 触发 App 启动时的初始同步
-  /// 3. 启动轮询（每 10 秒检查一次）
+  /// 2. 监听认证完成信号（登录/注册成功）
+  /// 3. 触发 App 启动时的初始同步
+  /// 4. 启动轮询（每 10 秒检查一次）
   void startMonitoring(WidgetRef ref) {
     if (_isMonitoring) {
       return; // 避免重复监听
@@ -60,6 +59,13 @@ class NetworkMonitorService {
       },
     );
     
+    // 监听认证完成信号（登录/注册成功）
+    ref.listen(authCompletedProvider, (prev, next) {
+      if (next != null) {
+        _onAuthCompleted(ref, next);
+      }
+    });
+    
     // 启动轮询作为备用方案
     _pollingTimer = Timer.periodic(
       Duration(seconds: ServerConfig.networkPollingInterval),
@@ -73,24 +79,18 @@ class NetworkMonitorService {
   }
   
   /// App 启动时触发初始同步
-  Future<void> _triggerInitialSync(WidgetRef ref) async {
-    Future.microtask(() async {
-      try {
-        final isServerHealthy = await _checkServerHealth();
-        _lastServerHealthy = isServerHealthy;
-        
-        if (!isServerHealthy) {
-          return;
-        }
-        
-        final user = await ref.read(authProvider.future);
-        
+  /// 
+  /// 设计说明：
+  /// - 使用 ref.listen 而不是 Future.microtask
+  /// - 这样可以安全处理 ref 失效的情况
+  /// - 当用户已登录时，自动触发同步
+  void _triggerInitialSync(WidgetRef ref) {
+    ref.listen(authProvider, (prev, next) {
+      next.whenData((user) {
         if (user != null) {
-          await _triggerSync(ref, user, SyncSource.appStartup);
+          _triggerSync(ref, user, SyncSource.appStartup);
         }
-      } catch (e) {
-        _lastServerHealthy = false;
-      }
+      });
     });
   }
   
@@ -151,23 +151,21 @@ class NetworkMonitorService {
   /// 
   /// 同步策略：使用增量同步，只同步有变化的数据
   Future<void> _onNetworkRestored(WidgetRef ref) async {
-    Future.microtask(() async {
-      try {
-        final isServerHealthy = await _checkServerHealth();
-        if (!isServerHealthy) {
-          return;
-        }
-        
-        // 使用 whenData 安全处理 AsyncValue，避免在 loading/error 状态时访问 .value
-        ref.read(authProvider).whenData((user) {
-          if (user != null) {
-            _triggerSync(ref, user, SyncSource.networkReconnect);
-          }
-        });
-      } catch (e) {
-        // 静默失败
+    try {
+      final isServerHealthy = await _checkServerHealth();
+      if (!isServerHealthy) {
+        return;
       }
-    });
+      
+      // 使用 whenData 安全处理 AsyncValue，避免在 loading/error 状态时访问 .value
+      ref.read(authProvider).whenData((user) {
+        if (user != null) {
+          _triggerSync(ref, user, SyncSource.networkReconnect);
+        }
+      });
+    } catch (e) {
+      // 静默失败
+    }
   }
   
   /// 检查服务器健康状态
@@ -186,19 +184,14 @@ class NetworkMonitorService {
     }
   }
   
-  /// 检查并设置同步标志（原子操作）
+  /// 认证完成时的处理（登录/注册成功）
   /// 
-  /// 设计原则：
-  /// - 原子操作：检查和设置在一个方法内完成
-  /// - 防止竞态条件：多个并发调用只有一个能成功设置标志
-  /// 
-  /// 返回：
-  /// - true：成功设置标志，调用者应该执行同步
-  /// - false：标志已被设置，调用者应该跳过同步
-  bool _setSyncingIfNotAlready() {
-    if (_isSyncing) return false;
-    _isSyncing = true;
-    return true;
+  /// 调用者：startMonitoring() 的 ref.listen(authCompletedProvider)
+  void _onAuthCompleted(WidgetRef ref, AuthCompletedEvent event) {
+    _triggerSync(ref, event.user, 
+      event.isRegister ? SyncSource.register : SyncSource.login,
+      skipDownload: event.isRegister,
+    );
   }
   
   /// 触发同步（带重试机制和并发保护）
@@ -207,95 +200,33 @@ class NetworkMonitorService {
   /// - _triggerInitialSync()：App 启动
   /// - _pollNetworkStatus()：定期轮询
   /// - _onNetworkRestored()：网络恢复
+  /// - _onAuthCompleted()：登录/注册成功
   /// 
-  /// 同步策略：从 SyncService 读取持久化的上次同步时间
-  /// - 首次同步（lastSyncTime == null）：全量同步
-  /// - 非首次同步（lastSyncTime != null）：增量同步
-  /// 
-  /// 重试策略：
-  /// - 最多重试 3 次
-  /// - 重试延迟：2秒、5秒、10秒
-  /// - 只重试网络错误，不重试业务逻辑错误
-  /// 
-  /// 并发保护：
-  /// - 使用原子操作 _setSyncingIfNotAlready() 防止并发
-  /// - 多个并发调用只有一个能执行同步
-  /// - 其他调用直接返回，不阻塞
-  /// 
-  /// 注意：
-  /// - syncStartTime 由 SyncService.syncAllData 内部持久化
-  /// - 自动同步不更新 syncStatusProvider（只给手动同步的 UI 用）
-  /// - 同步完成信号通过 syncCompletedProvider 发送，但 Provider 失效时静默忽略
-  Future<void> _triggerSync(WidgetRef ref, User user, SyncSource source) async {
-    // 并发保护：使用原子操作检查和设置标志
-    if (!_setSyncingIfNotAlready()) {
-      return; // 已有同步在进行中，直接跳过
-    }
-
+  /// 设计说明：
+  /// - 使用 SyncOrchestrator 统一管理同步
+  /// - SyncOrchestrator 处理并发保护和重试
+  /// - 这里只负责触发，不负责具体逻辑
+  Future<void> _triggerSync(
+    WidgetRef ref,
+    User user,
+    SyncSource source, {
+    bool skipDownload = false,
+  }) async {
     try {
-      const maxRetries = 3;
-      const retryDelays = [
-        Duration(seconds: 2),
-        Duration(seconds: 5),
-        Duration(seconds: 10),
-      ];
-
-      for (int attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-          final syncService = ref.read(syncServiceProvider);
-          final lastSyncTime = await syncService.getLastSyncTime(user.id);
-
-          await syncService.syncAllData(
-            user,
-            lastSyncTime: lastSyncTime,
-            source: source,
-          );
-
-          // 同步成功，尝试递增信号通知所有监听 syncCompletedProvider 的 Provider 重建
-          // 如果 Provider 已失效，静默忽略（不影响同步结果）
-          _notifySyncCompleted(ref);
-          return; // 成功，退出重试循环
-        } catch (e, stackTrace) {
-          final isLastAttempt = attempt == maxRetries - 1;
-
-          if (kDebugMode) {
-            print('数据同步失败（第 ${attempt + 1}/$maxRetries 次）: $e');
-            if (isLastAttempt) {
-              print('错误堆栈: $stackTrace');
-            }
-          }
-
-          if (!isLastAttempt) {
-            await Future.delayed(retryDelays[attempt]);
-          } else {
-            if (kDebugMode) {
-              print('数据同步已放弃（已重试 $maxRetries 次）');
-            }
-            // 静默失败，不影响用户体验
-          }
-        }
-      }
-    } finally {
-      // 无论成功/失败/异常，确保标志被重置
-      _isSyncing = false;
-    }
-  }
-
-  /// 通知同步完成（安全处理 Provider 失效）
-  /// 
-  /// 设计原则：
-  /// - 尽力而为：如果 Provider 已失效，静默忽略
-  /// - 不阻塞：不影响同步结果
-  /// - 可靠性：即使通知失败，同步数据已持久化
-  void _notifySyncCompleted(WidgetRef ref) {
-    try {
-      ref.read(syncCompletedProvider.notifier).state++;
+      final orchestrator = ref.read(syncOrchestratorProvider);
+      final lastSyncTime = skipDownload ? null : await ref.read(syncServiceProvider).getLastSyncTime(user.id);
+      
+      await orchestrator.sync(
+        ref,
+        user,
+        source: source,
+        lastSyncTime: lastSyncTime,
+        skipDownload: skipDownload,
+      );
     } catch (e) {
-      // Provider 已失效（应用已关闭或 Provider 已销毁）
-      // 这不是错误，因为同步数据已经持久化到本地存储
-      // 下次 App 启动时会自动加载最新数据
+      // 同步失败不影响用户体验，但记录日志便于调试
       if (kDebugMode) {
-        print('同步完成但 Provider 已失效，无法通知刷新（这是正常的）');
+        print('自动同步失败（来源：$source）: $e');
       }
     }
   }

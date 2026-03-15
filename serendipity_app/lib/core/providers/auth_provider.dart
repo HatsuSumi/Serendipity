@@ -8,6 +8,7 @@ import '../repositories/custom_server_auth_repository.dart';
 import '../services/http_client_service.dart';
 import '../services/i_storage_service.dart';
 import '../services/sync_service.dart';
+import '../services/sync_orchestrator.dart';
 import '../config/app_config.dart';
 import 'records_provider.dart';
 import 'story_lines_provider.dart';
@@ -70,41 +71,20 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// 
   /// 调用时机：用户登录/注册成功后
   /// 
-  /// 同步策略：
-  /// - 注册：首次同步（lastSyncTime: null），只上传不下载
-  ///   原因：新用户云端确实没有数据
-  /// - 登录：读取该用户的上次同步时间
-  ///   - 该用户首次同步（lastSyncTime: null）：全量下载
-  ///   - 该用户非首次同步（lastSyncTime != null）：增量同步
+  /// 设计说明：
+  /// - 不直接调用 SyncService（违反分层约束）
+  /// - 通过信号驱动，让 NetworkMonitorService 负责实际同步
+  /// - AuthNotifier 只负责认证，不负责同步业务逻辑
   /// 
-  /// 注意：同步失败不影响用户使用，用户可以稍后手动触发同步
+  /// 同步策略由 NetworkMonitorService 决定：
+  /// - 注册：SyncSource.register，跳过下载
+  /// - 登录：SyncSource.login，读取上次同步时间
   Future<void> _triggerSync(User user, {bool isRegister = false}) async {
-    try {
-      final syncService = ref.read(syncServiceProvider);
-      
-      // 注册场景：跳过下载（新用户云端确实没数据）
-      // 登录/启动场景：读取持久化的上次同步时间，null 时全量下载
-      final lastSyncTime = isRegister
-          ? null
-          : await syncService.getLastSyncTime(user.id);
-      
-      await syncService.syncAllData(
-        user,
-        lastSyncTime: lastSyncTime,
-        skipDownload: isRegister,
-        source: isRegister ? SyncSource.register : SyncSource.login,
-      );
-      
-      // 同步完成后刷新所有数据 Provider
-      _invalidateDataProviders();
-      // 同时递增信号，确保 watch(syncCompletedProvider) 的 Provider 也重建
-      ref.read(syncCompletedProvider.notifier).state++;
-    } catch (e) {
-      // 同步失败不影响用户使用，但记录日志便于调试
-      if (kDebugMode) {
-        print('登录/注册后数据同步失败: $e');
-      }
-    }
+    // 发送信号给 NetworkMonitorService，由它负责实际同步
+    ref.read(authCompletedProvider.notifier).state = AuthCompletedEvent(
+      user: user,
+      isRegister: isRegister,
+    );
   }
   
   /// 刷新所有数据 Provider（清除内存缓存）
@@ -665,4 +645,24 @@ class AuthNotifier extends StreamNotifier<User?> {
 final authProvider = StreamNotifierProvider<AuthNotifier, User?>(
   () => AuthNotifier(),
 );
+
+/// 认证完成信号（用于触发同步）
+/// 
+/// 设计说明：
+/// - AuthNotifier 登录/注册成功后发送此信号
+/// - NetworkMonitorService 监听此信号，触发实际同步
+/// - 这样可以保持分层约束：UI 层不直接调用 SyncService
+class AuthCompletedEvent {
+  final User user;
+  final bool isRegister;
+  
+  AuthCompletedEvent({
+    required this.user,
+    required this.isRegister,
+  });
+}
+
+final authCompletedProvider = StateProvider<AuthCompletedEvent?>((ref) {
+  return null;
+});
 
