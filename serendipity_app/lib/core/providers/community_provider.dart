@@ -349,6 +349,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
           placeTypes: placeTypes,
           tags: tags,
           statuses: statuses,
+          tagMatchMode: tagMatchMode == TagMatchMode.wholeWord ? 'wholeWord' : 'contains',
         );
         
         return CommunityState(

@@ -67,6 +67,7 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
     List<String>? placeTypes,
     List<String>? tags,
     List<String>? statuses,
+    String tagMatchMode = 'contains',
     int limit = 20,
   }) async {
     return await _remoteData.filterCommunityPosts(
@@ -80,6 +81,7 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
       placeTypes: placeTypes,
       tags: tags,
       statuses: statuses,
+      tagMatchMode: tagMatchMode,
       limit: limit,
     );
   }

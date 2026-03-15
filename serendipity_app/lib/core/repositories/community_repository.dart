@@ -198,6 +198,7 @@ class CommunityRepository {
   /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
   /// - tags: 标签名称列表（可选，多选OR逻辑）
   /// - statuses: 状态列表（可选，多选OR逻辑）
+  /// - tagMatchMode: 标签匹配模式（全词匹配或包含匹配）
   /// - limit: 每页数量（默认 20）
   /// 
   /// 返回：符合条件的帖子列表
@@ -214,6 +215,7 @@ class CommunityRepository {
     List<PlaceType>? placeTypes,
     List<String>? tags,
     List<EncounterStatus>? statuses,
+    String tagMatchMode = 'contains',
     int limit = 20,
   }) async {
     // Fail Fast: 参数验证
@@ -239,6 +241,7 @@ class CommunityRepository {
       placeTypes: placeTypes?.map((t) => t.value).toList(),
       tags: tags,
       statuses: statuses?.map((s) => s.name).toList(),
+      tagMatchMode: tagMatchMode,
       limit: limit,
     );
   }

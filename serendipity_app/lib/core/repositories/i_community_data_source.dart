@@ -79,6 +79,7 @@ abstract class ICommunityDataSource {
   /// - placeTypes: 场所类型列表
   /// - tags: 标签名称列表
   /// - statuses: 状态列表
+  /// - tagMatchMode: 标签匹配模式（wholeWord 或 contains）
   /// - limit: 每页数量
   /// 
   /// 返回：符合条件的帖子列表
@@ -93,6 +94,7 @@ abstract class ICommunityDataSource {
     List<String>? placeTypes,
     List<String>? tags,
     List<String>? statuses,
+    String tagMatchMode = 'contains',
     int limit = 20,
   });
 }

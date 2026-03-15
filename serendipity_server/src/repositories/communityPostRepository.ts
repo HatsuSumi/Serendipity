@@ -20,6 +20,7 @@ export interface ICommunityPostRepository {
     placeTypes?: string[];
     tags?: string[];
     statuses?: string[];
+    tagMatchMode?: 'wholeWord' | 'contains';
     limit: number;
   }): Promise<CommunityPost[]>;
   findByUserAndRecords(userId: string, recordIds: string[]): Promise<CommunityPost[]>;
@@ -120,6 +121,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     placeTypes?: string[];
     tags?: string[];
     statuses?: string[];
+    tagMatchMode?: 'wholeWord' | 'contains';
     limit: number;
   }): Promise<CommunityPost[]> {
     // 如果有标签筛选，使用原始 SQL 查询
@@ -195,7 +197,8 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   // - 符合最佳实践：遵循 Prisma 官方推荐
   // 
   // 标签匹配逻辑：
-  // - 包含匹配：标签包含关键词（使用 ILIKE，不区分大小写）
+  // - 全词匹配：标签完全相等（使用 @> 操作符）
+  // - 包含匹配：标签包含关键词（使用 ILIKE）
   private async findByFiltersWithTags(filters: {
     startDate?: Date;
     endDate?: Date;
@@ -207,19 +210,26 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     placeTypes?: string[];
     tags?: string[];
     statuses?: string[];
+    tagMatchMode?: 'wholeWord' | 'contains';
     limit: number;
   }): Promise<CommunityPost[]> {
     const conditions: Prisma.Sql[] = [];
+    const tagMatchMode = filters.tagMatchMode || 'contains';
 
     // 标签筛选（JSONB 查询，OR 逻辑：匹配任意一个标签即可）
-    // 使用 ILIKE 支持包含匹配（不区分大小写）
     if (filters.tags && filters.tags.length > 0) {
-      const tagConditions = filters.tags.map(tag => 
-        Prisma.sql`EXISTS (
-          SELECT 1 FROM jsonb_array_elements(tags) AS t
-          WHERE t->>'tag' ILIKE ${`%${tag}%`}
-        )`
-      );
+      const tagConditions = filters.tags.map(tag => {
+        if (tagMatchMode === 'wholeWord') {
+          // 全词匹配：标签完全相等
+          return Prisma.sql`tags @> ${JSON.stringify([{ tag }])}`;
+        } else {
+          // 包含匹配：标签包含关键词
+          return Prisma.sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements(tags) AS t
+            WHERE t->>'tag' ILIKE ${`%${tag}%`}
+          )`;
+        }
+      });
       conditions.push(Prisma.sql`(${Prisma.join(tagConditions, ' OR ')})`);
     }
 
