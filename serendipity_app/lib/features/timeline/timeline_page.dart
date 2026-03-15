@@ -271,7 +271,15 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       // 标签筛选（OR逻辑）
       if (filter.tags != null && filter.tags!.isNotEmpty) {
         final recordTags = record.tags.map((t) => t.tag).toList();
-        final hasMatchingTag = filter.tags!.any((tag) => recordTags.contains(tag));
+        final hasMatchingTag = filter.tags!.any((filterTag) {
+          if (filter.tagMatchMode == TagMatchMode.wholeWord) {
+            // 全词匹配：完全相等
+            return recordTags.contains(filterTag);
+          } else {
+            // 包含匹配：任何标签包含关键词
+            return recordTags.any((recordTag) => recordTag.contains(filterTag));
+          }
+        });
         if (!hasMatchingTag) {
           return false;
         }
@@ -559,7 +567,15 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                         // 判断是否需要高亮这个标签
                         final shouldHighlight = filterCriteria.tags != null && 
                             filterCriteria.tags!.isNotEmpty &&
-                            filterCriteria.tags!.any((keyword) => tag.tag.contains(keyword));
+                            filterCriteria.tags!.any((keyword) {
+                              if (filterCriteria.tagMatchMode == TagMatchMode.wholeWord) {
+                                // 全词匹配：完全相等
+                                return tag.tag == keyword;
+                              } else {
+                                // 包含匹配：标签包含关键词
+                                return tag.tag.contains(keyword);
+                              }
+                            });
                         
                         return Container(
                           padding: const EdgeInsets.symmetric(

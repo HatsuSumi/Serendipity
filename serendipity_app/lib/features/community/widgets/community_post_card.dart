@@ -16,12 +16,14 @@ class CommunityPostCard extends StatelessWidget {
   final CommunityPost post;
   final VoidCallback? onDelete;
   final List<String>? highlightKeywords;
+  final TagMatchMode tagMatchMode;
 
   const CommunityPostCard({
     super.key,
     required this.post,
     this.onDelete,
     this.highlightKeywords,
+    this.tagMatchMode = TagMatchMode.contains,
   });
 
   @override
@@ -170,7 +172,15 @@ class CommunityPostCard extends StatelessWidget {
         // 判断是否需要高亮这个标签
         final shouldHighlight = highlightKeywords != null && 
             highlightKeywords!.isNotEmpty &&
-            highlightKeywords!.any((keyword) => tagWithNote.tag.contains(keyword));
+            highlightKeywords!.any((keyword) {
+              if (tagMatchMode == TagMatchMode.wholeWord) {
+                // 全词匹配：完全相等
+                return tagWithNote.tag == keyword;
+              } else {
+                // 包含匹配：标签包含关键词
+                return tagWithNote.tag.contains(keyword);
+              }
+            });
         
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

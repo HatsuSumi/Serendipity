@@ -154,7 +154,15 @@ class MyPostsPage extends ConsumerWidget {
       // 标签筛选（OR逻辑）
       if (filter.tags != null && filter.tags!.isNotEmpty) {
         final postTagNames = post.tags.map((t) => t.tag).toList();
-        final hasMatchingTag = filter.tags!.any((tag) => postTagNames.contains(tag));
+        final hasMatchingTag = filter.tags!.any((filterTag) {
+          if (filter.tagMatchMode == TagMatchMode.wholeWord) {
+            // 全词匹配：完全相等
+            return postTagNames.contains(filterTag);
+          } else {
+            // 包含匹配：任何标签包含关键词
+            return postTagNames.any((postTag) => postTag.contains(filterTag));
+          }
+        });
         if (!hasMatchingTag) {
           return false;
         }
@@ -208,6 +216,7 @@ class MyPostsPage extends ConsumerWidget {
             post: post,
             onDelete: () => _deletePost(context, ref, post.id),
             highlightKeywords: filterCriteria.tags,
+            tagMatchMode: filterCriteria.tagMatchMode,
           );
         },
       ),

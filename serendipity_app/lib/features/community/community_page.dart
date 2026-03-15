@@ -327,6 +327,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
             post: post,
             onDelete: post.isOwner ? () => _deletePost(post.id) : null,
             highlightKeywords: filterCriteria.tags,
+            tagMatchMode: filterCriteria.tagMatchMode,
           );
         },
       ),
