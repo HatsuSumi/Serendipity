@@ -361,12 +361,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
           // 无记录时显示空状态占位
           if (records.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.only(top: 32),
+            // 区分是筛选结果为空还是真的没有记录
+            final isFiltering = filterCriteria.isActive;
+            return Padding(
+              padding: const EdgeInsets.only(top: 32),
               child: EmptyStateWidget(
-                icon: '💫',
-                title: '还没有记录',
-                description: '点击下方按钮开始记录',
+                icon: isFiltering ? '🔍' : '💫',
+                title: isFiltering ? '没有符合条件的记录' : '还没有记录',
+                description: isFiltering ? '试试调整筛选条件' : '点击下方按钮开始记录',
               ),
             );
           }

@@ -172,18 +172,22 @@ class MyPostsPage extends ConsumerWidget {
   /// - 社区帖子高度差异很大（100px-300px+）
   /// - 使用默认的动态高度计算，确保布局正确
   Widget _buildPostsList(BuildContext context, WidgetRef ref, List<dynamic> posts) {
+    final filterCriteria = ref.watch(myPostsFilterProvider);
+    
     // 空状态
     if (posts.isEmpty) {
+      // 区分是筛选结果为空还是真的没有帖子
+      final isFiltering = filterCriteria.hasAnyFilter;
       return RefreshIndicator(
         onRefresh: () => _onRefresh(ref),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 100),
+          children: [
+            const SizedBox(height: 100),
             EmptyStateWidget(
-              icon: Icons.cloud_off,
-              title: '还没有发布到树洞',
-              description: '在记录详情页可以发布到社区',
+              icon: isFiltering ? '🔍' : Icons.cloud_off,
+              title: isFiltering ? '没有符合条件的帖子' : '还没有发布到树洞',
+              description: isFiltering ? '试试调整筛选条件' : '在记录详情页可以发布到社区',
             ),
           ],
         ),
