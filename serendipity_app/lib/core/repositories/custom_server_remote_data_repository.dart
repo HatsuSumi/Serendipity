@@ -438,6 +438,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     String tagMatchMode = 'contains',
     int limit = 20,
   }) async {
+    print('DEBUG filterCommunityPosts: tagMatchMode=$tagMatchMode');
     // Fail Fast：参数验证
     if (limit <= 0) {
       throw ArgumentError('limit 必须大于 0');
@@ -481,13 +482,16 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       if (tags != null && tags.isNotEmpty) {
         queryParams['tags'] = tags.join(',');
       }
+      print('DEBUG before tagMatchMode check: tagMatchMode=$tagMatchMode');
       if (tagMatchMode == 'wholeWord') {
+        print('DEBUG adding tagMatchMode to queryParams');
         queryParams['tagMatchMode'] = tagMatchMode;
       }
       if (statuses != null && statuses.isNotEmpty) {
         queryParams['statuses'] = statuses.join(',');
       }
       
+      print('DEBUG queryParams: $queryParams');
       final response = await _httpClient.get(
         ServerConfig.communityPosts,
         queryParams: queryParams,
