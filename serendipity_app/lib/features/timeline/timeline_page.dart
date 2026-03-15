@@ -578,6 +578,51 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       }).toList(),
                     ),
                   ],
+
+                  // 如果再遇备忘（仅在筛选时显示）
+                  if (filterCriteria.ifReencounterKeyword != null && 
+                      filterCriteria.ifReencounterKeyword!.isNotEmpty &&
+                      record.ifReencounter != null && 
+                      record.ifReencounter!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildFilteredField(
+                      context,
+                      '如果再遇',
+                      record.ifReencounter!,
+                      filterCriteria.ifReencounterKeyword!,
+                      statusColor,
+                    ),
+                  ],
+
+                  // 对话契机（仅在筛选时显示）
+                  if (filterCriteria.conversationStarterKeyword != null && 
+                      filterCriteria.conversationStarterKeyword!.isNotEmpty &&
+                      record.conversationStarter != null && 
+                      record.conversationStarter!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildFilteredField(
+                      context,
+                      '对话契机',
+                      record.conversationStarter!,
+                      filterCriteria.conversationStarterKeyword!,
+                      statusColor,
+                    ),
+                  ],
+
+                  // 背景音乐（仅在筛选时显示）
+                  if (filterCriteria.backgroundMusicKeyword != null && 
+                      filterCriteria.backgroundMusicKeyword!.isNotEmpty &&
+                      record.backgroundMusic != null && 
+                      record.backgroundMusic!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildFilteredField(
+                      context,
+                      '背景音乐',
+                      record.backgroundMusic!,
+                      filterCriteria.backgroundMusicKeyword!,
+                      statusColor,
+                    ),
+                  ],
                   
                   // 底部时间信息和故事线信息
                   const SizedBox(height: 12),
@@ -853,6 +898,50 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       },
       loading: () => const SizedBox.shrink(),
       error: (error, stackTrace) => const SizedBox.shrink(),
+    );
+  }
+
+  /// 构建筛选字段显示（带标题和高亮）
+  /// 
+  /// 调用者：_buildRecordCard（显示如果再遇、对话契机、背景音乐）
+  Widget _buildFilteredField(
+    BuildContext context,
+    String label,
+    String content,
+    String keyword,
+    Color accentColor,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: accentColor,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 4),
+        _isMasked
+            ? Text(
+                _maskText(content),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              )
+            : buildHighlightedText(
+                content,
+                keyword: keyword,
+                highlightColor: accentColor.withValues(alpha: 0.3),
+                textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+      ],
     );
   }
 
