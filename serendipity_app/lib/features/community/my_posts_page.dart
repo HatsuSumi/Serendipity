@@ -4,6 +4,7 @@ import '../../core/providers/community_provider.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
+import '../../models/enums.dart';
 import 'widgets/community_post_card.dart';
 import 'dialogs/my_posts_filter_dialog.dart';
 

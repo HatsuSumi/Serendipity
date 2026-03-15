@@ -19,6 +19,7 @@ import '../../core/theme/status_color_extension.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/common_filter_widgets.dart';
 import '../../models/encounter_record.dart';
+import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import '../story_line/link_to_story_line_dialog.dart';
