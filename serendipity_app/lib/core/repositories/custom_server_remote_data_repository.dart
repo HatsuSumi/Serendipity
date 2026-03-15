@@ -435,6 +435,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     List<String>? placeTypes,
     List<String>? tags,
     List<String>? statuses,
+    String tagMatchMode = 'contains',
     int limit = 20,
   }) async {
     // Fail Fast：参数验证
@@ -479,6 +480,9 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       }
       if (tags != null && tags.isNotEmpty) {
         queryParams['tags'] = tags.join(',');
+      }
+      if (tagMatchMode.isNotEmpty) {
+        queryParams['tagMatchMode'] = tagMatchMode;
       }
       if (statuses != null && statuses.isNotEmpty) {
         queryParams['statuses'] = statuses.join(',');
