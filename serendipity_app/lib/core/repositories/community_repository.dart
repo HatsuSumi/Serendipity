@@ -241,7 +241,7 @@ class CommunityRepository {
       placeTypes: placeTypes?.map((t) => t.value).toList(),
       tags: tags,
       statuses: statuses?.map((s) => s.name).toList(),
-      tagMatchMode: tagMatchMode.value,
+      tagMatchMode: tagMatchMode.value, // 转换 enum 为 string 传给后端
       limit: limit,
     );
   }

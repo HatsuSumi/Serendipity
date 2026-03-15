@@ -349,7 +349,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
           placeTypes: placeTypes,
           tags: tags,
           statuses: statuses,
-          tagMatchMode: tagMatchMode.value,
+          tagMatchMode: tagMatchMode,
         );
         
         return CommunityState(

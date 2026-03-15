@@ -1,5 +1,6 @@
 import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
+import '../../models/enums.dart';
 
 /// 社区数据源接口
 /// 
@@ -94,7 +95,7 @@ abstract class ICommunityDataSource {
     List<String>? placeTypes,
     List<String>? tags,
     List<String>? statuses,
-    String tagMatchMode = 'contains', // 后端接收 string，前端转换
+    TagMatchMode tagMatchMode = TagMatchMode.contains,
     int limit = 20,
   });
 }
