@@ -129,7 +129,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
 
     const where: any = {};
 
-    // 错过时间范围筛选（基于 timestamp 字段�?
+    // 错过时间范围筛选（基于 timestamp 字段）
     if (filters.startDate || filters.endDate) {
       where.timestamp = {};
       if (filters.startDate) {
@@ -140,7 +140,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       }
     }
 
-    // 发布时间范围筛选（基于 publishedAt 字段�?
+    // 发布时间范围筛选（基于 publishedAt 字段）
     if (filters.publishStartDate || filters.publishEndDate) {
       where.publishedAt = {};
       if (filters.publishStartDate) {
@@ -151,29 +151,29 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       }
     }
 
-    // 省份筛�?
+    // 省份筛选
     if (filters.province) {
       where.province = filters.province;
     }
 
-    // 城市筛�?
+    // 城市筛选
     if (filters.city) {
       where.city = filters.city;
     }
 
-    // 区县筛�?
+    // 区县筛选
     if (filters.area) {
       where.area = filters.area;
     }
 
-    // 场所类型筛选（多选，OR逻辑�?
+    // 场所类型筛选（多选，OR逻辑）
     if (filters.placeTypes && filters.placeTypes.length > 0) {
       where.placeType = {
         in: filters.placeTypes,
       };
     }
 
-    // 状态筛选（多选，OR逻辑�?
+    // 状态筛选（多选，OR逻辑）
     if (filters.statuses && filters.statuses.length > 0) {
       where.status = {
         in: filters.statuses,
@@ -187,16 +187,15 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     });
   }
 
-  // 带标签筛选的查询（使�?Prisma.sql 模板标签�?
+  // 带标签筛选的查询（使用 Prisma.sql 模板标签）
   // 
-  // 设计原则�?
+  // 设计原则：
   // - 安全性优先：使用 Prisma.sql 防止 SQL 注入
-  // - 类型安全：利�?TypeScript 类型检�?
+  // - 类型安全：利用 TypeScript 类型检查
   // - 符合最佳实践：遵循 Prisma 官方推荐
   // 
-  // 性能优化�?
-  // - 使用 GIN 索引加�?JSONB 查询
-  // - 使用 @> 操作符（包含）代�?jsonb_array_elements（更快）
+  // 标签匹配逻辑：
+  // - 包含匹配：标签包含关键词（使用 ILIKE，不区分大小写）
   private async findByFiltersWithTags(filters: {
     startDate?: Date;
     endDate?: Date;
@@ -213,15 +212,18 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     const conditions: Prisma.Sql[] = [];
 
     // 标签筛选（JSONB 查询，OR 逻辑：匹配任意一个标签即可）
-    // 性能优化：使�?@> 操作�?+ GIN 索引，比 jsonb_array_elements �?10-100 �?
+    // 使用 ILIKE 支持包含匹配（不区分大小写）
     if (filters.tags && filters.tags.length > 0) {
       const tagConditions = filters.tags.map(tag => 
-        Prisma.sql`tags @> ${JSON.stringify([{ tag }])}`
+        Prisma.sql`EXISTS (
+          SELECT 1 FROM jsonb_array_elements(tags) AS t
+          WHERE t->>'tag' ILIKE ${`%${tag}%`}
+        )`
       );
       conditions.push(Prisma.sql`(${Prisma.join(tagConditions, ' OR ')})`);
     }
 
-    // 错过时间范围筛�?
+    // 错过时间范围筛选
     if (filters.startDate) {
       conditions.push(Prisma.sql`timestamp >= ${filters.startDate}`);
     }
@@ -229,7 +231,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       conditions.push(Prisma.sql`timestamp <= ${filters.endDate}`);
     }
 
-    // 发布时间范围筛�?
+    // 发布时间范围筛选
     if (filters.publishStartDate) {
       conditions.push(Prisma.sql`published_at >= ${filters.publishStartDate}`);
     }
@@ -237,27 +239,27 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       conditions.push(Prisma.sql`published_at <= ${filters.publishEndDate}`);
     }
 
-    // 省份筛�?
+    // 省份筛选
     if (filters.province) {
       conditions.push(Prisma.sql`province = ${filters.province}`);
     }
 
-    // 城市筛�?
+    // 城市筛选
     if (filters.city) {
       conditions.push(Prisma.sql`city = ${filters.city}`);
     }
 
-    // 区县筛�?
+    // 区县筛选
     if (filters.area) {
       conditions.push(Prisma.sql`area = ${filters.area}`);
     }
 
-    // 场所类型筛选（多选，OR 逻辑�?
+    // 场所类型筛选（多选，OR 逻辑）
     if (filters.placeTypes && filters.placeTypes.length > 0) {
       conditions.push(Prisma.sql`place_type = ANY(${filters.placeTypes})`);
     }
 
-    // 状态筛选（多选，OR 逻辑�?
+    // 状态筛选（多选，OR 逻辑）
     if (filters.statuses && filters.statuses.length > 0) {
       conditions.push(Prisma.sql`status = ANY(${filters.statuses})`);
     }
@@ -267,7 +269,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
       : Prisma.empty;
 
-    // 构建完整查询（使�?Prisma.sql 模板标签�?
+    // 构建完整查询（使用 Prisma.sql 模板标签）
     const query = Prisma.sql`
       SELECT 
         id,
@@ -299,7 +301,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     await this.prisma.communityPost.delete({
       where: {
         id,
-        userId, // 确保只能删除自己的帖�?
+        userId, // 确保只能删除自己的帖子
       },
     });
   }
@@ -311,4 +313,3 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     });
   }
 }
-
