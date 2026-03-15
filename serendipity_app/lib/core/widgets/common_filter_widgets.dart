@@ -611,8 +611,8 @@ Widget buildHighlightedText(
 }) {
   print('DEBUG buildHighlightedText: text=$text, keyword=$keyword, textStyle=$textStyle');
   
-  if (keyword == null || keyword.isEmpty || !text.contains(keyword)) {
-    print('DEBUG buildHighlightedText: returning plain Text');
+  if (keyword == null || keyword.isEmpty) {
+    print('DEBUG buildHighlightedText: keyword is null or empty, returning plain Text');
     return Text(
       text,
       style: textStyle,
@@ -621,24 +621,45 @@ Widget buildHighlightedText(
     );
   }
 
-  final parts = text.split(RegExp('($keyword)', caseSensitive: false));
-  final keywordLower = keyword.toLowerCase();
+  // 使用 allMatches 找到所有匹配位置
+  final regex = RegExp(keyword, caseSensitive: false);
+  final matches = regex.allMatches(text);
   
-  print('DEBUG buildHighlightedText: parts=$parts, keywordLower=$keywordLower');
-  
-  final children = parts.where((part) => part.isNotEmpty).map((part) {
-    final isKeyword = part.toLowerCase() == keywordLower;
-    print('DEBUG buildHighlightedText: part=$part, isKeyword=$isKeyword');
-    return TextSpan(
-      text: part,
-      style: isKeyword
-          ? TextStyle(
-              backgroundColor: highlightColor,
-              fontWeight: FontWeight.bold,
-            )
-          : null,
+  if (matches.isEmpty) {
+    print('DEBUG buildHighlightedText: no matches found, returning plain Text');
+    return Text(
+      text,
+      style: textStyle,
+      maxLines: maxLines,
+      overflow: overflow,
     );
-  }).toList();
+  }
+  
+  final children = <TextSpan>[];
+  int lastMatchEnd = 0;
+  
+  for (final match in matches) {
+    // 添加匹配前的文本
+    if (match.start > lastMatchEnd) {
+      children.add(TextSpan(text: text.substring(lastMatchEnd, match.start)));
+    }
+    
+    // 添加高亮的匹配文本
+    children.add(TextSpan(
+      text: text.substring(match.start, match.end),
+      style: TextStyle(
+        backgroundColor: highlightColor,
+        fontWeight: FontWeight.bold,
+      ),
+    ));
+    
+    lastMatchEnd = match.end;
+  }
+  
+  // 添加最后一个匹配后的文本
+  if (lastMatchEnd < text.length) {
+    children.add(TextSpan(text: text.substring(lastMatchEnd)));
+  }
   
   print('DEBUG buildHighlightedText: children count=${children.length}');
   
