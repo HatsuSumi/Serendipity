@@ -158,6 +158,8 @@ class NetworkMonitorService {
       }
       
       // 使用 whenData 安全处理 AsyncValue，避免在 loading/error 状态时访问 .value
+      // 注意：whenData 是同步回调，不会阻塞，所以这里不需要 await
+      // 如果需要等待同步完成，应该在 _triggerSync 中使用 await
       ref.read(authProvider).whenData((user) {
         if (user != null) {
           _triggerSync(ref, user, SyncSource.networkReconnect);

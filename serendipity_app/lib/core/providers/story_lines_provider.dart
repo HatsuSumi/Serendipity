@@ -358,3 +358,19 @@ final storyLinesProvider = AsyncNotifierProvider<StoryLinesNotifier, List<StoryL
   return StoryLinesNotifier();
 });
 
+/// 故事线统计 Provider
+/// 
+/// 计算当前用户的故事线总数
+/// 
+/// 设计说明：
+/// - 依赖 storyLinesProvider，自动响应数据变化
+/// - 返回异步值，支持 loading/error 状态
+/// - 用于 UI 显示统计信息（如标题中的故事线数）
+final storyLinesCountProvider = FutureProvider<int>((ref) async {
+  final storyLinesAsync = ref.watch(storyLinesProvider);
+  return storyLinesAsync.maybeWhen(
+    data: (storyLines) => storyLines.length,
+    orElse: () => 0,
+  );
+});
+

@@ -39,10 +39,15 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   @override
   Widget build(BuildContext context) {
     final storyLinesAsync = ref.watch(storyLinesProvider);
+    final countAsync = ref.watch(storyLinesCountProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('我的故事线'),
+        title: countAsync.when(
+          data: (count) => Text('我的故事线 ($count)'),
+          loading: () => const Text('我的故事线'),
+          error: (_, __) => const Text('我的故事线'),
+        ),
         actions: [
           PopupMenuButton<StoryLineSortType>(
             icon: const Icon(Icons.sort),

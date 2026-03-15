@@ -67,10 +67,15 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   @override
   Widget build(BuildContext context) {
     final recordsAsync = ref.watch(recordsProvider);
+    final countAsync = ref.watch(recordsCountProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TA'),
+        title: countAsync.when(
+          data: (count) => Text('TA ($count)'),
+          loading: () => const Text('TA'),
+          error: (_, __) => const Text('TA'),
+        ),
         actions: [
           // 排序按钮
           PopupMenuButton<RecordSortType>(

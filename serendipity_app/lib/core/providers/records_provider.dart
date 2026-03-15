@@ -404,3 +404,19 @@ final recordsProvider = AsyncNotifierProvider<RecordsNotifier, List<EncounterRec
   return RecordsNotifier();
 });
 
+/// 记录统计 Provider
+/// 
+/// 计算当前用户的记录总数
+/// 
+/// 设计说明：
+/// - 依赖 recordsProvider，自动响应数据变化
+/// - 返回异步值，支持 loading/error 状态
+/// - 用于 UI 显示统计信息（如标题中的记录数）
+final recordsCountProvider = FutureProvider<int>((ref) async {
+  final recordsAsync = ref.watch(recordsProvider);
+  return recordsAsync.maybeWhen(
+    data: (records) => records.length,
+    orElse: () => 0,
+  );
+});
+
