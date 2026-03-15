@@ -41,6 +41,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   Set<EncounterStatus> _selectedStatuses = {};
   final TextEditingController _tagController = TextEditingController();
   SelectedRegion? _selectedRegion;
+  late TagMatchMode _tagMatchMode;
 
   @override
   void initState() {
@@ -70,6 +71,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
       _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
       _selectedStatuses = criteria.statuses?.toSet() ?? {};
       _tagController.text = criteria.tags?.join(', ') ?? '';
+      _tagMatchMode = criteria.tagMatchMode;
       
       // 恢复地区选择
       if (criteria.province != null || criteria.city != null || criteria.area != null) {
@@ -126,16 +128,34 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
             // 标签
             _FilterSection(
               title: '标签',
-              child: TextField(
-                controller: _tagController,
-                decoration: const InputDecoration(
-                  hintText: '输入标签名称，多个标签用逗号分隔',
-                  helperText: '支持中英文逗号（, 或 ，）',
-                  helperMaxLines: 1,
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                maxLines: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _tagController,
+                    decoration: const InputDecoration(
+                      hintText: '输入标签名称，多个标签用逗号分隔',
+                      helperText: '支持中英文逗号（, 或 ，）',
+                      helperMaxLines: 1,
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    title: const Text('全词匹配'),
+                    subtitle: const Text('勾选后只匹配完整标签，不勾选则匹配包含关键词的标签'),
+                    value: _tagMatchMode == TagMatchMode.wholeWord,
+                    onChanged: (checked) {
+                      setState(() {
+                        _tagMatchMode = checked == true ? TagMatchMode.wholeWord : TagMatchMode.contains;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ],
               ),
             ),
 
@@ -368,6 +388,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
           placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
           statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
           tags: tags,
+          tagMatchMode: _tagMatchMode,
         );
   }
 

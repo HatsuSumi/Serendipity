@@ -19,6 +19,7 @@ class RecordsFilterCriteria {
   final List<EmotionIntensity>? emotionIntensities;
   final List<Weather>? weathers;
   final List<String>? tags;
+  final TagMatchMode tagMatchMode;
   final String? descriptionKeyword;
   final String? ifReencounterKeyword;
   final String? conversationStarterKeyword;
@@ -37,6 +38,7 @@ class RecordsFilterCriteria {
     this.emotionIntensities,
     this.weathers,
     this.tags,
+    this.tagMatchMode = TagMatchMode.contains,
     this.descriptionKeyword,
     this.ifReencounterKeyword,
     this.conversationStarterKeyword,
@@ -77,6 +79,7 @@ class RecordsFilterCriteria {
     List<EmotionIntensity>? emotionIntensities,
     List<Weather>? weathers,
     List<String>? tags,
+    TagMatchMode? tagMatchMode,
     String? descriptionKeyword,
     String? ifReencounterKeyword,
     String? conversationStarterKeyword,
@@ -106,6 +109,7 @@ class RecordsFilterCriteria {
       emotionIntensities: emotionIntensities ?? this.emotionIntensities,
       weathers: weathers ?? this.weathers,
       tags: tags ?? this.tags,
+      tagMatchMode: tagMatchMode ?? this.tagMatchMode,
       descriptionKeyword: clearDescriptionKeyword ? null : (descriptionKeyword ?? this.descriptionKeyword),
       ifReencounterKeyword: clearIfReencounterKeyword ? null : (ifReencounterKeyword ?? this.ifReencounterKeyword),
       conversationStarterKeyword: clearConversationStarterKeyword ? null : (conversationStarterKeyword ?? this.conversationStarterKeyword),

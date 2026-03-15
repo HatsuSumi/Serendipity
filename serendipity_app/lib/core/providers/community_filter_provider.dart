@@ -20,6 +20,7 @@ class CommunityFilterCriteria {
   final String? area;
   final List<PlaceType>? placeTypes;
   final List<String>? tags;
+  final TagMatchMode tagMatchMode;
   final List<EncounterStatus>? statuses;
 
   const CommunityFilterCriteria({
@@ -32,6 +33,7 @@ class CommunityFilterCriteria {
     this.area,
     this.placeTypes,
     this.tags,
+    this.tagMatchMode = TagMatchMode.contains,
     this.statuses,
   });
 
@@ -60,6 +62,7 @@ class CommunityFilterCriteria {
     String? area,
     List<PlaceType>? placeTypes,
     List<String>? tags,
+    TagMatchMode? tagMatchMode,
     List<EncounterStatus>? statuses,
     bool clearStartDate = false,
     bool clearEndDate = false,
@@ -82,6 +85,7 @@ class CommunityFilterCriteria {
       area: clearArea ? null : (area ?? this.area),
       placeTypes: clearPlaceTypes ? null : (placeTypes ?? this.placeTypes),
       tags: clearTags ? null : (tags ?? this.tags),
+      tagMatchMode: tagMatchMode ?? this.tagMatchMode,
       statuses: clearStatuses ? null : (statuses ?? this.statuses),
     );
   }

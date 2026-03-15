@@ -312,6 +312,36 @@ class TagInputField extends StatelessWidget {
   }
 }
 
+/// 标签匹配模式选择器
+/// 
+/// 职责：提供全词匹配复选框
+/// 
+/// 调用者：各筛选对话框
+class TagMatchModeSelector extends StatelessWidget {
+  final TagMatchMode matchMode;
+  final ValueChanged<TagMatchMode> onChanged;
+
+  const TagMatchModeSelector({
+    super.key,
+    required this.matchMode,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckboxListTile(
+      title: const Text('全词匹配'),
+      subtitle: const Text('勾选后只匹配完整标签，不勾选则匹配包含关键词的标签'),
+      value: matchMode == TagMatchMode.wholeWord,
+      onChanged: (checked) {
+        onChanged(checked == true ? TagMatchMode.wholeWord : TagMatchMode.contains);
+      },
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+    );
+  }
+}
+
 /// 情绪强度选择器
 /// 
 /// 职责：显示情绪强度的 FilterChip 列表

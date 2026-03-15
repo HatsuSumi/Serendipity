@@ -50,6 +50,7 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
   Set<EncounterStatus> _selectedStatuses = {};
   final TextEditingController _tagController = TextEditingController();
   SelectedRegion? _selectedRegion;
+  late TagMatchMode _tagMatchMode;
 
   @override
   void initState() {
@@ -74,6 +75,7 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
       _selectedPlaceTypes = criteria.placeTypes?.toSet() ?? {};
       _selectedStatuses = criteria.statuses?.toSet() ?? {};
       _tagController.text = criteria.tags?.join(', ') ?? '';
+      _tagMatchMode = criteria.tagMatchMode;
       
       // 恢复地区选择
       if (criteria.province != null || criteria.city != null || criteria.area != null) {
@@ -144,7 +146,17 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
             // 标签
             FilterSection(
               title: '标签',
-              child: TagInputField(controller: _tagController),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TagInputField(controller: _tagController),
+                  const SizedBox(height: 8),
+                  TagMatchModeSelector(
+                    matchMode: _tagMatchMode,
+                    onChanged: (mode) => setState(() => _tagMatchMode = mode),
+                  ),
+                ],
+              ),
             ),
 
             // 地区
@@ -193,6 +205,7 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
       placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
       statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
       tags: tags,
+      tagMatchMode: _tagMatchMode,
     );
   }
 

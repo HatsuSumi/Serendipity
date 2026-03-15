@@ -296,6 +296,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
   /// - tags: 标签名称列表（可选，多选OR逻辑）
   /// - statuses: 状态列表（可选，多选OR逻辑）
+  /// - tagMatchMode: 标签匹配模式（包含匹配或全词匹配）
   /// 
   /// 调用者：
   /// - CommunityFilterDialog（筛选对话框）
@@ -311,6 +312,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     List<PlaceType>? placeTypes,
     List<String>? tags,
     List<EncounterStatus>? statuses,
+    TagMatchMode tagMatchMode = TagMatchMode.contains,
   }) async {
     // 设置标志位，防止无限递归
     _isFiltering = true;
@@ -327,6 +329,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
         area: area,
         placeTypes: placeTypes,
         tags: tags,
+        tagMatchMode: tagMatchMode,
         statuses: statuses,
       );
       ref.read(communityFilterProvider.notifier).updateFilter(criteria);

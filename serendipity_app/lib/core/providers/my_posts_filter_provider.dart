@@ -21,6 +21,7 @@ class MyPostsFilterCriteria {
   final List<PlaceType>? placeTypes;
   final List<EncounterStatus>? statuses;
   final List<String>? tags;
+  final TagMatchMode tagMatchMode;
 
   const MyPostsFilterCriteria({
     this.startDate,
@@ -33,6 +34,7 @@ class MyPostsFilterCriteria {
     this.placeTypes,
     this.statuses,
     this.tags,
+    this.tagMatchMode = TagMatchMode.contains,
   });
 
   /// 判断是否有任何筛选条件
@@ -61,6 +63,7 @@ class MyPostsFilterCriteria {
     List<PlaceType>? placeTypes,
     List<EncounterStatus>? statuses,
     List<String>? tags,
+    TagMatchMode? tagMatchMode,
     bool clearStartDate = false,
     bool clearEndDate = false,
     bool clearPublishStartDate = false,
@@ -83,6 +86,7 @@ class MyPostsFilterCriteria {
       placeTypes: clearPlaceTypes ? null : (placeTypes ?? this.placeTypes),
       statuses: clearStatuses ? null : (statuses ?? this.statuses),
       tags: clearTags ? null : (tags ?? this.tags),
+      tagMatchMode: tagMatchMode ?? this.tagMatchMode,
     );
   }
 

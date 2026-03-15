@@ -56,6 +56,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
   final TextEditingController _ifReencounterController = TextEditingController();
   final TextEditingController _conversationStarterController = TextEditingController();
   final TextEditingController _backgroundMusicController = TextEditingController();
+  late TagMatchMode _tagMatchMode;
 
   @override
   void initState() {
@@ -82,6 +83,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
       _selectedIntensities = criteria.emotionIntensities?.toSet() ?? {};
       _selectedWeathers = criteria.weathers?.toSet() ?? {};
       _tagController.text = criteria.tags?.join(', ') ?? '';
+      _tagMatchMode = criteria.tagMatchMode;
       _descriptionController.text = criteria.descriptionKeyword ?? '';
       _ifReencounterController.text = criteria.ifReencounterKeyword ?? '';
       _conversationStarterController.text = criteria.conversationStarterKeyword ?? '';
@@ -178,7 +180,17 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
             // 标签
             FilterSection(
               title: '标签',
-              child: TagInputField(controller: _tagController),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TagInputField(controller: _tagController),
+                  const SizedBox(height: 8),
+                  TagMatchModeSelector(
+                    matchMode: _tagMatchMode,
+                    onChanged: (mode) => setState(() => _tagMatchMode = mode),
+                  ),
+                ],
+              ),
             ),
 
             // 地区
@@ -296,6 +308,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
           emotionIntensities: _selectedIntensities.isEmpty ? null : _selectedIntensities.toList(),
           weathers: _selectedWeathers.isEmpty ? null : _selectedWeathers.toList(),
           tags: tags,
+          tagMatchMode: _tagMatchMode,
           descriptionKeyword: descriptionKeyword,
           ifReencounterKeyword: ifReencounterKeyword,
           conversationStarterKeyword: conversationStarterKeyword,
