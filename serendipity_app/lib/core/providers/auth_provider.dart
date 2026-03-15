@@ -75,16 +75,20 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 不直接调用 SyncService（违反分层约束）
   /// - 通过信号驱动，让 NetworkMonitorService 负责实际同步
   /// - AuthNotifier 只负责认证，不负责同步业务逻辑
+  /// - 使用 Future.microtask 确保信号在当前事件循环后发送
   /// 
   /// 同步策略由 NetworkMonitorService 决定：
   /// - 注册：SyncSource.register，跳过下载
   /// - 登录：SyncSource.login，读取上次同步时间
-  Future<void> _triggerSync(User user, {bool isRegister = false}) async {
-    // 发送信号给 NetworkMonitorService，由它负责实际同步
-    ref.read(authCompletedProvider.notifier).state = AuthCompletedEvent(
-      user: user,
-      isRegister: isRegister,
-    );
+  void _triggerSync(User user, {bool isRegister = false}) {
+    // 不 await，直接发送信号（异步）
+    // 使用 Future.microtask 确保信号在当前事件循环后发送，避免竞态条件
+    Future.microtask(() {
+      ref.read(authCompletedProvider.notifier).emit(AuthCompletedEvent(
+        user: user,
+        isRegister: isRegister,
+      ));
+    });
   }
   
   /// 刷新所有数据 Provider（清除内存缓存）
@@ -157,7 +161,7 @@ class AuthNotifier extends StreamNotifier<User?> {
         _invalidateDataProviders();
         
         // 4. 登录成功后触发数据同步
-        await _triggerSync(user);
+        _triggerSync(user);
       }
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -204,7 +208,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       _invalidateDataProviders();
       
       // 4. 注册成功后触发数据同步
-      await _triggerSync(result.user, isRegister: true);
+      _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
@@ -280,7 +284,7 @@ class AuthNotifier extends StreamNotifier<User?> {
         _invalidateDataProviders();
         
         // 4. 登录成功后触发数据同步
-        await _triggerSync(user);
+        _triggerSync(user);
       }
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -339,7 +343,7 @@ class AuthNotifier extends StreamNotifier<User?> {
         _invalidateDataProviders();
         
         // 4. 登录成功后触发数据同步
-        await _triggerSync(user);
+        _triggerSync(user);
       }
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -389,7 +393,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       _invalidateDataProviders();
       
       // 4. 注册成功后触发数据同步
-      await _triggerSync(result.user, isRegister: true);
+      _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
@@ -449,7 +453,7 @@ class AuthNotifier extends StreamNotifier<User?> {
       _invalidateDataProviders();
       
       // 4. 注册成功后触发数据同步
-      await _triggerSync(result.user, isRegister: true);
+      _triggerSync(result.user, isRegister: true);
       
       return result.recoveryKey; // 返回恢复密钥
     } catch (e, stack) {
@@ -662,7 +666,22 @@ class AuthCompletedEvent {
   });
 }
 
-final authCompletedProvider = StateProvider<AuthCompletedEvent?>((ref) {
-  return null;
+/// 认证完成事件通知器
+/// 
+/// 使用 StateNotifierProvider 而不是 StateProvider，原因：
+/// - StateNotifier 提供更好的事件语义
+/// - 可以在 build 方法中初始化为 null，避免信号丢失
+/// - 支持更复杂的状态转换逻辑
+class AuthCompletedNotifier extends StateNotifier<AuthCompletedEvent?> {
+  AuthCompletedNotifier() : super(null);
+  
+  /// 发送认证完成事件
+  void emit(AuthCompletedEvent event) {
+    state = event;
+  }
+}
+
+final authCompletedProvider = StateNotifierProvider<AuthCompletedNotifier, AuthCompletedEvent?>((ref) {
+  return AuthCompletedNotifier();
 });
 

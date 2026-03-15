@@ -72,7 +72,15 @@ class SyncOrchestrator {
       if (kDebugMode) {
         print('同步已在进行中，等待完成...');
       }
-      await _syncCompleter!.future;
+      try {
+        await _syncCompleter!.future;
+      } catch (e) {
+        // 前一个同步失败，不传播异常
+        // 调用者应该通过 syncCompletedProvider 信号来刷新数据
+        if (kDebugMode) {
+          print('前一个同步失败，本次调用返回空结果: $e');
+        }
+      }
       // 返回一个空的结果（因为我们不知道前一个同步的结果）
       // 调用者应该通过 syncCompletedProvider 信号来刷新数据
       return SyncResult(

@@ -36,6 +36,10 @@ class NetworkMonitorService {
   bool _isMonitoring = false;
   bool _lastServerHealthy = true;
   
+  /// 监听器的取消句柄
+  ProviderSubscription<AuthCompletedEvent?>? _authCompletedSubscription;
+  ProviderSubscription<AsyncValue<User?>>? _authProviderSubscription;
+  
   /// 开始监听网络状态
   /// 
   /// 调用者：main.dart 的 MyApp.initState()
@@ -60,10 +64,21 @@ class NetworkMonitorService {
     );
     
     // 监听认证完成信号（登录/注册成功）
-    ref.listen(authCompletedProvider, (prev, next) {
+    // 保存句柄以便后续取消
+    _authCompletedSubscription = ref.listen(authCompletedProvider, (prev, next) {
       if (next != null) {
         _onAuthCompleted(ref, next);
       }
+    });
+    
+    // 监听认证状态变化（App 启动时触发初始同步）
+    // 保存句柄以便后续取消
+    _authProviderSubscription = ref.listen(authProvider, (prev, next) {
+      next.whenData((user) {
+        if (user != null) {
+          _triggerSync(ref, user, SyncSource.appStartup);
+        }
+      });
     });
     
     // 启动轮询作为备用方案
@@ -73,25 +88,6 @@ class NetworkMonitorService {
         _pollNetworkStatus(ref);
       },
     );
-    
-    // App 启动时触发初始同步
-    _triggerInitialSync(ref);
-  }
-  
-  /// App 启动时触发初始同步
-  /// 
-  /// 设计说明：
-  /// - 使用 ref.listen 而不是 Future.microtask
-  /// - 这样可以安全处理 ref 失效的情况
-  /// - 当用户已登录时，自动触发同步
-  void _triggerInitialSync(WidgetRef ref) {
-    ref.listen(authProvider, (prev, next) {
-      next.whenData((user) {
-        if (user != null) {
-          _triggerSync(ref, user, SyncSource.appStartup);
-        }
-      });
-    });
   }
   
   /// 停止监听
@@ -102,6 +98,10 @@ class NetworkMonitorService {
     _subscription = null;
     _pollingTimer?.cancel();
     _pollingTimer = null;
+    _authCompletedSubscription?.close();
+    _authCompletedSubscription = null;
+    _authProviderSubscription?.close();
+    _authProviderSubscription = null;
     _isMonitoring = false;
   }
   
@@ -197,10 +197,8 @@ class NetworkMonitorService {
   /// 触发同步（带重试机制和并发保护）
   /// 
   /// 调用者：
-  /// - _triggerInitialSync()：App 启动
+  /// - startMonitoring()：App 启动、认证完成、网络恢复
   /// - _pollNetworkStatus()：定期轮询
-  /// - _onNetworkRestored()：网络恢复
-  /// - _onAuthCompleted()：登录/注册成功
   /// 
   /// 设计说明：
   /// - 使用 SyncOrchestrator 统一管理同步
@@ -214,7 +212,20 @@ class NetworkMonitorService {
   }) async {
     try {
       final orchestrator = ref.read(syncOrchestratorProvider);
-      final lastSyncTime = skipDownload ? null : await ref.read(syncServiceProvider).getLastSyncTime(user.id);
+      
+      // 获取上次同步时间，失败时使用 null（全量同步）
+      DateTime? lastSyncTime;
+      if (!skipDownload) {
+        try {
+          lastSyncTime = await ref.read(syncServiceProvider).getLastSyncTime(user.id);
+        } catch (e) {
+          // 获取失败，使用 null 进行全量同步
+          if (kDebugMode) {
+            print('获取上次同步时间失败，使用全量同步: $e');
+          }
+          lastSyncTime = null;
+        }
+      }
       
       await orchestrator.sync(
         ref,
