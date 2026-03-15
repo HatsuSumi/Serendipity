@@ -75,6 +75,11 @@ export class CommunityPostController {
 
       // 如果有筛选参数，使用筛选逻辑
       if (hasFilterParams) {
+        const tagMatchModeStr = getQueryAsString(req.query.tagMatchMode);
+        const tagMatchMode = (tagMatchModeStr === 'wholeWord' || tagMatchModeStr === 'contains') 
+          ? tagMatchModeStr 
+          : undefined;
+        
         const query: FilterCommunityPostsQuery = {
           startDate: getQueryAsString(req.query.startDate),
           endDate: getQueryAsString(req.query.endDate),
@@ -85,7 +90,7 @@ export class CommunityPostController {
           area: getQueryAsString(req.query.area),
           placeTypes: getQueryAsString(req.query.placeTypes),
           tags: getQueryAsString(req.query.tags),
-          tagMatchMode: getQueryAsString(req.query.tagMatchMode),
+          tagMatchMode,
           statuses: getQueryAsString(req.query.statuses),
           limit: getQueryAsInt(req.query.limit),
         };
