@@ -72,7 +72,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     return Scaffold(
       appBar: AppBar(
         title: countAsync.when(
-          data: (count) => Text('TA ($count)'),
+          data: (count) => Text('TA ($count条)'),
           loading: () => const Text('TA'),
           error: (_, __) => const Text('TA'),
         ),
