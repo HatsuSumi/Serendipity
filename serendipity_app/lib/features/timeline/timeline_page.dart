@@ -17,6 +17,7 @@ import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/widgets/empty_state_widget.dart';
+import '../../core/widgets/common_filter_widgets.dart';
 import '../../models/encounter_record.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
@@ -151,7 +152,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               // 根据当前排序方式排序
               final sortedRecords = _sortRecords(filteredRecords);
               // 无论有无记录，都渲染列表（签到卡片始终显示在顶部）
-              return _buildRecordList(context, sortedRecords, ref);
+              return _buildRecordList(context, sortedRecords, ref, filterCriteria);
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => Center(
@@ -341,7 +342,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   }
 
   /// 记录列表（签到卡片始终显示在顶部，记录为空时显示空状态占位）
-  Widget _buildRecordList(BuildContext context, List<EncounterRecord> records, WidgetRef ref) {
+  Widget _buildRecordList(BuildContext context, List<EncounterRecord> records, WidgetRef ref, RecordsFilterCriteria filterCriteria) {
     return RefreshIndicator(
       onRefresh: () async {
         await ref.read(recordsProvider.notifier).refresh();
@@ -374,7 +375,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           final record = records[index - 1];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _buildRecordCard(context, record, ref),
+            child: _buildRecordCard(context, record, ref, filterCriteria),
           );
         },
       ),
@@ -382,7 +383,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   }
 
   /// 记录卡片
-  Widget _buildRecordCard(BuildContext context, EncounterRecord record, WidgetRef ref) {
+  Widget _buildRecordCard(BuildContext context, EncounterRecord record, WidgetRef ref, RecordsFilterCriteria filterCriteria) {
     // 使用主题自适应的状态颜色
     final statusColor = record.status.getColor(context, ref);
     
@@ -529,14 +530,25 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               // 描述（如果有）
               if (record.description != null && record.description!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text(
-                      _isMasked ? _maskText(record.description!) : record.description!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    _isMasked
+                        ? Text(
+                            _maskText(record.description!),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        : buildHighlightedText(
+                            record.description!,
+                            keyword: filterCriteria.descriptionKeyword,
+                            highlightColor: statusColor.withValues(alpha: 0.3),
+                            textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ],
                   
                   // 标签（如果有）

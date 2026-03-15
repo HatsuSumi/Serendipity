@@ -588,3 +588,55 @@ List<String>? parseTags(String input) {
   return tags.isEmpty ? null : tags;
 }
 
+/// 构建高亮文本 Widget
+/// 
+/// 职责：在文本中高亮指定的关键词
+/// 
+/// 参数：
+/// - text: 原始文本
+/// - keyword: 要高亮的关键词（为空时返回普通文本）
+/// - highlightColor: 高亮背景色
+/// - textStyle: 文本样式
+/// - maxLines: 最大行数
+/// - overflow: 溢出处理
+/// 
+/// 调用者：记录卡片（高亮筛选关键词）
+Widget buildHighlightedText(
+  String text, {
+  String? keyword,
+  required Color highlightColor,
+  TextStyle? textStyle,
+  int? maxLines,
+  TextOverflow? overflow,
+}) {
+  if (keyword == null || keyword.isEmpty || !text.contains(keyword)) {
+    return Text(
+      text,
+      style: textStyle,
+      maxLines: maxLines,
+      overflow: overflow,
+    );
+  }
+
+  final parts = text.split(RegExp('($keyword)', caseSensitive: false));
+  
+  return RichText(
+    maxLines: maxLines,
+    overflow: overflow ?? TextOverflow.clip,
+    text: TextSpan(
+      children: parts.map((part) {
+        final isKeyword = part.toLowerCase() == keyword.toLowerCase();
+        return TextSpan(
+          text: part,
+          style: isKeyword
+              ? (textStyle ?? const TextStyle()).copyWith(
+                  backgroundColor: highlightColor,
+                  fontWeight: FontWeight.bold,
+                )
+              : textStyle,
+        );
+      }).toList(),
+    ),
+  );
+}
+
