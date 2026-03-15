@@ -37,8 +37,8 @@ class NetworkMonitorService {
   bool _lastServerHealthy = true;
   
   /// 监听器的取消句柄
-  void Function()? _authCompletedUnsubscribe;
-  void Function()? _authProviderUnsubscribe;
+  ProviderSubscription<AuthCompletedEvent?>? _authCompletedSubscription;
+  ProviderSubscription<AsyncValue<User?>>? _authProviderSubscription;
   
   /// 开始监听网络状态
   /// 
@@ -64,16 +64,16 @@ class NetworkMonitorService {
     );
     
     // 监听认证完成信号（登录/注册成功）
-    // 使用 listenManual 获取取消函数
-    _authCompletedUnsubscribe = ref.listenManual(authCompletedProvider, (prev, next) {
+    // 保存 ProviderSubscription 以便后续取消
+    _authCompletedSubscription = ref.listenManual(authCompletedProvider, (prev, next) {
       if (next != null) {
         _onAuthCompleted(ref, next);
       }
     });
     
     // 监听认证状态变化（App 启动时触发初始同步）
-    // 使用 listenManual 获取取消函数
-    _authProviderUnsubscribe = ref.listenManual(authProvider, (prev, next) {
+    // 保存 ProviderSubscription 以便后续取消
+    _authProviderSubscription = ref.listenManual(authProvider, (prev, next) {
       next.whenData((user) {
         if (user != null) {
           _triggerSync(ref, user, SyncSource.appStartup);
@@ -98,10 +98,10 @@ class NetworkMonitorService {
     _subscription = null;
     _pollingTimer?.cancel();
     _pollingTimer = null;
-    _authCompletedUnsubscribe?.call();
-    _authCompletedUnsubscribe = null;
-    _authProviderUnsubscribe?.call();
-    _authProviderUnsubscribe = null;
+    _authCompletedSubscription?.close();
+    _authCompletedSubscription = null;
+    _authProviderSubscription?.close();
+    _authProviderSubscription = null;
     _isMonitoring = false;
   }
   
