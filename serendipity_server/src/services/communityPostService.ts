@@ -324,6 +324,11 @@ export class CommunityPostService implements ICommunityPostService {
       }
     }
 
+    // 标签匹配模式
+    if (query.tagMatchMode) {
+      filters.tagMatchMode = query.tagMatchMode;
+    }
+
     // 状态（支持多选，OR逻辑）
     if (query.statuses) {
       const statuses = query.statuses.split(',').map(s => s.trim()).filter(s => s);

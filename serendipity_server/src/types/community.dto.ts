@@ -74,6 +74,7 @@ export interface FilterCommunityPostsQuery {
   area?: string;      // 区县（如"南山区"）
   placeTypes?: string; // 场所类型（多个用逗号分隔，OR逻辑）
   tags?: string; // 标签（多个用逗号分隔，OR逻辑）
+  tagMatchMode?: 'wholeWord' | 'contains'; // 标签匹配模式
   statuses?: string; // 状态（多个用逗号分隔，OR逻辑）
   limit?: number;
 }
