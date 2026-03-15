@@ -1,5 +1,10 @@
 import { body } from 'express-validator';
 
+// 标签匹配模式类型守卫
+export function isValidTagMatchMode(value: any): value is 'wholeWord' | 'contains' {
+  return value === 'wholeWord' || value === 'contains';
+}
+
 // 发布社区帖子验证规则
 export const createCommunityPostValidation = [
   body('id')

@@ -3,6 +3,7 @@ import { ICommunityPostService } from '../services/communityPostService';
 import { CreateCommunityPostDto, FilterCommunityPostsQuery, CheckPublishStatusDto } from '../types/community.dto';
 import { sendSuccess } from '../utils/response';
 import { getQueryAsString, getQueryAsInt, getParamAsString } from '../utils/request';
+import { isValidTagMatchMode } from '../validators/communityValidators';
 
 // 社区帖子控制器
 export class CommunityPostController {
@@ -76,9 +77,7 @@ export class CommunityPostController {
       // 如果有筛选参数，使用筛选逻辑
       if (hasFilterParams) {
         const tagMatchModeStr = getQueryAsString(req.query.tagMatchMode);
-        const tagMatchMode = (tagMatchModeStr === 'wholeWord' || tagMatchModeStr === 'contains') 
-          ? tagMatchModeStr 
-          : undefined;
+        const tagMatchMode = isValidTagMatchMode(tagMatchModeStr) ? tagMatchModeStr : undefined;
         
         const query: FilterCommunityPostsQuery = {
           startDate: getQueryAsString(req.query.startDate),
