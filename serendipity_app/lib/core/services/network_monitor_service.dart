@@ -222,8 +222,10 @@ class NetworkMonitorService {
   /// - 多个并发调用只有一个能执行同步
   /// - 其他调用直接返回，不阻塞
   /// 
-  /// 注意：syncStartTime 由 SyncService.syncAllData 内部持久化，
-  /// 自动同步不更新 syncStatusProvider（syncStatusProvider 只给手动同步的 UI 用）。
+  /// 注意：
+  /// - syncStartTime 由 SyncService.syncAllData 内部持久化
+  /// - 自动同步不更新 syncStatusProvider（只给手动同步的 UI 用）
+  /// - 同步完成信号通过 syncCompletedProvider 发送，但 Provider 失效时静默忽略
   Future<void> _triggerSync(WidgetRef ref, User user, SyncSource source) async {
     // 并发保护：使用原子操作检查和设置标志
     if (!_setSyncingIfNotAlready()) {
@@ -249,16 +251,9 @@ class NetworkMonitorService {
             source: source,
           );
 
-          // 同步成功，递增信号通知所有监听 syncCompletedProvider 的 Provider 重建
-          // checkInProvider 在 build() 里 watch(syncCompletedProvider)，会自动重建
-          try {
-            ref.read(syncCompletedProvider.notifier).state++;
-          } catch (e) {
-            // ref 已失效（应用已关闭或 Provider 已销毁），静默忽略
-            if (kDebugMode) {
-              print('同步完成但 Provider 已失效，无法通知刷新');
-            }
-          }
+          // 同步成功，尝试递增信号通知所有监听 syncCompletedProvider 的 Provider 重建
+          // 如果 Provider 已失效，静默忽略（不影响同步结果）
+          _notifySyncCompleted(ref);
           return; // 成功，退出重试循环
         } catch (e, stackTrace) {
           final isLastAttempt = attempt == maxRetries - 1;
@@ -283,6 +278,25 @@ class NetworkMonitorService {
     } finally {
       // 无论成功/失败/异常，确保标志被重置
       _isSyncing = false;
+    }
+  }
+
+  /// 通知同步完成（安全处理 Provider 失效）
+  /// 
+  /// 设计原则：
+  /// - 尽力而为：如果 Provider 已失效，静默忽略
+  /// - 不阻塞：不影响同步结果
+  /// - 可靠性：即使通知失败，同步数据已持久化
+  void _notifySyncCompleted(WidgetRef ref) {
+    try {
+      ref.read(syncCompletedProvider.notifier).state++;
+    } catch (e) {
+      // Provider 已失效（应用已关闭或 Provider 已销毁）
+      // 这不是错误，因为同步数据已经持久化到本地存储
+      // 下次 App 启动时会自动加载最新数据
+      if (kDebugMode) {
+        print('同步完成但 Provider 已失效，无法通知刷新（这是正常的）');
+      }
     }
   }
 

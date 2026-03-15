@@ -416,14 +416,11 @@ class SyncService {
       final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
       
       // 2. 下载云端有变化的数据
-      // skipDownload == true（注册场景）：跳过下载，新用户云端确实没数据
-      // 其他场景：lastSyncTime == null 全量下载，否则增量下载
-      // 
-      // 注意：即使 skipDownload=true，也应该执行全量同步的删除逻辑
-      // 防止用户在其他设备删除的数据在本设备仍然存在
+      // skipDownload == true（注册场景）：只下载云端数据，不删除本地数据
+      // 其他场景：lastSyncTime == null 全量下载+删除，否则增量下载
       onProgress?.call('正在下载云端数据...');
       final downloadStats = skipDownload
-          ? await _downloadRemoteData(user, lastSyncTime: null, isFullSync: true)
+          ? await _downloadRemoteData(user, lastSyncTime: null, isFullSync: false)
           : await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
       
       // 3. 同步用户设置
@@ -720,6 +717,8 @@ class SyncService {
   /// 3. 本地检测器继续运行，检测新成就（触发通知）
   /// 
   /// 返回：同步的成就数量
+  /// 
+  /// 注意：成就同步失败不影响其他数据同步，但应记录错误便于调试
   Future<int> _syncAchievementUnlocks(User user) async {
     try {
       // 下载云端成就解锁记录
@@ -731,7 +730,8 @@ class SyncService {
       return remoteUnlocks.length;
     } catch (e) {
       // 成就同步失败不影响其他数据同步
-      // 生产环境应记录错误日志
+      // 生产环境应记录错误日志便于调试
+      // 返回 0 表示本次同步未成功同步任何成就
       return 0;
     }
   }

@@ -23,9 +23,9 @@ class HttpClientService {
   static const String _tokenExpiryKey = 'token_expiry';
   
   // Token 刷新锁（防止并发刷新）
-  // 注意：使用 late 确保引用始终有效，避免竞态条件
+  // 注意：使用 Completer 引用计数，避免竞态条件
   Completer<void>? _refreshTokenCompleter;
-  Completer<void>? _pendingRefreshCompleter;
+  int _refreshWaiters = 0;
   
   HttpClientService({
     required IStorageService storage,
@@ -221,7 +221,7 @@ class HttpClientService {
   /// - 使用 Completer 实现单一 Token 刷新
   /// - 多个并发请求共享同一个刷新操作
   /// - 刷新失败时清除 Token，但不影响其他请求
-  /// - 保存 Completer 引用，避免竞态条件
+  /// - 使用引用计数避免竞态条件：只有最后一个等待者才能置空 Completer
   Future<Map<String, String>> _buildHeaders({bool skipAuth = false}) async {
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -234,25 +234,32 @@ class HttpClientService {
       if (await isTokenExpiringSoon()) {
         // 如果已有刷新在进行中，等待其完成
         if (_refreshTokenCompleter != null) {
+          _refreshWaiters++;
           try {
             await _refreshTokenCompleter!.future;
           } catch (e) {
             // 刷新失败，但不影响当前请求（可能是匿名请求）
+          } finally {
+            _refreshWaiters--;
+            // 只有最后一个等待者才能置空 Completer
+            if (_refreshWaiters == 0) {
+              _refreshTokenCompleter = null;
+            }
           }
         } else {
           // 创建新的刷新操作
           _refreshTokenCompleter = Completer<void>();
-          // 保存引用，防止在完成后被置空导致竞态条件
-          final completer = _refreshTokenCompleter!;
+          _refreshWaiters = 1;
           try {
             await refreshToken();
-            completer.complete();
+            _refreshTokenCompleter!.complete();
           } catch (e) {
             // Token 刷新失败，清除 Token
             await clearTokens();
-            completer.completeError(e);
+            _refreshTokenCompleter!.completeError(e);
           } finally {
-            // 重置锁，允许下次刷新
+            // 重置计数器和 Completer
+            _refreshWaiters = 0;
             _refreshTokenCompleter = null;
           }
         }
