@@ -221,7 +221,10 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       const tagConditions = filters.tags.map(tag => {
         if (tagMatchMode === 'wholeWord') {
           // 全词匹配：标签完全相等
-          return Prisma.sql`tags @> ${JSON.stringify([{ tag }])}`;
+          return Prisma.sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements(tags) AS t
+            WHERE t->>'tag' = ${tag}
+          )`;
         } else {
           // 包含匹配：标签包含关键词
           return Prisma.sql`EXISTS (
