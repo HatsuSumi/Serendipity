@@ -137,7 +137,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 
   /// 调用者：所有设置更新方法
   /// 
-  /// 注意：上传失败不影响本地保存，静默失败
+  /// 注意：上传失败时回滚本地状态，避免数据不一致
   /// 
   /// 架构说明：通过 SyncService 上传，遵循 Provider → SyncService → Repository 分层约束
   Future<void> _uploadToCloud(UserSettings settings) async {
@@ -159,7 +159,14 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       await _storageService.saveUserSettings(serverSettings);
       state = serverSettings;
     } catch (e) {
-      // 上传失败，静默失败（不影响用户体验）
+      // 上传失败，回滚本地状态到上一个已知的好状态
+      // 重新从存储加载，确保本地和存储一致
+      final savedSettings = _storageService.getUserSettings();
+      if (savedSettings != null) {
+        state = savedSettings;
+      }
+      // 静默失败，不影响用户体验
+      // 用户可以稍后手动同步或重新修改设置
     }
   }
 

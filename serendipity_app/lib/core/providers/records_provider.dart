@@ -339,7 +339,13 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// - 单一职责：只负责上传成就解锁记录
   /// - Fail Fast：用户未登录时直接返回，不抛异常
   /// - 容错处理：上传失败不影响成就解锁（已保存到本地）
+  /// - 参数验证：achievementIds 不能为空
   Future<void> _uploadAchievementUnlocks(List<String> achievementIds) async {
+    // Fail Fast：参数验证
+    if (achievementIds.isEmpty) {
+      return; // 允许空列表
+    }
+    
     // 获取当前用户
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser == null) {
@@ -352,6 +358,11 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     
     // 遍历每个成就ID，上传解锁记录
     for (final achievementId in achievementIds) {
+      // Fail Fast：成就ID不能为空
+      if (achievementId.isEmpty) {
+        continue;
+      }
+      
       try {
         // 获取成就详情（包含解锁时间）
         final achievement = await achievementRepo.getAchievement(achievementId);

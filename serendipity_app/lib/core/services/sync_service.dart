@@ -418,9 +418,12 @@ class SyncService {
       // 2. 下载云端有变化的数据
       // skipDownload == true（注册场景）：跳过下载，新用户云端确实没数据
       // 其他场景：lastSyncTime == null 全量下载，否则增量下载
+      // 
+      // 注意：即使 skipDownload=true，也应该执行全量同步的删除逻辑
+      // 防止用户在其他设备删除的数据在本设备仍然存在
       onProgress?.call('正在下载云端数据...');
       final downloadStats = skipDownload
-          ? {'records': 0, 'storyLines': 0, 'checkIns': 0, 'mergedRecords': 0, 'mergedStoryLines': 0, 'mergedCheckIns': 0}
+          ? await _downloadRemoteData(user, lastSyncTime: null, isFullSync: true)
           : await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
       
       // 3. 同步用户设置
@@ -545,33 +548,34 @@ class SyncService {
   ///   - 非 null → 增量同步：只下载 updatedAt > lastSyncTime 的数据
   ///     注意：增量同步无法感知删除操作（被删除的记录不会出现在结果中）
   ///     跨设备的删除同步依赖下一次全量同步（用户手动触发或 lastSyncTime 被清除）
+  /// - isFullSync：是否强制全量同步（用于注册场景）
   /// 
   /// 返回：下载和合并统计信息
   /// 
   /// 错误处理：网络错误直接抛出，让用户看到错误提示
-  Future<Map<String, int>> _downloadRemoteData(User user, {DateTime? lastSyncTime}) async {
+  Future<Map<String, int>> _downloadRemoteData(User user, {DateTime? lastSyncTime, bool isFullSync = false}) async {
     int mergedRecords = 0;
     int mergedStoryLines = 0;
     int mergedCheckIns = 0;
-    final isFullSync = lastSyncTime == null;
+    final performFullSync = isFullSync || lastSyncTime == null;
 
     // 下载并合并记录
-    final remoteRecords = isFullSync
+    final remoteRecords = performFullSync
         ? await _remoteRepository.downloadRecords(user.id)
-        : await _remoteRepository.downloadRecordsSince(user.id, lastSyncTime);
-    mergedRecords = await _mergeRecords(remoteRecords, user.id, isFullSync);
+        : await _remoteRepository.downloadRecordsSince(user.id, lastSyncTime!);
+    mergedRecords = await _mergeRecords(remoteRecords, user.id, performFullSync);
 
     // 下载并合并故事线
-    final remoteStoryLines = isFullSync
+    final remoteStoryLines = performFullSync
         ? await _remoteRepository.downloadStoryLines(user.id)
-        : await _remoteRepository.downloadStoryLinesSince(user.id, lastSyncTime);
-    mergedStoryLines = await _mergeStoryLines(remoteStoryLines, user.id, isFullSync);
+        : await _remoteRepository.downloadStoryLinesSince(user.id, lastSyncTime!);
+    mergedStoryLines = await _mergeStoryLines(remoteStoryLines, user.id, performFullSync);
 
     // 下载并合并签到记录
-    final remoteCheckIns = isFullSync
+    final remoteCheckIns = performFullSync
         ? await _remoteRepository.downloadCheckIns(user.id)
-        : await _remoteRepository.downloadCheckInsSince(user.id, lastSyncTime);
-    mergedCheckIns = await _mergeCheckIns(remoteCheckIns, user.id, isFullSync);
+        : await _remoteRepository.downloadCheckInsSince(user.id, lastSyncTime!);
+    mergedCheckIns = await _mergeCheckIns(remoteCheckIns, user.id, performFullSync);
 
     return {
       'records': remoteRecords.length,
@@ -856,71 +860,120 @@ class SyncService {
     UserSettings localSettings,
     UserSettings remoteSettings,
   ) async {
+    // 辅助函数：根据时间戳选择值
+    T _selectByTimestamp<T>(
+      T localValue,
+      T remoteValue,
+      DateTime localTime,
+      DateTime remoteTime,
+    ) {
+      return localTime.isAfter(remoteTime) ? localValue : remoteValue;
+    }
+    
     // 字段级别的 Last Write Wins 合并
     final merged = UserSettings(
       id: localSettings.id,
       userId: localSettings.userId,
       
       // 主题设置：比较 themeUpdatedAt
-      theme: localSettings.themeUpdatedAt.isAfter(remoteSettings.themeUpdatedAt)
-          ? localSettings.theme
-          : remoteSettings.theme,
-      pageTransition: localSettings.themeUpdatedAt.isAfter(remoteSettings.themeUpdatedAt)
-          ? localSettings.pageTransition
-          : remoteSettings.pageTransition,
-      dialogAnimation: localSettings.themeUpdatedAt.isAfter(remoteSettings.themeUpdatedAt)
-          ? localSettings.dialogAnimation
-          : remoteSettings.dialogAnimation,
+      theme: _selectByTimestamp(
+        localSettings.theme,
+        remoteSettings.theme,
+        localSettings.themeUpdatedAt,
+        remoteSettings.themeUpdatedAt,
+      ),
+      pageTransition: _selectByTimestamp(
+        localSettings.pageTransition,
+        remoteSettings.pageTransition,
+        localSettings.themeUpdatedAt,
+        remoteSettings.themeUpdatedAt,
+      ),
+      dialogAnimation: _selectByTimestamp(
+        localSettings.dialogAnimation,
+        remoteSettings.dialogAnimation,
+        localSettings.themeUpdatedAt,
+        remoteSettings.themeUpdatedAt,
+      ),
       themeUpdatedAt: localSettings.themeUpdatedAt.isAfter(remoteSettings.themeUpdatedAt)
           ? localSettings.themeUpdatedAt
           : remoteSettings.themeUpdatedAt,
       
       // 强调色设置：比较 accentColorUpdatedAt（独立追踪）
-      accentColor: localSettings.accentColorUpdatedAt.isAfter(remoteSettings.accentColorUpdatedAt)
-          ? localSettings.accentColor
-          : remoteSettings.accentColor,
+      accentColor: _selectByTimestamp(
+        localSettings.accentColor,
+        remoteSettings.accentColor,
+        localSettings.accentColorUpdatedAt,
+        remoteSettings.accentColorUpdatedAt,
+      ),
       accentColorUpdatedAt: localSettings.accentColorUpdatedAt.isAfter(remoteSettings.accentColorUpdatedAt)
           ? localSettings.accentColorUpdatedAt
           : remoteSettings.accentColorUpdatedAt,
       
       // 通知设置：比较 notificationsUpdatedAt
-      achievementNotification: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
-          ? localSettings.achievementNotification
-          : remoteSettings.achievementNotification,
-      anniversaryReminder: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
-          ? localSettings.anniversaryReminder
-          : remoteSettings.anniversaryReminder,
-      checkInReminderEnabled: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
-          ? localSettings.checkInReminderEnabled
-          : remoteSettings.checkInReminderEnabled,
-      checkInReminderTime: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
-          ? localSettings.checkInReminderTime
-          : remoteSettings.checkInReminderTime,
+      achievementNotification: _selectByTimestamp(
+        localSettings.achievementNotification,
+        remoteSettings.achievementNotification,
+        localSettings.notificationsUpdatedAt,
+        remoteSettings.notificationsUpdatedAt,
+      ),
+      anniversaryReminder: _selectByTimestamp(
+        localSettings.anniversaryReminder,
+        remoteSettings.anniversaryReminder,
+        localSettings.notificationsUpdatedAt,
+        remoteSettings.notificationsUpdatedAt,
+      ),
+      checkInReminderEnabled: _selectByTimestamp(
+        localSettings.checkInReminderEnabled,
+        remoteSettings.checkInReminderEnabled,
+        localSettings.notificationsUpdatedAt,
+        remoteSettings.notificationsUpdatedAt,
+      ),
+      checkInReminderTime: _selectByTimestamp(
+        localSettings.checkInReminderTime,
+        remoteSettings.checkInReminderTime,
+        localSettings.notificationsUpdatedAt,
+        remoteSettings.notificationsUpdatedAt,
+      ),
       notificationsUpdatedAt: localSettings.notificationsUpdatedAt.isAfter(remoteSettings.notificationsUpdatedAt)
           ? localSettings.notificationsUpdatedAt
           : remoteSettings.notificationsUpdatedAt,
       
       // 签到设置：比较 checkInUpdatedAt
-      checkInVibrationEnabled: localSettings.checkInUpdatedAt.isAfter(remoteSettings.checkInUpdatedAt)
-          ? localSettings.checkInVibrationEnabled
-          : remoteSettings.checkInVibrationEnabled,
-      checkInConfettiEnabled: localSettings.checkInUpdatedAt.isAfter(remoteSettings.checkInUpdatedAt)
-          ? localSettings.checkInConfettiEnabled
-          : remoteSettings.checkInConfettiEnabled,
+      checkInVibrationEnabled: _selectByTimestamp(
+        localSettings.checkInVibrationEnabled,
+        remoteSettings.checkInVibrationEnabled,
+        localSettings.checkInUpdatedAt,
+        remoteSettings.checkInUpdatedAt,
+      ),
+      checkInConfettiEnabled: _selectByTimestamp(
+        localSettings.checkInConfettiEnabled,
+        remoteSettings.checkInConfettiEnabled,
+        localSettings.checkInUpdatedAt,
+        remoteSettings.checkInUpdatedAt,
+      ),
       checkInUpdatedAt: localSettings.checkInUpdatedAt.isAfter(remoteSettings.checkInUpdatedAt)
           ? localSettings.checkInUpdatedAt
           : remoteSettings.checkInUpdatedAt,
       
       // 社区设置：比较 communityUpdatedAt
-      hidePublishWarning: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
-          ? localSettings.hidePublishWarning
-          : remoteSettings.hidePublishWarning,
-      hasSeenPublishWarning: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
-          ? localSettings.hasSeenPublishWarning
-          : remoteSettings.hasSeenPublishWarning,
-      hasSeenCommunityIntro: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
-          ? localSettings.hasSeenCommunityIntro
-          : remoteSettings.hasSeenCommunityIntro,
+      hidePublishWarning: _selectByTimestamp(
+        localSettings.hidePublishWarning,
+        remoteSettings.hidePublishWarning,
+        localSettings.communityUpdatedAt,
+        remoteSettings.communityUpdatedAt,
+      ),
+      hasSeenPublishWarning: _selectByTimestamp(
+        localSettings.hasSeenPublishWarning,
+        remoteSettings.hasSeenPublishWarning,
+        localSettings.communityUpdatedAt,
+        remoteSettings.communityUpdatedAt,
+      ),
+      hasSeenCommunityIntro: _selectByTimestamp(
+        localSettings.hasSeenCommunityIntro,
+        remoteSettings.hasSeenCommunityIntro,
+        localSettings.communityUpdatedAt,
+        remoteSettings.communityUpdatedAt,
+      ),
       communityUpdatedAt: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
           ? localSettings.communityUpdatedAt
           : remoteSettings.communityUpdatedAt,
