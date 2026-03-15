@@ -1,5 +1,6 @@
 import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
+import '../../models/enums.dart';
 import 'i_community_data_source.dart';
 
 /// 测试社区数据源
