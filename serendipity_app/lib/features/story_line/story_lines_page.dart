@@ -44,7 +44,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
     return Scaffold(
       appBar: AppBar(
         title: countAsync.when(
-          data: (count) => Text('我的故事线 ($count条)'),
+          data: (count) => Text('我的故事线 (共$count条)'),
           loading: () => const Text('我的故事线'),
           error: (_, __) => const Text('我的故事线'),
         ),
