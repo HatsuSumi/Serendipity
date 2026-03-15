@@ -619,21 +619,23 @@ Widget buildHighlightedText(
   }
 
   final parts = text.split(RegExp('($keyword)', caseSensitive: false));
+  final keywordLower = keyword.toLowerCase();
   
   return RichText(
     maxLines: maxLines,
     overflow: overflow ?? TextOverflow.clip,
     text: TextSpan(
-      children: parts.map((part) {
-        final isKeyword = part.toLowerCase() == keyword.toLowerCase();
+      style: textStyle,
+      children: parts.where((part) => part.isNotEmpty).map((part) {
+        final isKeyword = part.toLowerCase() == keywordLower;
         return TextSpan(
           text: part,
           style: isKeyword
-              ? (textStyle ?? const TextStyle()).copyWith(
+              ? TextStyle(
                   backgroundColor: highlightColor,
                   fontWeight: FontWeight.bold,
                 )
-              : textStyle,
+              : null,
         );
       }).toList(),
     ),
