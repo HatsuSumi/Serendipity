@@ -241,7 +241,7 @@ class CommunityRepository {
       placeTypes: placeTypes?.map((t) => t.value).toList(),
       tags: tags,
       statuses: statuses?.map((s) => s.name).toList(),
-      tagMatchMode: tagMatchMode,
+      tagMatchMode: tagMatchMode.value,
       limit: limit,
     );
   }
