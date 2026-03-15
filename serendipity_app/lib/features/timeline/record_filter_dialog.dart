@@ -56,7 +56,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
   final TextEditingController _ifReencounterController = TextEditingController();
   final TextEditingController _conversationStarterController = TextEditingController();
   final TextEditingController _backgroundMusicController = TextEditingController();
-  late TagMatchMode _tagMatchMode;
+  TagMatchMode _tagMatchMode = TagMatchMode.contains;
 
   @override
   void initState() {

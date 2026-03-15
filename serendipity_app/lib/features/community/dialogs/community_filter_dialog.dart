@@ -41,7 +41,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   Set<EncounterStatus> _selectedStatuses = {};
   final TextEditingController _tagController = TextEditingController();
   SelectedRegion? _selectedRegion;
-  late TagMatchMode _tagMatchMode;
+  TagMatchMode _tagMatchMode = TagMatchMode.contains;
 
   @override
   void initState() {
