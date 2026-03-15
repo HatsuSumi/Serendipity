@@ -154,17 +154,7 @@ class MyPostsPage extends ConsumerWidget {
 
       // 标签筛选（OR逻辑）
       if (filter.tags != null && filter.tags!.isNotEmpty) {
-        final postTags = post.tags ?? [];
-        final postTagNames = postTags.map((t) {
-          if (t is String) {
-            return t;
-          } else if (t is Map && t.containsKey('tag')) {
-            return t['tag'] as String;
-          } else {
-            return t.tag?.toString() ?? '';
-          }
-        }).toList();
-        
+        final postTagNames = post.tags.map((t) => t.tag).toList();
         final hasMatchingTag = filter.tags!.any((filterTag) {
           if (filter.tagMatchMode == TagMatchMode.wholeWord) {
             // 全词匹配：完全相等
