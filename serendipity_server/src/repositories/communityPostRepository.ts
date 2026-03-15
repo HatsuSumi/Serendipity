@@ -218,12 +218,15 @@ export class CommunityPostRepository implements ICommunityPostRepository {
 
     // 标签筛选（JSONB 查询，OR 逻辑：匹配任意一个标签即可）
     if (filters.tags && filters.tags.length > 0) {
+      console.log('DEBUG findByFiltersWithTags: tagMatchMode=', tagMatchMode, 'tags=', filters.tags);
       const tagConditions = filters.tags.map(tag => {
         if (tagMatchMode === 'wholeWord') {
           // 全词匹配：标签完全相等
+          console.log('DEBUG wholeWord match: tag=', tag, 'query=', JSON.stringify([{ tag }]));
           return Prisma.sql`tags @> ${JSON.stringify([{ tag }])}`;
         } else {
           // 包含匹配：标签包含关键词
+          console.log('DEBUG contains match: tag=', tag);
           return Prisma.sql`EXISTS (
             SELECT 1 FROM jsonb_array_elements(tags) AS t
             WHERE t->>'tag' ILIKE ${`%${tag}%`}
