@@ -85,6 +85,7 @@ export class CommunityPostController {
           area: getQueryAsString(req.query.area),
           placeTypes: getQueryAsString(req.query.placeTypes),
           tags: getQueryAsString(req.query.tags),
+          tagMatchMode: getQueryAsString(req.query.tagMatchMode),
           statuses: getQueryAsString(req.query.statuses),
           limit: getQueryAsInt(req.query.limit),
         };
