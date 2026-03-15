@@ -155,15 +155,27 @@ class MyPostsPage extends ConsumerWidget {
       // 标签筛选（OR逻辑）
       if (filter.tags != null && filter.tags!.isNotEmpty) {
         final postTagNames = post.tags.map((t) => t.tag).toList();
-        final hasMatchingTag = filter.tags!.any((filterTag) {
+        bool hasMatchingTag = false;
+        
+        for (final filterTag in filter.tags!) {
           if (filter.tagMatchMode == TagMatchMode.wholeWord) {
             // 全词匹配：完全相等
-            return postTagNames.contains(filterTag);
+            if (postTagNames.contains(filterTag)) {
+              hasMatchingTag = true;
+              break;
+            }
           } else {
             // 包含匹配：任何标签包含关键词
-            return postTagNames.any((postTag) => postTag.contains(filterTag));
+            for (final postTag in postTagNames) {
+              if (postTag.contains(filterTag)) {
+                hasMatchingTag = true;
+                break;
+              }
+            }
+            if (hasMatchingTag) break;
           }
-        });
+        }
+        
         if (!hasMatchingTag) {
           return false;
         }
