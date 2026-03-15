@@ -61,12 +61,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
   @override
   void initState() {
     super.initState();
-    // 延迟到第一帧后读取，确保 Provider 已初始化
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _initializeFromProvider();
-      }
-    });
+    _initializeFromProvider();
   }
 
   /// 从 Provider 读取筛选条件并初始化

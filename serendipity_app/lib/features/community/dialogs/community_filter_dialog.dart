@@ -46,13 +46,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   @override
   void initState() {
     super.initState();
-    // 延迟到第一帧后读取，确保 Provider 已初始化
-    // 性能优化：避免在 initState 中直接使用 ref.read
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _initializeFromProvider();
-      }
-    });
+    _initializeFromProvider();
   }
 
   /// 从 Provider 读取筛选条件并初始化
