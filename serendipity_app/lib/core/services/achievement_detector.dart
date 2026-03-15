@@ -56,8 +56,15 @@ class AchievementDetector {
   /// 
   /// 在创建或更新记录后调用
   /// 返回新解锁的成就ID列表
-  Future<List<String>> checkRecordAchievements(EncounterRecord record) async {
-    return await _recordChecker.check(record);
+  /// 
+  /// 参数：
+  /// - record: 当前创建或更新的记录
+  /// - userId: 当前用户ID（用于数据隔离）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：由 RecordAchievementChecker 抛出异常
+  Future<List<String>> checkRecordAchievements(EncounterRecord record, String userId) async {
+    return await _recordChecker.check(record, userId);
   }
 
   /// 检测签到相关成就

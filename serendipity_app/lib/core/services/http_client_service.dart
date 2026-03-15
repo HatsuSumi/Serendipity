@@ -249,7 +249,7 @@ class HttpClientService {
         } else {
           // 创建新的刷新操作
           _refreshTokenCompleter = Completer<void>();
-          _refreshWaiters = 1;
+          _refreshWaiters = 0;  // 初始化为 0，创建者不计入等待者
           try {
             await refreshToken();
             _refreshTokenCompleter!.complete();

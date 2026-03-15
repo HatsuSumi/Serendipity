@@ -36,13 +36,22 @@ class RecordAchievementChecker extends BaseAchievementChecker {
   /// 
   /// 参数：
   /// - record: 当前创建或更新的记录
+  /// - userId: 当前用户ID（用于数据隔离）
   /// 
   /// 返回：新解锁的成就ID列表
-  Future<List<String>> check(EncounterRecord record) async {
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  Future<List<String>> check(EncounterRecord record, String userId) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
     final unlockedAchievements = <String>[];
 
-    // 获取所有记录
-    final allRecords = _recordRepository.getAllRecords();
+    // 获取当前用户的所有记录（数据隔离）
+    final allRecords = _recordRepository.getRecordsByUser(userId);
 
     // 检测记录数量成就
     unlockedAchievements.addAll(

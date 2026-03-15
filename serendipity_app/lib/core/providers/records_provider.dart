@@ -117,6 +117,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// - 单一职责：只负责成就检测和通知
   /// - 时序控制：由调用者决定何时触发，避免导航栈混乱
   /// - 容错处理：检测失败不影响记录保存
+  /// - 数据隔离：传入 userId 确保只检测当前用户的数据
   /// 
   /// 调用者：
   /// - MainNavigationPage：在 CreateRecordPage 关闭后调用
@@ -134,11 +135,20 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// ```
   Future<void> checkAchievementsForRecord(EncounterRecord record) async {
     try {
-      final unlockedAchievements = await _achievementDetector.checkRecordAchievements(record);
+      // 获取当前用户
+      final currentUser = await ref.read(authProvider.notifier).currentUser;
+      if (currentUser == null) {
+        // 未登录，跳过成就检测
+        return;
+      }
+      
+      final detector = ref.read(achievementDetectorProvider);
+      // 传入 userId 确保数据隔离
+      final unlockedAchievements = await detector.checkRecordAchievements(record, currentUser.id);
       
       // 如果记录关联了故事线，也检测故事线成就（例如"重新开始"成就）
       if (record.storyLineId != null) {
-        final storyLineAchievements = await _achievementDetector.checkStoryLineAchievements();
+        final storyLineAchievements = await detector.checkStoryLineAchievements();
         unlockedAchievements.addAll(storyLineAchievements);
       }
       
