@@ -215,7 +215,6 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   }): Promise<CommunityPost[]> {
     const conditions: Prisma.Sql[] = [];
     const tagMatchMode = filters.tagMatchMode || 'contains';
-    console.log('DEBUG findByFiltersWithTags: tagMatchMode=', tagMatchMode, 'tags=', filters.tags);
 
     // 标签筛选（JSONB 查询，OR 逻辑：匹配任意一个标签即可）
     if (filters.tags && filters.tags.length > 0) {
@@ -308,7 +307,6 @@ export class CommunityPostRepository implements ICommunityPostRepository {
       LIMIT ${filters.limit}
     `;
 
-    console.log('DEBUG SQL query:', query);
     return this.prisma.$queryRaw<CommunityPost[]>(query);
   }
 

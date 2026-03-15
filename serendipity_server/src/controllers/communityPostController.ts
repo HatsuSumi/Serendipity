@@ -77,16 +77,7 @@ export class CommunityPostController {
       // 如果有筛选参数，使用筛选逻辑
       if (hasFilterParams) {
         const tagMatchModeStr = getQueryAsString(req.query.tagMatchMode);
-        console.log('DEBUG controller: req.query.tagMatchMode=', req.query.tagMatchMode, 'tagMatchModeStr=', tagMatchModeStr);
-        
-        // 标准化 tagMatchMode：将 whole_word 转换为 wholeWord
-        let tagMatchMode: 'wholeWord' | 'contains' | undefined;
-        if (tagMatchModeStr === 'whole_word') {
-          tagMatchMode = 'wholeWord';
-        } else if (isValidTagMatchMode(tagMatchModeStr)) {
-          tagMatchMode = tagMatchModeStr;
-        }
-        console.log('DEBUG controller: tagMatchMode=', tagMatchMode);
+        const tagMatchMode = isValidTagMatchMode(tagMatchModeStr) ? tagMatchModeStr : undefined;
         
         const query: FilterCommunityPostsQuery = {
           startDate: getQueryAsString(req.query.startDate),

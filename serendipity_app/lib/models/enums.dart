@@ -359,7 +359,7 @@ enum DialogAnimationType {
 /// 标签匹配模式
 enum TagMatchMode {
   contains('contains', '包含匹配'),
-  wholeWord('whole_word', '全词匹配');
+  wholeWord('wholeWord', '全词匹配');
 
   final String value;
   final String label;
