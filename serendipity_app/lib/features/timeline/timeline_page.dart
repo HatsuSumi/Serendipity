@@ -272,15 +272,27 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       // 标签筛选（OR逻辑）
       if (filter.tags != null && filter.tags!.isNotEmpty) {
         final recordTags = record.tags.map((t) => t.tag).toList();
-        final hasMatchingTag = filter.tags!.any((filterTag) {
+        bool hasMatchingTag = false;
+        
+        for (final filterTag in filter.tags!) {
           if (filter.tagMatchMode == TagMatchMode.wholeWord) {
             // 全词匹配：完全相等
-            return recordTags.contains(filterTag);
+            if (recordTags.contains(filterTag)) {
+              hasMatchingTag = true;
+              break;
+            }
           } else {
             // 包含匹配：任何标签包含关键词
-            return recordTags.any((recordTag) => recordTag.contains(filterTag));
+            for (final recordTag in recordTags) {
+              if (recordTag.contains(filterTag)) {
+                hasMatchingTag = true;
+                break;
+              }
+            }
+            if (hasMatchingTag) break;
           }
-        });
+        }
+        
         if (!hasMatchingTag) {
           return false;
         }
@@ -566,17 +578,24 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       runSpacing: 8,
                       children: record.tags.take(3).map((tag) {
                         // 判断是否需要高亮这个标签
-                        final shouldHighlight = filterCriteria.tags != null && 
-                            filterCriteria.tags!.isNotEmpty &&
-                            filterCriteria.tags!.any((keyword) {
-                              if (filterCriteria.tagMatchMode == TagMatchMode.wholeWord) {
-                                // 全词匹配：完全相等
-                                return tag.tag == keyword;
-                              } else {
-                                // 包含匹配：标签包含关键词
-                                return tag.tag.contains(keyword);
+                        bool shouldHighlight = false;
+                        if (filterCriteria.tags != null && filterCriteria.tags!.isNotEmpty) {
+                          for (final keyword in filterCriteria.tags!) {
+                            if (filterCriteria.tagMatchMode == TagMatchMode.wholeWord) {
+                              // 全词匹配：完全相等
+                              if (tag.tag == keyword) {
+                                shouldHighlight = true;
+                                break;
                               }
-                            });
+                            } else {
+                              // 包含匹配：标签包含关键词
+                              if (tag.tag.contains(keyword)) {
+                                shouldHighlight = true;
+                                break;
+                              }
+                            }
+                          }
+                        }
                         
                         return Container(
                           padding: const EdgeInsets.symmetric(
