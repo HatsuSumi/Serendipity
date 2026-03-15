@@ -111,11 +111,13 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
     
     // 3. 检测成就
     try {
-      final unlockedAchievements = await _achievementDetector.checkStoryLineAchievements();
-      if (unlockedAchievements.isNotEmpty) {
-        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-        ref.invalidate(achievementsProvider);
-        await _uploadAchievementUnlocks(unlockedAchievements);
+      if (currentUser != null) {
+        final unlockedAchievements = await _achievementDetector.checkStoryLineAchievements(currentUser.id);
+        if (unlockedAchievements.isNotEmpty) {
+          ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+          ref.invalidate(achievementsProvider);
+          await _uploadAchievementUnlocks(unlockedAchievements);
+        }
       }
     } catch (e) {
       // 成就检测失败不影响故事线创建
@@ -195,15 +197,18 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
     
     // 检测成就
     try {
-      final unlockedAchievements = await _achievementDetector.checkStoryLineAchievements();
-      if (unlockedAchievements.isNotEmpty) {
-        // 通知UI层显示成就解锁通知
-        ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
-        // 刷新成就列表
-        ref.invalidate(achievementsProvider);
-        
-        // 上传成就解锁记录到云端
-        await _uploadAchievementUnlocks(unlockedAchievements);
+      final currentUser = await ref.read(authProvider.notifier).currentUser;
+      if (currentUser != null) {
+        final unlockedAchievements = await _achievementDetector.checkStoryLineAchievements(currentUser.id);
+        if (unlockedAchievements.isNotEmpty) {
+          // 通知UI层显示成就解锁通知
+          ref.read(newlyUnlockedAchievementsProvider.notifier).add(unlockedAchievements);
+          // 刷新成就列表
+          ref.invalidate(achievementsProvider);
+          
+          // 上传成就解锁记录到云端
+          await _uploadAchievementUnlocks(unlockedAchievements);
+        }
       }
     } catch (e) {
       // 成就检测失败不影响记录关联

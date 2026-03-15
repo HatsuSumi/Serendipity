@@ -71,16 +71,28 @@ class AchievementDetector {
   /// 
   /// 在签到后调用
   /// 返回新解锁的成就ID列表
-  Future<List<String>> checkCheckInAchievements() async {
-    return await _checkInChecker.check();
+  /// 
+  /// 参数：
+  /// - userId: 当前用户ID（用于数据隔离）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：由 CheckInAchievementChecker 抛出异常
+  Future<List<String>> checkCheckInAchievements(String userId) async {
+    return await _checkInChecker.check(userId);
   }
 
   /// 检测故事线相关成就
   /// 
   /// 在创建或更新故事线后调用
   /// 返回新解锁的成就ID列表
-  Future<List<String>> checkStoryLineAchievements() async {
-    return await _storyLineChecker.check();
+  /// 
+  /// 参数：
+  /// - userId: 当前用户ID（用于数据隔离）
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：由 StoryLineAchievementChecker 抛出异常
+  Future<List<String>> checkStoryLineAchievements(String userId) async {
+    return await _storyLineChecker.check(userId);
   }
 
   /// 检测社区相关成就

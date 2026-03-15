@@ -148,7 +148,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       
       // 如果记录关联了故事线，也检测故事线成就（例如"重新开始"成就）
       if (record.storyLineId != null) {
-        final storyLineAchievements = await detector.checkStoryLineAchievements();
+        final storyLineAchievements = await detector.checkStoryLineAchievements(currentUser.id);
         unlockedAchievements.addAll(storyLineAchievements);
       }
       

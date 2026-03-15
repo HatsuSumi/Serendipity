@@ -118,17 +118,20 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     // 检测成就
     try {
       final detector = ref.read(achievementDetectorProvider);
-      final unlockedAchievements = await detector.checkCheckInAchievements();
-      if (unlockedAchievements.isNotEmpty) {
-        // 通知UI层显示成就解锁通知
-        ref
-            .read(newlyUnlockedAchievementsProvider.notifier)
-            .add(unlockedAchievements);
-        // 刷新成就列表
-        ref.invalidate(achievementsProvider);
-        
-        // 上传成就解锁记录到云端
-        await _uploadAchievementUnlocks(unlockedAchievements);
+      // 如果用户已登录，检测成就
+      if (currentUser != null) {
+        final unlockedAchievements = await detector.checkCheckInAchievements(currentUser.id);
+        if (unlockedAchievements.isNotEmpty) {
+          // 通知UI层显示成就解锁通知
+          ref
+              .read(newlyUnlockedAchievementsProvider.notifier)
+              .add(unlockedAchievements);
+          // 刷新成就列表
+          ref.invalidate(achievementsProvider);
+          
+          // 上传成就解锁记录到云端
+          await _uploadAchievementUnlocks(unlockedAchievements);
+        }
       }
     } catch (e) {
       // 成就检测失败不影响签到

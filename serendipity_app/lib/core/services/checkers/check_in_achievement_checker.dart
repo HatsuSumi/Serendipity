@@ -24,13 +24,24 @@ class CheckInAchievementChecker extends BaseAchievementChecker {
 
   /// 检测签到相关成就
   /// 
+  /// 参数：
+  /// - userId: 当前用户ID（用于数据隔离）
+  /// 
   /// 返回：新解锁的成就ID列表
-  Future<List<String>> check() async {
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  Future<List<String>> check(String userId) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
     final unlockedAchievements = <String>[];
 
-    // 获取签到统计
-    final consecutiveDays = _checkInRepository.calculateConsecutiveDays();
-    final totalDays = _checkInRepository.getTotalCheckInDays();
+    // 获取当前用户的签到统计（数据隔离）
+    final consecutiveDays = _checkInRepository.calculateConsecutiveDays(userId: userId);
+    final totalDays = _checkInRepository.getTotalCheckInDays(userId: userId);
 
     // 检测连续签到成就
     unlockedAchievements.addAll(

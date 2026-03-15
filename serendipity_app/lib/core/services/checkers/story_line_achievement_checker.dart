@@ -28,12 +28,23 @@ class StoryLineAchievementChecker extends BaseAchievementChecker {
 
   /// 检测故事线相关成就
   /// 
+  /// 参数：
+  /// - userId: 当前用户ID（用于数据隔离）
+  /// 
   /// 返回：新解锁的成就ID列表
-  Future<List<String>> check() async {
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  Future<List<String>> check(String userId) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    
     final unlockedAchievements = <String>[];
 
-    // 获取所有故事线
-    final allStoryLines = _storyLineRepository.getAllStoryLines();
+    // 获取当前用户的故事线（数据隔离）
+    final allStoryLines = _storyLineRepository.getStoryLinesByUser(userId);
     final storyLineCount = allStoryLines.length;
 
     // 检测：第一条故事线（无进度条的成就）
