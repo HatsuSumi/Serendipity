@@ -1,7 +1,6 @@
 import { PrismaClient, Record, Prisma } from '@prisma/client';
 import { CreateRecordDto, UpdateRecordDto, LocationDto } from '../types/record.dto';
 import { toJsonValue } from '../utils/prisma-json';
-import { AddressHelper } from '../utils/address';
 
 /**
  * Record Repository 接口
@@ -116,13 +115,11 @@ export class RecordRepository implements IRecordRepository {
    * 如果记录已存在则更新，否则创建新记录
    */
   async create(userId: string, data: CreateRecordDto): Promise<Record> {
-    const normalizedLocation = this.normalizeLocation(data.location);
-    
     return this.prisma.record.upsert({
       where: { id: data.id },
       update: {
         timestamp: new Date(data.timestamp),
-        location: toJsonValue(normalizedLocation),
+        location: toJsonValue(data.location),
         description: data.description,
         tags: toJsonValue(data.tags),
         emotion: data.emotion,
@@ -139,7 +136,7 @@ export class RecordRepository implements IRecordRepository {
         id: data.id,
         userId,
         timestamp: new Date(data.timestamp),
-        location: toJsonValue(normalizedLocation),
+        location: toJsonValue(data.location),
         description: data.description,
         tags: toJsonValue(data.tags),
         emotion: data.emotion,
@@ -167,14 +164,12 @@ export class RecordRepository implements IRecordRepository {
   async batchCreate(userId: string, records: CreateRecordDto[]): Promise<Record[]> {
     // 使用事务确保原子性：要么全部成功，要么全部失败
     return this.prisma.$transaction(
-      records.map((data) => {
-        const normalizedLocation = this.normalizeLocation(data.location);
-        
-        return this.prisma.record.upsert({
+      records.map((data) =>
+        this.prisma.record.upsert({
           where: { id: data.id },
           update: {
             timestamp: new Date(data.timestamp),
-            location: toJsonValue(normalizedLocation),
+            location: toJsonValue(data.location),
             description: data.description,
             tags: toJsonValue(data.tags),
             emotion: data.emotion,
@@ -191,7 +186,7 @@ export class RecordRepository implements IRecordRepository {
             id: data.id,
             userId,
             timestamp: new Date(data.timestamp),
-            location: toJsonValue(normalizedLocation),
+            location: toJsonValue(data.location),
             description: data.description,
             tags: toJsonValue(data.tags),
             emotion: data.emotion,
@@ -205,8 +200,8 @@ export class RecordRepository implements IRecordRepository {
             createdAt: new Date(data.createdAt),
             updatedAt: new Date(data.updatedAt),
           },
-        });
-      })
+        })
+      )
     );
   }
 
@@ -438,32 +433,6 @@ export class RecordRepository implements IRecordRepository {
     await this.prisma.record.delete({
       where: { id },
     });
-  }
-
-  /**
-   * 规范化 location 数据
-   * 确保 location 中包含 province、city、area 字段
-   * 如果前端没有提供，则从 address 中解析
-   * @private
-   */
-  private normalizeLocation(location: LocationDto): LocationDto {
-    // 如果已经有地区信息，直接返回
-    if (location.province || location.city || location.area) {
-      return location;
-    }
-
-    // 如果没有 address，无法解析，返回原值
-    if (!location.address) {
-      return location;
-    }
-
-    // 从 address 中解析地区信息
-    const region = AddressHelper.extractRegion(location.address);
-    
-    return {
-      ...location,
-      ...region,
-    };
   }
 
   /**

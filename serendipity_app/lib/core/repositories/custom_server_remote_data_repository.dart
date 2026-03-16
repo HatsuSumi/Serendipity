@@ -28,9 +28,24 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     }
     
     try {
+      // 提取地区信息并填充到 location
+      final recordJson = record.toJson();
+      final location = recordJson['location'] as Map<String, dynamic>;
+      final region = AddressHelper.extractRegion(location['address'] as String?);
+      
+      if (region.province != null) {
+        location['province'] = region.province;
+      }
+      if (region.city != null) {
+        location['city'] = region.city;
+      }
+      if (region.area != null) {
+        location['area'] = region.area;
+      }
+      
       await _httpClient.post(
         ServerConfig.records,
-        body: record.toJson(),
+        body: recordJson,
       );
     } on HttpException catch (e) {
       throw Exception('上传记录失败：${e.message}');
@@ -45,11 +60,26 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     }
     
     try {
+      // 提取地区信息并填充到 location
+      final recordJson = record.toJson();
+      final location = recordJson['location'] as Map<String, dynamic>;
+      final region = AddressHelper.extractRegion(location['address'] as String?);
+      
+      if (region.province != null) {
+        location['province'] = region.province;
+      }
+      if (region.city != null) {
+        location['city'] = region.city;
+      }
+      if (region.area != null) {
+        location['area'] = region.area;
+      }
+      
       // 使用 PUT API 进行增量更新
       // 只传输完整数据（后端会根据 UpdateRecordDto 只更新传入的字段）
       await _httpClient.put(
         ServerConfig.recordById(record.id),
-        body: record.toJson(),
+        body: recordJson,
       );
     } on HttpException catch (e) {
       throw Exception('更新记录失败：${e.message}');
@@ -68,10 +98,29 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     }
     
     try {
+      // 提取地区信息并填充到每条记录的 location
+      final recordsJson = records.map((r) {
+        final recordJson = r.toJson();
+        final location = recordJson['location'] as Map<String, dynamic>;
+        final region = AddressHelper.extractRegion(location['address'] as String?);
+        
+        if (region.province != null) {
+          location['province'] = region.province;
+        }
+        if (region.city != null) {
+          location['city'] = region.city;
+        }
+        if (region.area != null) {
+          location['area'] = region.area;
+        }
+        
+        return recordJson;
+      }).toList();
+      
       await _httpClient.post(
         ServerConfig.recordsBatch,
         body: {
-          'records': records.map((r) => r.toJson()).toList(),
+          'records': recordsJson,
         },
       );
     } on HttpException catch (e) {
