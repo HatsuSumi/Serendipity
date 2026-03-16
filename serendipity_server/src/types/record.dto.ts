@@ -7,6 +7,9 @@ export interface LocationDto {
   address?: string;
   placeName?: string;
   placeType?: string;
+  province?: string;
+  city?: string;
+  area?: string;
 }
 
 // 标签 + 备注
