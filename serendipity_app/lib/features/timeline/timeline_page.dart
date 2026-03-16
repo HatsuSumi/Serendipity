@@ -199,29 +199,25 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 从后端获取筛选后的记录
   Future<List<EncounterRecord>> _fetchFilteredRecords(WidgetRef ref, RecordsFilterCriteria filterCriteria) async {
-    try {
-      // 转换排序参数
-      final sortBy = _getSortByField(_currentSort);
-      final sortOrder = _getSortOrder(_currentSort);
+    // 转换排序参数
+    final sortBy = _getSortByField(_currentSort);
+    final sortOrder = _getSortOrder(_currentSort);
 
-      return await ref.read(recordsProvider.notifier).filterRecordsFromServer(
-        startDate: filterCriteria.startDate,
-        endDate: filterCriteria.endDate,
-        province: filterCriteria.province,
-        city: filterCriteria.city,
-        area: filterCriteria.area,
-        placeTypes: filterCriteria.placeTypes?.map((t) => t.value).toList(),
-        tags: filterCriteria.tags,
-        tagMatchMode: filterCriteria.tagMatchMode.value,
-        statuses: filterCriteria.statuses?.map((s) => s.name).toList(),
-        sortBy: sortBy,
-        sortOrder: sortOrder,
-        limit: 100,
-        offset: 0,
-      );
-    } catch (e) {
-      throw Exception('筛选记录失败：${AuthErrorHelper.extractErrorMessage(e)}');
-    }
+    return await ref.read(recordsProvider.notifier).filterRecordsFromServer(
+      startDate: filterCriteria.startDate,
+      endDate: filterCriteria.endDate,
+      province: filterCriteria.province,
+      city: filterCriteria.city,
+      area: filterCriteria.area,
+      placeTypes: filterCriteria.placeTypes?.map((t) => t.value).toList(),
+      tags: filterCriteria.tags,
+      tagMatchMode: filterCriteria.tagMatchMode.value,
+      statuses: filterCriteria.statuses?.map((s) => s.name).toList(),
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+      limit: 100,
+      offset: 0,
+    );
   }
 
   /// 获取排序字段
@@ -250,6 +246,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 构建错误 Widget
   Widget _buildErrorWidget(BuildContext context, WidgetRef ref, Object? error) {
+    final errorMessage = AuthErrorHelper.extractErrorMessage(error);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -261,10 +258,11 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           ),
           const SizedBox(height: 16),
           Text(
-            '加载失败：$error',
+            errorMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           ElevatedButton(
