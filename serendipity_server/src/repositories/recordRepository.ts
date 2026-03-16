@@ -94,7 +94,7 @@ export interface IRecordRepository {
  */
 export class RecordRepository implements IRecordRepository {
   // 字段名映射表：Prisma 字段名 -> 数据库列名
-  private readonly dbColumnMap: Record<string, string> = {
+  private readonly dbColumnMap: { [key: string]: string } = {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   };
