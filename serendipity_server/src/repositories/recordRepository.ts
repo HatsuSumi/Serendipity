@@ -1,6 +1,7 @@
 import { PrismaClient, Record, Prisma } from '@prisma/client';
 import { CreateRecordDto, UpdateRecordDto, LocationDto } from '../types/record.dto';
 import { toJsonValue } from '../utils/prisma-json';
+import { AddressHelper } from '../utils/address';
 
 /**
  * Record Repository 接口
@@ -457,28 +458,12 @@ export class RecordRepository implements IRecordRepository {
     }
 
     // 从 address 中解析地区信息
-    // address 格式通常是：省份市区县街道
-    // 例如：广东省梅州市兴宁市新陂镇205国道
-    const address = location.address;
-    const normalized = { ...location };
-
-    // 简单的解析逻辑：按照常见的地址格式
-    // 这是一个基础实现，可以根据需要改进
-    const provinceMatch = address.match(/^(.+?省)/);
-    const cityMatch = address.match(/省(.+?市)/);
-    const areaMatch = address.match(/市(.+?[市区县镇])/);
-
-    if (provinceMatch) {
-      normalized.province = provinceMatch[1];
-    }
-    if (cityMatch) {
-      normalized.city = cityMatch[1];
-    }
-    if (areaMatch) {
-      normalized.area = areaMatch[1];
-    }
-
-    return normalized;
+    const region = AddressHelper.extractRegion(location.address);
+    
+    return {
+      ...location,
+      ...region,
+    };
   }
 
   /**
