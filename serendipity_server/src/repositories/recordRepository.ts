@@ -1,5 +1,5 @@
 import { PrismaClient, Record, Prisma } from '@prisma/client';
-import { CreateRecordDto, UpdateRecordDto, LocationDto } from '../types/record.dto';
+import { CreateRecordDto, UpdateRecordDto } from '../types/record.dto';
 import { toJsonValue } from '../utils/prisma-json';
 
 /**
