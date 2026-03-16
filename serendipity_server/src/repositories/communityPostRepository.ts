@@ -10,6 +10,7 @@ export interface ICommunityPostRepository {
   findByUserAndRecord(userId: string, recordId: string): Promise<CommunityPost | null>;
   findRecent(limit: number, lastTimestamp?: Date): Promise<CommunityPost[]>;
   findByFilters(filters: {
+    userId?: string;
     startDate?: Date;
     endDate?: Date;
     publishStartDate?: Date;
@@ -111,6 +112,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   }
 
   async findByFilters(filters: {
+    userId?: string;
     startDate?: Date;
     endDate?: Date;
     publishStartDate?: Date;
@@ -130,6 +132,11 @@ export class CommunityPostRepository implements ICommunityPostRepository {
     }
 
     const where: any = {};
+
+    // 用户 ID 筛选（用于"我的发布"功能）
+    if (filters.userId) {
+      where.userId = filters.userId;
+    }
 
     // 错过时间范围筛选（基于 timestamp 字段）
     if (filters.startDate || filters.endDate) {
@@ -200,6 +207,7 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   // - 全词匹配：标签完全相等（使用 @> 操作符）
   // - 包含匹配：标签包含关键词（使用 ILIKE）
   private async findByFiltersWithTags(filters: {
+    userId?: string;
     startDate?: Date;
     endDate?: Date;
     publishStartDate?: Date;
@@ -215,6 +223,11 @@ export class CommunityPostRepository implements ICommunityPostRepository {
   }): Promise<CommunityPost[]> {
     const conditions: Prisma.Sql[] = [];
     const tagMatchMode = filters.tagMatchMode || 'contains';
+
+    // 用户 ID 筛选（用于"我的发布"功能）
+    if (filters.userId) {
+      conditions.push(Prisma.sql`user_id = ${filters.userId}`);
+    }
 
     // 标签筛选（JSONB 查询，OR 逻辑：匹配任意一个标签即可）
     if (filters.tags && filters.tags.length > 0) {

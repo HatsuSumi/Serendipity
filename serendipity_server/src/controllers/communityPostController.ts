@@ -122,9 +122,46 @@ export class CommunityPostController {
     try {
       const userId = req.user!.userId;
 
-      const result = await this.communityPostService.getMyPosts(userId);
+      // 检查是否有筛选参数
+      const hasFilterParams = 
+        req.query.startDate ||
+        req.query.endDate ||
+        req.query.publishStartDate ||
+        req.query.publishEndDate ||
+        req.query.province ||
+        req.query.city ||
+        req.query.area ||
+        req.query.placeTypes ||
+        req.query.tags ||
+        req.query.statuses;
 
-      sendSuccess(res, result);
+      if (hasFilterParams) {
+        // 有筛选参数，使用筛选逻辑
+        const tagMatchModeStr = getQueryAsString(req.query.tagMatchMode);
+        const tagMatchMode = isValidTagMatchMode(tagMatchModeStr) ? tagMatchModeStr : undefined;
+        
+        const query: FilterCommunityPostsQuery = {
+          startDate: getQueryAsString(req.query.startDate),
+          endDate: getQueryAsString(req.query.endDate),
+          publishStartDate: getQueryAsString(req.query.publishStartDate),
+          publishEndDate: getQueryAsString(req.query.publishEndDate),
+          province: getQueryAsString(req.query.province),
+          city: getQueryAsString(req.query.city),
+          area: getQueryAsString(req.query.area),
+          placeTypes: getQueryAsString(req.query.placeTypes),
+          tags: getQueryAsString(req.query.tags),
+          tagMatchMode,
+          statuses: getQueryAsString(req.query.statuses),
+          limit: getQueryAsInt(req.query.limit),
+        };
+
+        const result = await this.communityPostService.getMyPostsFiltered(userId, query);
+        sendSuccess(res, result);
+      } else {
+        // 无筛选参数，返回所有帖子
+        const result = await this.communityPostService.getMyPosts(userId);
+        sendSuccess(res, result);
+      }
     } catch (error) {
       next(error);
     }

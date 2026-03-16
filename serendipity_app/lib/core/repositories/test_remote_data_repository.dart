@@ -49,6 +49,27 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
+  Future<List<EncounterRecord>> filterRecords({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    List<String>? statuses,
+    String tagMatchMode = 'contains',
+    String sortBy = 'createdAt',
+    String sortOrder = 'desc',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    // 测试模式：返回空列表
+    return [];
+  }
+
+  @override
   Future<void> uploadStoryLine(String userId, StoryLine storyLine) async {
     // 测试模式：不执行任何操作
   }

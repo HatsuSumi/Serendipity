@@ -140,6 +140,92 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       throw Exception('删除记录失败：${e.message}');
     }
   }
+
+  @override
+  Future<List<EncounterRecord>> filterRecords({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    List<String>? statuses,
+    String tagMatchMode = 'contains',
+    String sortBy = 'createdAt',
+    String sortOrder = 'desc',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (limit <= 0) {
+      throw ArgumentError('limit 必须大于 0');
+    }
+    if (offset < 0) {
+      throw ArgumentError('offset 不能为负数');
+    }
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      throw ArgumentError('开始日期不能晚于结束日期');
+    }
+
+    try {
+      final queryParams = <String, String>{
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+        'sortBy': sortBy,
+        'sortOrder': sortOrder,
+      };
+
+      if (startDate != null) {
+        queryParams['startDate'] = startDate.toIso8601String();
+      }
+      if (endDate != null) {
+        queryParams['endDate'] = endDate.toIso8601String();
+      }
+      if (province != null && province.isNotEmpty) {
+        queryParams['province'] = province;
+      }
+      if (city != null && city.isNotEmpty) {
+        queryParams['city'] = city;
+      }
+      if (area != null && area.isNotEmpty) {
+        queryParams['area'] = area;
+      }
+      if (placeTypes != null && placeTypes.isNotEmpty) {
+        queryParams['placeTypes'] = placeTypes.join(',');
+      }
+      if (tags != null && tags.isNotEmpty) {
+        queryParams['tags'] = tags.join(',');
+      }
+      if (statuses != null && statuses.isNotEmpty) {
+        queryParams['statuses'] = statuses.join(',');
+      }
+      if (tagMatchMode == 'wholeWord') {
+        queryParams['tagMatchMode'] = tagMatchMode;
+      }
+
+      // DEBUG 日志
+      print('DEBUG CustomServerRemoteDataRepository.filterRecords: queryParams=$queryParams');
+
+      final response = await _httpClient.get(
+        '${ServerConfig.records}/filter',
+        queryParams: queryParams,
+      );
+
+      final data = response['data'] as Map<String, dynamic>;
+      final recordsJson = data['records'] as List;
+
+      return recordsJson
+          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on HttpException catch (e) {
+      throw Exception('筛选记录失败：${e.message}');
+    }
+  }
   
   // ==================== 故事线相关操作 ====================
   

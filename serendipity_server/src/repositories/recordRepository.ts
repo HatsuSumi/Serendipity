@@ -1,4 +1,4 @@
-import { PrismaClient, Record } from '@prisma/client';
+import { PrismaClient, Record, Prisma } from '@prisma/client';
 import { CreateRecordDto, UpdateRecordDto } from '../types/record.dto';
 import { toJsonValue } from '../utils/prisma-json';
 
@@ -44,6 +44,31 @@ export interface IRecordRepository {
     lastSyncTime?: Date,
     limit?: number,
     offset?: number
+  ): Promise<{ records: Record[]; total: number }>;
+  
+  /**
+   * 筛选记录（支持多条件组合）
+   * @param userId - 用户 ID
+   * @param filters - 筛选条件
+   * @returns 筛选结果和总数
+   */
+  findByFilters(
+    userId: string,
+    filters: {
+      startDate?: Date;
+      endDate?: Date;
+      province?: string;
+      city?: string;
+      area?: string;
+      placeTypes?: string[];
+      statuses?: string[];
+      tags?: string[];
+      tagMatchMode?: 'wholeWord' | 'contains';
+      sortBy?: 'createdAt' | 'updatedAt';
+      sortOrder?: 'asc' | 'desc';
+      limit: number;
+      offset: number;
+    }
   ): Promise<{ records: Record[]; total: number }>;
   
   /**
@@ -197,6 +222,214 @@ export class RecordRepository implements IRecordRepository {
       }),
       this.prisma.record.count({ where }),
     ]);
+
+    return { records, total };
+  }
+
+  /**
+   * 筛选记录（支持多条件组合）
+   * 
+   * 设计原则：
+   * - Fail Fast：参数验证在方法开始
+   * - 复用社区筛选的逻辑框架
+   * - 支持标签的全词匹配和包含匹配
+   * - 支持排序和分页
+   */
+  async findByFilters(
+    userId: string,
+    filters: {
+      startDate?: Date;
+      endDate?: Date;
+      province?: string;
+      city?: string;
+      area?: string;
+      placeTypes?: string[];
+      statuses?: string[];
+      tags?: string[];
+      tagMatchMode?: 'wholeWord' | 'contains';
+      sortBy?: 'createdAt' | 'updatedAt';
+      sortOrder?: 'asc' | 'desc';
+      limit: number;
+      offset: number;
+    }
+  ): Promise<{ records: Record[]; total: number }> {
+    // Fail Fast: 参数验证
+    if (!userId || userId.trim() === '') {
+      throw new Error('userId cannot be empty');
+    }
+    if (filters.limit <= 0) {
+      throw new Error('limit must be positive');
+    }
+    if (filters.offset < 0) {
+      throw new Error('offset cannot be negative');
+    }
+    if (filters.startDate && filters.endDate && filters.startDate > filters.endDate) {
+      throw new Error('startDate must be before endDate');
+    }
+
+    // 构建 where 条件
+    const where: any = { userId };
+
+    // 时间范围筛选
+    if (filters.startDate || filters.endDate) {
+      where.timestamp = {};
+      if (filters.startDate) {
+        where.timestamp.gte = filters.startDate;
+      }
+      if (filters.endDate) {
+        where.timestamp.lte = filters.endDate;
+      }
+    }
+
+    // 地点筛选
+    if (filters.province) {
+      where.location = { path: ['province'], equals: filters.province };
+    }
+    if (filters.city) {
+      where.location = { ...where.location, path: ['city'], equals: filters.city };
+    }
+    if (filters.area) {
+      where.location = { ...where.location, path: ['area'], equals: filters.area };
+    }
+
+    // 场所类型筛选
+    if (filters.placeTypes && filters.placeTypes.length > 0) {
+      where.location = { ...where.location, path: ['placeType'], in: filters.placeTypes };
+    }
+
+    // 状态筛选
+    if (filters.statuses && filters.statuses.length > 0) {
+      where.status = { in: filters.statuses };
+    }
+
+    // 标签筛选（需要特殊处理 JSONB）
+    if (filters.tags && filters.tags.length > 0) {
+      // 如果有标签筛选，使用原始 SQL 查询
+      return this.findByFiltersWithTags(userId, filters);
+    }
+
+    // 排序
+    const sortBy = filters.sortBy || 'createdAt';
+    const sortOrder = filters.sortOrder || 'desc';
+    const orderBy: any = {};
+    orderBy[sortBy] = sortOrder;
+
+    // 执行查询
+    const [records, total] = await Promise.all([
+      this.prisma.record.findMany({
+        where,
+        orderBy,
+        take: filters.limit,
+        skip: filters.offset,
+      }),
+      this.prisma.record.count({ where }),
+    ]);
+
+    return { records, total };
+  }
+
+  /**
+   * 带标签筛选的查询（使用原始 SQL）
+   * @private
+   */
+  private async findByFiltersWithTags(
+    userId: string,
+    filters: {
+      startDate?: Date;
+      endDate?: Date;
+      province?: string;
+      city?: string;
+      area?: string;
+      placeTypes?: string[];
+      statuses?: string[];
+      tags?: string[];
+      tagMatchMode?: 'wholeWord' | 'contains';
+      sortBy?: 'createdAt' | 'updatedAt';
+      sortOrder?: 'asc' | 'desc';
+      limit: number;
+      offset: number;
+    }
+  ): Promise<{ records: Record[]; total: number }> {
+    const conditions: Prisma.Sql[] = [];
+    const tagMatchMode = filters.tagMatchMode || 'contains';
+
+    conditions.push(Prisma.sql`user_id = ${userId}`);
+
+    // 时间范围
+    if (filters.startDate) {
+      conditions.push(Prisma.sql`timestamp >= ${filters.startDate}`);
+    }
+    if (filters.endDate) {
+      conditions.push(Prisma.sql`timestamp <= ${filters.endDate}`);
+    }
+
+    // 地点筛选
+    if (filters.province) {
+      conditions.push(Prisma.sql`location->>'province' = ${filters.province}`);
+    }
+    if (filters.city) {
+      conditions.push(Prisma.sql`location->>'city' = ${filters.city}`);
+    }
+    if (filters.area) {
+      conditions.push(Prisma.sql`location->>'area' = ${filters.area}`);
+    }
+
+    // 场所类型筛选
+    if (filters.placeTypes && filters.placeTypes.length > 0) {
+      conditions.push(Prisma.sql`location->>'placeType' = ANY(${filters.placeTypes})`);
+    }
+
+    // 状态筛选
+    if (filters.statuses && filters.statuses.length > 0) {
+      conditions.push(Prisma.sql`status = ANY(${filters.statuses})`);
+    }
+
+    // 标签筛选
+    if (filters.tags && filters.tags.length > 0) {
+      const tagConditions = filters.tags.map(tag => {
+        if (tagMatchMode === 'wholeWord') {
+          // 全词匹配
+          return Prisma.sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements(tags) AS t
+            WHERE t->>'tag' = ${tag}
+          )`;
+        } else {
+          // 包含匹配
+          return Prisma.sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements(tags) AS t
+            WHERE t->>'tag' ILIKE ${`%${tag}%`}
+          )`;
+        }
+      });
+      conditions.push(Prisma.sql`(${Prisma.join(tagConditions, ' OR ')})`);
+    }
+
+    // 排序
+    const sortBy = filters.sortBy || 'createdAt';
+    const sortOrder = filters.sortOrder || 'desc';
+
+    // 构建查询
+    const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
+    
+    const query = Prisma.sql`
+      SELECT * FROM "Record"
+      ${whereClause}
+      ORDER BY ${Prisma.raw(`"${sortBy}" ${sortOrder.toUpperCase()}`)}
+      LIMIT ${filters.limit}
+      OFFSET ${filters.offset}
+    `;
+
+    const countQuery = Prisma.sql`
+      SELECT COUNT(*) as count FROM "Record"
+      ${whereClause}
+    `;
+
+    const [records, countResult] = await Promise.all([
+      this.prisma.$queryRaw<Record[]>(query),
+      this.prisma.$queryRaw<[{ count: bigint }]>(countQuery),
+    ]);
+
+    const total = Number(countResult[0].count);
 
     return { records, total };
   }

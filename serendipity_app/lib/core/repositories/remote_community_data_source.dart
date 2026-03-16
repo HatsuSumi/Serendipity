@@ -86,5 +86,34 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
       limit: limit,
     );
   }
+
+  @override
+  Future<List<CommunityPost>> filterCommunityPosts({
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? publishStartDate,
+    DateTime? publishEndDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    String tagMatchMode = 'contains',
+    int limit = 20,
+  }) async {
+    return await _remoteData.filterCommunityPosts(
+      startDate: startDate,
+      endDate: endDate,
+      publishStartDate: publishStartDate,
+      publishEndDate: publishEndDate,
+      province: province,
+      city: city,
+      area: area,
+      placeTypes: placeTypes,
+      tags: tags,
+      tagMatchMode: tagMatchMode,
+      limit: limit,
+    );
+  }
 }
 

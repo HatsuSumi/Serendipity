@@ -79,6 +79,32 @@ export interface IRecordService {
    * @throws {AppError} 当记录不存在或删除失败时
    */
   deleteRecord(userId: string, id: string): Promise<void>;
+
+  /**
+   * 筛选记录（支持多条件组合）
+   * @param userId - 用户 ID
+   * @param filters - 筛选条件
+   * @returns 筛选结果和分页信息
+   * @throws {AppError} 当参数无效时
+   */
+  filterRecords(
+    userId: string,
+    filters: {
+      startDate?: string;
+      endDate?: string;
+      province?: string;
+      city?: string;
+      area?: string;
+      placeTypes?: string;
+      tags?: string;
+      statuses?: string;
+      tagMatchMode?: 'wholeWord' | 'contains';
+      sortBy?: 'createdAt' | 'updatedAt';
+      sortOrder?: 'asc' | 'desc';
+      limit: number;
+      offset: number;
+    }
+  ): Promise<GetRecordsResponseDto>;
 }
 
 /**
@@ -234,6 +260,106 @@ export class RecordService implements IRecordService {
 
     // 权限验证通过，执行删除
     await this.recordRepository.delete(id);
+  }
+
+  /**
+   * 筛选记录（支持多条件组合）
+   * 
+   * 设计原则：
+   * - Fail Fast：参数验证在方法开始
+   * - 字符串参数解析：placeTypes、tags、statuses 从逗号分隔字符串转换为数组
+   * - 日期参数解析：startDate、endDate 从 ISO 字符串转换为 Date
+   * - 权限验证：确保只能查看自己的记录
+   */
+  async filterRecords(
+    userId: string,
+    filters: {
+      startDate?: string;
+      endDate?: string;
+      province?: string;
+      city?: string;
+      area?: string;
+      placeTypes?: string;
+      tags?: string;
+      statuses?: string;
+      tagMatchMode?: 'wholeWord' | 'contains';
+      sortBy?: 'createdAt' | 'updatedAt';
+      sortOrder?: 'asc' | 'desc';
+      limit: number;
+      offset: number;
+    }
+  ): Promise<GetRecordsResponseDto> {
+    // Fail Fast: 立即验证参数
+    FailFastValidator.validateNonEmptyString(userId, 'userId');
+    if (filters.limit <= 0) {
+      throw new AppError('limit must be positive', ErrorCode.VALIDATION_ERROR);
+    }
+    if (filters.offset < 0) {
+      throw new AppError('offset cannot be negative', ErrorCode.VALIDATION_ERROR);
+    }
+
+    // 解析日期参数
+    const startDate = filters.startDate ? new Date(filters.startDate) : undefined;
+    const endDate = filters.endDate ? new Date(filters.endDate) : undefined;
+
+    if (startDate && isNaN(startDate.getTime())) {
+      throw new AppError('Invalid startDate format', ErrorCode.VALIDATION_ERROR);
+    }
+    if (endDate && isNaN(endDate.getTime())) {
+      throw new AppError('Invalid endDate format', ErrorCode.VALIDATION_ERROR);
+    }
+
+    // 解析数组参数（逗号分隔字符串转换为数组）
+    const placeTypes = filters.placeTypes
+      ? filters.placeTypes.split(',').map(t => t.trim()).filter(t => t)
+      : undefined;
+    const tags = filters.tags
+      ? filters.tags.split(',').map(t => t.trim()).filter(t => t)
+      : undefined;
+    const statuses = filters.statuses
+      ? filters.statuses.split(',').map(s => s.trim()).filter(s => s)
+      : undefined;
+
+    // DEBUG 日志
+    logger.info('DEBUG filterRecords', {
+      userId,
+      statuses,
+      tags,
+      placeTypes,
+      startDate,
+      endDate,
+    });
+
+    // 调用 Repository 执行筛选
+    const { records, total } = await this.recordRepository.findByFilters(userId, {
+      startDate,
+      endDate,
+      province: filters.province,
+      city: filters.city,
+      area: filters.area,
+      placeTypes,
+      statuses,
+      tags,
+      tagMatchMode: filters.tagMatchMode,
+      sortBy: filters.sortBy || 'createdAt',
+      sortOrder: filters.sortOrder || 'desc',
+      limit: filters.limit,
+      offset: filters.offset,
+    });
+
+    // DEBUG 日志：查询结果
+    logger.info('DEBUG filterRecords result', {
+      total,
+      recordCount: records.length,
+      statuses: records.map(r => r.status),
+    });
+
+    return {
+      records: records.map((record) => this.toResponseDto(record)),
+      total,
+      hasMore: filters.offset + records.length < total,
+      syncTime: new Date(),
+    };
   }
 
   /**

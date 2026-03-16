@@ -245,5 +245,65 @@ class CommunityRepository {
       limit: limit,
     );
   }
+
+  /// 从后端筛选用户的帖子
+  /// 
+  /// 参数：
+  /// - userId: 用户 ID
+  /// - startDate: 错过时间开始日期（可选）
+  /// - endDate: 错过时间结束日期（可选）
+  /// - publishStartDate: 发布时间开始日期（可选）
+  /// - publishEndDate: 发布时间结束日期（可选）
+  /// - province: 省份（可选）
+  /// - city: 城市（可选）
+  /// - area: 区县（可选）
+  /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
+  /// - tags: 标签名称列表（可选，多选OR逻辑）
+  /// - tagMatchMode: 标签匹配模式（wholeWord 或 contains）
+  /// - limit: 每页数量
+  /// 
+  /// 返回：符合条件的帖子列表
+  /// 
+  /// 调用者：MyPostsNotifier.filterPostsFromServer()
+  Future<List<CommunityPost>> filterPostsFromServer({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? publishStartDate,
+    DateTime? publishEndDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    String tagMatchMode = 'contains',
+    int limit = 20,
+  }) async {
+    // Fail Fast：参数验证
+    if (userId.isEmpty) {
+      throw ArgumentError('userId cannot be empty');
+    }
+    if (limit <= 0) {
+      throw ArgumentError('limit must be positive');
+    }
+
+    try {
+      return await _dataSource.filterCommunityPosts(
+        startDate: startDate,
+        endDate: endDate,
+        publishStartDate: publishStartDate,
+        publishEndDate: publishEndDate,
+        province: province,
+        city: city,
+        area: area,
+        placeTypes: placeTypes,
+        tags: tags,
+        tagMatchMode: tagMatchMode,
+        limit: limit,
+      );
+    } catch (e) {
+      throw Exception('筛选帖子失败：${e.toString()}');
+    }
+  }
 }
 

@@ -52,6 +52,12 @@ export const createRecordRoutes = (
   // 删除记录
   router.delete('/:id', recordController.deleteRecord);
 
+  // 筛选记录
+  router.get(
+    '/filter',
+    recordController.filterRecords
+  );
+
   return router;
 };
 

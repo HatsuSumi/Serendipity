@@ -406,8 +406,8 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// 
   /// 设计说明：
   /// - 保存筛选条件到 Provider
-  /// - 不直接修改列表，由 UI 层通过 watch 响应
-  /// - Fail Fast：参数验证由调用者负责
+  /// - 如果有筛选条件，立即调用后端筛选
+  /// - 如果没有筛选条件，刷新本地列表
   Future<void> filterRecords({
     DateTime? startDate,
     DateTime? endDate,
@@ -427,6 +427,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     String? conversationStarterKeyword,
     String? backgroundMusicKeyword,
   }) async {
+    // 保存筛选条件到 Provider
     ref.read(recordsFilterProvider.notifier).state = RecordsFilterCriteria(
       startDate: startDate,
       endDate: endDate,
@@ -453,6 +454,69 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// 调用者：RecordFilterDialog._clearFilter()
   Future<void> clearRecordsFilter() async {
     ref.read(recordsFilterProvider.notifier).state = const RecordsFilterCriteria();
+  }
+
+  /// 从后端筛选记录（支持多条件组合）
+  /// 
+  /// 设计原则：
+  /// - 后端筛选：支持大数据量和复杂筛选
+  /// - 分页支持：limit + offset
+  /// - 排序支持：createdAt/updatedAt，升序/降序
+  /// - 标签筛选：全词匹配或包含匹配
+  /// 
+  /// 调用者：
+  /// - TimelinePage：时间轴页面筛选
+  /// - MyPostsPage：我的发布页面筛选
+  /// 
+  /// 返回：筛选结果列表
+  Future<List<EncounterRecord>> filterRecordsFromServer({
+    DateTime? startDate,
+    DateTime? endDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    List<String>? statuses,
+    String tagMatchMode = 'contains',
+    String sortBy = 'createdAt',
+    String sortOrder = 'desc',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    // 获取当前用户
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser == null) {
+      throw Exception('必须登录后才可筛选');
+    }
+
+    // DEBUG 日志
+    print('DEBUG filterRecordsFromServer: statuses=$statuses');
+
+    try {
+      // 直接调用远程数据仓库的筛选方法
+      final remoteData = ref.read(remoteDataRepositoryProvider);
+      final records = await remoteData.filterRecords(
+        userId: currentUser.id,
+        startDate: startDate,
+        endDate: endDate,
+        province: province,
+        city: city,
+        area: area,
+        placeTypes: placeTypes,
+        tags: tags,
+        statuses: statuses,
+        tagMatchMode: tagMatchMode,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+        limit: limit,
+        offset: offset,
+      );
+      
+      return records;
+    } catch (e) {
+      throw Exception('筛选记录失败：${e.toString()}');
+    }
   }
 }
 

@@ -113,6 +113,52 @@ abstract class IRemoteDataRepository {
   /// - recordId 为空：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<void> deleteRecord(String userId, String recordId);
+
+  /// 筛选用户的记录（支持多条件组合）
+  /// 
+  /// 参数：
+  /// - [userId]：用户 ID
+  /// - [startDate]：错过时间开始日期（可选）
+  /// - [endDate]：错过时间结束日期（可选）
+  /// - [province]：省份（可选）
+  /// - [city]：城市（可选）
+  /// - [area]：区县（可选）
+  /// - [placeTypes]：场所类型列表（可选，多选OR逻辑）
+  /// - [tags]：标签名称列表（可选，多选OR逻辑）
+  /// - [statuses]：状态列表（可选，多选OR逻辑）
+  /// - [tagMatchMode]：标签匹配模式（wholeWord 或 contains）
+  /// - [sortBy]：排序字段（createdAt 或 updatedAt）
+  /// - [sortOrder]：排序顺序（asc 或 desc）
+  /// - [limit]：每页数量
+  /// - [offset]：偏移量
+  /// 
+  /// 返回：符合条件的记录列表
+  /// 
+  /// 调用者：
+  /// - RecordsProvider.filterRecords()
+  /// 
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - limit <= 0：抛出 ArgumentError
+  /// - offset < 0：抛出 ArgumentError
+  /// - startDate > endDate：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常（由实现类定义）
+  Future<List<EncounterRecord>> filterRecords({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    List<String>? statuses,
+    String tagMatchMode = 'contains',
+    String sortBy = 'createdAt',
+    String sortOrder = 'desc',
+    int limit = 20,
+    int offset = 0,
+  });
   
   // ==================== 故事线相关操作 ====================
   

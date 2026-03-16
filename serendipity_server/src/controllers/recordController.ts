@@ -95,5 +95,50 @@ export class RecordController {
       next(error);
     }
   };
+
+  filterRecords = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      
+      // 参数提取
+      const startDate = getQueryAsString(req.query.startDate);
+      const endDate = getQueryAsString(req.query.endDate);
+      const province = getQueryAsString(req.query.province);
+      const city = getQueryAsString(req.query.city);
+      const area = getQueryAsString(req.query.area);
+      const placeTypes = getQueryAsString(req.query.placeTypes);
+      const tags = getQueryAsString(req.query.tags);
+      const statuses = getQueryAsString(req.query.statuses);
+      const tagMatchMode = getQueryAsString(req.query.tagMatchMode);
+      const sortBy = getQueryAsString(req.query.sortBy) as 'createdAt' | 'updatedAt' | undefined;
+      const sortOrder = getQueryAsString(req.query.sortOrder) as 'asc' | 'desc' | undefined;
+      const limit = getQueryAsInt(req.query.limit) || 20;
+      const offset = getQueryAsInt(req.query.offset) || 0;
+
+      const result = await this.recordService.filterRecords(userId, {
+        startDate,
+        endDate,
+        province,
+        city,
+        area,
+        placeTypes,
+        tags,
+        statuses,
+        tagMatchMode: tagMatchMode as 'wholeWord' | 'contains' | undefined,
+        sortBy,
+        sortOrder,
+        limit,
+        offset,
+      });
+
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 

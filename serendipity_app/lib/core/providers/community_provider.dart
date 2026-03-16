@@ -493,4 +493,45 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
       state = result;
     }
   }
+
+  /// 从后端筛选我的帖子
+  /// 
+  /// 调用者：MyPostsPage._fetchFilteredPosts()
+  Future<List<CommunityPost>> filterPostsFromServer({
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? publishStartDate,
+    DateTime? publishEndDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    String tagMatchMode = 'contains',
+    int limit = 20,
+  }) async {
+    final currentUser = ref.read(authProvider).value;
+    if (currentUser == null) {
+      throw Exception('必须登录后才可筛选');
+    }
+
+    try {
+      return await _repository.filterPostsFromServer(
+        userId: currentUser.id,
+        startDate: startDate,
+        endDate: endDate,
+        publishStartDate: publishStartDate,
+        publishEndDate: publishEndDate,
+        province: province,
+        city: city,
+        area: area,
+        placeTypes: placeTypes,
+        tags: tags,
+        tagMatchMode: tagMatchMode,
+        limit: limit,
+      );
+    } catch (e) {
+      throw Exception('筛选帖子失败：${AuthErrorHelper.extractErrorMessage(e)}');
+    }
+  }
 }

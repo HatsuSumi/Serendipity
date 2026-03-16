@@ -98,5 +98,35 @@ abstract class ICommunityDataSource {
     TagMatchMode tagMatchMode = TagMatchMode.contains,
     int limit = 20,
   });
+
+  /// 从后端筛选社区帖子
+  /// 
+  /// 参数：
+  /// - startDate: 错过时间开始日期
+  /// - endDate: 错过时间结束日期
+  /// - publishStartDate: 发布时间开始日期
+  /// - publishEndDate: 发布时间结束日期
+  /// - province: 省份
+  /// - city: 城市
+  /// - area: 区县
+  /// - placeTypes: 场所类型列表
+  /// - tags: 标签名称列表
+  /// - tagMatchMode: 标签匹配模式（wholeWord 或 contains）
+  /// - limit: 每页数量
+  /// 
+  /// 返回：符合条件的帖子列表
+  Future<List<CommunityPost>> filterCommunityPosts({
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? publishStartDate,
+    DateTime? publishEndDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    String tagMatchMode = 'contains',
+    int limit = 20,
+  });
 }
 

@@ -104,6 +104,41 @@ class RecordRepository {
     return _storage.getRecordsWithoutStoryLine();
   }
 
+  /// 从后端筛选记录（支持多条件组合）
+  /// 
+  /// 设计原则：
+  /// - 后端筛选：支持大数据量和复杂筛选
+  /// - 分页支持：limit + offset
+  /// - 排序支持：createdAt/updatedAt，升序/降序
+  /// - 标签筛选：全词匹配或包含匹配
+  /// 
+  /// 调用者：
+  /// - RecordsProvider.filterRecordsFromServer()
+  /// 
+  /// 返回：筛选结果列表
+  /// 
+  /// 注意：此方法由 RecordsProvider 通过 remoteDataRepositoryProvider 调用
+  /// 不在此处实现，避免循环依赖
+  Future<List<EncounterRecord>> filterRecordsFromServer({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    String tagMatchMode = 'contains',
+    String sortBy = 'createdAt',
+    String sortOrder = 'desc',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    throw UnimplementedError(
+      'filterRecordsFromServer should be called through remoteDataRepositoryProvider in RecordsProvider'
+    );
+  }
+
   /// 验证数据一致性
   /// 
   /// 检查记录和故事线的双向关联是否一致

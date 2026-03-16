@@ -33,6 +33,10 @@ export interface ICommunityPostService {
     currentUserId?: string
   ): Promise<CommunityPostListResponseDto>;
   getMyPosts(userId: string): Promise<MyCommunityPostsResponseDto>;
+  getMyPostsFiltered(
+    userId: string,
+    query: FilterCommunityPostsQuery
+  ): Promise<CommunityPostListResponseDto>;
   deletePost(postId: string, userId: string): Promise<void>;
   deletePostByRecordId(userId: string, recordId: string): Promise<void>;
   filterPosts(
@@ -240,6 +244,94 @@ export class CommunityPostService implements ICommunityPostService {
         };
       }),
       total: posts.length,
+    };
+  }
+
+  async getMyPostsFiltered(
+    userId: string,
+    query: FilterCommunityPostsQuery
+  ): Promise<CommunityPostListResponseDto> {
+    const limit = query.limit || 20;
+
+    const filters: any = {
+      userId, // 限制只查询当前用户的帖子
+      limit: limit + 1, // 多查询一条，用于判断是否还有更多
+    };
+
+    // 错过时间范围
+    if (query.startDate) {
+      filters.startDate = new Date(query.startDate);
+    }
+    if (query.endDate) {
+      filters.endDate = new Date(query.endDate);
+    }
+
+    // 发布时间范围
+    if (query.publishStartDate) {
+      filters.publishStartDate = new Date(query.publishStartDate);
+    }
+    if (query.publishEndDate) {
+      filters.publishEndDate = new Date(query.publishEndDate);
+    }
+
+    // 省份
+    if (query.province) {
+      filters.province = query.province;
+    }
+
+    // 城市
+    if (query.city) {
+      filters.city = query.city;
+    }
+
+    // 区县
+    if (query.area) {
+      filters.area = query.area;
+    }
+
+    // 场所类型（支持多选，OR逻辑）
+    if (query.placeTypes) {
+      const types = query.placeTypes.split(',').map(t => t.trim()).filter(t => t);
+      if (types.length > 0) {
+        filters.placeTypes = types;
+      }
+    }
+
+    // 标签（支持多选，OR逻辑）
+    if (query.tags) {
+      const tags = query.tags.split(',').map(t => t.trim()).filter(t => t);
+      if (tags.length > 0) {
+        filters.tags = tags;
+      }
+    }
+
+    // 标签匹配模式
+    if (query.tagMatchMode) {
+      filters.tagMatchMode = query.tagMatchMode;
+    }
+
+    // 状态（支持多选，OR逻辑）
+    if (query.statuses) {
+      const statuses = query.statuses.split(',').map(s => s.trim()).filter(s => s);
+      if (statuses.length > 0) {
+        filters.statuses = statuses;
+      }
+    }
+
+    const posts = await this.communityPostRepository.findByFilters(filters);
+
+    const hasMore = posts.length > limit;
+    const resultPosts = hasMore ? posts.slice(0, limit) : posts;
+
+    return {
+      posts: resultPosts.map((post) => {
+        const dto = this.toResponseDto(post, userId);
+        return {
+          ...dto,
+          isOwner: true,
+        };
+      }),
+      hasMore,
     };
   }
 

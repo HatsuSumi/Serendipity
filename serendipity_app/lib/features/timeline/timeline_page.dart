@@ -70,9 +70,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   @override
   Widget build(BuildContext context) {
-    final recordsAsync = ref.watch(recordsProvider);
-    final countAsync = ref.watch(recordsCountProvider);
     final filterCriteria = ref.watch(recordsFilterProvider);
+    final countAsync = ref.watch(recordsCountProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -145,42 +144,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       ),
       body: Stack(
         children: [
-          // 主内容
-          recordsAsync.when(
-            data: (records) {
-              // 应用筛选条件
-              final filteredRecords = _applyFilter(records, filterCriteria);
-              // 根据当前排序方式排序
-              final sortedRecords = _sortRecords(filteredRecords);
-              // 无论有无记录，都渲染列表（签到卡片始终显示在顶部）
-              return _buildRecordList(context, sortedRecords, ref, filterCriteria);
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '加载失败：$error',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => ref.refresh(recordsProvider),
-                    child: const Text('重试'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // 主内容：使用后端筛选
+          _buildFilteredRecordList(context, ref, filterCriteria),
           // 粒子效果（覆盖在整个页面最顶层）
           if (_confettiController != null)
             Positioned(
@@ -198,140 +163,120 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     );
   }
 
-  /// 应用筛选条件到记录列表
-  /// 
-  /// 调用者：build()
-  List<EncounterRecord> _applyFilter(List<EncounterRecord> records, RecordsFilterCriteria filter) {
-    if (!filter.isActive) {
-      return records;
+  /// 构建筛选后的记录列表（使用后端筛选）
+  Widget _buildFilteredRecordList(BuildContext context, WidgetRef ref, RecordsFilterCriteria filterCriteria) {
+    // 如果没有筛选条件，显示本地所有记录
+    if (!filterCriteria.isActive) {
+      final recordsAsync = ref.watch(recordsProvider);
+      return recordsAsync.when(
+        data: (records) {
+          final sortedRecords = _sortRecords(records);
+          return _buildRecordList(context, sortedRecords, ref, filterCriteria);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => _buildErrorWidget(context, ref, error),
+      );
     }
 
-    return records.where((record) {
-      // 发生时间范围筛选
-      if (filter.startDate != null || filter.endDate != null) {
-        final timestamp = record.timestamp;
-        if (filter.startDate != null && timestamp.isBefore(filter.startDate!)) {
-          return false;
+    // 有筛选条件，从后端获取
+    return FutureBuilder<List<EncounterRecord>>(
+      future: _fetchFilteredRecords(ref, filterCriteria),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
         }
-        if (filter.endDate != null && timestamp.isAfter(filter.endDate!)) {
-          return false;
-        }
-      }
 
-      // 创建时间范围筛选
-      if (filter.createdStartDate != null || filter.createdEndDate != null) {
-        final createdAt = record.createdAt;
-        if (filter.createdStartDate != null && createdAt.isBefore(filter.createdStartDate!)) {
-          return false;
+        if (snapshot.hasError) {
+          return _buildErrorWidget(context, ref, snapshot.error);
         }
-        if (filter.createdEndDate != null && createdAt.isAfter(filter.createdEndDate!)) {
-          return false;
-        }
-      }
 
-      // 地点筛选
-      if (filter.province != null && record.location.province != filter.province) {
-        return false;
-      }
-      if (filter.city != null && record.location.city != filter.city) {
-        return false;
-      }
-      if (filter.area != null && record.location.area != filter.area) {
-        return false;
-      }
+        final records = snapshot.data ?? [];
+        final sortedRecords = _sortRecords(records);
+        return _buildRecordList(context, sortedRecords, ref, filterCriteria);
+      },
+    );
+  }
 
-      // 场所类型筛选（OR逻辑）
-      if (filter.placeTypes != null && filter.placeTypes!.isNotEmpty) {
-        if (!filter.placeTypes!.contains(record.location.placeType)) {
-          return false;
-        }
-      }
+  /// 从后端获取筛选后的记录
+  Future<List<EncounterRecord>> _fetchFilteredRecords(WidgetRef ref, RecordsFilterCriteria filterCriteria) async {
+    try {
+      // 转换排序参数
+      final sortBy = _getSortByField(_currentSort);
+      final sortOrder = _getSortOrder(_currentSort);
 
-      // 状态筛选（OR逻辑）
-      if (filter.statuses != null && filter.statuses!.isNotEmpty) {
-        if (!filter.statuses!.contains(record.status)) {
-          return false;
-        }
-      }
+      // DEBUG 日志
+      print('DEBUG _fetchFilteredRecords: filterCriteria.statuses=${filterCriteria.statuses}');
 
-      // 情绪强度筛选（OR逻辑）
-      if (filter.emotionIntensities != null && filter.emotionIntensities!.isNotEmpty) {
-        if (!filter.emotionIntensities!.contains(record.emotion)) {
-          return false;
-        }
-      }
+      return await ref.read(recordsProvider.notifier).filterRecordsFromServer(
+        startDate: filterCriteria.startDate,
+        endDate: filterCriteria.endDate,
+        province: filterCriteria.province,
+        city: filterCriteria.city,
+        area: filterCriteria.area,
+        placeTypes: filterCriteria.placeTypes?.map((t) => t.value).toList(),
+        tags: filterCriteria.tags,
+        tagMatchMode: filterCriteria.tagMatchMode.value,
+        statuses: filterCriteria.statuses?.map((s) => s.name).toList(),
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+        limit: 100,
+        offset: 0,
+      );
+    } catch (e) {
+      throw Exception('筛选记录失败：${AuthErrorHelper.extractErrorMessage(e)}');
+    }
+  }
 
-      // 天气筛选（OR逻辑）
-      if (filter.weathers != null && filter.weathers!.isNotEmpty) {
-        final hasMatchingWeather = record.weather.any((w) => filter.weathers!.contains(w));
-        if (!hasMatchingWeather) {
-          return false;
-        }
-      }
+  /// 获取排序字段
+  String _getSortByField(RecordSortType sortType) {
+    switch (sortType) {
+      case RecordSortType.createdDesc:
+      case RecordSortType.createdAsc:
+        return 'createdAt';
+      case RecordSortType.updatedDesc:
+      case RecordSortType.updatedAsc:
+        return 'updatedAt';
+    }
+  }
 
-      // 标签筛选（OR逻辑）
-      if (filter.tags != null && filter.tags!.isNotEmpty) {
-        final recordTags = record.tags.map((t) => t.tag).toList();
-        bool hasMatchingTag = false;
-        
-        for (final filterTag in filter.tags!) {
-          if (filter.tagMatchMode == TagMatchMode.wholeWord) {
-            // 全词匹配：完全相等
-            if (recordTags.contains(filterTag)) {
-              hasMatchingTag = true;
-              break;
-            }
-          } else {
-            // 包含匹配：任何标签包含关键词
-            for (final recordTag in recordTags) {
-              if (recordTag.contains(filterTag)) {
-                hasMatchingTag = true;
-                break;
-              }
-            }
-            if (hasMatchingTag) break;
-          }
-        }
-        
-        if (!hasMatchingTag) {
-          return false;
-        }
-      }
+  /// 获取排序顺序
+  String _getSortOrder(RecordSortType sortType) {
+    switch (sortType) {
+      case RecordSortType.createdDesc:
+      case RecordSortType.updatedDesc:
+        return 'desc';
+      case RecordSortType.createdAsc:
+      case RecordSortType.updatedAsc:
+        return 'asc';
+    }
+  }
 
-      // 描述关键词筛选
-      if (filter.descriptionKeyword != null && filter.descriptionKeyword!.isNotEmpty) {
-        final description = record.description ?? '';
-        if (!description.contains(filter.descriptionKeyword!)) {
-          return false;
-        }
-      }
-
-      // 如果再遇备忘关键词筛选
-      if (filter.ifReencounterKeyword != null && filter.ifReencounterKeyword!.isNotEmpty) {
-        final ifReencounter = record.ifReencounter ?? '';
-        if (!ifReencounter.contains(filter.ifReencounterKeyword!)) {
-          return false;
-        }
-      }
-
-      // 对话契机关键词筛选
-      if (filter.conversationStarterKeyword != null && filter.conversationStarterKeyword!.isNotEmpty) {
-        final conversationStarter = record.conversationStarter ?? '';
-        if (!conversationStarter.contains(filter.conversationStarterKeyword!)) {
-          return false;
-        }
-      }
-
-      // 背景音乐关键词筛选
-      if (filter.backgroundMusicKeyword != null && filter.backgroundMusicKeyword!.isNotEmpty) {
-        final backgroundMusic = record.backgroundMusic ?? '';
-        if (!backgroundMusic.contains(filter.backgroundMusicKeyword!)) {
-          return false;
-        }
-      }
-
-      return true;
-    }).toList();
+  /// 构建错误 Widget
+  Widget _buildErrorWidget(BuildContext context, WidgetRef ref, Object? error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '加载失败：$error',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => setState(() {}),
+            child: const Text('重试'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 根据排序方式排序记录

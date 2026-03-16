@@ -72,5 +72,23 @@ class TestCommunityDataSource implements ICommunityDataSource {
     // 测试模式：返回空列表
     return [];
   }
+
+  @override
+  Future<List<CommunityPost>> filterCommunityPosts({
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? publishStartDate,
+    DateTime? publishEndDate,
+    String? province,
+    String? city,
+    String? area,
+    List<String>? placeTypes,
+    List<String>? tags,
+    String tagMatchMode = 'contains',
+    int limit = 20,
+  }) async {
+    // 测试模式：返回空列表
+    return [];
+  }
 }
 

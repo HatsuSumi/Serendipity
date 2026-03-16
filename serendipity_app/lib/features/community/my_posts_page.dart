@@ -4,7 +4,7 @@ import '../../core/providers/community_provider.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
-import '../../models/enums.dart';
+import '../../models/community_post.dart';
 import 'widgets/community_post_card.dart';
 import 'dialogs/my_posts_filter_dialog.dart';
 
@@ -85,120 +85,67 @@ class MyPostsPage extends ConsumerWidget {
         ],
       ),
       body: myPostsAsync.when(
-        data: (posts) => _buildPostsList(context, ref, _applyFilter(posts, filterCriteria)),
+        data: (posts) => _buildPostsList(context, ref, posts, filterCriteria),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildError(context, ref, error),
+        error: (error, stack) => _buildError(context, ref, error as Object?),
       ),
     );
   }
 
-  /// 应用筛选条件到帖子列表
-  /// 
-  /// 调用者：build()
-  List<dynamic> _applyFilter(List<dynamic> posts, MyPostsFilterCriteria filter) {
-    if (!filter.hasAnyFilter) {
-      return posts;
-    }
-
-    return posts.where((post) {
-      // 错过时间范围筛选
-      if (filter.startDate != null || filter.endDate != null) {
-        final missedAt = post.missedAt;
-        if (missedAt != null) {
-          if (filter.startDate != null && missedAt.isBefore(filter.startDate!)) {
-            return false;
-          }
-          if (filter.endDate != null && missedAt.isAfter(filter.endDate!)) {
-            return false;
-          }
-        }
-      }
-
-      // 发布时间范围筛选
-      if (filter.publishStartDate != null || filter.publishEndDate != null) {
-        final publishedAt = post.publishedAt;
-        if (publishedAt != null) {
-          if (filter.publishStartDate != null && publishedAt.isBefore(filter.publishStartDate!)) {
-            return false;
-          }
-          if (filter.publishEndDate != null && publishedAt.isAfter(filter.publishEndDate!)) {
-            return false;
-          }
-        }
-      }
-
-      // 地点筛选
-      if (filter.province != null && post.province != filter.province) {
-        return false;
-      }
-      if (filter.city != null && post.city != filter.city) {
-        return false;
-      }
-      if (filter.area != null && post.area != filter.area) {
-        return false;
-      }
-
-      // 场所类型筛选（OR逻辑）
-      if (filter.placeTypes != null && filter.placeTypes!.isNotEmpty) {
-        if (!filter.placeTypes!.contains(post.placeType)) {
-          return false;
-        }
-      }
-
-      // 状态筛选（OR逻辑）
-      if (filter.statuses != null && filter.statuses!.isNotEmpty) {
-        if (!filter.statuses!.contains(post.status)) {
-          return false;
-        }
-      }
-
-      // 标签筛选（OR逻辑）
-      if (filter.tags != null && filter.tags!.isNotEmpty) {
-        final postTagNames = post.tags.map((t) => t.tag).toList();
-        bool hasMatchingTag = false;
-        
-        for (final filterTag in filter.tags!) {
-          if (filter.tagMatchMode == TagMatchMode.wholeWord) {
-            // 全词匹配：完全相等
-            if (postTagNames.contains(filterTag)) {
-              hasMatchingTag = true;
-              break;
-            }
-          } else {
-            // 包含匹配：任何标签包含关键词
-            for (final postTag in postTagNames) {
-              if (postTag.contains(filterTag)) {
-                hasMatchingTag = true;
-                break;
-              }
-            }
-            if (hasMatchingTag) break;
-          }
-        }
-        
-        if (!hasMatchingTag) {
-          return false;
-        }
-      }
-
-      return true;
-    }).toList();
-  }
-
   /// 构建帖子列表
   /// 
-  /// 调用者：build()
-  /// 
-  /// 性能说明：
-  /// - 社区帖子高度差异很大（100px-300px+）
-  /// - 使用默认的动态高度计算，确保布局正确
-  Widget _buildPostsList(BuildContext context, WidgetRef ref, List<dynamic> posts) {
-    final filterCriteria = ref.watch(myPostsFilterProvider);
+  /// 如果有筛选条件，从后端获取；否则显示本地所有帖子
+  Widget _buildPostsList(BuildContext context, WidgetRef ref, List<CommunityPost> posts, MyPostsFilterCriteria filterCriteria) {
+    // 如果没有筛选条件，显示本地所有帖子
+    if (!filterCriteria.hasAnyFilter) {
+      return _buildPostsListView(context, ref, posts, filterCriteria);
+    }
+
+    // 有筛选条件，从后端获取
+    return FutureBuilder<List<CommunityPost>>(
+      future: _fetchFilteredPosts(ref, filterCriteria),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return _buildError(context, ref, snapshot.error as Object?);
+        }
+
+        final filteredPosts = snapshot.data ?? [];
+        return _buildPostsListView(context, ref, filteredPosts, filterCriteria);
+      },
+    );
+  }
+
+  /// 从后端获取筛选后的帖子
+  Future<List<CommunityPost>> _fetchFilteredPosts(WidgetRef ref, MyPostsFilterCriteria filterCriteria) async {
+    try {
+      return await ref.read(myPostsProvider.notifier).filterPostsFromServer(
+        startDate: filterCriteria.startDate,
+        endDate: filterCriteria.endDate,
+        publishStartDate: filterCriteria.publishStartDate,
+        publishEndDate: filterCriteria.publishEndDate,
+        province: filterCriteria.province,
+        city: filterCriteria.city,
+        area: filterCriteria.area,
+        placeTypes: filterCriteria.placeTypes?.map((t) => t.value).toList(),
+        tags: filterCriteria.tags,
+        tagMatchMode: filterCriteria.tagMatchMode.value,
+        limit: 100,
+      );
+    } catch (e) {
+      throw Exception('筛选帖子失败：${AuthErrorHelper.extractErrorMessage(e)}');
+    }
+  }
+
+  /// 构建帖子列表视图
+  Widget _buildPostsListView(BuildContext context, WidgetRef ref, List<CommunityPost> posts, MyPostsFilterCriteria filterCriteria) {
+    final isFiltering = filterCriteria.hasAnyFilter;
     
     // 空状态
     if (posts.isEmpty) {
-      // 区分是筛选结果为空还是真的没有帖子
-      final isFiltering = filterCriteria.hasAnyFilter;
       return RefreshIndicator(
         onRefresh: () => _onRefresh(ref),
         child: ListView(
@@ -223,8 +170,6 @@ class MyPostsPage extends ConsumerWidget {
         itemCount: posts.length,
         itemBuilder: (context, index) {
           final post = posts[index];
-          // 我的帖子页面：后端保证所有帖子都是 isOwner = true
-          // 直接传递 onDelete，不需要判断
           return CommunityPostCard(
             post: post,
             onDelete: () => _deletePost(context, ref, post.id),
@@ -239,14 +184,18 @@ class MyPostsPage extends ConsumerWidget {
   /// 构建错误状态
   /// 
   /// 调用者：build()
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
+  Widget _buildError(BuildContext context, WidgetRef ref, Object? error) {
+    final errorMessage = error != null 
+        ? AuthErrorHelper.extractErrorMessage(error)
+        : '加载失败';
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.grey),
           const SizedBox(height: 16),
-          Text('加载失败：${AuthErrorHelper.extractErrorMessage(error)}'),
+          Text('加载失败：$errorMessage'),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => ref.read(myPostsProvider.notifier).refresh(),
