@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import '../core/utils/json_helper.dart';
 import 'enums.dart';
 
 part 'encounter_record.g.dart';
@@ -33,8 +34,8 @@ class TagWithNote {
 
   factory TagWithNote.fromJson(Map<String, dynamic> json) {
     return TagWithNote(
-      tag: json['tag'] as String,
-      note: json['note'] as String?,
+      tag: requireString(json, 'tag'),
+      note: optionalString(json, 'note'),
     );
   }
 }
@@ -104,10 +105,10 @@ class Location {
 
   factory Location.fromJson(Map<String, dynamic> json) {
     return Location(
-      latitude: json['latitude'] as double?,
-      longitude: json['longitude'] as double?,
-      address: json['address'] as String?,
-      placeName: json['placeName'] as String?,
+      latitude: optionalDouble(json, 'latitude'),
+      longitude: optionalDouble(json, 'longitude'),
+      address: optionalString(json, 'address'),
+      placeName: optionalString(json, 'placeName'),
       placeType: json['placeType'] != null
           ? PlaceType.values.firstWhere(
               (e) => e.value == json['placeType'],
@@ -117,9 +118,9 @@ class Location {
               ),
             )
           : null,
-      province: json['province'] as String?,
-      city: json['city'] as String?,
-      area: json['area'] as String?,
+      province: optionalString(json, 'province'),
+      city: optionalString(json, 'city'),
+      area: optionalString(json, 'area'),
     );
   }
 
@@ -250,10 +251,10 @@ class EncounterRecord {
 
   factory EncounterRecord.fromJson(Map<String, dynamic> json) {
     return EncounterRecord(
-      id: json['id'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      id: requireString(json, 'id'),
+      timestamp: DateTime.parse(requireString(json, 'timestamp')),
       location: Location.fromJson(json['location'] as Map<String, dynamic>),
-      description: json['description'] as String?,
+      description: optionalString(json, 'description'),
       tags: (json['tags'] as List)
           .map((t) => TagWithNote.fromJson(t as Map<String, dynamic>))
           .toList(),
@@ -273,10 +274,10 @@ class EncounterRecord {
           'Expected one of: ${EncounterStatus.values.map((e) => e.name).join(", ")}'
         ),
       ),
-      storyLineId: json['storyLineId'] as String?,
-      ifReencounter: json['ifReencounter'] as String?,
-      conversationStarter: json['conversationStarter'] as String?,
-      backgroundMusic: json['backgroundMusic'] as String?,
+      storyLineId: optionalString(json, 'storyLineId'),
+      ifReencounter: optionalString(json, 'ifReencounter'),
+      conversationStarter: optionalString(json, 'conversationStarter'),
+      backgroundMusic: optionalString(json, 'backgroundMusic'),
       weather: json['weather'] != null
           ? (json['weather'] as List)
               .map((w) {
@@ -292,10 +293,10 @@ class EncounterRecord {
               })
               .toList()
           : [],
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      isPinned: json['isPinned'] as bool? ?? false,
-      ownerId: json['ownerId'] as String?,
+      createdAt: DateTime.parse(requireString(json, 'createdAt')),
+      updatedAt: DateTime.parse(requireString(json, 'updatedAt')),
+      isPinned: optionalBool(json, 'isPinned') ?? false,
+      ownerId: optionalString(json, 'ownerId'),
     );
   }
 
