@@ -93,7 +93,17 @@ export interface IRecordRepository {
  * 负责记录数据的持久化操作
  */
 export class RecordRepository implements IRecordRepository {
+  // 字段名映射表：Prisma 字段名 -> 数据库列名
+  private readonly dbColumnMap: Record<string, string> = {
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  };
+
   constructor(private prisma: PrismaClient) {}
+
+  private getDbColumnName(fieldName: string): string {
+    return this.dbColumnMap[fieldName] || fieldName;
+  }
 
   /**
    * 创建或更新记录（使用 upsert）
@@ -319,10 +329,10 @@ export class RecordRepository implements IRecordRepository {
       conditions.push(Prisma.sql`(${Prisma.join(tagConditions, ' OR ')})`);
     }
 
-    // 排序（转换为数据库列名）
+    // 排序
     const sortBy = filters.sortBy || 'createdAt';
     const sortOrder = filters.sortOrder || 'desc';
-    const dbColumnName = sortBy === 'createdAt' ? 'created_at' : 'updated_at';
+    const dbColumnName = this.getDbColumnName(sortBy);
 
     // 构建查询
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
