@@ -408,7 +408,7 @@ export class RecordRepository implements IRecordRepository {
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
     
     const query = Prisma.sql`
-      SELECT * FROM "Record"
+      SELECT * FROM "records"
       ${whereClause}
       ORDER BY ${Prisma.raw(`"${sortBy}" ${sortOrder.toUpperCase()}`)}
       LIMIT ${filters.limit}
@@ -416,7 +416,7 @@ export class RecordRepository implements IRecordRepository {
     `;
 
     const countQuery = Prisma.sql`
-      SELECT COUNT(*) as count FROM "Record"
+      SELECT COUNT(*) as count FROM "records"
       ${whereClause}
     `;
 
