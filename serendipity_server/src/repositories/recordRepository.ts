@@ -294,12 +294,8 @@ export class RecordRepository implements IRecordRepository {
 
     // 场所类型筛选
     if (filters.placeTypes && filters.placeTypes.length > 0) {
-      where.location = { ...where.location, path: ['placeType'], in: filters.placeTypes };
-    }
-
-    // 状态筛选
-    if (filters.statuses && filters.statuses.length > 0) {
-      where.status = { in: filters.statuses };
+      // 场所类型筛选需要使用原始 SQL
+      return this.findByFiltersWithTags(userId, filters);
     }
 
     // 标签筛选（需要特殊处理 JSONB）
