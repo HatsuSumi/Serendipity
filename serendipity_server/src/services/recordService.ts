@@ -98,6 +98,7 @@ export interface IRecordService {
       placeTypes?: string;
       tags?: string;
       statuses?: string;
+      emotionIntensities?: string;
       tagMatchMode?: 'wholeWord' | 'contains';
       sortBy?: 'createdAt' | 'updatedAt';
       sortOrder?: 'asc' | 'desc';
@@ -282,6 +283,7 @@ export class RecordService implements IRecordService {
       placeTypes?: string;
       tags?: string;
       statuses?: string;
+      emotionIntensities?: string;
       tagMatchMode?: 'wholeWord' | 'contains';
       sortBy?: 'createdAt' | 'updatedAt';
       sortOrder?: 'asc' | 'desc';
@@ -319,6 +321,9 @@ export class RecordService implements IRecordService {
     const statuses = filters.statuses
       ? filters.statuses.split(',').map(s => s.trim()).filter(s => s)
       : undefined;
+    const emotionIntensities = filters.emotionIntensities
+      ? filters.emotionIntensities.split(',').map(e => e.trim()).filter(e => e)
+      : undefined;
 
     // 调用 Repository 执行筛选
     const { records, total } = await this.recordRepository.findByFilters(userId, {
@@ -329,6 +334,7 @@ export class RecordService implements IRecordService {
       area: filters.area,
       placeTypes,
       statuses,
+      emotionIntensities,
       tags,
       tagMatchMode: filters.tagMatchMode,
       sortBy: filters.sortBy || 'createdAt',

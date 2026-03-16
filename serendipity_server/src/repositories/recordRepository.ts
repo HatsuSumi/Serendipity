@@ -62,6 +62,7 @@ export interface IRecordRepository {
       area?: string;
       placeTypes?: string[];
       statuses?: string[];
+      emotionIntensities?: string[];
       tags?: string[];
       tagMatchMode?: 'wholeWord' | 'contains';
       sortBy?: 'createdAt' | 'updatedAt';
@@ -258,6 +259,7 @@ export class RecordRepository implements IRecordRepository {
       area?: string;
       placeTypes?: string[];
       statuses?: string[];
+      emotions?: string[];
       tags?: string[];
       tagMatchMode?: 'wholeWord' | 'contains';
       sortBy?: 'createdAt' | 'updatedAt';
@@ -317,6 +319,14 @@ export class RecordRepository implements IRecordRepository {
         (status) => Prisma.sql`status = ${status}`
       );
       conditions.push(Prisma.sql`(${Prisma.join(statusConditions, ' OR ')})`);
+    }
+
+    // 情绪强度筛选
+    if (filters.emotionIntensities && filters.emotionIntensities.length > 0) {
+      const emotionConditions = filters.emotionIntensities.map(
+        (emotion) => Prisma.sql`emotion = ${emotion}`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(emotionConditions, ' OR ')})`);
     }
 
     // 标签筛选
