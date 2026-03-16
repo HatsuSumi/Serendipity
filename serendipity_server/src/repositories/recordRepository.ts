@@ -325,11 +325,12 @@ export class RecordRepository implements IRecordRepository {
 
     // 构建查询
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
+    const orderByClause = Prisma.sql`ORDER BY ${Prisma.raw(`"${sortBy}" ${sortOrder.toUpperCase()}`)}`;
     
     const query = Prisma.sql`
       SELECT * FROM "records"
       ${whereClause}
-      ORDER BY "${Prisma.raw(sortBy)}" ${Prisma.raw(sortOrder.toUpperCase())}
+      ${orderByClause}
       LIMIT ${filters.limit}
       OFFSET ${filters.offset}
     `;
