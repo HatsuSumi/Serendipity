@@ -102,7 +102,10 @@ export class RecordRepository implements IRecordRepository {
   constructor(private prisma: PrismaClient) {}
 
   private getDbColumnName(fieldName: string): string {
-    return this.dbColumnMap[fieldName] || fieldName;
+    if (!this.dbColumnMap[fieldName]) {
+      throw new Error(`Unknown field name: ${fieldName}`);
+    }
+    return this.dbColumnMap[fieldName];
   }
 
   /**
