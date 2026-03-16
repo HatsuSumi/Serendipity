@@ -259,7 +259,7 @@ export class RecordRepository implements IRecordRepository {
       area?: string;
       placeTypes?: string[];
       statuses?: string[];
-      emotions?: string[];
+      emotionIntensities?: string[];
       tags?: string[];
       tagMatchMode?: 'wholeWord' | 'contains';
       sortBy?: 'createdAt' | 'updatedAt';
