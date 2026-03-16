@@ -259,6 +259,7 @@ class CommunityRepository {
   /// - area: 区县（可选）
   /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
   /// - tags: 标签名称列表（可选，多选OR逻辑）
+  /// - statuses: 状态列表（可选，多选OR逻辑）
   /// - tagMatchMode: 标签匹配模式（wholeWord 或 contains）
   /// - limit: 每页数量
   /// 
@@ -276,6 +277,7 @@ class CommunityRepository {
     String? area,
     List<String>? placeTypes,
     List<String>? tags,
+    List<String>? statuses,
     String tagMatchMode = 'contains',
     int limit = 20,
   }) async {
@@ -298,6 +300,7 @@ class CommunityRepository {
         area: area,
         placeTypes: placeTypes,
         tags: tags,
+        statuses: statuses,
         tagMatchMode: tagMatchMode,
         limit: limit,
       );

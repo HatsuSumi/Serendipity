@@ -132,6 +132,7 @@ class MyPostsPage extends ConsumerWidget {
         area: filterCriteria.area,
         placeTypes: filterCriteria.placeTypes?.map((t) => t.value).toList(),
         tags: filterCriteria.tags,
+        statuses: filterCriteria.statuses?.map((s) => s.name).toList(),
         tagMatchMode: filterCriteria.tagMatchMode.value,
         limit: 100,
       );
