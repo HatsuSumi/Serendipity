@@ -280,14 +280,6 @@ export class RecordRepository implements IRecordRepository {
       throw new Error('startDate must be before endDate');
     }
 
-    console.log('DEBUG findByFilters:', {
-      userId,
-      placeTypes: filters.placeTypes,
-      statuses: filters.statuses,
-      tags: filters.tags,
-      sortBy: filters.sortBy,
-    });
-
     // 构建 WHERE 条件
     const conditions: Prisma.Sql[] = [];
     conditions.push(Prisma.sql`user_id = ${userId}`);
