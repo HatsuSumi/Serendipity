@@ -47,7 +47,7 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   @override
   void initState() {
     super.initState();
-    _initializeFromProvider();
+        _initializeFromProvider();
   }
 
   /// 从 Provider 读取筛选条件并初始化
