@@ -406,8 +406,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// 
   /// 设计说明：
   /// - 保存筛选条件到 Provider
-  /// - 如果有筛选条件，立即调用后端筛选
-  /// - 如果没有筛选条件，刷新本地列表
+  /// - 触发 TimelinePage 重新构建，从而调用 _fetchFilteredRecords
   Future<void> filterRecords({
     DateTime? startDate,
     DateTime? endDate,
@@ -427,7 +426,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     String? conversationStarterKeyword,
     String? backgroundMusicKeyword,
   }) async {
-    // 保存筛选条件到 Provider
+    // 保存筛选条件到 Provider（会触发 TimelinePage 重新构建）
     ref.read(recordsFilterProvider.notifier).state = RecordsFilterCriteria(
       startDate: startDate,
       endDate: endDate,
