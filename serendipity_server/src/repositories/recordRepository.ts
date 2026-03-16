@@ -417,6 +417,12 @@ export class RecordRepository implements IRecordRepository {
 
     const total = Number(countResult[0].count);
 
+    console.log('DEBUG query result:', {
+      recordsCount: records.length,
+      totalCount: total,
+      firstRecordLocation: records[0]?.location,
+    });
+
     return { records, total };
   }
 
