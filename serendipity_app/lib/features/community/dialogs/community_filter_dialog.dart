@@ -266,13 +266,15 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
           if (isStartDate) {
             _publishStartDate = picked;
           } else {
-            _publishEndDate = picked;
+            // 结束日期：调整到当天 23:59:59，确保包含整个当天的记录
+            _publishEndDate = picked.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
           }
         } else {
           if (isStartDate) {
             _startDate = picked;
           } else {
-            _endDate = picked;
+            // 结束日期：调整到当天 23:59:59，确保包含整个当天的记录
+            _endDate = picked.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
           }
         }
       });
