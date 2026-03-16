@@ -114,6 +114,7 @@ export class RecordController {
       const tags = getQueryAsString(req.query.tags);
       const statuses = getQueryAsString(req.query.statuses);
       const emotionIntensities = getQueryAsString(req.query.emotionIntensities);
+      const weathers = getQueryAsString(req.query.weathers);
       const tagMatchMode = getQueryAsString(req.query.tagMatchMode);
       const sortBy = getQueryAsString(req.query.sortBy) as 'createdAt' | 'updatedAt' | undefined;
       const sortOrder = getQueryAsString(req.query.sortOrder) as 'asc' | 'desc' | undefined;
@@ -130,6 +131,7 @@ export class RecordController {
         tags,
         statuses,
         emotionIntensities,
+        weathers,
         tagMatchMode: tagMatchMode as 'wholeWord' | 'contains' | undefined,
         sortBy,
         sortOrder,

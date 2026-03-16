@@ -153,6 +153,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     List<String>? tags,
     List<String>? statuses,
     List<String>? emotionIntensities,
+    List<String>? weathers,
     String tagMatchMode = 'contains',
     String sortBy = 'createdAt',
     String sortOrder = 'desc',
@@ -207,6 +208,9 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       }
       if (emotionIntensities != null && emotionIntensities.isNotEmpty) {
         queryParams['emotionIntensities'] = emotionIntensities.join(',');
+      }
+      if (weathers != null && weathers.isNotEmpty) {
+        queryParams['weathers'] = weathers.join(',');
       }
       if (tagMatchMode == 'wholeWord') {
         queryParams['tagMatchMode'] = tagMatchMode;

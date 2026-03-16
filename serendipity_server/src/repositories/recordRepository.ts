@@ -63,6 +63,7 @@ export interface IRecordRepository {
       placeTypes?: string[];
       statuses?: string[];
       emotionIntensities?: string[];
+      weathers?: string[];
       tags?: string[];
       tagMatchMode?: 'wholeWord' | 'contains';
       sortBy?: 'createdAt' | 'updatedAt';
@@ -260,6 +261,7 @@ export class RecordRepository implements IRecordRepository {
       placeTypes?: string[];
       statuses?: string[];
       emotionIntensities?: string[];
+      weathers?: string[];
       tags?: string[];
       tagMatchMode?: 'wholeWord' | 'contains';
       sortBy?: 'createdAt' | 'updatedAt';
@@ -327,6 +329,14 @@ export class RecordRepository implements IRecordRepository {
         (emotion) => Prisma.sql`emotion = ${emotion}`
       );
       conditions.push(Prisma.sql`(${Prisma.join(emotionConditions, ' OR ')})`);
+    }
+
+    // 天气筛选
+    if (filters.weathers && filters.weathers.length > 0) {
+      const weatherConditions = filters.weathers.map(
+        (weather) => Prisma.sql`weather @> ${JSON.stringify([weather])}`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(weatherConditions, ' OR ')})`);
     }
 
     // 标签筛选

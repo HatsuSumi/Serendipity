@@ -154,6 +154,7 @@ abstract class IRemoteDataRepository {
     List<String>? tags,
     List<String>? statuses,
     List<String>? emotionIntensities,
+    List<String>? weathers,
     String tagMatchMode = 'contains',
     String sortBy = 'createdAt',
     String sortOrder = 'desc',

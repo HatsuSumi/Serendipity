@@ -214,6 +214,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       tagMatchMode: filterCriteria.tagMatchMode.value,
       statuses: filterCriteria.statuses?.map((s) => s.name).toList(),
       emotionIntensities: filterCriteria.emotionIntensities?.map((e) => e.name).toList(),
+      weathers: filterCriteria.weathers?.map((w) => w.value.toString()).toList(),
       sortBy: sortBy,
       sortOrder: sortOrder,
       limit: 100,
