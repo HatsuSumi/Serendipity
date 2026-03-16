@@ -230,8 +230,8 @@ export class RecordRepository implements IRecordRepository {
    * 筛选记录（支持多条件组合）
    * 
    * 设计原则：
-   * - Fail Fast：参数验证在方法开始
-   * - 复用社区筛选的逻辑框架
+   * - 统一使用原始 SQL 处理所有筛选逻辑
+   * - 支持 JSONB 字段的多值筛选（placeType、tags）
    * - 支持标签的全词匹配和包含匹配
    * - 支持排序和分页
    */
@@ -253,7 +253,7 @@ export class RecordRepository implements IRecordRepository {
       offset: number;
     }
   ): Promise<{ records: Record[]; total: number }> {
-    // Fail Fast: 参数验证
+    // 参数验证
     if (!userId || userId.trim() === '') {
       throw new Error('userId cannot be empty');
     }
@@ -267,88 +267,8 @@ export class RecordRepository implements IRecordRepository {
       throw new Error('startDate must be before endDate');
     }
 
-    // 构建 where 条件
-    const where: any = { userId };
-
-    // 时间范围筛选
-    if (filters.startDate || filters.endDate) {
-      where.timestamp = {};
-      if (filters.startDate) {
-        where.timestamp.gte = filters.startDate;
-      }
-      if (filters.endDate) {
-        where.timestamp.lte = filters.endDate;
-      }
-    }
-
-    // 地点筛选
-    if (filters.province) {
-      where.location = { path: ['province'], equals: filters.province };
-    }
-    if (filters.city) {
-      where.location = { ...where.location, path: ['city'], equals: filters.city };
-    }
-    if (filters.area) {
-      where.location = { ...where.location, path: ['area'], equals: filters.area };
-    }
-
-    // 场所类型筛选
-    if (filters.placeTypes && filters.placeTypes.length > 0) {
-      // 场所类型筛选需要使用原始 SQL
-      return this.findByFiltersWithTags(userId, filters);
-    }
-
-    // 标签筛选（需要特殊处理 JSONB）
-    if (filters.tags && filters.tags.length > 0) {
-      // 如果有标签筛选，使用原始 SQL 查询
-      return this.findByFiltersWithTags(userId, filters);
-    }
-
-    // 排序
-    const sortBy = filters.sortBy || 'createdAt';
-    const sortOrder = filters.sortOrder || 'desc';
-    const orderBy: any = {};
-    orderBy[sortBy] = sortOrder;
-
-    // 执行查询
-    const [records, total] = await Promise.all([
-      this.prisma.record.findMany({
-        where,
-        orderBy,
-        take: filters.limit,
-        skip: filters.offset,
-      }),
-      this.prisma.record.count({ where }),
-    ]);
-
-    return { records, total };
-  }
-
-  /**
-   * 带标签筛选的查询（使用原始 SQL）
-   * @private
-   */
-  private async findByFiltersWithTags(
-    userId: string,
-    filters: {
-      startDate?: Date;
-      endDate?: Date;
-      province?: string;
-      city?: string;
-      area?: string;
-      placeTypes?: string[];
-      statuses?: string[];
-      tags?: string[];
-      tagMatchMode?: 'wholeWord' | 'contains';
-      sortBy?: 'createdAt' | 'updatedAt';
-      sortOrder?: 'asc' | 'desc';
-      limit: number;
-      offset: number;
-    }
-  ): Promise<{ records: Record[]; total: number }> {
+    // 构建 WHERE 条件
     const conditions: Prisma.Sql[] = [];
-    const tagMatchMode = filters.tagMatchMode || 'contains';
-
     conditions.push(Prisma.sql`user_id = ${userId}`);
 
     // 时间范围
@@ -382,15 +302,14 @@ export class RecordRepository implements IRecordRepository {
 
     // 标签筛选
     if (filters.tags && filters.tags.length > 0) {
+      const tagMatchMode = filters.tagMatchMode || 'contains';
       const tagConditions = filters.tags.map(tag => {
         if (tagMatchMode === 'wholeWord') {
-          // 全词匹配
           return Prisma.sql`EXISTS (
             SELECT 1 FROM jsonb_array_elements(tags) AS t
             WHERE t->>'tag' = ${tag}
           )`;
         } else {
-          // 包含匹配
           return Prisma.sql`EXISTS (
             SELECT 1 FROM jsonb_array_elements(tags) AS t
             WHERE t->>'tag' ILIKE ${`%${tag}%`}
@@ -403,8 +322,6 @@ export class RecordRepository implements IRecordRepository {
     // 排序
     const sortBy = filters.sortBy || 'createdAt';
     const sortOrder = filters.sortOrder || 'desc';
-    
-    // 将驼峰命名转换为蛇形命名
     const columnName = sortBy === 'createdAt' ? 'created_at' : 'updated_at';
 
     // 构建查询
@@ -444,8 +361,6 @@ export class RecordRepository implements IRecordRepository {
   ): Promise<Record> {
     const updateData = this.buildUpdateData(data);
 
-    // 使用 updateMany 可以在 where 中使用复合条件
-    // 但为了保持返回类型一致，我们先查询再更新
     const record = await this.prisma.record.update({
       where: { id },
       data: updateData,
@@ -474,7 +389,6 @@ export class RecordRepository implements IRecordRepository {
       updatedAt: new Date(data.updatedAt),
     };
 
-    // 使用对象映射简化条件判断
     const fieldMappings: Array<{
       key: keyof UpdateRecordDto;
       transform?: (value: any) => any;
@@ -502,4 +416,3 @@ export class RecordRepository implements IRecordRepository {
     return updateData;
   }
 }
-
