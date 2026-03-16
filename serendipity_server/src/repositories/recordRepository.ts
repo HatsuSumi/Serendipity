@@ -403,6 +403,9 @@ export class RecordRepository implements IRecordRepository {
     // 排序
     const sortBy = filters.sortBy || 'createdAt';
     const sortOrder = filters.sortOrder || 'desc';
+    
+    // 将驼峰命名转换为蛇形命名
+    const columnName = sortBy === 'createdAt' ? 'created_at' : 'updated_at';
 
     // 构建查询
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
@@ -410,7 +413,7 @@ export class RecordRepository implements IRecordRepository {
     const query = Prisma.sql`
       SELECT * FROM "records"
       ${whereClause}
-      ORDER BY ${Prisma.raw(`"${sortBy}" ${sortOrder.toUpperCase()}`)}
+      ORDER BY ${Prisma.raw(`"${columnName}" ${sortOrder.toUpperCase()}`)}
       LIMIT ${filters.limit}
       OFFSET ${filters.offset}
     `;
