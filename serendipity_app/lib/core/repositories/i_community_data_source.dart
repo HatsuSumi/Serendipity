@@ -111,6 +111,7 @@ abstract class ICommunityDataSource {
   /// - area: 区县
   /// - placeTypes: 场所类型列表
   /// - tags: 标签名称列表
+  /// - statuses: 状态列表
   /// - tagMatchMode: 标签匹配模式（wholeWord 或 contains）
   /// - limit: 每页数量
   /// 
@@ -125,6 +126,7 @@ abstract class ICommunityDataSource {
     String? area,
     List<String>? placeTypes,
     List<String>? tags,
+    List<String>? statuses,
     String tagMatchMode = 'contains',
     int limit = 20,
   });

@@ -98,6 +98,7 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
     String? area,
     List<String>? placeTypes,
     List<String>? tags,
+    List<String>? statuses,
     String tagMatchMode = 'contains',
     int limit = 20,
   }) async {
@@ -111,6 +112,7 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
       area: area,
       placeTypes: placeTypes,
       tags: tags,
+      statuses: statuses,
       tagMatchMode: tagMatchMode,
       limit: limit,
     );
