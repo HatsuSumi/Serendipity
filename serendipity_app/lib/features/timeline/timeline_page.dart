@@ -204,9 +204,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       final sortBy = _getSortByField(_currentSort);
       final sortOrder = _getSortOrder(_currentSort);
 
-      // DEBUG 日志
-      print('DEBUG _fetchFilteredRecords: filterCriteria.statuses=${filterCriteria.statuses}');
-
       return await ref.read(recordsProvider.notifier).filterRecordsFromServer(
         startDate: filterCriteria.startDate,
         endDate: filterCriteria.endDate,
@@ -500,7 +497,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                     const SizedBox(height: 8),
                     Builder(
                       builder: (context) {
-                        print('DEBUG description: description=${record.description}, keyword=${filterCriteria.descriptionKeyword}');
                         return buildHighlightedText(
                           _isMasked ? _maskText(record.description!) : record.description!,
                           keyword: _isMasked ? null : filterCriteria.descriptionKeyword,
@@ -907,8 +903,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   ) {
     final displayContent = _isMasked ? _maskText(content) : content;
     final displayKeyword = _isMasked ? null : keyword;
-    
-    print('DEBUG _buildFilteredField: label=$label, content=$content, keyword=$keyword, displayContent=$displayContent, displayKeyword=$displayKeyword');
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
