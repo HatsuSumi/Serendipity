@@ -285,6 +285,7 @@ export class RecordService implements IRecordService {
       tags?: string;
       statuses?: string;
       emotionIntensities?: string;
+      weathers?: string;
       tagMatchMode?: 'wholeWord' | 'contains';
       sortBy?: 'createdAt' | 'updatedAt';
       sortOrder?: 'asc' | 'desc';
