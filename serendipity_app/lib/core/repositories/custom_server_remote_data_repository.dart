@@ -208,9 +208,6 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
         queryParams['tagMatchMode'] = tagMatchMode;
       }
 
-      // DEBUG 日志
-      print('DEBUG CustomServerRemoteDataRepository.filterRecords: queryParams=$queryParams');
-
       final response = await _httpClient.get(
         '${ServerConfig.records}/filter',
         queryParams: queryParams,

@@ -320,16 +320,6 @@ export class RecordService implements IRecordService {
       ? filters.statuses.split(',').map(s => s.trim()).filter(s => s)
       : undefined;
 
-    // DEBUG 日志
-    logger.info('DEBUG filterRecords', {
-      userId,
-      statuses,
-      tags,
-      placeTypes,
-      startDate,
-      endDate,
-    });
-
     // 调用 Repository 执行筛选
     const { records, total } = await this.recordRepository.findByFilters(userId, {
       startDate,
@@ -345,13 +335,6 @@ export class RecordService implements IRecordService {
       sortOrder: filters.sortOrder || 'desc',
       limit: filters.limit,
       offset: filters.offset,
-    });
-
-    // DEBUG 日志：查询结果
-    logger.info('DEBUG filterRecords result', {
-      total,
-      recordCount: records.length,
-      statuses: records.map(r => r.status),
     });
 
     return {

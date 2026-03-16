@@ -490,9 +490,6 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       throw Exception('必须登录后才可筛选');
     }
 
-    // DEBUG 日志
-    print('DEBUG filterRecordsFromServer: statuses=$statuses');
-
     try {
       // 直接调用远程数据仓库的筛选方法
       final remoteData = ref.read(remoteDataRepositoryProvider);
