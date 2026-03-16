@@ -74,9 +74,12 @@ class TimeRangeSelector extends StatelessWidget {
 
     if (picked != null) {
       if (isStartDate) {
+        // 开始日期：使用当天 00:00:00
         onStartDateChanged(picked);
       } else {
-        onEndDateChanged(picked);
+        // 结束日期：调整到当天 23:59:59，确保包含整个当天的记录
+        final endOfDay = picked.add(const Duration(days: 1)).subtract(const Duration(seconds: 1));
+        onEndDateChanged(endOfDay);
       }
     }
   }

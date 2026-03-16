@@ -290,9 +290,6 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
         ? null
         : _backgroundMusicController.text.trim();
 
-    // DEBUG 日志
-    print('DEBUG _applyFilter: _selectedStatuses=$_selectedStatuses, isEmpty=${_selectedStatuses.isEmpty}');
-
     await ref.read(recordsProvider.notifier).filterRecords(
           startDate: _startDate,
           endDate: _endDate,
