@@ -246,7 +246,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 构建错误 Widget
   Widget _buildErrorWidget(BuildContext context, WidgetRef ref, Object? error) {
-    final errorMessage = AuthErrorHelper.extractErrorMessage(error);
+    final errorMessage = error != null 
+        ? AuthErrorHelper.extractErrorMessage(error)
+        : '加载失败';
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
