@@ -363,6 +363,17 @@ export class RecordRepository implements IRecordRepository {
     const sortOrder = filters.sortOrder || 'desc';
     const dbColumnName = this.getDbColumnName(sortBy);
 
+    console.log('DEBUG findByFilters conditions:', {
+      province: filters.province,
+      city: filters.city,
+      area: filters.area,
+      placeTypes: filters.placeTypes,
+      statuses: filters.statuses,
+      emotionIntensities: filters.emotionIntensities,
+      weathers: filters.weathers,
+      conditionsCount: conditions.length,
+    });
+
     // 构建查询
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
     
