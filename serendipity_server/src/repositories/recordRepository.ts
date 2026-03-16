@@ -319,18 +319,18 @@ export class RecordRepository implements IRecordRepository {
       conditions.push(Prisma.sql`(${Prisma.join(tagConditions, ' OR ')})`);
     }
 
-    // 排序
+    // 排序（转换为数据库列名）
     const sortBy = filters.sortBy || 'createdAt';
     const sortOrder = filters.sortOrder || 'desc';
+    const dbColumnName = sortBy === 'createdAt' ? 'created_at' : 'updated_at';
 
     // 构建查询
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
-    const orderByClause = Prisma.sql`ORDER BY ${Prisma.raw(`"${sortBy}" ${sortOrder.toUpperCase()}`)}`;
     
     const query = Prisma.sql`
       SELECT * FROM "records"
       ${whereClause}
-      ${orderByClause}
+      ORDER BY "${Prisma.raw(dbColumnName)}" ${Prisma.raw(sortOrder.toUpperCase())}
       LIMIT ${filters.limit}
       OFFSET ${filters.offset}
     `;
