@@ -355,7 +355,24 @@ export class RecordRepository implements IRecordRepository {
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
     
     const query = Prisma.sql`
-      SELECT * FROM "records"
+      SELECT 
+        id,
+        user_id as "userId",
+        timestamp,
+        location,
+        description,
+        tags,
+        emotion,
+        status,
+        story_line_id as "storyLineId",
+        if_reencounter as "ifReencounter",
+        conversation_starter as "conversationStarter",
+        background_music as "backgroundMusic",
+        weather,
+        is_pinned as "isPinned",
+        created_at as "createdAt",
+        updated_at as "updatedAt"
+      FROM "records"
       ${whereClause}
       ORDER BY "${Prisma.raw(dbColumnName)}" ${Prisma.raw(sortOrder.toUpperCase())}
       LIMIT ${filters.limit}
