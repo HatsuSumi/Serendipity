@@ -313,12 +313,12 @@ export class RecordRepository implements IRecordRepository {
 
     // 场所类型筛选
     if (filters.placeTypes && filters.placeTypes.length > 0) {
-      conditions.push(Prisma.sql`location->>'placeType' = ANY(${filters.placeTypes})`);
+      conditions.push(Prisma.sql`location->>'placeType' = ANY(CAST(${JSON.stringify(filters.placeTypes)} AS text[]))`);
     }
 
     // 状态筛选
     if (filters.statuses && filters.statuses.length > 0) {
-      conditions.push(Prisma.sql`status = ANY(${filters.statuses})`);
+      conditions.push(Prisma.sql`status = ANY(CAST(${JSON.stringify(filters.statuses)} AS text[]))`);
     }
 
     // 标签筛选
