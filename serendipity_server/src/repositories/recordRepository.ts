@@ -374,6 +374,12 @@ export class RecordRepository implements IRecordRepository {
       conditionsCount: conditions.length,
     });
 
+    // 先查询所有用户的记录，看看 location 字段的实际内容
+    const allRecords = await this.prisma.$queryRaw<Record[]>(
+      Prisma.sql`SELECT id, location FROM "records" WHERE user_id = ${userId} LIMIT 5`
+    );
+    console.log('DEBUG sample records location:', allRecords.map(r => ({ id: r.id, location: r.location })));
+
     // 构建查询
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
     
