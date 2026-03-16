@@ -412,6 +412,9 @@ export class RecordRepository implements IRecordRepository {
       this.prisma.$queryRaw<[{ count: bigint }]>(countQuery),
     ]);
 
+    console.log('DEBUG SQL query:', query.strings);
+    console.log('DEBUG SQL values:', query.values);
+
     const total = Number(countResult[0].count);
 
     return { records, total };
