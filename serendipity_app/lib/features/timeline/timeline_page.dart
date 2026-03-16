@@ -550,7 +550,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                           child: shouldHighlight && filterCriteria.tags != null && filterCriteria.tags!.isNotEmpty
                               ? buildHighlightedText(
                                   _isMasked ? _maskText(tag.tag) : tag.tag,
-                                  keyword: _isMasked ? null : filterCriteria.tags!.first,
+                                  keywords: _isMasked ? null : filterCriteria.tags,
                                   highlightColor: statusColor.withValues(alpha: 0.3),
                                   textStyle: TextStyle(
                                     fontSize: 12,

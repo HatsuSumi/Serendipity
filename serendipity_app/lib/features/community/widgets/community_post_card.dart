@@ -197,7 +197,7 @@ class CommunityPostCard extends StatelessWidget {
               child: shouldHighlight && highlightKeywords != null && highlightKeywords!.isNotEmpty
                   ? buildHighlightedText(
                       tagWithNote.tag,
-                      keyword: highlightKeywords!.first,
+                      keywords: highlightKeywords,
                       highlightColor: theme.colorScheme.primary.withValues(alpha: 0.3),
                       textStyle: theme.textTheme.bodySmall,
                     )

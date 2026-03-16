@@ -627,22 +627,26 @@ List<String>? parseTags(String input) {
 /// 
 /// 参数：
 /// - text: 原始文本
-/// - keyword: 要高亮的关键词（为空时返回普通文本）
+/// - keywords: 要高亮的关键词列表（为空时返回普通文本）
 /// - highlightColor: 高亮背景色
 /// - textStyle: 文本样式
 /// - maxLines: 最大行数
 /// - overflow: 溢出处理
 /// 
-/// 调用者：记录卡片（高亮筛选关键词）
+/// 调用者：记录卡片、社区帖子卡片（高亮筛选关键词）
 Widget buildHighlightedText(
   String text, {
+  List<String>? keywords,
   String? keyword,
   required Color highlightColor,
   TextStyle? textStyle,
   int? maxLines,
   TextOverflow? overflow,
 }) {
-  if (keyword == null || keyword.isEmpty) {
+  // 兼容旧的单关键词参数
+  final keywordList = keywords ?? (keyword != null ? [keyword] : []);
+  
+  if (keywordList.isEmpty) {
     return Text(
       text,
       style: textStyle,
@@ -651,9 +655,10 @@ Widget buildHighlightedText(
     );
   }
 
-  // 使用 allMatches 找到所有匹配位置
-  final regex = RegExp(keyword, caseSensitive: false);
-  final matches = regex.allMatches(text);
+  // 构建正则表达式，匹配任意一个关键词
+  final pattern = keywordList.map((k) => RegExp.escape(k)).join('|');
+  final regex = RegExp(pattern, caseSensitive: false);
+  final matches = regex.allMatches(text).toList();
   
   if (matches.isEmpty) {
     return Text(
