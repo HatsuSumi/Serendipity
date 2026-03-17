@@ -252,7 +252,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
         ],
       ),
       body: communityStateAsync.when(
-        data: (communityState) => _buildPostsList(communityState),
+        data: (communityState) => _buildPostsList(communityState, communityStateAsync.isLoading),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
@@ -284,7 +284,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
   /// - 社区帖子高度差异很大（100px-300px+）
   /// - prototypeItem 不适用于高度差异大的场景
   /// - 使用默认的动态高度计算，确保布局正确
-  Widget _buildPostsList(CommunityState communityState) {
+  Widget _buildPostsList(CommunityState communityState, bool isLoading) {
     final posts = communityState.posts;
     final filterCriteria = ref.watch(communityFilterProvider);
     final isFiltering = filterCriteria.isActive;
@@ -317,7 +317,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
         itemBuilder: (context, index) {
           // 加载更多指示器
           if (index == posts.length) {
-            return _buildLoadingIndicator();
+            return _buildLoadingIndicator(communityState, isLoading);
           }
 
           // 帖子卡片
@@ -335,21 +335,18 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
   }
 
   /// 构建加载更多指示器
-  /// 
+  ///
   /// 优化说明：
-  /// - 使用 Provider 的状态判断，遵循"单一数据源"原则
-  /// - 移除本地 _isLoadingMore 状态，避免状态重复
-  Widget _buildLoadingIndicator() {
-    final communityStateAsync = ref.read(communityProvider);
-    final communityState = communityStateAsync.value;
-    
-    // 如果没有更多数据或正在加载，不显示加载指示器
-    if (communityState == null || !communityState.hasMore) {
+  /// - 接收已读取的状态参数，避免在 itemBuilder 中重复 ref.read
+  /// - 遵循"单一数据源"原则
+  Widget _buildLoadingIndicator(CommunityState communityState, bool isLoading) {
+    // 没有更多数据，只留底部空白
+    if (!communityState.hasMore) {
       return const SizedBox(height: 80);
     }
 
-    // 如果正在加载，显示加载指示器
-    if (communityStateAsync.isLoading) {
+    // 正在加载，显示指示器
+    if (isLoading) {
       return const Padding(
         padding: EdgeInsets.all(16.0),
         child: Center(

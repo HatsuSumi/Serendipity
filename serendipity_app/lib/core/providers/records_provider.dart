@@ -75,21 +75,50 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   SyncService get _syncService => ref.read(syncServiceProvider);
 
   /// 应用筛选条件到记录列表
-  /// 
+  ///
   /// 职责：
   /// - 根据筛选条件过滤记录
   /// - 支持多条件组合（AND 逻辑）
-  /// 
+  ///
   /// 设计原则：
+  /// - 循环不变量前置：所有与单条记录无关的计算在循环外完成
   /// - Fail Fast：条件不合法时直接返回空列表
-  /// - 高效过滤：使用 where 链式调用
   /// - 不修改原列表：返回新列表
-  /// 
+  ///
   /// 调用者：build()
   List<EncounterRecord> _applyFilterCriteria(
     List<EncounterRecord> records,
     RecordsFilterCriteria criteria,
   ) {
+    // 预计算循环不变量（只计算一次，不在每条记录里重复计算）
+    final placeTypeSet = criteria.placeTypes?.isNotEmpty == true
+        ? Set<PlaceType>.from(criteria.placeTypes!)
+        : null;
+    final statusSet = criteria.statuses?.isNotEmpty == true
+        ? Set<EncounterStatus>.from(criteria.statuses!)
+        : null;
+    final emotionSet = criteria.emotionIntensities?.isNotEmpty == true
+        ? Set<EmotionIntensity>.from(criteria.emotionIntensities!)
+        : null;
+    final weatherSet = criteria.weathers?.isNotEmpty == true
+        ? Set<Weather>.from(criteria.weathers!)
+        : null;
+    final tagList = criteria.tags?.isNotEmpty == true ? criteria.tags! : null;
+    final isWholeWord = criteria.tagMatchMode == TagMatchMode.wholeWord;
+    // 关键词全部转小写，避免在每条记录里重复调用 toLowerCase()
+    final descKw = criteria.descriptionKeyword?.isNotEmpty == true
+        ? criteria.descriptionKeyword!.toLowerCase()
+        : null;
+    final reencounterKw = criteria.ifReencounterKeyword?.isNotEmpty == true
+        ? criteria.ifReencounterKeyword!.toLowerCase()
+        : null;
+    final conversationKw = criteria.conversationStarterKeyword?.isNotEmpty == true
+        ? criteria.conversationStarterKeyword!.toLowerCase()
+        : null;
+    final musicKw = criteria.backgroundMusicKeyword?.isNotEmpty == true
+        ? criteria.backgroundMusicKeyword!.toLowerCase()
+        : null;
+
     return records.where((record) {
       // 时间范围筛选（错过时间）
       if (criteria.startDate != null && record.timestamp.isBefore(criteria.startDate!)) {
@@ -107,31 +136,24 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
         return false;
       }
 
-      // 场所类型筛选
-      if (criteria.placeTypes != null && criteria.placeTypes!.isNotEmpty) {
-        if (!criteria.placeTypes!.contains(record.location.placeType)) {
-          return false;
-        }
+      // 场所类型筛选（Set O(1) 查找）
+      if (placeTypeSet != null && !placeTypeSet.contains(record.location.placeType)) {
+        return false;
       }
 
-      // 状态筛选
-      if (criteria.statuses != null && criteria.statuses!.isNotEmpty) {
-        if (!criteria.statuses!.contains(record.status)) {
-          return false;
-        }
+      // 状态筛选（Set O(1) 查找）
+      if (statusSet != null && !statusSet.contains(record.status)) {
+        return false;
       }
 
-      // 情绪强度筛选
-      if (criteria.emotionIntensities != null && criteria.emotionIntensities!.isNotEmpty) {
-        if (!criteria.emotionIntensities!.contains(record.emotion)) {
-          return false;
-        }
+      // 情绪强度筛选（Set O(1) 查找）
+      if (emotionSet != null && !emotionSet.contains(record.emotion)) {
+        return false;
       }
 
-      // 天气筛选
-      if (criteria.weathers != null && criteria.weathers!.isNotEmpty) {
-        final hasWeatherMatch = record.weather.any((w) => criteria.weathers!.contains(w));
-        if (!hasWeatherMatch) return false;
+      // 天气筛选（Set O(1) 查找）
+      if (weatherSet != null && !record.weather.any(weatherSet.contains)) {
+        return false;
       }
 
       // 地区筛选
@@ -146,46 +168,45 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
 
       // 标签筛选
-      if (criteria.tags != null && criteria.tags!.isNotEmpty) {
-        final recordTags = record.tags.map((t) => t.tag).toList();
-        final hasMatch = criteria.tags!.any((tag) {
-          if (criteria.tagMatchMode == TagMatchMode.wholeWord) {
-            return recordTags.contains(tag);
-          } else {
-            return recordTags.any((recordTag) => recordTag.contains(tag));
-          }
-        });
+      // - 全词匹配：record tags 转 Set，O(1) 查找
+      // - 包含匹配：线性扫描，但 tagMatchMode 判断已提到循环外
+      if (tagList != null) {
+        final bool hasMatch;
+        if (isWholeWord) {
+          final recordTagSet = record.tags.map((t) => t.tag).toSet();
+          hasMatch = tagList.any(recordTagSet.contains);
+        } else {
+          hasMatch = tagList.any(
+            (kw) => record.tags.any((t) => t.tag.contains(kw)),
+          );
+        }
         if (!hasMatch) return false;
       }
 
-      // 描述关键词筛选
-      if (criteria.descriptionKeyword != null && criteria.descriptionKeyword!.isNotEmpty) {
-        final description = record.description ?? '';
-        if (!description.toLowerCase().contains(criteria.descriptionKeyword!.toLowerCase())) {
+      // 描述关键词筛选（关键词已预转小写）
+      if (descKw != null) {
+        if (!(record.description ?? '').toLowerCase().contains(descKw)) {
           return false;
         }
       }
 
       // 如果再遇备忘关键词筛选
-      if (criteria.ifReencounterKeyword != null && criteria.ifReencounterKeyword!.isNotEmpty) {
-        final ifReencounter = record.ifReencounter ?? '';
-        if (!ifReencounter.toLowerCase().contains(criteria.ifReencounterKeyword!.toLowerCase())) {
+      if (reencounterKw != null) {
+        if (!(record.ifReencounter ?? '').toLowerCase().contains(reencounterKw)) {
           return false;
         }
       }
 
       // 对话契机关键词筛选
-      if (criteria.conversationStarterKeyword != null && criteria.conversationStarterKeyword!.isNotEmpty) {
-        final conversationStarter = record.conversationStarter ?? '';
-        if (!conversationStarter.toLowerCase().contains(criteria.conversationStarterKeyword!.toLowerCase())) {
+      if (conversationKw != null) {
+        if (!(record.conversationStarter ?? '').toLowerCase().contains(conversationKw)) {
           return false;
         }
       }
 
       // 背景音乐关键词筛选
-      if (criteria.backgroundMusicKeyword != null && criteria.backgroundMusicKeyword!.isNotEmpty) {
-        final backgroundMusic = record.backgroundMusic ?? '';
-        if (!backgroundMusic.toLowerCase().contains(criteria.backgroundMusicKeyword!.toLowerCase())) {
+      if (musicKw != null) {
+        if (!(record.backgroundMusic ?? '').toLowerCase().contains(musicKw)) {
           return false;
         }
       }
