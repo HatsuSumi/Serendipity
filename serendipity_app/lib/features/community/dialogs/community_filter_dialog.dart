@@ -4,6 +4,7 @@ import '../../../models/enums.dart';
 import '../../../models/region_data.dart';
 import '../../../core/providers/community_provider.dart';
 import '../../../core/utils/dialog_helper.dart';
+import '../../../core/utils/message_helper.dart';
 import '../../../core/widgets/common_filter_widgets.dart';
 import '../widgets/region_picker_dialog.dart';
 
@@ -176,7 +177,25 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
 
   /// 应用筛选
   Future<void> _applyFilter() async {
-    Navigator.of(context).pop();
+    // 验证错过时间范围
+    if (_startDate != null && _endDate != null && _startDate!.isAfter(_endDate!)) {
+      if (mounted) {
+        MessageHelper.showError(context, '错过时间：开始日期不能晚于结束日期');
+      }
+      return;
+    }
+    
+    // 验证发布时间范围
+    if (_publishStartDate != null && _publishEndDate != null && _publishStartDate!.isAfter(_publishEndDate!)) {
+      if (mounted) {
+        MessageHelper.showError(context, '发布时间：开始日期不能晚于结束日期');
+      }
+      return;
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
 
     final tags = parseTags(_tagController.text.trim());
 
