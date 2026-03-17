@@ -286,8 +286,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
   /// - 使用默认的动态高度计算，确保布局正确
   Widget _buildPostsList(CommunityState communityState) {
     final posts = communityState.posts;
-    final isFiltering = communityState.isFiltering;
     final filterCriteria = ref.watch(communityFilterProvider);
+    final isFiltering = filterCriteria.isActive;
     
     // 空状态
     if (posts.isEmpty) {

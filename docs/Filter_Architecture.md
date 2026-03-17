@@ -1,7 +1,7 @@
 # 统一筛选架构设计文档
 
 **更新时间**：2026-03-17  
-**版本**：1.0  
+**版本**：1.1  
 **状态**：已实现
 
 ---
@@ -15,8 +15,11 @@
 - ✅ **架构一致性**：三个页面使用相同的筛选架构模式
 - ✅ **自动响应**：Notifier 自动监听筛选条件变化并过滤数据
 - ✅ **单一职责**：筛选条件管理与数据过滤分离
-- ✅ **无死代码**：删除了旧的 `filterRecords()` 和 `clearFilter()` 方法
+- ✅ **无死代码**：删除了旧的 `filterRecordsFromServer()` 和 `filterPostsFromServer()` 死方法
 - ✅ **Fail Fast**：时间范围验证在对话框层完成
+- ✅ **refresh() 筛选同步**：三个 Notifier 的 refresh() 统一使用 `invalidateSelf()`，刷新后自动重新应用当前筛选条件
+- ✅ **refreshSilently() 统一**：三个 Notifier 均提供静默刷新，操作后不触发 loading 闪烁
+- ✅ **无冗余状态**：删除 `CommunityState.isFiltering`，UI 层统一通过 `communityFilterProvider.isActive` 判断
 
 ---
 
@@ -262,6 +265,71 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
 
 ---
 
+## 🔀 两种筛选执行模式
+
+三个页面的筛选架构模式统一，但**筛选执行位置**因数据源不同而分为两种模式。这是有意为之的设计，而非架构不一致。
+
+### 模式 A：客户端内存过滤（记录页面 & 我的发布页面）
+
+```
+FilterProvider 状态更新
+    ↓
+DataNotifier.build() 重新执行
+    ↓
+从本地仓储加载全量数据
+    ↓
+_applyFilterCriteria() 内存过滤（AND 逻辑）
+    ↓
+返回过滤后的列表
+```
+
+**适用条件**：数据存储在本地（Hive），支持离线使用。  
+**优点**：零延迟，无网络依赖，可离线筛选。  
+**适用页面**：`RecordsNotifier`、`MyPostsNotifier`
+
+### 模式 B：服务端接口过滤（社区页面）
+
+```
+FilterProvider 状态更新
+    ↓
+CommunityNotifier.build() 重新执行
+    ↓
+检测 filterCriteria.isActive
+    ↓（有筛选条件）
+_repository.filterPosts() → 后端 API
+    ↓
+返回服务端筛选结果（不支持分页）
+```
+
+**适用条件**：数据存储在服务端，不可能全量拉取到客户端。  
+**优点**：支持大数据量，筛选逻辑在服务端统一维护。  
+**注意**：筛选结果 `hasMore = false`，不支持分页加载更多。  
+**适用页面**：`CommunityNotifier`
+
+### refresh() 与筛选状态同步
+
+三个 Notifier 的 `refresh()` 统一使用 `ref.invalidateSelf()`，让 `build()` 完整重新执行。  
+这样无论当前是否有筛选条件，刷新后的数据都会自动应用当前 FilterProvider 的状态，避免数据与筛选条件不同步的问题。
+
+```dart
+// 三个 Notifier 统一的 refresh() 实现
+Future<void> refresh() async {
+  ref.invalidateSelf(); // 触发 build() 重新执行，自动应用筛选
+  await future;         // 等待重建完成
+}
+```
+
+### isFiltering 判断统一
+
+三个页面的 UI 层统一通过对应的 FilterProvider 判断是否处于筛选状态，不在 State 对象中维护冗余字段：
+
+```dart
+// 统一写法（三个页面都如此）
+final isFiltering = ref.watch(xxxFilterProvider).isActive;
+```
+
+---
+
 ## 📊 三个页面的一致性
 
 ### 记录页面（TimelinePage）
@@ -338,7 +406,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
 
 7. **DRY / KISS / YAGNI** ✅
    - 三个页面使用相同的架构模式
-   - 删除了旧的 filterRecords() 和 clearFilter() 方法
+   - 删除了死方法 filterRecordsFromServer() 和 filterPostsFromServer()
    - 不留死代码
 
 8. **代码健康检查** ✅
@@ -349,17 +417,19 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
 9. **性能检查** ✅
    - 使用 where 链式调用实现高效过滤
    - 不在 build 内创建大对象
+   - refresh() 使用 invalidateSelf() 避免重复实现加载逻辑
 
 10. **命名与一致性** ✅
     - 方法名与行为一致
     - 变量名表达真实语义
+    - refreshSilently() 三个 Notifier 命名统一
 
 11. **Flutter 特有最佳实践** ✅
     - 使用 const 构造
     - 合理使用 Selector/Consumer
 
 12. **终极原则** ✅
-    - 用户体验优先
+    - 用户体验优先（refreshSilently 避免闪烁）
     - 可读性优先
 
 ---
@@ -367,12 +437,15 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
 ## 🔍 验证清单
 
 - [x] 三个页面的筛选架构一致
-- [x] 删除了旧的 filterRecords() 和 clearFilter() 方法
+- [x] 删除了死方法 filterRecordsFromServer() 和 filterPostsFromServer()
 - [x] 没有跨文件 DRY 问题
 - [x] 所有筛选条件 Provider 都使用 NotifierProvider
 - [x] 所有 DataNotifier 都在 build() 中监听 FilterProvider
 - [x] 所有筛选对话框都调用 updateFilter() 和 clearFilter()
 - [x] 时间范围验证在对话框层完成（Fail Fast）
+- [x] refresh() 统一使用 invalidateSelf()，刷新后自动应用筛选条件
+- [x] 三个 Notifier 均提供 refreshSilently()，操作后无 loading 闪烁
+- [x] CommunityState 删除冗余 isFiltering 字段，UI 层统一读 FilterProvider.isActive
 - [x] 没有死代码
 - [x] 代码符合 12 个质量原则
 

@@ -195,19 +195,34 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   }
 
   /// 刷新记录列表
+  ///
+  /// 使用 invalidateSelf() 让 build() 重新执行，自动应用当前筛选条件。
+  /// 这样无论筛选状态如何，刷新后的数据都与 recordsFilterProvider 保持同步。
+  ///
+  /// 调用者：
+  /// - TimelinePage（下拉刷新）
+  /// - saveRecord / updateRecord / deleteRecord / togglePin（操作后刷新）
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      // 获取当前登录用户
-      final currentUser = await ref.read(authProvider.notifier).currentUser;
-      
-      // 根据用户加载数据
-      if (currentUser != null) {
-        return _repository.getRecordsByUser(currentUser.id);
-      } else {
-        return _repository.getRecordsByUser(null);
-      }
-    });
+    ref.invalidateSelf();
+    await future;
+  }
+
+  /// 静默刷新记录列表（不显示 loading 状态）
+  ///
+  /// 用于操作后的后台刷新，避免页面闪烁。
+  /// 与 refresh() 的区别：不触发 loading 状态，当前数据在刷新期间保持可见。
+  ///
+  /// 调用者：
+  /// - saveRecord / updateRecord / deleteRecord / pinRecord / unpinRecord
+  Future<void> refreshSilently() async {
+    if (state.value == null) {
+      await refresh();
+      return;
+    }
+    final result = await AsyncValue.guard(() => future);
+    if (result.hasValue) {
+      state = result;
+    }
   }
 
   /// 保存记录（自动处理故事线关联）
@@ -245,8 +260,8 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 4. 刷新记录列表
-    await refresh();
+    // 4. 静默刷新记录列表（避免 loading 闪烁）
+    await refreshSilently();
   }
   
   /// 检测记录的成就解锁（由调用者在页面关闭后手动触发）
@@ -354,8 +369,8 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 5. 刷新记录列表
-    await refresh();
+    // 5. 静默刷新记录列表（避免 loading 闪烁）
+    await refreshSilently();
   }
 
   /// 删除记录（自动从故事线移除，并联动删除对应社区帖子）
@@ -404,8 +419,8 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
     
-    // 4. 无论云端是否成功，UI 都刷新
-    await refresh();
+    // 4. 无论云端是否成功，UI 都静默刷新（避免 loading 闪烁）
+    await refreshSilently();
     
     // 5. 云端失败时再向上抛出，让 UI 层显示提示
     if (syncException != null) throw syncException;
@@ -435,7 +450,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
 
-    await refresh();
+    await refreshSilently();
   }
 
   /// 取消置顶记录
@@ -462,7 +477,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
     }
 
-    await refresh();
+    await refreshSilently();
   }
 
   /// 切换置顶状态
@@ -538,69 +553,6 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
 
 
 
-  /// 从后端筛选记录（支持多条件组合）
-  /// 
-  /// 设计原则：
-  /// - 后端筛选：支持大数据量和复杂筛选
-  /// - 分页支持：limit + offset
-  /// - 排序支持：createdAt/updatedAt，升序/降序
-  /// - 标签筛选：全词匹配或包含匹配
-  /// 
-  /// 调用者：
-  /// - TimelinePage：时间轴页面筛选
-  /// - MyPostsPage：我的发布页面筛选
-  /// 
-  /// 返回：筛选结果列表
-  Future<List<EncounterRecord>> filterRecordsFromServer({
-    DateTime? startDate,
-    DateTime? endDate,
-    String? province,
-    String? city,
-    String? area,
-    List<String>? placeTypes,
-    List<String>? tags,
-    List<String>? statuses,
-    List<String>? emotionIntensities,
-    List<String>? weathers,
-    String tagMatchMode = 'contains',
-    String sortBy = 'createdAt',
-    String sortOrder = 'desc',
-    int limit = 20,
-    int offset = 0,
-  }) async {
-    // 获取当前用户
-    final currentUser = await ref.read(authProvider.notifier).currentUser;
-    if (currentUser == null) {
-      throw Exception('必须登录后才可筛选');
-    }
-
-    try {
-      // 直接调用远程数据仓库的筛选方法
-      final remoteData = ref.read(remoteDataRepositoryProvider);
-      final records = await remoteData.filterRecords(
-        userId: currentUser.id,
-        startDate: startDate,
-        endDate: endDate,
-        province: province,
-        city: city,
-        area: area,
-        placeTypes: placeTypes,
-        tags: tags,
-        statuses: statuses,
-        emotionIntensities: emotionIntensities,
-        weathers: weathers,
-        tagMatchMode: tagMatchMode,
-        sortBy: sortBy,
-        sortOrder: sortOrder,
-        limit: limit,
-        offset: offset,
-      );
-      
-      return records;
-    } catch (e) {
-      throw Exception('筛选记录失败：${e.toString()}');
-    }
-  }
 }
 
 /// 记录列表 Provider

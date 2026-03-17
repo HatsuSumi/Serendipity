@@ -39,34 +39,30 @@ final communityRepositoryProvider = Provider<CommunityRepository>((ref) {
 });
 
 /// 社区状态
-/// 
+///
 /// 职责：
 /// - 存储帖子列表
 /// - 存储分页状态
-/// - 存储筛选状态
-/// 
+///
 /// 设计原则：
 /// - 单一职责（SRP）：只负责列表状态
 /// - 筛选条件独立管理：使用 communityFilterProvider
+/// - 不存储 isFiltering：通过 communityFilterProvider.isActive 判断，避免冗余状态
 class CommunityState {
   final List<CommunityPost> posts;
-  final bool isFiltering;
   final bool hasMore;
 
   const CommunityState({
     required this.posts,
-    this.isFiltering = false,
     this.hasMore = true,
   });
 
   CommunityState copyWith({
     List<CommunityPost>? posts,
-    bool? isFiltering,
     bool? hasMore,
   }) {
     return CommunityState(
       posts: posts ?? this.posts,
-      isFiltering: isFiltering ?? this.isFiltering,
       hasMore: hasMore ?? this.hasMore,
     );
   }
@@ -112,7 +108,6 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
       final posts = await _loadPosts();
       return CommunityState(
         posts: posts,
-        isFiltering: false,
         hasMore: posts.length >= 20,
       );
     }
@@ -140,7 +135,6 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     
     return CommunityState(
       posts: posts,
-      isFiltering: true,
       hasMore: false, // 筛选结果不支持分页
     );
   }
@@ -164,60 +158,36 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   }
 
   /// 刷新帖子列表
-  /// 
+  ///
+  /// 使用 invalidateSelf() 让 build() 重新执行，自动应用当前筛选条件。
+  /// 这样无论筛选状态如何，刷新后的数据都与 communityFilterProvider 保持同步。
+  ///
   /// 调用者：CommunityPage（下拉刷新）
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
     _lastTimestamp = null;
-    
-    state = await AsyncValue.guard(() async {
-      final posts = await _loadPosts();
-      return CommunityState(
-        posts: posts,
-        isFiltering: false,
-        hasMore: posts.length >= 20,
-      );
-    });
+    ref.invalidateSelf();
+    await future;
   }
 
   /// 静默刷新帖子列表（不显示 loading 状态）
-  /// 
-  /// 用于发布/删除帖子后的刷新，避免页面闪烁
-  /// 
-  /// 优化说明：
-  /// - 使用 AsyncValue.guard 自动捕获错误
-  /// - 失败时保持当前状态不变
-  /// - 利用 Riverpod 的内置错误处理机制
-  /// 
+  ///
+  /// 用于发布/删除帖子后的后台刷新，避免页面闪烁。
+  /// 筛选激活时静默刷新会重新执行后端筛选查询，保持结果最新。
+  ///
   /// 调用者：
-  /// - publishPost（发布后刷新）
   /// - deletePost（删除后刷新）
+  /// - CommunityPublishNotifier.publishPost（发布后刷新）
   /// - MyPostsNotifier.deletePost（删除后同步）
   Future<void> refreshSilently() async {
-    final currentState = state.value;
-    if (currentState == null) {
-      // 如果当前没有数据，使用普通刷新
+    if (state.value == null) {
       await refresh();
       return;
     }
-
     _lastTimestamp = null;
-    
-    // 使用 AsyncValue.guard，它会自动捕获错误
-    final result = await AsyncValue.guard(() async {
-      final posts = await _loadPosts();
-      return CommunityState(
-        posts: posts,
-        isFiltering: false,
-        hasMore: posts.length >= 20,
-      );
-    });
-    
-    // 只在成功时更新状态，失败时保持当前状态不变
+    final result = await AsyncValue.guard(() => future);
     if (result.hasValue) {
       state = result;
     }
-    // 失败时什么都不做，保持当前状态，用户仍可看到旧数据
   }
 
   /// 加载更多帖子
@@ -236,7 +206,7 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     if (!currentState.hasMore) return;
     
     // 如果正在筛选，不支持加载更多
-    if (currentState.isFiltering) return;
+    if (ref.read(communityFilterProvider).isActive) return;
 
     // 如果正在加载，直接返回
     if (state.isLoading) return;
@@ -450,17 +420,19 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
   }
 
   /// 刷新我的帖子列表
-  /// 
+  ///
+  /// 使用 invalidateSelf() 让 build() 重新执行，自动应用当前筛选条件。
+  ///
   /// 调用者：MyPostsPage（下拉刷新）
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(_fetchMyPosts);
+    ref.invalidateSelf();
+    await future;
   }
 
   /// 删除帖子
-  /// 
+  ///
   /// 调用者：MyPostsPage（删除按钮）
-  /// 
+  ///
   /// 设计说明：
   /// - 直接调用 _repository.deletePost，不经由 CommunityNotifier
   /// - 删除成功后通知 communityProvider 静默刷新（保持树洞列表同步）
@@ -480,64 +452,14 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
     // 通知树洞列表同步（静默，不阻塞当前页面）
     ref.read(communityProvider.notifier).refreshSilently();
 
-    // 静默刷新自身列表
-    await _refreshSilently();
-  }
-
-  /// 静默刷新我的帖子列表（不显示 loading 状态）
-  /// 
-  /// 调用者：deletePost
-  Future<void> _refreshSilently() async {
+    // 静默刷新自身列表（避免页面闪烁）
     if (state.value == null) {
       await refresh();
       return;
     }
-    final result = await AsyncValue.guard(_fetchMyPosts);
+    final result = await AsyncValue.guard(() => future);
     if (result.hasValue) {
       state = result;
-    }
-  }
-
-  /// 从后端筛选我的帖子
-  /// 
-  /// 调用者：MyPostsPage._fetchFilteredPosts()
-  Future<List<CommunityPost>> filterPostsFromServer({
-    DateTime? startDate,
-    DateTime? endDate,
-    DateTime? publishStartDate,
-    DateTime? publishEndDate,
-    String? province,
-    String? city,
-    String? area,
-    List<String>? placeTypes,
-    List<String>? tags,
-    List<String>? statuses,
-    String tagMatchMode = 'contains',
-    int limit = 20,
-  }) async {
-    final currentUser = ref.read(authProvider).value;
-    if (currentUser == null) {
-      throw Exception('必须登录后才可筛选');
-    }
-
-    try {
-      return await _repository.filterPostsFromServer(
-        userId: currentUser.id,
-        startDate: startDate,
-        endDate: endDate,
-        publishStartDate: publishStartDate,
-        publishEndDate: publishEndDate,
-        province: province,
-        city: city,
-        area: area,
-        placeTypes: placeTypes,
-        tags: tags,
-        statuses: statuses,
-        tagMatchMode: tagMatchMode,
-        limit: limit,
-      );
-    } catch (e) {
-      throw Exception('筛选帖子失败：${AuthErrorHelper.extractErrorMessage(e)}');
     }
   }
 }
