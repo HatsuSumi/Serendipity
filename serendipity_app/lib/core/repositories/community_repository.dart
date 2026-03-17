@@ -246,27 +246,16 @@ class CommunityRepository {
     );
   }
 
-  /// 从后端筛选用户的帖子
-  /// 
-  /// 参数：
-  /// - userId: 用户 ID
-  /// - startDate: 错过时间开始日期（可选）
-  /// - endDate: 错过时间结束日期（可选）
-  /// - publishStartDate: 发布时间开始日期（可选）
-  /// - publishEndDate: 发布时间结束日期（可选）
-  /// - province: 省份（可选）
-  /// - city: 城市（可选）
-  /// - area: 区县（可选）
-  /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
-  /// - tags: 标签名称列表（可选，多选OR逻辑）
-  /// - statuses: 状态列表（可选，多选OR逻辑）
-  /// - tagMatchMode: 标签匹配模式（wholeWord 或 contains）
-  /// - limit: 每页数量
-  /// 
-  /// 返回：符合条件的帖子列表
-  /// 
-  /// 调用者：MyPostsNotifier.filterPostsFromServer()
-  Future<List<CommunityPost>> filterPostsFromServer({
+  /// 筛选我的帖子（服务端过滤，支持大数据量）
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - limit <= 0：抛出 ArgumentError
+  /// - startDate > endDate：抛出 ArgumentError
+  /// - publishStartDate > publishEndDate：抛出 ArgumentError
+  ///
+  /// 调用者：MyPostsNotifier.build()
+  Future<List<CommunityPost>> filterMyPosts({
     required String userId,
     DateTime? startDate,
     DateTime? endDate,
@@ -275,11 +264,11 @@ class CommunityRepository {
     String? province,
     String? city,
     String? area,
-    List<String>? placeTypes,
+    List<PlaceType>? placeTypes,
     List<String>? tags,
-    List<String>? statuses,
-    String tagMatchMode = 'contains',
-    int limit = 20,
+    List<EncounterStatus>? statuses,
+    TagMatchMode tagMatchMode = TagMatchMode.contains,
+    int limit = 50,
   }) async {
     // Fail Fast：参数验证
     if (userId.isEmpty) {
@@ -288,25 +277,28 @@ class CommunityRepository {
     if (limit <= 0) {
       throw ArgumentError('limit must be positive');
     }
-
-    try {
-      return await _dataSource.filterCommunityPosts(
-        startDate: startDate,
-        endDate: endDate,
-        publishStartDate: publishStartDate,
-        publishEndDate: publishEndDate,
-        province: province,
-        city: city,
-        area: area,
-        placeTypes: placeTypes,
-        tags: tags,
-        statuses: statuses,
-        tagMatchMode: tagMatchMode,
-        limit: limit,
-      );
-    } catch (e) {
-      throw Exception('筛选帖子失败：${e.toString()}');
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      throw ArgumentError('startDate must be before endDate');
     }
+    if (publishStartDate != null && publishEndDate != null && publishStartDate.isAfter(publishEndDate)) {
+      throw ArgumentError('publishStartDate must be before publishEndDate');
+    }
+
+    return await _dataSource.filterMyPosts(
+      userId: userId,
+      startDate: startDate,
+      endDate: endDate,
+      publishStartDate: publishStartDate,
+      publishEndDate: publishEndDate,
+      province: province,
+      city: city,
+      area: area,
+      placeTypes: placeTypes,
+      tags: tags,
+      statuses: statuses,
+      tagMatchMode: tagMatchMode,
+      limit: limit,
+    );
   }
 }
 

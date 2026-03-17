@@ -88,7 +88,8 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
   }
 
   @override
-  Future<List<CommunityPost>> filterCommunityPosts({
+  Future<List<CommunityPost>> filterMyPosts({
+    required String userId,
     DateTime? startDate,
     DateTime? endDate,
     DateTime? publishStartDate,
@@ -96,11 +97,11 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
     String? province,
     String? city,
     String? area,
-    List<String>? placeTypes,
+    List<PlaceType>? placeTypes,
     List<String>? tags,
-    List<String>? statuses,
-    String tagMatchMode = 'contains',
-    int limit = 20,
+    List<EncounterStatus>? statuses,
+    TagMatchMode tagMatchMode = TagMatchMode.contains,
+    int limit = 50,
   }) async {
     return await _remoteData.filterCommunityPosts(
       startDate: startDate,
@@ -110,10 +111,10 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
       province: province,
       city: city,
       area: area,
-      placeTypes: placeTypes,
+      placeTypes: placeTypes?.map((t) => t.value).toList(),
       tags: tags,
-      statuses: statuses,
-      tagMatchMode: tagMatchMode,
+      statuses: statuses?.map((s) => s.name).toList(),
+      tagMatchMode: tagMatchMode.value,
       limit: limit,
     );
   }

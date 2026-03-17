@@ -74,7 +74,8 @@ class TestCommunityDataSource implements ICommunityDataSource {
   }
 
   @override
-  Future<List<CommunityPost>> filterCommunityPosts({
+  Future<List<CommunityPost>> filterMyPosts({
+    required String userId,
     DateTime? startDate,
     DateTime? endDate,
     DateTime? publishStartDate,
@@ -82,11 +83,11 @@ class TestCommunityDataSource implements ICommunityDataSource {
     String? province,
     String? city,
     String? area,
-    List<String>? placeTypes,
+    List<PlaceType>? placeTypes,
     List<String>? tags,
-    List<String>? statuses,
-    String tagMatchMode = 'contains',
-    int limit = 20,
+    List<EncounterStatus>? statuses,
+    TagMatchMode tagMatchMode = TagMatchMode.contains,
+    int limit = 50,
   }) async {
     // 测试模式：返回空列表
     return [];

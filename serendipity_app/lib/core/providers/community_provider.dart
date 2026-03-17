@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/community_post.dart';
-import '../../models/enums.dart';
 import '../repositories/community_repository.dart';
 import '../repositories/i_community_data_source.dart';
 import '../repositories/remote_community_data_source.dart';
@@ -314,109 +313,40 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
   @override
   Future<List<CommunityPost>> build() async {
     _repository = ref.read(communityRepositoryProvider);
-    
-    // 监听筛选条件变化，自动重新过滤
-    final filterCriteria = ref.watch(myPostsFilterProvider);
-    
-    // 获取当前用户的帖子
-    var posts = await _fetchMyPosts();
-    
-    // 应用筛选条件
-    if (filterCriteria.isActive) {
-      posts = _applyFilterCriteria(posts, filterCriteria);
-    }
-    
-    return posts;
-  }
 
-  /// 从仓储获取当前用户的帖子（内部方法）
-  /// 
-  /// Fail Fast：用户未登录时抛出 Exception
-  Future<List<CommunityPost>> _fetchMyPosts() async {
+    // 监听筛选条件变化，自动重新执行
+    final filterCriteria = ref.watch(myPostsFilterProvider);
+
+    // Fail Fast：用户必须登录
     final currentUser = ref.read(authProvider).value;
     if (currentUser == null) {
       throw Exception('必须登录后才可查看我的发布');
     }
+
     try {
-      return await _repository.getMyPosts(currentUser.id);
+      if (filterCriteria.isActive) {
+        // 筛选激活时：服务端过滤（与 CommunityNotifier 对齐）
+        return await _repository.filterMyPosts(
+          userId: currentUser.id,
+          startDate: filterCriteria.startDate,
+          endDate: filterCriteria.endDate,
+          publishStartDate: filterCriteria.publishStartDate,
+          publishEndDate: filterCriteria.publishEndDate,
+          province: filterCriteria.province,
+          city: filterCriteria.city,
+          area: filterCriteria.area,
+          placeTypes: filterCriteria.placeTypes,
+          tags: filterCriteria.tags,
+          statuses: filterCriteria.statuses,
+          tagMatchMode: filterCriteria.tagMatchMode,
+        );
+      } else {
+        // 无筛选：全量拉取当前用户帖子
+        return await _repository.getMyPosts(currentUser.id);
+      }
     } catch (e) {
       throw Exception(AuthErrorHelper.extractErrorMessage(e));
     }
-  }
-
-  /// 应用筛选条件到帖子列表
-  /// 
-  /// 职责：
-  /// - 根据筛选条件过滤帖子
-  /// - 支持多条件组合（AND 逻辑）
-  /// 
-  /// 设计原则：
-  /// - Fail Fast：条件不合法时直接返回空列表
-  /// - 高效过滤：使用 where 链式调用
-  /// - 不修改原列表：返回新列表
-  /// 
-  /// 调用者：build()
-  List<CommunityPost> _applyFilterCriteria(
-    List<CommunityPost> posts,
-    MyPostsFilterCriteria criteria,
-  ) {
-    return posts.where((post) {
-      // 时间范围筛选（错过时间）
-      if (criteria.startDate != null && post.timestamp.isBefore(criteria.startDate!)) {
-        return false;
-      }
-      if (criteria.endDate != null && post.timestamp.isAfter(criteria.endDate!)) {
-        return false;
-      }
-
-      // 发布时间范围筛选
-      if (criteria.publishStartDate != null && post.publishedAt.isBefore(criteria.publishStartDate!)) {
-        return false;
-      }
-      if (criteria.publishEndDate != null && post.publishedAt.isAfter(criteria.publishEndDate!)) {
-        return false;
-      }
-
-      // 场所类型筛选
-      if (criteria.placeTypes != null && criteria.placeTypes!.isNotEmpty) {
-        if (!criteria.placeTypes!.contains(post.placeType)) {
-          return false;
-        }
-      }
-
-      // 状态筛选
-      if (criteria.statuses != null && criteria.statuses!.isNotEmpty) {
-        if (!criteria.statuses!.contains(post.status)) {
-          return false;
-        }
-      }
-
-      // 地区筛选
-      if (criteria.province != null && post.province != criteria.province) {
-        return false;
-      }
-      if (criteria.city != null && post.city != criteria.city) {
-        return false;
-      }
-      if (criteria.area != null && post.area != criteria.area) {
-        return false;
-      }
-
-      // 标签筛选
-      if (criteria.tags != null && criteria.tags!.isNotEmpty) {
-        final postTags = post.tags.map((t) => t.tag).toList();
-        final hasMatch = criteria.tags!.any((tag) {
-          if (criteria.tagMatchMode == TagMatchMode.wholeWord) {
-            return postTags.contains(tag);
-          } else {
-            return postTags.any((postTag) => postTag.contains(tag));
-          }
-        });
-        if (!hasMatch) return false;
-      }
-
-      return true;
-    }).toList();
   }
 
   /// 刷新我的帖子列表
