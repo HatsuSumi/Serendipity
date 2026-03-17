@@ -118,12 +118,59 @@ class RecordsFilterCriteria {
   }
 }
 
+/// 记录筛选条件 Notifier
+/// 
+/// 职责：
+/// - 管理筛选条件状态
+/// - 提供统一的 updateFilter 和 clearFilter 方法
+/// 
+/// 设计原则：
+/// - 单一职责（SRP）：只负责筛选条件管理
+/// - 依赖倒置（DIP）：页面依赖此 Notifier，不依赖具体实现
+/// 
+/// 调用者：
+/// - RecordFilterDialog（应用/清除筛选）
+/// - RecordsNotifier（监听筛选条件变化）
+class RecordsFilterNotifier extends Notifier<RecordsFilterCriteria> {
+  @override
+  RecordsFilterCriteria build() => const RecordsFilterCriteria();
+
+  /// 更新筛选条件
+  /// 
+  /// 参数：
+  /// - criteria: 新的筛选条件
+  /// 
+  /// Fail Fast：criteria 不能为 null（由类型系统保证）
+  /// 
+  /// 调用者：RecordFilterDialog._applyFilter()
+  void updateFilter(RecordsFilterCriteria criteria) {
+    state = criteria;
+  }
+
+  /// 清除所有筛选条件
+  /// 
+  /// 调用者：RecordFilterDialog._clearFilter()
+  void clearFilter() {
+    state = const RecordsFilterCriteria();
+  }
+}
+
 /// 记录筛选条件 Provider
 /// 
 /// 职责：管理记录筛选条件状态
 /// 
-/// 调用者：RecordFilterDialog、RecordsNotifier
-final recordsFilterProvider = StateProvider<RecordsFilterCriteria>((ref) {
-  return const RecordsFilterCriteria();
+/// 使用示例：
+/// ```dart
+/// // 读取筛选条件
+/// final filter = ref.watch(recordsFilterProvider);
+/// 
+/// // 更新筛选条件
+/// ref.read(recordsFilterProvider.notifier).updateFilter(newCriteria);
+/// 
+/// // 清除筛选条件
+/// ref.read(recordsFilterProvider.notifier).clearFilter();
+/// ```
+final recordsFilterProvider = NotifierProvider<RecordsFilterNotifier, RecordsFilterCriteria>(() {
+  return RecordsFilterNotifier();
 });
 

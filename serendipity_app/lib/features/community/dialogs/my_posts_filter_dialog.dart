@@ -184,8 +184,14 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
   }
 
   /// 应用筛选
+  /// 
+  /// 流程：
+  /// 1. 验证时间范围
+  /// 2. 关闭对话框
+  /// 3. 更新 myPostsFilterProvider
+  /// 4. MyPostsNotifier 监听 myPostsFilterProvider 变化并自动过滤
   Future<void> _applyFilter() async {
-    // 验证错过时间范围
+    // Fail Fast：验证时间范围
     if (_startDate != null && _endDate != null && _startDate!.isAfter(_endDate!)) {
       if (mounted) {
         MessageHelper.showError(context, '错过时间：开始日期不能晚于结束日期');
@@ -193,7 +199,6 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
       return;
     }
     
-    // 验证发布时间范围
     if (_publishStartDate != null && _publishEndDate != null && _publishStartDate!.isAfter(_publishEndDate!)) {
       if (mounted) {
         MessageHelper.showError(context, '发布时间：开始日期不能晚于结束日期');
@@ -207,8 +212,8 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
 
     final tags = parseTags(_tagController.text.trim());
 
-    // 更新筛选条件到 Provider
-    ref.read(myPostsFilterProvider.notifier).state = MyPostsFilterCriteria(
+    // 构建筛选条件
+    final criteria = MyPostsFilterCriteria(
       startDate: _startDate,
       endDate: _endDate,
       publishStartDate: _publishStartDate,
@@ -221,12 +226,20 @@ class _MyPostsFilterDialogState extends ConsumerState<MyPostsFilterDialog> {
       tags: tags,
       tagMatchMode: _tagMatchMode,
     );
+
+    // 更新 Provider，MyPostsNotifier 会自动监听并过滤
+    ref.read(myPostsFilterProvider.notifier).updateFilter(criteria);
   }
 
   /// 清除筛选
+  /// 
+  /// 流程：
+  /// 1. 关闭对话框
+  /// 2. 清除 myPostsFilterProvider
+  /// 3. MyPostsNotifier 监听变化并恢复全部帖子
   Future<void> _clearFilter() async {
     Navigator.of(context).pop();
-    ref.read(myPostsFilterProvider.notifier).state = MyPostsFilterCriteria.empty;
+    ref.read(myPostsFilterProvider.notifier).clearFilter();
   }
 }
 

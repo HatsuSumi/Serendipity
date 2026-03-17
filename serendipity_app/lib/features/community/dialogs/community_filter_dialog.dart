@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/enums.dart';
 import '../../../models/region_data.dart';
-import '../../../core/providers/community_provider.dart';
+import '../../../core/providers/community_filter_provider.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/message_helper.dart';
 import '../../../core/widgets/common_filter_widgets.dart';
@@ -176,8 +176,14 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
   }
 
   /// 应用筛选
+  /// 
+  /// 流程：
+  /// 1. 验证时间范围
+  /// 2. 关闭对话框
+  /// 3. 更新 communityFilterProvider
+  /// 4. CommunityNotifier 监听 communityFilterProvider 变化并自动过滤
   Future<void> _applyFilter() async {
-    // 验证错过时间范围
+    // Fail Fast：验证时间范围
     if (_startDate != null && _endDate != null && _startDate!.isAfter(_endDate!)) {
       if (mounted) {
         MessageHelper.showError(context, '错过时间：开始日期不能晚于结束日期');
@@ -185,7 +191,6 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
       return;
     }
     
-    // 验证发布时间范围
     if (_publishStartDate != null && _publishEndDate != null && _publishStartDate!.isAfter(_publishEndDate!)) {
       if (mounted) {
         MessageHelper.showError(context, '发布时间：开始日期不能晚于结束日期');
@@ -199,24 +204,33 @@ class _CommunityFilterDialogState extends ConsumerState<CommunityFilterDialog> {
 
     final tags = parseTags(_tagController.text.trim());
 
-    await ref.read(communityProvider.notifier).filterPosts(
-          startDate: _startDate,
-          endDate: _endDate,
-          publishStartDate: _publishStartDate,
-          publishEndDate: _publishEndDate,
-          province: _selectedRegion?.province,
-          city: _selectedRegion?.city,
-          area: _selectedRegion?.area,
-          placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
-          statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
-          tags: tags,
-          tagMatchMode: _tagMatchMode,
-        );
+    // 构建筛选条件
+    final criteria = CommunityFilterCriteria(
+      startDate: _startDate,
+      endDate: _endDate,
+      publishStartDate: _publishStartDate,
+      publishEndDate: _publishEndDate,
+      province: _selectedRegion?.province,
+      city: _selectedRegion?.city,
+      area: _selectedRegion?.area,
+      placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
+      statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
+      tags: tags,
+      tagMatchMode: _tagMatchMode,
+    );
+
+    // 更新 Provider，CommunityNotifier 会自动监听并过滤
+    ref.read(communityFilterProvider.notifier).updateFilter(criteria);
   }
 
   /// 清除筛选
+  /// 
+  /// 流程：
+  /// 1. 关闭对话框
+  /// 2. 清除 communityFilterProvider
+  /// 3. CommunityNotifier 监听变化并恢复全部帖子
   Future<void> _clearFilter() async {
     Navigator.of(context).pop();
-    await ref.read(communityProvider.notifier).clearFilter();
+    ref.read(communityFilterProvider.notifier).clearFilter();
   }
 }

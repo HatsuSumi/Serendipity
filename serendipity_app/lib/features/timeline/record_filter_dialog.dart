@@ -274,8 +274,14 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
   }
 
   /// 应用筛选
+  /// 
+  /// 流程：
+  /// 1. 验证时间范围
+  /// 2. 关闭对话框
+  /// 3. 更新 recordsFilterProvider
+  /// 4. RecordsNotifier 监听 recordsFilterProvider 变化并自动过滤
   Future<void> _applyFilter() async {
-    // 验证错过时间范围
+    // Fail Fast：验证时间范围
     if (_startDate != null && _endDate != null && _startDate!.isAfter(_endDate!)) {
       if (mounted) {
         MessageHelper.showError(context, '错过时间：开始日期不能晚于结束日期');
@@ -283,7 +289,6 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
       return;
     }
     
-    // 验证创建时间范围
     if (_createdStartDate != null && _createdEndDate != null && _createdStartDate!.isAfter(_createdEndDate!)) {
       if (mounted) {
         MessageHelper.showError(context, '创建时间：开始日期不能晚于结束日期');
@@ -309,31 +314,40 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
         ? null
         : _backgroundMusicController.text.trim();
 
-    await ref.read(recordsProvider.notifier).filterRecords(
-          startDate: _startDate,
-          endDate: _endDate,
-          createdStartDate: _createdStartDate,
-          createdEndDate: _createdEndDate,
-          province: _selectedRegion?.province,
-          city: _selectedRegion?.city,
-          area: _selectedRegion?.area,
-          placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
-          statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
-          emotionIntensities: _selectedIntensities.isEmpty ? null : _selectedIntensities.toList(),
-          weathers: _selectedWeathers.isEmpty ? null : _selectedWeathers.toList(),
-          tags: tags,
-          tagMatchMode: _tagMatchMode,
-          descriptionKeyword: descriptionKeyword,
-          ifReencounterKeyword: ifReencounterKeyword,
-          conversationStarterKeyword: conversationStarterKeyword,
-          backgroundMusicKeyword: backgroundMusicKeyword,
-        );
+    // 构建筛选条件
+    final criteria = RecordsFilterCriteria(
+      startDate: _startDate,
+      endDate: _endDate,
+      createdStartDate: _createdStartDate,
+      createdEndDate: _createdEndDate,
+      province: _selectedRegion?.province,
+      city: _selectedRegion?.city,
+      area: _selectedRegion?.area,
+      placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
+      statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
+      emotionIntensities: _selectedIntensities.isEmpty ? null : _selectedIntensities.toList(),
+      weathers: _selectedWeathers.isEmpty ? null : _selectedWeathers.toList(),
+      tags: tags,
+      tagMatchMode: _tagMatchMode,
+      descriptionKeyword: descriptionKeyword,
+      ifReencounterKeyword: ifReencounterKeyword,
+      conversationStarterKeyword: conversationStarterKeyword,
+      backgroundMusicKeyword: backgroundMusicKeyword,
+    );
+
+    // 更新 Provider，RecordsNotifier 会自动监听并过滤
+    ref.read(recordsFilterProvider.notifier).updateFilter(criteria);
   }
 
   /// 清除筛选
+  /// 
+  /// 流程：
+  /// 1. 关闭对话框
+  /// 2. 清除 recordsFilterProvider
+  /// 3. RecordsNotifier 监听变化并恢复全部记录
   Future<void> _clearFilter() async {
     Navigator.of(context).pop();
-    await ref.read(recordsProvider.notifier).clearRecordsFilter();
+    ref.read(recordsFilterProvider.notifier).clearFilter();
   }
 }
 
