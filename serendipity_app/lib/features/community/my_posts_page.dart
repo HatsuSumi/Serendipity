@@ -152,8 +152,10 @@ class MyPostsPage extends ConsumerWidget {
     try {
       if (isFavorited) {
         await notifier.unfavoritePost(postId);
+        if (context.mounted) MessageHelper.showSuccess(context, '已取消收藏');
       } else {
         await notifier.favoritePost(postId);
+        if (context.mounted) MessageHelper.showSuccess(context, '已收藏');
       }
     } catch (e) {
       if (!context.mounted) return;
