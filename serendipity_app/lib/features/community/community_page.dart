@@ -370,8 +370,10 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
     try {
       if (isFavorited) {
         await notifier.unfavoritePost(postId);
+        if (mounted) MessageHelper.showSuccess(context, '已取消收藏');
       } else {
         await notifier.favoritePost(postId);
+        if (mounted) MessageHelper.showSuccess(context, '已收藏');
       }
     } catch (e) {
       if (!mounted) return;
