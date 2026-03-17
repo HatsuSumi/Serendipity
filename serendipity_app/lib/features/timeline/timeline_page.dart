@@ -760,11 +760,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       lines.add('删除这条记录会自动取消关联故事线。');
     }
 
-    // 确保 myPostsProvider 已加载
-    final myPosts = await ref.read(myPostsProvider.future);
-    final isPublished = myPosts.any((post) => post.recordId == record.id);
-    if (isPublished) {
-      lines.add('删除这条记录会自动删除社区帖子。');
+    // 优先读已缓存的状态，避免触发额外网络请求
+    final myPostsValue = ref.read(myPostsProvider);
+    final myPosts = myPostsValue.valueOrNull;
+    if (myPosts != null) {
+      final isPublished = myPosts.any((post) => post.recordId == record.id);
+      if (isPublished) {
+        lines.add('删除这条记录会自动删除社区帖子。');
+      }
     }
 
     return lines.join('\n\n');

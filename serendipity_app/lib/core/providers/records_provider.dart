@@ -426,8 +426,8 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     if (syncException != null) throw syncException;
   }
 
-  /// 置顶记录
-  Future<void> pinRecord(String id) async {
+  /// 置顶记录（内部方法，外部通过 togglePin 调用）
+  Future<void> _pinRecord(String id) async {
     final record = _repository.getRecord(id);
     if (record == null) {
       throw StateError('Record $id does not exist');
@@ -453,8 +453,8 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     await refreshSilently();
   }
 
-  /// 取消置顶记录
-  Future<void> unpinRecord(String id) async {
+  /// 取消置顶记录（内部方法，外部通过 togglePin 调用）
+  Future<void> _unpinRecord(String id) async {
     final record = _repository.getRecord(id);
     if (record == null) {
       throw StateError('Record $id does not exist');
@@ -488,9 +488,9 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     }
     
     if (record.isPinned) {
-      await unpinRecord(id);
+      await _unpinRecord(id);
     } else {
-      await pinRecord(id);
+      await _pinRecord(id);
     }
   }
   
