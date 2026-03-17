@@ -10,6 +10,7 @@ import '../utils/auth_error_helper.dart';
 import '../config/app_config.dart';
 import 'auth_provider.dart';
 import 'community_filter_provider.dart';
+import 'my_posts_filter_provider.dart';
 
 // 导出发布 Provider
 export 'community_publish_provider.dart';
@@ -75,9 +76,14 @@ class CommunityState {
 /// 
 /// 职责：
 /// - 管理社区帖子列表状态
+/// - 监听筛选条件变化并自动过滤
 /// - 删除自己的帖子
-/// - 筛选帖子
 /// - 加载更多帖子（分页）
+/// 
+/// 设计原则：
+/// - 单一职责（SRP）：只负责社区帖子列表管理
+/// - 依赖倒置（DIP）：依赖 communityFilterProvider，不依赖具体的筛选UI
+/// - 自动响应：监听 communityFilterProvider 变化，自动过滤
 /// 
 /// 注意：
 /// - 发布功能已移至 CommunityPublishNotifier
@@ -90,56 +96,53 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
   
   /// 最后一条帖子的时间戳（用于分页）
   DateTime? _lastTimestamp;
-  
-  /// 标志位：是否正在执行筛选（防止无限递归）
-  bool _isFiltering = false;
 
   @override
   Future<CommunityState> build() async {
     _repository = ref.read(communityRepositoryProvider);
     
-    // 监听筛选条件变化
-    ref.listen(communityFilterProvider, (previous, next) {
-      // 当筛选条件变化时，自动重新加载
-      if (previous != next) {
-        _onFilterChanged(next);
-      }
-    });
+    // 监听筛选条件变化，自动重新过滤
+    final filterCriteria = ref.watch(communityFilterProvider);
     
-    // 初始化时加载第一页
-    final posts = await _loadPosts();
-    return CommunityState(
-      posts: posts,
-      isFiltering: false,
-      hasMore: posts.length >= 20,
-    );
+    // 如果有筛选条件，执行筛选；否则加载默认列表
+    if (filterCriteria.isActive) {
+      return await _filterPosts(filterCriteria);
+    } else {
+      // 初始化时加载第一页
+      final posts = await _loadPosts();
+      return CommunityState(
+        posts: posts,
+        isFiltering: false,
+        hasMore: posts.length >= 20,
+      );
+    }
   }
 
-  /// 筛选条件变化时的处理
+  /// 根据筛选条件过滤帖子（内部方法）
   /// 
-  /// 自动响应筛选条件变化，重新加载数据
-  Future<void> _onFilterChanged(CommunityFilterCriteria filter) async {
-    // 如果正在执行筛选，忽略此次变化（防止无限递归）
-    if (_isFiltering) return;
+  /// 调用者：build()
+  Future<CommunityState> _filterPosts(CommunityFilterCriteria criteria) async {
+    _lastTimestamp = null;
     
-    if (filter.hasAnyFilter) {
-      // 有筛选条件，执行筛选
-      await filterPosts(
-        startDate: filter.startDate,
-        endDate: filter.endDate,
-        publishStartDate: filter.publishStartDate,
-        publishEndDate: filter.publishEndDate,
-        province: filter.province,
-        city: filter.city,
-        area: filter.area,
-        placeTypes: filter.placeTypes,
-        tags: filter.tags,
-        statuses: filter.statuses,
-      );
-    } else {
-      // 无筛选条件，刷新列表
-      await refresh();
-    }
+    final posts = await _repository.filterPosts(
+      startDate: criteria.startDate,
+      endDate: criteria.endDate,
+      publishStartDate: criteria.publishStartDate,
+      publishEndDate: criteria.publishEndDate,
+      province: criteria.province,
+      city: criteria.city,
+      area: criteria.area,
+      placeTypes: criteria.placeTypes,
+      tags: criteria.tags,
+      statuses: criteria.statuses,
+      tagMatchMode: criteria.tagMatchMode,
+    );
+    
+    return CommunityState(
+      posts: posts,
+      isFiltering: true,
+      hasMore: false, // 筛选结果不支持分页
+    );
   }
 
   /// 加载帖子（内部方法）
@@ -283,98 +286,6 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     }
   }
 
-  /// 筛选帖子
-  /// 
-  /// 参数：
-  /// - startDate: 错过时间开始日期（可选）
-  /// - endDate: 错过时间结束日期（可选）
-  /// - publishStartDate: 发布时间开始日期（可选）
-  /// - publishEndDate: 发布时间结束日期（可选）
-  /// - province: 省份（可选）
-  /// - city: 城市（可选）
-  /// - area: 区县（可选）
-  /// - placeTypes: 场所类型列表（可选，多选OR逻辑）
-  /// - tags: 标签名称列表（可选，多选OR逻辑）
-  /// - statuses: 状态列表（可选，多选OR逻辑）
-  /// - tagMatchMode: 标签匹配模式（包含匹配或全词匹配）
-  /// 
-  /// 调用者：
-  /// - CommunityFilterDialog（筛选对话框）
-  /// - _onFilterChanged（筛选条件变化时自动调用）
-  Future<void> filterPosts({
-    DateTime? startDate,
-    DateTime? endDate,
-    DateTime? publishStartDate,
-    DateTime? publishEndDate,
-    String? province,
-    String? city,
-    String? area,
-    List<PlaceType>? placeTypes,
-    List<String>? tags,
-    List<EncounterStatus>? statuses,
-    TagMatchMode tagMatchMode = TagMatchMode.contains,
-  }) async {
-    // 设置标志位，防止无限递归
-    _isFiltering = true;
-    
-    try {
-      // 先更新筛选条件到 Provider，以便对话框下次打开时能读取
-      final criteria = CommunityFilterCriteria(
-        startDate: startDate,
-        endDate: endDate,
-        publishStartDate: publishStartDate,
-        publishEndDate: publishEndDate,
-        province: province,
-        city: city,
-        area: area,
-        placeTypes: placeTypes,
-        tags: tags,
-        tagMatchMode: tagMatchMode,
-        statuses: statuses,
-      );
-      ref.read(communityFilterProvider.notifier).updateFilter(criteria);
-      
-      state = const AsyncValue.loading();
-      _lastTimestamp = null;
-
-      state = await AsyncValue.guard(() async {
-        final posts = await _repository.filterPosts(
-          startDate: startDate,
-          endDate: endDate,
-          publishStartDate: publishStartDate,
-          publishEndDate: publishEndDate,
-          province: province,
-          city: city,
-          area: area,
-          placeTypes: placeTypes,
-          tags: tags,
-          statuses: statuses,
-          tagMatchMode: tagMatchMode,
-        );
-        
-        return CommunityState(
-          posts: posts,
-          isFiltering: true,
-          hasMore: false, // 筛选结果不支持分页
-        );
-      });
-    } finally {
-      // 无论成功还是失败，都要重置标志位
-      _isFiltering = false;
-    }
-  }
-
-  /// 清除筛选（恢复默认列表）
-  /// 
-  /// 调用者：CommunityPage（清除筛选按钮）
-  Future<void> clearFilter() async {
-    // 先清除筛选条件
-    ref.read(communityFilterProvider.notifier).clearFilter();
-    
-    // 立即刷新列表，恢复到默认状态
-    await refresh();
-  }
-
   /// 判断当前用户是否可以删除指定帖子
   /// 
   /// 规则：
@@ -417,8 +328,14 @@ final myPostsProvider = AsyncNotifierProvider<MyPostsNotifier, List<CommunityPos
 /// 
 /// 职责：
 /// - 加载当前用户的帖子列表
+/// - 监听筛选条件变化并自动过滤
 /// - 刷新帖子列表
 /// - 删除帖子后自动刷新
+/// 
+/// 设计原则：
+/// - 单一职责（SRP）：只负责"我的帖子"业务逻辑
+/// - 依赖倒置（DIP）：直接依赖 CommunityRepository，与 CommunityNotifier 平级
+/// - 自动响应：监听 myPostsFilterProvider 变化，自动过滤
 /// 
 /// 调用者：MyPostsPage
 class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
@@ -427,7 +344,19 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
   @override
   Future<List<CommunityPost>> build() async {
     _repository = ref.read(communityRepositoryProvider);
-    return await _fetchMyPosts();
+    
+    // 监听筛选条件变化，自动重新过滤
+    final filterCriteria = ref.watch(myPostsFilterProvider);
+    
+    // 获取当前用户的帖子
+    var posts = await _fetchMyPosts();
+    
+    // 应用筛选条件
+    if (filterCriteria.isActive) {
+      posts = _applyFilterCriteria(posts, filterCriteria);
+    }
+    
+    return posts;
   }
 
   /// 从仓储获取当前用户的帖子（内部方法）
@@ -443,6 +372,81 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
     } catch (e) {
       throw Exception(AuthErrorHelper.extractErrorMessage(e));
     }
+  }
+
+  /// 应用筛选条件到帖子列表
+  /// 
+  /// 职责：
+  /// - 根据筛选条件过滤帖子
+  /// - 支持多条件组合（AND 逻辑）
+  /// 
+  /// 设计原则：
+  /// - Fail Fast：条件不合法时直接返回空列表
+  /// - 高效过滤：使用 where 链式调用
+  /// - 不修改原列表：返回新列表
+  /// 
+  /// 调用者：build()
+  List<CommunityPost> _applyFilterCriteria(
+    List<CommunityPost> posts,
+    MyPostsFilterCriteria criteria,
+  ) {
+    return posts.where((post) {
+      // 时间范围筛选（错过时间）
+      if (criteria.startDate != null && post.timestamp.isBefore(criteria.startDate!)) {
+        return false;
+      }
+      if (criteria.endDate != null && post.timestamp.isAfter(criteria.endDate!)) {
+        return false;
+      }
+
+      // 发布时间范围筛选
+      if (criteria.publishStartDate != null && post.publishedAt.isBefore(criteria.publishStartDate!)) {
+        return false;
+      }
+      if (criteria.publishEndDate != null && post.publishedAt.isAfter(criteria.publishEndDate!)) {
+        return false;
+      }
+
+      // 场所类型筛选
+      if (criteria.placeTypes != null && criteria.placeTypes!.isNotEmpty) {
+        if (!criteria.placeTypes!.contains(post.placeType)) {
+          return false;
+        }
+      }
+
+      // 状态筛选
+      if (criteria.statuses != null && criteria.statuses!.isNotEmpty) {
+        if (!criteria.statuses!.contains(post.status)) {
+          return false;
+        }
+      }
+
+      // 地区筛选
+      if (criteria.province != null && post.province != criteria.province) {
+        return false;
+      }
+      if (criteria.city != null && post.city != criteria.city) {
+        return false;
+      }
+      if (criteria.area != null && post.area != criteria.area) {
+        return false;
+      }
+
+      // 标签筛选
+      if (criteria.tags != null && criteria.tags!.isNotEmpty) {
+        final postTags = post.tags.map((t) => t.tag).toList();
+        final hasMatch = criteria.tags!.any((tag) {
+          if (criteria.tagMatchMode == TagMatchMode.wholeWord) {
+            return postTags.contains(tag);
+          } else {
+            return postTags.any((postTag) => postTag.contains(tag));
+          }
+        });
+        if (!hasMatch) return false;
+      }
+
+      return true;
+    }).toList();
   }
 
   /// 刷新我的帖子列表

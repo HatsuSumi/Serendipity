@@ -3,7 +3,6 @@ import '../../models/encounter_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/enums.dart';
 import '../services/sync_service.dart';
-import '../services/achievement_detector.dart';
 import '../repositories/record_repository.dart';
 import '../repositories/story_line_repository.dart';
 import 'community_provider.dart';
@@ -29,6 +28,16 @@ final storyLineRepositoryProvider = Provider<StoryLineRepository>((ref) {
 });
 
 /// 记录列表状态管理
+/// 
+/// 职责：
+/// - 管理记录列表状态
+/// - 监听筛选条件变化并自动过滤
+/// - 处理记录的增删改查
+/// 
+/// 设计原则：
+/// - 单一职责（SRP）：只负责记录列表管理
+/// - 依赖倒置（DIP）：依赖 recordsFilterProvider，不依赖具体的筛选UI
+/// - 自动响应：监听 recordsFilterProvider 变化，自动过滤
 class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   late RecordRepository _repository;
 
@@ -39,24 +48,151 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     // 监听自动同步完成信号，信号变化时自动重建
     ref.watch(syncCompletedProvider);
     
+    // 监听筛选条件变化，自动重新过滤
+    final filterCriteria = ref.watch(recordsFilterProvider);
+    
     // 获取当前登录用户
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     
     // 根据用户加载数据
+    List<EncounterRecord> records;
     if (currentUser != null) {
-      final records = _repository.getRecordsByUser(currentUser.id);
-      return records;
+      records = _repository.getRecordsByUser(currentUser.id);
     } else {
       // 未登录：加载离线数据
-      return _repository.getRecordsByUser(null);
+      records = _repository.getRecordsByUser(null);
     }
+    
+    // 应用筛选条件
+    if (filterCriteria.isActive) {
+      records = _applyFilterCriteria(records, filterCriteria);
+    }
+    
+    return records;
   }
   
   /// 获取同步服务（延迟初始化）
   SyncService get _syncService => ref.read(syncServiceProvider);
-  
-  /// 获取成就检测服务
-  AchievementDetector get _achievementDetector => ref.read(achievementDetectorProvider);
+
+  /// 应用筛选条件到记录列表
+  /// 
+  /// 职责：
+  /// - 根据筛选条件过滤记录
+  /// - 支持多条件组合（AND 逻辑）
+  /// 
+  /// 设计原则：
+  /// - Fail Fast：条件不合法时直接返回空列表
+  /// - 高效过滤：使用 where 链式调用
+  /// - 不修改原列表：返回新列表
+  /// 
+  /// 调用者：build()
+  List<EncounterRecord> _applyFilterCriteria(
+    List<EncounterRecord> records,
+    RecordsFilterCriteria criteria,
+  ) {
+    return records.where((record) {
+      // 时间范围筛选（错过时间）
+      if (criteria.startDate != null && record.timestamp.isBefore(criteria.startDate!)) {
+        return false;
+      }
+      if (criteria.endDate != null && record.timestamp.isAfter(criteria.endDate!)) {
+        return false;
+      }
+
+      // 创建时间范围筛选
+      if (criteria.createdStartDate != null && record.createdAt.isBefore(criteria.createdStartDate!)) {
+        return false;
+      }
+      if (criteria.createdEndDate != null && record.createdAt.isAfter(criteria.createdEndDate!)) {
+        return false;
+      }
+
+      // 场所类型筛选
+      if (criteria.placeTypes != null && criteria.placeTypes!.isNotEmpty) {
+        if (!criteria.placeTypes!.contains(record.location.placeType)) {
+          return false;
+        }
+      }
+
+      // 状态筛选
+      if (criteria.statuses != null && criteria.statuses!.isNotEmpty) {
+        if (!criteria.statuses!.contains(record.status)) {
+          return false;
+        }
+      }
+
+      // 情绪强度筛选
+      if (criteria.emotionIntensities != null && criteria.emotionIntensities!.isNotEmpty) {
+        if (!criteria.emotionIntensities!.contains(record.emotion)) {
+          return false;
+        }
+      }
+
+      // 天气筛选
+      if (criteria.weathers != null && criteria.weathers!.isNotEmpty) {
+        final hasWeatherMatch = record.weather.any((w) => criteria.weathers!.contains(w));
+        if (!hasWeatherMatch) return false;
+      }
+
+      // 地区筛选
+      if (criteria.province != null && record.location.province != criteria.province) {
+        return false;
+      }
+      if (criteria.city != null && record.location.city != criteria.city) {
+        return false;
+      }
+      if (criteria.area != null && record.location.area != criteria.area) {
+        return false;
+      }
+
+      // 标签筛选
+      if (criteria.tags != null && criteria.tags!.isNotEmpty) {
+        final recordTags = record.tags.map((t) => t.tag).toList();
+        final hasMatch = criteria.tags!.any((tag) {
+          if (criteria.tagMatchMode == TagMatchMode.wholeWord) {
+            return recordTags.contains(tag);
+          } else {
+            return recordTags.any((recordTag) => recordTag.contains(tag));
+          }
+        });
+        if (!hasMatch) return false;
+      }
+
+      // 描述关键词筛选
+      if (criteria.descriptionKeyword != null && criteria.descriptionKeyword!.isNotEmpty) {
+        final description = record.description ?? '';
+        if (!description.toLowerCase().contains(criteria.descriptionKeyword!.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // 如果再遇备忘关键词筛选
+      if (criteria.ifReencounterKeyword != null && criteria.ifReencounterKeyword!.isNotEmpty) {
+        final ifReencounter = record.ifReencounter ?? '';
+        if (!ifReencounter.toLowerCase().contains(criteria.ifReencounterKeyword!.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // 对话契机关键词筛选
+      if (criteria.conversationStarterKeyword != null && criteria.conversationStarterKeyword!.isNotEmpty) {
+        final conversationStarter = record.conversationStarter ?? '';
+        if (!conversationStarter.toLowerCase().contains(criteria.conversationStarterKeyword!.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // 背景音乐关键词筛选
+      if (criteria.backgroundMusicKeyword != null && criteria.backgroundMusicKeyword!.isNotEmpty) {
+        final backgroundMusic = record.backgroundMusic ?? '';
+        if (!backgroundMusic.toLowerCase().contains(criteria.backgroundMusicKeyword!.toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+  }
 
   /// 刷新记录列表
   Future<void> refresh() async {
@@ -400,60 +536,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     }
   }
 
-  /// 应用筛选条件
-  /// 
-  /// 调用者：RecordFilterDialog._applyFilter()
-  /// 
-  /// 设计说明：
-  /// - 保存筛选条件到 Provider
-  /// - 触发 TimelinePage 重新构建，从而调用 _fetchFilteredRecords
-  Future<void> filterRecords({
-    DateTime? startDate,
-    DateTime? endDate,
-    DateTime? createdStartDate,
-    DateTime? createdEndDate,
-    String? province,
-    String? city,
-    String? area,
-    List<PlaceType>? placeTypes,
-    List<EncounterStatus>? statuses,
-    List<EmotionIntensity>? emotionIntensities,
-    List<Weather>? weathers,
-    List<String>? tags,
-    TagMatchMode tagMatchMode = TagMatchMode.contains,
-    String? descriptionKeyword,
-    String? ifReencounterKeyword,
-    String? conversationStarterKeyword,
-    String? backgroundMusicKeyword,
-  }) async {
-    // 保存筛选条件到 Provider（会触发 TimelinePage 重新构建）
-    ref.read(recordsFilterProvider.notifier).state = RecordsFilterCriteria(
-      startDate: startDate,
-      endDate: endDate,
-      createdStartDate: createdStartDate,
-      createdEndDate: createdEndDate,
-      province: province,
-      city: city,
-      area: area,
-      placeTypes: placeTypes,
-      statuses: statuses,
-      emotionIntensities: emotionIntensities,
-      weathers: weathers,
-      tags: tags,
-      tagMatchMode: tagMatchMode,
-      descriptionKeyword: descriptionKeyword,
-      ifReencounterKeyword: ifReencounterKeyword,
-      conversationStarterKeyword: conversationStarterKeyword,
-      backgroundMusicKeyword: backgroundMusicKeyword,
-    );
-  }
 
-  /// 清除筛选条件
-  /// 
-  /// 调用者：RecordFilterDialog._clearFilter()
-  Future<void> clearRecordsFilter() async {
-    ref.read(recordsFilterProvider.notifier).state = const RecordsFilterCriteria();
-  }
 
   /// 从后端筛选记录（支持多条件组合）
   /// 

@@ -37,8 +37,8 @@ class CommunityFilterCriteria {
     this.statuses,
   });
 
-  /// 判断是否有任何筛选条件
-  bool get hasAnyFilter {
+  /// 判断是否有活跃的筛选条件
+  bool get isActive {
     return startDate != null ||
         endDate != null ||
         publishStartDate != null ||
@@ -129,9 +129,6 @@ class CommunityFilterNotifier extends Notifier<CommunityFilterCriteria> {
   void clearFilter() {
     state = CommunityFilterCriteria.empty;
   }
-
-  /// 判断是否有筛选条件
-  bool get hasFilter => state.hasAnyFilter;
 }
 
 /// 社区筛选条件 Provider
@@ -148,9 +145,6 @@ class CommunityFilterNotifier extends Notifier<CommunityFilterCriteria> {
 /// 
 /// // 清空筛选条件
 /// ref.read(communityFilterProvider.notifier).clearFilter();
-/// 
-/// // 判断是否有筛选条件
-/// final hasFilter = ref.read(communityFilterProvider.notifier).hasFilter;
 /// ```
 final communityFilterProvider = NotifierProvider<CommunityFilterNotifier, CommunityFilterCriteria>(() {
   return CommunityFilterNotifier();

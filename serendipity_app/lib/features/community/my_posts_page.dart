@@ -85,65 +85,16 @@ class MyPostsPage extends ConsumerWidget {
         ],
       ),
       body: myPostsAsync.when(
-        data: (posts) => _buildPostsList(context, ref, posts, filterCriteria),
+        data: (posts) => _buildPostsListView(context, ref, posts, filterCriteria),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => _buildError(context, ref, error as Object?),
       ),
     );
   }
 
-  /// 构建帖子列表
-  /// 
-  /// 如果有筛选条件，从后端获取；否则显示本地所有帖子
-  Widget _buildPostsList(BuildContext context, WidgetRef ref, List<CommunityPost> posts, MyPostsFilterCriteria filterCriteria) {
-    // 如果没有筛选条件，显示本地所有帖子
-    if (!filterCriteria.hasAnyFilter) {
-      return _buildPostsListView(context, ref, posts, filterCriteria);
-    }
-
-    // 有筛选条件，从后端获取
-    return FutureBuilder<List<CommunityPost>>(
-      future: _fetchFilteredPosts(ref, filterCriteria),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return _buildError(context, ref, snapshot.error as Object?);
-        }
-
-        final filteredPosts = snapshot.data ?? [];
-        return _buildPostsListView(context, ref, filteredPosts, filterCriteria);
-      },
-    );
-  }
-
-  /// 从后端获取筛选后的帖子
-  Future<List<CommunityPost>> _fetchFilteredPosts(WidgetRef ref, MyPostsFilterCriteria filterCriteria) async {
-    try {
-      return await ref.read(myPostsProvider.notifier).filterPostsFromServer(
-        startDate: filterCriteria.startDate,
-        endDate: filterCriteria.endDate,
-        publishStartDate: filterCriteria.publishStartDate,
-        publishEndDate: filterCriteria.publishEndDate,
-        province: filterCriteria.province,
-        city: filterCriteria.city,
-        area: filterCriteria.area,
-        placeTypes: filterCriteria.placeTypes?.map((t) => t.value).toList(),
-        tags: filterCriteria.tags,
-        statuses: filterCriteria.statuses?.map((s) => s.name).toList(),
-        tagMatchMode: filterCriteria.tagMatchMode.value,
-        limit: 100,
-      );
-    } catch (e) {
-      throw Exception('筛选帖子失败：${AuthErrorHelper.extractErrorMessage(e)}');
-    }
-  }
-
   /// 构建帖子列表视图
   Widget _buildPostsListView(BuildContext context, WidgetRef ref, List<CommunityPost> posts, MyPostsFilterCriteria filterCriteria) {
-    final isFiltering = filterCriteria.hasAnyFilter;
+    final isFiltering = filterCriteria.isActive;
     
     // 空状态
     if (posts.isEmpty) {

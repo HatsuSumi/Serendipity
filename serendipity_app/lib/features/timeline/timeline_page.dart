@@ -78,7 +78,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         title: countAsync.when(
           data: (count) => Text('TA (共$count条)'),
           loading: () => const Text('TA'),
-          error: (_, __) => const Text('TA'),
+          error: (e, _) => const Text('TA'),
         ),
         actions: [
           // 筛选按钮
@@ -149,87 +149,17 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     );
   }
 
-  /// 构建筛选后的记录列表（使用后端筛选）
+  /// 构建记录列表（recordsProvider 已在 build() 中自动应用筛选条件）
   Widget _buildFilteredRecordList(BuildContext context, WidgetRef ref, RecordsFilterCriteria filterCriteria) {
-    // 如果没有筛选条件，显示本地所有记录
-    if (!filterCriteria.isActive) {
-      final recordsAsync = ref.watch(recordsProvider);
-      return recordsAsync.when(
-        data: (records) {
-          final sortedRecords = _sortRecords(records);
-          return _buildRecordList(context, sortedRecords, ref, filterCriteria);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorWidget(context, ref, error),
-      );
-    }
-
-    // 有筛选条件，从后端获取
-    return FutureBuilder<List<EncounterRecord>>(
-      future: _fetchFilteredRecords(ref, filterCriteria),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return _buildErrorWidget(context, ref, snapshot.error);
-        }
-
-        final records = snapshot.data ?? [];
+    final recordsAsync = ref.watch(recordsProvider);
+    return recordsAsync.when(
+      data: (records) {
         final sortedRecords = _sortRecords(records);
         return _buildRecordList(context, sortedRecords, ref, filterCriteria);
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => _buildErrorWidget(context, ref, error),
     );
-  }
-
-  /// 从后端获取筛选后的记录
-  Future<List<EncounterRecord>> _fetchFilteredRecords(WidgetRef ref, RecordsFilterCriteria filterCriteria) async {
-    // 转换排序参数
-    final sortBy = _getSortByField(_currentSort);
-    final sortOrder = _getSortOrder(_currentSort);
-
-    return await ref.read(recordsProvider.notifier).filterRecordsFromServer(
-      startDate: filterCriteria.startDate,
-      endDate: filterCriteria.endDate,
-      province: filterCriteria.province,
-      city: filterCriteria.city,
-      area: filterCriteria.area,
-      placeTypes: filterCriteria.placeTypes?.map((t) => t.value).toList(),
-      tags: filterCriteria.tags,
-      tagMatchMode: filterCriteria.tagMatchMode.value,
-      statuses: filterCriteria.statuses?.map((s) => s.name).toList(),
-      emotionIntensities: filterCriteria.emotionIntensities?.map((e) => e.name).toList(),
-      weathers: filterCriteria.weathers?.map((w) => w.value.toString()).toList(),
-      sortBy: sortBy,
-      sortOrder: sortOrder,
-      limit: 100,
-      offset: 0,
-    );
-  }
-
-  /// 获取排序字段
-  String _getSortByField(RecordSortType sortType) {
-    switch (sortType) {
-      case RecordSortType.createdDesc:
-      case RecordSortType.createdAsc:
-        return 'createdAt';
-      case RecordSortType.updatedDesc:
-      case RecordSortType.updatedAsc:
-        return 'updatedAt';
-    }
-  }
-
-  /// 获取排序顺序
-  String _getSortOrder(RecordSortType sortType) {
-    switch (sortType) {
-      case RecordSortType.createdDesc:
-      case RecordSortType.updatedDesc:
-        return 'desc';
-      case RecordSortType.createdAsc:
-      case RecordSortType.updatedAsc:
-        return 'asc';
-    }
   }
 
   /// 构建错误 Widget
