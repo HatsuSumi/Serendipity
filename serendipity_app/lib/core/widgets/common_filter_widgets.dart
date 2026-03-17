@@ -637,14 +637,12 @@ List<String>? parseTags(String input) {
 Widget buildHighlightedText(
   String text, {
   List<String>? keywords,
-  String? keyword,
   required Color highlightColor,
   TextStyle? textStyle,
   int? maxLines,
   TextOverflow? overflow,
 }) {
-  // 兼容旧的单关键词参数
-  final keywordList = keywords ?? (keyword != null ? [keyword] : []);
+  final keywordList = keywords ?? [];
   
   if (keywordList.isEmpty) {
     return Text(
