@@ -210,5 +210,39 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
     // 测试模式：返回 null（用户没有设置）
     return null;
   }
+
+  // ==================== 收藏相关操作 ====================
+
+  @override
+  Future<void> favoritePost(String userId, String postId) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<void> unfavoritePost(String userId, String postId) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
+    // 测试模式：返回空列表
+    return [];
+  }
+
+  @override
+  Future<void> favoriteRecord(String userId, String recordId) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<void> unfavoriteRecord(String userId, String recordId) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<Set<String>> getFavoritedRecordIds(String userId) async {
+    // 测试模式：返回空集合
+    return {};
+  }
 }
 

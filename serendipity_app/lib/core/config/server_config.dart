@@ -88,6 +88,12 @@ class ServerConfig {
   // 成就相关
   static const String achievementUnlocks = '/achievement-unlocks';
   
+  // 收藏相关
+  static const String favoritePosts = '/favorites/posts';
+  static const String favoriteRecords = '/favorites/records';
+  static String favoritePostById(String postId) => '/favorites/posts/$postId';
+  static String favoriteRecordById(String recordId) => '/favorites/records/$recordId';
+  
   /// 构建完整的 API URL
   static String buildUrl(String endpoint) {
     return '$apiUrl$endpoint';

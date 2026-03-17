@@ -837,5 +837,79 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       throw Exception('下载用户设置失败：${e.message}');
     }
   }
+
+  // ==================== 收藏相关操作 ====================
+
+  @override
+  Future<void> favoritePost(String userId, String postId) async {
+    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
+    if (postId.isEmpty) throw ArgumentError('帖子 ID 不能为空');
+    try {
+      await _httpClient.post(ServerConfig.favoritePosts, body: {'postId': postId});
+    } on HttpException catch (e) {
+      throw Exception('收藏帖子失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<void> unfavoritePost(String userId, String postId) async {
+    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
+    if (postId.isEmpty) throw ArgumentError('帖子 ID 不能为空');
+    try {
+      await _httpClient.delete(ServerConfig.favoritePostById(postId));
+    } on HttpException catch (e) {
+      throw Exception('取消收藏帖子失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
+    try {
+      final response = await _httpClient.get(ServerConfig.favoritePosts);
+      final data = response['data'] as Map<String, dynamic>;
+      final postsJson = data['posts'] as List;
+      return postsJson
+          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } on HttpException catch (e) {
+      throw Exception('获取收藏帖子失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<void> favoriteRecord(String userId, String recordId) async {
+    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
+    if (recordId.isEmpty) throw ArgumentError('记录 ID 不能为空');
+    try {
+      await _httpClient.post(ServerConfig.favoriteRecords, body: {'recordId': recordId});
+    } on HttpException catch (e) {
+      throw Exception('收藏记录失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<void> unfavoriteRecord(String userId, String recordId) async {
+    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
+    if (recordId.isEmpty) throw ArgumentError('记录 ID 不能为空');
+    try {
+      await _httpClient.delete(ServerConfig.favoriteRecordById(recordId));
+    } on HttpException catch (e) {
+      throw Exception('取消收藏记录失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<Set<String>> getFavoritedRecordIds(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
+    try {
+      final response = await _httpClient.get(ServerConfig.favoriteRecords);
+      final data = response['data'] as Map<String, dynamic>;
+      final ids = data['recordIds'] as List;
+      return ids.map((e) => e as String).toSet();
+    } on HttpException catch (e) {
+      throw Exception('获取收藏记录 ID 失败：${e.message}');
+    }
+  }
 }
 
