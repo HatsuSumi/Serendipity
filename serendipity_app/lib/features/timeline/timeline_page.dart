@@ -112,33 +112,19 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               );
             }).toList(),
           ),
-          // 更多菜单按钮
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: '更多',
-            onSelected: (String value) {
-              if (value == 'mask') {
-                setState(() {
-                  _isMasked = !_isMasked;
-                });
-                MessageHelper.showSuccess(
-                  context,
-                  _isMasked ? '已打码敏感信息' : '已显示原始信息',
-                );
-              }
+          // 打码按钮
+          IconButton(
+            icon: Icon(_isMasked ? Icons.visibility : Icons.visibility_off),
+            tooltip: _isMasked ? '显示原始信息' : '打码记录',
+            onPressed: () {
+              setState(() {
+                _isMasked = !_isMasked;
+              });
+              MessageHelper.showSuccess(
+                context,
+                _isMasked ? '已打码敏感信息' : '已显示原始信息',
+              );
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'mask',
-                child: Row(
-                  children: [
-                    Icon(_isMasked ? Icons.visibility : Icons.visibility_off),
-                    const SizedBox(width: 8),
-                    Text(_isMasked ? '显示原始信息' : '打码记录'),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -501,7 +487,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       builder: (context) {
                         return buildHighlightedText(
                           _isMasked ? _maskText(record.description!) : record.description!,
-                          keyword: _isMasked ? null : filterCriteria.descriptionKeyword,
+                          keywords: _isMasked ? null : (filterCriteria.descriptionKeyword != null ? [filterCriteria.descriptionKeyword!] : null),
                           highlightColor: statusColor.withValues(alpha: 0.3),
                           textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -919,7 +905,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         const SizedBox(height: 4),
         buildHighlightedText(
           displayContent,
-          keyword: displayKeyword,
+          keywords: displayKeyword != null ? [displayKeyword] : null,
           highlightColor: accentColor.withValues(alpha: 0.3),
           textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
