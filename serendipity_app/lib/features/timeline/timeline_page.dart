@@ -354,27 +354,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                           ],
                         ),
                       ),
-                      PopupMenuItem(
-                        value: 'favorite',
-                        child: Consumer(
-                          builder: (context, ref, _) {
-                            final isFavorited = ref
-                                    .watch(favoritesProvider)
-                                    .valueOrNull
-                                    ?.isRecordFavorited(record.id) ??
-                                false;
-                            return Row(
-                              children: [
-                                Icon(isFavorited
-                                    ? Icons.bookmark
-                                    : Icons.bookmark_border),
-                                const SizedBox(width: 8),
-                                Text(isFavorited ? '取消收藏' : '收藏'),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
                       const PopupMenuItem(
                         value: 'link',
                         child: Row(
@@ -591,6 +570,28 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       // 右侧：故事线信息
                       if (record.storyLineId != null)
                         _buildStoryLineInfo(context, ref, record.storyLineId!),
+                      // 收藏按钮
+                      const SizedBox(width: 4),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final isFavorited = ref
+                                  .watch(favoritesProvider)
+                                  .valueOrNull
+                                  ?.isRecordFavorited(record.id) ??
+                              false;
+                          return GestureDetector(
+                            onTap: () => _toggleFavoriteRecord(
+                                context, ref, record.id),
+                            child: Icon(
+                              isFavorited
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_border,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ],

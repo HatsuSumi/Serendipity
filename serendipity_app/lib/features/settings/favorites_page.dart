@@ -185,16 +185,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
-                        value: 'unfavorite',
-                        child: Row(
-                          children: [
-                            Icon(Icons.bookmark_remove_outlined),
-                            SizedBox(width: 8),
-                            Text('取消收藏'),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ],
@@ -306,6 +296,16 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                   ),
                   if (record.storyLineId != null)
                     _buildStoryLineInfo(record.storyLineId!),
+                  // 取消收藏按钮
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => _unfavoriteRecord(record.id),
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ],
               ),
             ],
