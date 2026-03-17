@@ -247,7 +247,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
             return Padding(
               padding: const EdgeInsets.only(top: 32),
               child: EmptyStateWidget(
-                icon: isFiltering ? '🔍' : '💫',
+                icon: isFiltering ? Icons.search_off : Icons.auto_awesome,
                 title: isFiltering ? '没有符合条件的记录' : '还没有记录',
                 description: isFiltering ? '试试调整筛选条件' : '点击下方按钮开始记录',
               ),

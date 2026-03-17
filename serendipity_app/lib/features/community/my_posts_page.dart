@@ -105,7 +105,7 @@ class MyPostsPage extends ConsumerWidget {
           children: [
             const SizedBox(height: 100),
             EmptyStateWidget(
-              icon: isFiltering ? '🔍' : Icons.cloud_off,
+              icon: isFiltering ? Icons.search_off : Icons.cloud_off,
               title: isFiltering ? '没有符合条件的帖子' : '还没有发布到树洞',
               description: isFiltering ? '试试调整筛选条件' : '在记录详情页可以发布到社区',
             ),
