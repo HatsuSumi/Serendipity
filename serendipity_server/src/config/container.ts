@@ -23,6 +23,9 @@ import { CommunityPostController } from '../controllers/communityPostController'
 import { UserController } from '../controllers/userController';
 import { CheckInController } from '../controllers/checkInController';
 import { AchievementUnlockController } from '../controllers/achievementUnlockController';
+import { FavoriteRepository } from '../repositories/favoriteRepository';
+import { FavoriteService } from '../services/favoriteService';
+import { FavoriteController } from '../controllers/favoriteController';
 import { RecordService } from '../services/recordService';
 import { StoryLineService } from '../services/storyLineService';
 import { CommunityPostService } from '../services/communityPostService';
@@ -165,6 +168,7 @@ export const initializeContainer = (): Container => {
   const userSettingsRepository = new UserSettingsRepository(prisma);
   const checkInRepository = new CheckInRepository(prisma);
   const achievementUnlockRepository = new AchievementUnlockRepository(prisma);
+  const favoriteRepository = new FavoriteRepository(prisma);
 
   container.register('userRepository', userRepository);
   container.register('refreshTokenRepository', refreshTokenRepository);
@@ -176,6 +180,7 @@ export const initializeContainer = (): Container => {
   container.register('userSettingsRepository', userSettingsRepository);
   container.register('checkInRepository', checkInRepository);
   container.register('achievementUnlockRepository', achievementUnlockRepository);
+  container.register('favoriteRepository', favoriteRepository);
 
   // 初始化 Services
   const verificationService = new VerificationService(verificationCodeRepository);
@@ -191,6 +196,7 @@ export const initializeContainer = (): Container => {
   const userService = new UserService(userRepository, userSettingsRepository);
   const checkInService = new CheckInService(checkInRepository);
   const achievementUnlockService = new AchievementUnlockService(achievementUnlockRepository);
+  const favoriteService = new FavoriteService(favoriteRepository, communityPostRepository);
 
   container.register('verificationService', verificationService);
   container.register('authService', authService);
@@ -200,6 +206,7 @@ export const initializeContainer = (): Container => {
   container.register('userService', userService);
   container.register('checkInService', checkInService);
   container.register('achievementUnlockService', achievementUnlockService);
+  container.register('favoriteService', favoriteService);
 
   // 初始化 Controllers
   const authController = new AuthController(authService, verificationService);
@@ -209,6 +216,7 @@ export const initializeContainer = (): Container => {
   const userController = new UserController(userService);
   const checkInController = new CheckInController(checkInService);
   const achievementUnlockController = new AchievementUnlockController(achievementUnlockService);
+  const favoriteController = new FavoriteController(favoriteService);
 
   container.register('authController', authController);
   container.register('recordController', recordController);
@@ -217,6 +225,7 @@ export const initializeContainer = (): Container => {
   container.register('userController', userController);
   container.register('checkInController', checkInController);
   container.register('achievementUnlockController', achievementUnlockController);
+  container.register('favoriteController', favoriteController);
 
   return container;
 };

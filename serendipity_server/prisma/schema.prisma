@@ -21,6 +21,7 @@ model User {
   achievementUnlocks AchievementUnlock[]
   checkIns          CheckIn[]
   communityPosts    CommunityPost[]
+  favorites         Favorite[]
   membership        Membership?
   records           Record[]
   refreshTokens     RefreshToken[]
@@ -190,6 +191,22 @@ model CheckIn {
   @@index([userId])
   @@index([date])
   @@map("check_ins")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  postId    String?  @map("post_id")
+  recordId  String?  @map("record_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, recordId])
+  @@index([userId])
+  @@index([postId])
+  @@index([recordId])
+  @@map("favorites")
 }
 
 model AchievementUnlock {
