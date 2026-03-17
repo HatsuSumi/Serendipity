@@ -300,5 +300,79 @@ class CommunityRepository {
       limit: limit,
     );
   }
+
+  // ==================== 收藏相关操作 ====================
+
+  /// 收藏社区帖子
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - postId 为空：抛出 ArgumentError
+  ///
+  /// 调用者：FavoritesNotifier.favoritePost()
+  Future<void> favoritePost(String userId, String postId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    if (postId.isEmpty) throw ArgumentError('postId cannot be empty');
+    await _dataSource.favoritePost(userId, postId);
+  }
+
+  /// 取消收藏社区帖子
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - postId 为空：抛出 ArgumentError
+  ///
+  /// 调用者：FavoritesNotifier.unfavoritePost()
+  Future<void> unfavoritePost(String userId, String postId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    if (postId.isEmpty) throw ArgumentError('postId cannot be empty');
+    await _dataSource.unfavoritePost(userId, postId);
+  }
+
+  /// 获取用户收藏的社区帖子列表
+  ///
+  /// Fail Fast：userId 为空抛出 ArgumentError
+  ///
+  /// 调用者：FavoritesNotifier.build()
+  Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    return await _dataSource.getFavoritedPosts(userId);
+  }
+
+  /// 收藏私人记录
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - recordId 为空：抛出 ArgumentError
+  ///
+  /// 调用者：FavoritesNotifier.favoriteRecord()
+  Future<void> favoriteRecord(String userId, String recordId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    if (recordId.isEmpty) throw ArgumentError('recordId cannot be empty');
+    await _dataSource.favoriteRecord(userId, recordId);
+  }
+
+  /// 取消收藏私人记录
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - recordId 为空：抛出 ArgumentError
+  ///
+  /// 调用者：FavoritesNotifier.unfavoriteRecord()
+  Future<void> unfavoriteRecord(String userId, String recordId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    if (recordId.isEmpty) throw ArgumentError('recordId cannot be empty');
+    await _dataSource.unfavoriteRecord(userId, recordId);
+  }
+
+  /// 获取用户收藏的记录 ID 集合
+  ///
+  /// Fail Fast：userId 为空抛出 ArgumentError
+  ///
+  /// 调用者：FavoritesNotifier.build()
+  Future<Set<String>> getFavoritedRecordIds(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    return await _dataSource.getFavoritedRecordIds(userId);
+  }
 }
 

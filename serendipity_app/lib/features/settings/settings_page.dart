@@ -16,7 +16,6 @@ import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/phone_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
-import '../../core/widgets/countdown_button.dart';
 import '../../models/enums.dart';
 import '../auth/widgets/auth_text_field.dart';
 import '../auth/login_page.dart';
@@ -29,6 +28,7 @@ import '../community/my_posts_page.dart';
 import 'dialogs/manual_sync_dialog.dart';
 import 'dialogs/sync_info_dialog.dart';
 import 'dialogs/sync_history_dialog.dart';
+import 'favorites_page.dart';
 
 /// 设置页面（我的页面）
 /// 
@@ -123,6 +123,20 @@ class SettingsPage extends ConsumerWidget {
                 context,
                 ref,
                 const MyPostsPage(),
+              );
+            },
+          ),
+          
+          // 我的收藏入口
+          ListTile(
+            leading: const Text('🔖', style: TextStyle(fontSize: 24)),
+            title: const Text('我的收藏'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              NavigationHelper.pushWithTransition(
+                context,
+                ref,
+                const FavoritesPage(),
               );
             },
           ),
@@ -1211,7 +1225,7 @@ class SettingsPage extends ConsumerWidget {
             onPressed: () async {
               Navigator.of(dialogContext).pop();
               
-              final success = await AsyncActionHelper.execute(
+              await AsyncActionHelper.execute(
                 context,
                 action: () async {
                   await ref.read(achievementsProvider.notifier).resetAllAchievements();

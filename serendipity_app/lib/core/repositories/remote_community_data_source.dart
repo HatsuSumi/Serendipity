@@ -118,5 +118,35 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
       limit: limit,
     );
   }
+
+  @override
+  Future<void> favoritePost(String userId, String postId) async {
+    await _remoteData.favoritePost(userId, postId);
+  }
+
+  @override
+  Future<void> unfavoritePost(String userId, String postId) async {
+    await _remoteData.unfavoritePost(userId, postId);
+  }
+
+  @override
+  Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
+    return await _remoteData.getFavoritedPosts(userId);
+  }
+
+  @override
+  Future<void> favoriteRecord(String userId, String recordId) async {
+    await _remoteData.favoriteRecord(userId, recordId);
+  }
+
+  @override
+  Future<void> unfavoriteRecord(String userId, String recordId) async {
+    await _remoteData.unfavoriteRecord(userId, recordId);
+  }
+
+  @override
+  Future<Set<String>> getFavoritedRecordIds(String userId) async {
+    return await _remoteData.getFavoritedRecordIds(userId);
+  }
 }
 

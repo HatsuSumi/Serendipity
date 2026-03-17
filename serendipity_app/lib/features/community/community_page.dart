@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/favorites_provider.dart';
 import '../../core/providers/user_settings_provider.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/message_helper.dart';
@@ -288,6 +289,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
     final posts = communityState.posts;
     final filterCriteria = ref.watch(communityFilterProvider);
     final isFiltering = filterCriteria.isActive;
+    final favoritesState = ref.watch(favoritesProvider).valueOrNull;
     
     // 空状态
     if (posts.isEmpty) {
@@ -326,6 +328,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
           return CommunityPostCard(
             post: post,
             onDelete: post.isOwner ? () => _deletePost(post.id) : null,
+            isFavorited: favoritesState?.isPostFavorited(post.id) ?? false,
+            onFavorite: () => _toggleFavoritePost(post.id, favoritesState?.isPostFavorited(post.id) ?? false),
             highlightKeywords: filterCriteria.tags,
             tagMatchMode: filterCriteria.tagMatchMode,
           );
@@ -356,6 +360,26 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
     }
 
     return const SizedBox(height: 80);
+  }
+
+  /// 切换帖子收藏状态
+  ///
+  /// 调用者：_buildPostsList() 的 CommunityPostCard.onFavorite
+  Future<void> _toggleFavoritePost(String postId, bool isFavorited) async {
+    final notifier = ref.read(favoritesProvider.notifier);
+    try {
+      if (isFavorited) {
+        await notifier.unfavoritePost(postId);
+      } else {
+        await notifier.favoritePost(postId);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      MessageHelper.showError(
+        context,
+        isFavorited ? '取消收藏失败：${AuthErrorHelper.extractErrorMessage(e)}' : '收藏失败：${AuthErrorHelper.extractErrorMessage(e)}',
+      );
+    }
   }
 
   /// 删除帖子

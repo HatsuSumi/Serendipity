@@ -6,16 +6,19 @@ import '../../../core/utils/date_time_helper.dart';
 import '../../../core/widgets/common_filter_widgets.dart';
 
 /// 社区帖子卡片
-/// 
+///
 /// 职责：
 /// - 显示社区帖子内容
 /// - 支持删除操作（仅自己的帖子）
+/// - 支持收藏/取消收藏操作
 /// - 支持标签高亮（筛选时）
-/// 
-/// 调用者：CommunityPage、MyPostsPage
+///
+/// 调用者：CommunityPage、MyPostsPage、FavoritesPage
 class CommunityPostCard extends StatelessWidget {
   final CommunityPost post;
   final VoidCallback? onDelete;
+  final VoidCallback? onFavorite;
+  final bool isFavorited;
   final List<String>? highlightKeywords;
   final TagMatchMode tagMatchMode;
 
@@ -23,6 +26,8 @@ class CommunityPostCard extends StatelessWidget {
     super.key,
     required this.post,
     this.onDelete,
+    this.onFavorite,
+    this.isFavorited = false,
     this.highlightKeywords,
     this.tagMatchMode = TagMatchMode.contains,
   });
@@ -107,6 +112,17 @@ class CommunityPostCard extends StatelessWidget {
             color: theme.colorScheme.error,
             tooltip: '删除',
             onPressed: onDelete,
+          ),
+
+        // 收藏按钮
+        if (onFavorite != null)
+          IconButton(
+            icon: Icon(
+              isFavorited ? Icons.bookmark : Icons.bookmark_border,
+              color: isFavorited ? theme.colorScheme.primary : null,
+            ),
+            tooltip: isFavorited ? '取消收藏' : '收藏',
+            onPressed: onFavorite,
           ),
       ],
     );

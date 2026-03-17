@@ -547,5 +547,69 @@ abstract class IRemoteDataRepository {
   /// - userId 为空：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<UserSettings?> downloadSettings(String userId);
+
+  // ==================== 收藏相关操作 ====================
+
+  /// 收藏社区帖子
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - postId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常
+  ///
+  /// 调用者：CommunityRepository.favoritePost()
+  Future<void> favoritePost(String userId, String postId);
+
+  /// 取消收藏社区帖子
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - postId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常
+  ///
+  /// 调用者：CommunityRepository.unfavoritePost()
+  Future<void> unfavoritePost(String userId, String postId);
+
+  /// 获取用户收藏的社区帖子列表
+  ///
+  /// 返回：收藏的 CommunityPost 列表（按收藏时间倒序）
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常
+  ///
+  /// 调用者：CommunityRepository.getFavoritedPosts()
+  Future<List<CommunityPost>> getFavoritedPosts(String userId);
+
+  /// 收藏私人记录
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - recordId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常
+  ///
+  /// 调用者：CommunityRepository.favoriteRecord()
+  Future<void> favoriteRecord(String userId, String recordId);
+
+  /// 取消收藏私人记录
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - recordId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常
+  ///
+  /// 调用者：CommunityRepository.unfavoriteRecord()
+  Future<void> unfavoriteRecord(String userId, String recordId);
+
+  /// 获取用户收藏的记录 ID 列表
+  ///
+  /// 返回：收藏的 recordId 集合（用于本地 Hive 过滤展示）
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常
+  ///
+  /// 调用者：CommunityRepository.getFavoritedRecordIds()
+  Future<Set<String>> getFavoritedRecordIds(String userId);
 }
 

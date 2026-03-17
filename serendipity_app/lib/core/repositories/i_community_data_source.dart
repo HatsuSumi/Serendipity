@@ -111,4 +111,30 @@ abstract class ICommunityDataSource {
     TagMatchMode tagMatchMode = TagMatchMode.contains,
     int limit = 50,
   });
+
+  // ==================== 收藏相关操作 ====================
+
+  /// 收藏社区帖子
+  /// 调用者：CommunityRepository.favoritePost()
+  Future<void> favoritePost(String userId, String postId);
+
+  /// 取消收藏社区帖子
+  /// 调用者：CommunityRepository.unfavoritePost()
+  Future<void> unfavoritePost(String userId, String postId);
+
+  /// 获取用户收藏的社区帖子列表
+  /// 调用者：CommunityRepository.getFavoritedPosts()
+  Future<List<CommunityPost>> getFavoritedPosts(String userId);
+
+  /// 收藏私人记录
+  /// 调用者：CommunityRepository.favoriteRecord()
+  Future<void> favoriteRecord(String userId, String recordId);
+
+  /// 取消收藏私人记录
+  /// 调用者：CommunityRepository.unfavoriteRecord()
+  Future<void> unfavoriteRecord(String userId, String recordId);
+
+  /// 获取用户收藏的记录 ID 集合
+  /// 调用者：CommunityRepository.getFavoritedRecordIds()
+  Future<Set<String>> getFavoritedRecordIds(String userId);
 }

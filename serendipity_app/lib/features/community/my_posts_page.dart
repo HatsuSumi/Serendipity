@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/community_provider.dart';
+import '../../core/providers/favorites_provider.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
+import '../../core/utils/message_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../models/community_post.dart';
 import 'widgets/community_post_card.dart';
@@ -122,15 +124,46 @@ class MyPostsPage extends ConsumerWidget {
         itemCount: posts.length,
         itemBuilder: (context, index) {
           final post = posts[index];
+          final favoritesState = ref.watch(favoritesProvider).valueOrNull;
           return CommunityPostCard(
             post: post,
             onDelete: () => _deletePost(context, ref, post.id),
+            isFavorited: favoritesState?.isPostFavorited(post.id) ?? false,
+            onFavorite: () => _toggleFavoritePost(context, ref, post.id,
+                favoritesState?.isPostFavorited(post.id) ?? false),
             highlightKeywords: filterCriteria.tags,
             tagMatchMode: filterCriteria.tagMatchMode,
           );
         },
       ),
     );
+  }
+
+  /// 切换帖子收藏状态
+  ///
+  /// 调用者：_buildPostsListView() 的 CommunityPostCard.onFavorite
+  Future<void> _toggleFavoritePost(
+    BuildContext context,
+    WidgetRef ref,
+    String postId,
+    bool isFavorited,
+  ) async {
+    final notifier = ref.read(favoritesProvider.notifier);
+    try {
+      if (isFavorited) {
+        await notifier.unfavoritePost(postId);
+      } else {
+        await notifier.favoritePost(postId);
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      MessageHelper.showError(
+        context,
+        isFavorited
+            ? '取消收藏失败：${AuthErrorHelper.extractErrorMessage(e)}'
+            : '收藏失败：${AuthErrorHelper.extractErrorMessage(e)}',
+      );
+    }
   }
 
   /// 构建错误状态

@@ -7,6 +7,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/records_filter_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/community_provider.dart';
+import '../../core/providers/favorites_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
@@ -353,6 +354,27 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                           ],
                         ),
                       ),
+                      PopupMenuItem(
+                        value: 'favorite',
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final isFavorited = ref
+                                    .watch(favoritesProvider)
+                                    .valueOrNull
+                                    ?.isRecordFavorited(record.id) ??
+                                false;
+                            return Row(
+                              children: [
+                                Icon(isFavorited
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border),
+                                const SizedBox(width: 8),
+                                Text(isFavorited ? '取消收藏' : '收藏'),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
                       const PopupMenuItem(
                         value: 'link',
                         child: Row(
@@ -589,6 +611,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       case 'pin':
         _togglePinRecord(context, ref, record);
         break;
+      case 'favorite':
+        _toggleFavoriteRecord(context, ref, record.id);
+        break;
       case 'link':
         _showLinkToStoryLineDialog(context, ref, record);
         break;
@@ -614,6 +639,31 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     } catch (e) {
       if (context.mounted) {
         MessageHelper.showError(context, '操作失败：${AuthErrorHelper.extractErrorMessage(e)}');
+      }
+    }
+  }
+
+  /// 切换记录收藏状态
+  ///
+  /// 调用者：_handleMenuAction()
+  void _toggleFavoriteRecord(BuildContext context, WidgetRef ref, String recordId) async {
+    final isFavorited =
+        ref.read(favoritesProvider).valueOrNull?.isRecordFavorited(recordId) ?? false;
+    final notifier = ref.read(favoritesProvider.notifier);
+    try {
+      if (isFavorited) {
+        await notifier.unfavoriteRecord(recordId);
+        if (context.mounted) MessageHelper.showSuccess(context, '已取消收藏');
+      } else {
+        await notifier.favoriteRecord(recordId);
+        if (context.mounted) MessageHelper.showSuccess(context, '已收藏');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        MessageHelper.showError(
+          context,
+          '操作失败：${AuthErrorHelper.extractErrorMessage(e)}',
+        );
       }
     }
   }
