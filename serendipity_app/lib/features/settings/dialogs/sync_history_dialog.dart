@@ -295,6 +295,26 @@ class SyncHistoryDialog extends ConsumerWidget {
                     checkIns: history.mergedCheckIns,
                     isWarning: true,
                   ),
+                
+                // 成就同步统计
+                if (history.syncedAchievements > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.emoji_events_outlined,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '成就：同步 \${history.syncedAchievements} 个',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
               ] else ...[
                 Text(
                   '无数据变化',
