@@ -309,7 +309,7 @@ class SyncHistoryDialog extends ConsumerWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '成就：同步 \${history.syncedAchievements} 个',
+                          '成就：同步 ${history.syncedAchievements} 个',
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],
