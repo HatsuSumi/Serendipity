@@ -34,12 +34,13 @@ import { CheckInService } from '../services/checkInService';
 import { AchievementUnlockService } from '../services/achievementUnlockService';
 import { config } from '../config';
 import { AUTH_CONFIG } from '../config/auth.config';
+import { TYPES } from '../config/types';
 import path from 'path';
 
 // 依赖容器
 class Container {
   private static instance: Container;
-  private services: Map<string, unknown> = new Map();
+  private services: Map<symbol, unknown> = new Map();
 
   private constructor() {}
 
@@ -50,20 +51,20 @@ class Container {
     return Container.instance;
   }
 
-  register<T>(name: string, service: T): void {
-    this.services.set(name, service);
+  register<T>(key: symbol, service: T): void {
+    this.services.set(key, service);
   }
 
-  get<T>(name: string): T {
-    const service = this.services.get(name);
+  get<T>(key: symbol): T {
+    const service = this.services.get(key);
     if (!service) {
-      throw new Error(`Service ${name} not found in container`);
+      throw new Error(`Service ${String(key)} not found in container`);
     }
     return service as T;
   }
 
-  has(name: string): boolean {
-    return this.services.has(name);
+  has(key: symbol): boolean {
+    return this.services.has(key);
   }
 }
 
@@ -113,7 +114,7 @@ export const initializeContainer = (): Container => {
     logger.add(new winston.transports.Console({ format: consoleFormat }));
   }
 
-  container.register('logger', logger);
+  container.register(TYPES.Logger, logger);
 
   // 初始化 Database
   const pool = new Pool({
@@ -146,16 +147,16 @@ export const initializeContainer = (): Container => {
     logger.warn('Prisma warning:', e);
   });
 
-  container.register('database', prisma);
-  container.register('pool', pool);
+  container.register(TYPES.Database, prisma);
+  container.register(TYPES.Pool, pool);
 
   // 初始化 JWT Service
   const jwtService = new JwtService();
-  container.register('jwtService', jwtService);
+  container.register(TYPES.JwtService, jwtService);
 
   // 初始化 Password Hasher
   const passwordHasher = new BcryptPasswordHasher(AUTH_CONFIG.SALT_ROUNDS);
-  container.register('passwordHasher', passwordHasher);
+  container.register(TYPES.PasswordHasher, passwordHasher);
 
   // 初始化 Repositories
   const userRepository = new UserRepository(prisma);
@@ -170,17 +171,17 @@ export const initializeContainer = (): Container => {
   const achievementUnlockRepository = new AchievementUnlockRepository(prisma);
   const favoriteRepository = new FavoriteRepository(prisma);
 
-  container.register('userRepository', userRepository);
-  container.register('refreshTokenRepository', refreshTokenRepository);
-  container.register('verificationCodeRepository', verificationCodeRepository);
-  container.register('recordRepository', recordRepository);
-  container.register('storyLineRepository', storyLineRepository);
-  container.register('communityPostRepository', communityPostRepository);
-  container.register('membershipRepository', membershipRepository);
-  container.register('userSettingsRepository', userSettingsRepository);
-  container.register('checkInRepository', checkInRepository);
-  container.register('achievementUnlockRepository', achievementUnlockRepository);
-  container.register('favoriteRepository', favoriteRepository);
+  container.register(TYPES.UserRepository, userRepository);
+  container.register(TYPES.RefreshTokenRepository, refreshTokenRepository);
+  container.register(TYPES.VerificationCodeRepository, verificationCodeRepository);
+  container.register(TYPES.RecordRepository, recordRepository);
+  container.register(TYPES.StoryLineRepository, storyLineRepository);
+  container.register(TYPES.CommunityPostRepository, communityPostRepository);
+  container.register(TYPES.MembershipRepository, membershipRepository);
+  container.register(TYPES.UserSettingsRepository, userSettingsRepository);
+  container.register(TYPES.CheckInRepository, checkInRepository);
+  container.register(TYPES.AchievementUnlockRepository, achievementUnlockRepository);
+  container.register(TYPES.FavoriteRepository, favoriteRepository);
 
   // 初始化 Services
   const verificationService = new VerificationService(verificationCodeRepository);
@@ -198,15 +199,15 @@ export const initializeContainer = (): Container => {
   const achievementUnlockService = new AchievementUnlockService(achievementUnlockRepository);
   const favoriteService = new FavoriteService(favoriteRepository, communityPostRepository);
 
-  container.register('verificationService', verificationService);
-  container.register('authService', authService);
-  container.register('recordService', recordService);
-  container.register('storyLineService', storyLineService);
-  container.register('communityPostService', communityPostService);
-  container.register('userService', userService);
-  container.register('checkInService', checkInService);
-  container.register('achievementUnlockService', achievementUnlockService);
-  container.register('favoriteService', favoriteService);
+  container.register(TYPES.VerificationService, verificationService);
+  container.register(TYPES.AuthService, authService);
+  container.register(TYPES.RecordService, recordService);
+  container.register(TYPES.StoryLineService, storyLineService);
+  container.register(TYPES.CommunityPostService, communityPostService);
+  container.register(TYPES.UserService, userService);
+  container.register(TYPES.CheckInService, checkInService);
+  container.register(TYPES.AchievementUnlockService, achievementUnlockService);
+  container.register(TYPES.FavoriteService, favoriteService);
 
   // 初始化 Controllers
   const authController = new AuthController(authService, verificationService);
@@ -218,14 +219,14 @@ export const initializeContainer = (): Container => {
   const achievementUnlockController = new AchievementUnlockController(achievementUnlockService);
   const favoriteController = new FavoriteController(favoriteService);
 
-  container.register('authController', authController);
-  container.register('recordController', recordController);
-  container.register('storyLineController', storyLineController);
-  container.register('communityPostController', communityPostController);
-  container.register('userController', userController);
-  container.register('checkInController', checkInController);
-  container.register('achievementUnlockController', achievementUnlockController);
-  container.register('favoriteController', favoriteController);
+  container.register(TYPES.AuthController, authController);
+  container.register(TYPES.RecordController, recordController);
+  container.register(TYPES.StoryLineController, storyLineController);
+  container.register(TYPES.CommunityPostController, communityPostController);
+  container.register(TYPES.UserController, userController);
+  container.register(TYPES.CheckInController, checkInController);
+  container.register(TYPES.AchievementUnlockController, achievementUnlockController);
+  container.register(TYPES.FavoriteController, favoriteController);
 
   return container;
 };
@@ -234,18 +235,18 @@ export const initializeContainer = (): Container => {
 export const shutdownContainer = async (): Promise<void> => {
   const container = Container.getInstance();
   
-  if (container.has('database')) {
-    const prisma = container.get<PrismaClient>('database');
+  if (container.has(TYPES.Database)) {
+    const prisma = container.get<PrismaClient>(TYPES.Database);
     await prisma.$disconnect();
   }
 
-  if (container.has('pool')) {
-    const pool = container.get<Pool>('pool');
+  if (container.has(TYPES.Pool)) {
+    const pool = container.get<Pool>(TYPES.Pool);
     await pool.end();
   }
 
-  if (container.has('logger')) {
-    const logger = container.get<winston.Logger>('logger');
+  if (container.has(TYPES.Logger)) {
+    const logger = container.get<winston.Logger>(TYPES.Logger);
     logger.info('All services shut down');
   }
 };

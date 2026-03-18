@@ -9,6 +9,7 @@ import { createCheckInRoutes } from './checkIn.routes';
 import { createAchievementUnlockRoutes } from './achievementUnlock.routes';
 import { createFavoriteRoutes } from './favorite.routes';
 import Container from '../config/container';
+import { TYPES } from '../config/types';
 import { AuthController } from '../controllers/authController';
 import { RecordController } from '../controllers/recordController';
 import { StoryLineController } from '../controllers/storyLineController';
@@ -20,28 +21,28 @@ import { FavoriteController } from '../controllers/favoriteController';
 
 /**
  * 创建主路由
- * 
+ *
  * 从依赖注入容器获取所有控制器，并注册路由。
  * 必须在容器初始化后调用。
- * 
+ *
+ * @param container 已初始化的 DI 容器
  * @returns Express Router
  */
-export const createMainRoutes = (): Router => {
+export const createMainRoutes = (container: Container): Router => {
   const router = Router();
 
   // 健康检查（无需认证）
   router.get('/health', healthCheck);
 
   // 从容器获取控制器实例
-  const container = Container.getInstance();
-  const authController = container.get<AuthController>('authController');
-  const recordController = container.get<RecordController>('recordController');
-  const storyLineController = container.get<StoryLineController>('storyLineController');
-  const communityPostController = container.get<CommunityPostController>('communityPostController');
-  const userController = container.get<UserController>('userController');
-  const checkInController = container.get<CheckInController>('checkInController');
-  const achievementUnlockController = container.get<AchievementUnlockController>('achievementUnlockController');
-  const favoriteController = container.get<FavoriteController>('favoriteController');
+  const authController = container.get<AuthController>(TYPES.AuthController);
+  const recordController = container.get<RecordController>(TYPES.RecordController);
+  const storyLineController = container.get<StoryLineController>(TYPES.StoryLineController);
+  const communityPostController = container.get<CommunityPostController>(TYPES.CommunityPostController);
+  const userController = container.get<UserController>(TYPES.UserController);
+  const checkInController = container.get<CheckInController>(TYPES.CheckInController);
+  const achievementUnlockController = container.get<AchievementUnlockController>(TYPES.AchievementUnlockController);
+  const favoriteController = container.get<FavoriteController>(TYPES.FavoriteController);
 
   // 注册子路由
   router.use('/auth', createAuthRoutes(authController));

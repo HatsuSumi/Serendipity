@@ -11,10 +11,10 @@ import { createApp } from './app';
  */
 
 // 1. 初始化依赖注入容器
-initializeContainer();
+const container = initializeContainer();
 
 // 2. 创建 Express 应用
-const app = createApp();
+const app = createApp(container);
 
 // 3. 启动 HTTP 服务器
 const PORT = config.port;
