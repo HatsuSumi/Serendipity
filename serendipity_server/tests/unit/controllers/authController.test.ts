@@ -12,8 +12,10 @@ describe('AuthController', () => {
     mockAuthService = {
       registerEmail: jest.fn(),
       registerPhone: jest.fn(),
+      registerPhonePassword: jest.fn(),
       loginEmail: jest.fn(),
       loginPhone: jest.fn(),
+      loginPhonePassword: jest.fn(),
       resetPassword: jest.fn(),
       changePassword: jest.fn(),
       changeEmail: jest.fn(),
@@ -47,7 +49,7 @@ describe('AuthController', () => {
       const next = createMockNext();
 
       const mockResult = {
-        user: { id: 'user-id', email: 'test@example.com', createdAt: new Date() },
+        user: { id: 'user-id', email: 'test@example.com', authProvider: 'email' as const, createdAt: new Date() },
         tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 
@@ -87,7 +89,7 @@ describe('AuthController', () => {
       const next = createMockNext();
 
       const mockResult = {
-        user: { id: 'user-id', email: 'test@example.com', createdAt: new Date() },
+        user: { id: 'user-id', email: 'test@example.com', authProvider: 'email' as const, createdAt: new Date() },
         tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 
@@ -158,7 +160,7 @@ describe('AuthController', () => {
       const next = createMockNext();
 
       const mockResult = {
-        user: { id: 'user-id', email: 'test@example.com', createdAt: new Date() },
+        user: { id: 'user-id', email: 'test@example.com', authProvider: 'email' as const, createdAt: new Date() },
         tokens: { accessToken: 'new-token', refreshToken: 'new-refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 

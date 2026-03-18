@@ -1,7 +1,6 @@
 import { AuthService } from '../../../src/services/authService';
 import { IUserRepository } from '../../../src/repositories/userRepository';
 import { IRefreshTokenRepository } from '../../../src/repositories/refreshTokenRepository';
-import { IVerificationService } from '../../../src/services/verificationService';
 import { IPasswordHasher } from '../../../src/services/passwordHasher';
 import { JwtService } from '../../../src/services/jwtService';
 import { createMockUser } from '../../helpers/factories';
@@ -12,7 +11,6 @@ describe('AuthService', () => {
   let authService: AuthService;
   let mockUserRepository: jest.Mocked<IUserRepository>;
   let mockRefreshTokenRepository: jest.Mocked<IRefreshTokenRepository>;
-  let mockVerificationService: jest.Mocked<IVerificationService>;
   let mockJwtService: jest.Mocked<JwtService>;
   let mockPasswordHasher: jest.Mocked<IPasswordHasher>;
 
@@ -42,12 +40,6 @@ describe('AuthService', () => {
       deleteExpired: jest.fn(),
     };
 
-    mockVerificationService = {
-      sendVerificationCode: jest.fn(),
-      verifyCode: jest.fn(),
-      generateCode: jest.fn(),
-    };
-
     mockPasswordHasher = {
       hash: jest.fn(),
       compare: jest.fn(),
@@ -62,7 +54,6 @@ describe('AuthService', () => {
     authService = new AuthService(
       mockUserRepository,
       mockRefreshTokenRepository,
-      mockVerificationService,
       mockJwtService,
       mockPasswordHasher
     );
