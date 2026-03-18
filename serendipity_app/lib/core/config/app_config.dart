@@ -26,9 +26,5 @@ class AppConfig {
   /// 
   /// ⚠️ 注意：生产环境使用 ServerType.customServer
   static const ServerType serverType = ServerType.customServer;
-  
-  /// 是否启用测试模式（向后兼容）
-  @Deprecated('使用 serverType 代替')
-  static bool get enableTestMode => serverType == ServerType.test;
 }
 
