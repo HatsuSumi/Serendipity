@@ -716,7 +716,7 @@ class SyncService {
   /// 2. 静默标记本地成就为已解锁（不触发通知）
   /// 3. 本地检测器继续运行，检测新成就（触发通知）
   /// 
-  /// 返回：同步的成就数量
+  /// 返回：本次实际新解锁的成就数量
   /// 
   /// 注意：成就同步失败不影响其他数据同步，但应记录错误便于调试
   Future<int> _syncAchievementUnlocks(User user) async {
@@ -724,10 +724,10 @@ class SyncService {
       // 下载云端成就解锁记录
       final remoteUnlocks = await _remoteRepository.downloadAchievementUnlocks(user.id);
       
-      // 静默标记本地成就为已解锁
-      await _achievementRepository.syncAchievementUnlocks(remoteUnlocks);
+      // 静默标记本地成就为已解锁，返回本次实际新解锁的数量
+      final newlyUnlocked = await _achievementRepository.syncAchievementUnlocks(remoteUnlocks);
       
-      return remoteUnlocks.length;
+      return newlyUnlocked;
     } catch (e) {
       // 成就同步失败不影响其他数据同步
       // 生产环境应记录错误日志便于调试
