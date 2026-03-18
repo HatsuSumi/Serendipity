@@ -113,6 +113,10 @@ class SyncInfoDialog extends StatelessWidget {
               context,
               '9. 修改用户设置后，自动上传设置',
             ),
+            _buildInfoText(
+              context,
+              '10. 收藏/取消收藏帖子或记录后，自动同步收藏状态',
+            ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
