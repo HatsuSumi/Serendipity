@@ -139,9 +139,9 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         itemCount: totalCount,
         itemBuilder: (context, index) {
           if (index < records.length) {
-            return _buildRecordCard(records[index]);
+            return _buildRecordCard(records[index], isDeleted: false);
           } else {
-            return _buildDeletedRecordCard(deletedRecords[index - records.length]);
+            return _buildRecordCard(deletedRecords[index - records.length], isDeleted: true);
           }
         },
       ),
@@ -157,113 +157,142 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   /// - 书签图标半透明
   ///
   /// 调用者：_buildFavoritedRecordsTab()
-  Widget _buildDeletedRecordCard(EncounterRecord record) {
+  Widget _buildRecordCard(EncounterRecord record, {required bool isDeleted}) {
     final statusColor = record.status.getColor(context, ref);
     final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: statusColor.withValues(alpha: 0.2),
-          width: 2,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 状态 + 创建时间
-            Row(
-              children: [
-                Text(record.status.icon, style: const TextStyle(fontSize: 24)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    record.status.label,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: statusColor.withValues(alpha: 0.6),
-                    ),
+    final borderAlpha = isDeleted ? 0.2 : 0.3;
+    final labelAlpha = isDeleted ? 0.6 : 1.0;
+
+    final content = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 状态 + 创建时间 + 菜单（仅正常记录）
+          Row(
+            children: [
+              Text(record.status.icon, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  record.status.label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor.withValues(alpha: labelAlpha),
                   ),
                 ),
-                Text(
-                  '创建：${DateTimeHelper.formatRelativeTime(record.createdAt)}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // 地点
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.location_on, size: 16,
-                    color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    RecordHelper.getLocationText(record.location),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            // 描述
-            if (record.description != null && record.description!.isNotEmpty) ...[  
-              const SizedBox(height: 8),
+              ),
               Text(
-                record.description!,
+                '创建：${DateTimeHelper.formatRelativeTime(record.createdAt)}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
-            // 标签
-            if (record.tags.isNotEmpty) ...[  
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: record.tags.take(3).map((tag) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(4),
+              if (!isDeleted)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) => _handleRecordMenuAction(record, value),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined),
+                          SizedBox(width: 8),
+                          Text('编辑'),
+                        ],
+                      ),
                     ),
-                    child: Text(tag.tag,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: statusColor.withValues(alpha: 0.7))),
-                  );
-                }).toList(),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 地点
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.location_on, size: 16,
+                  color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  RecordHelper.getLocationText(record.location),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: isDeleted ? theme.colorScheme.onSurfaceVariant : null,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
+          ),
+          // 描述
+          if (record.description != null && record.description!.isNotEmpty) ...[  
+            const SizedBox(height: 8),
+            Text(
+              record.description!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          // 标签
+          if (record.tags.isNotEmpty) ...[  
             const SizedBox(height: 12),
-            // 底部：发生时间 + 「已被删除」标注 + 取消收藏
-            Row(
-              children: [
-                Expanded(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: record.tags.take(3).map((tag) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: isDeleted ? 0.08 : 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                   child: Text(
-                    '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
-                      color: theme.colorScheme.onSurfaceVariant,
+                    tag.tag,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: statusColor.withValues(alpha: isDeleted ? 0.7 : 1.0),
                     ),
                   ),
+                );
+              }).toList(),
+            ),
+          ],
+          // 底部行
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Text(
+                      '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (!isDeleted && record.createdAt != record.updatedAt) ...[  
+                      Text(' | ', style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                      Text(
+                        '更新：${DateTimeHelper.formatRelativeTime(record.updatedAt)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
+              ),
+              if (isDeleted) ...[  
                 Text(
                   '该记录已被删除',
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -273,51 +302,27 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                   ),
                 ),
                 const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _unfavoriteDeletedRecord(record.id),
-                  child: Icon(
-                    Icons.bookmark,
-                    size: 16,
-                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                  ),
-                ),
+              ] else if (record.storyLineId != null) ...[  
+                _buildStoryLineInfo(record.storyLineId!),
+                const SizedBox(width: 4),
               ],
-            ),
-          ],
-        ),
+              GestureDetector(
+                onTap: () => _unfavoriteRecord(
+                  recordId: record.id,
+                  isDeleted: isDeleted,
+                ),
+                child: Icon(
+                  Icons.bookmark,
+                  size: 16,
+                  color: theme.colorScheme.primary
+                      .withValues(alpha: isDeleted ? 0.5 : 1.0),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
-  }
-
-  /// 取消收藏已删除的记录
-  ///
-  /// 调用者：_buildDeletedRecordCard()
-  Future<void> _unfavoriteDeletedRecord(String recordId) async {
-    final confirmed = await DialogHelper.showDeleteConfirm(
-      context: context,
-      title: '取消收藏',
-      content: '该记录已被删除，确定要移除这条收藏记录吗？',
-    );
-    if (confirmed != true || !mounted) return;
-
-    try {
-      await ref.read(favoritesProvider.notifier).unfavoriteRecord(recordId);
-      if (mounted) MessageHelper.showSuccess(context, '已移除收藏');
-    } catch (e) {
-      if (mounted) {
-        MessageHelper.showError(
-          context,
-          '移除失败：${AuthErrorHelper.extractErrorMessage(e)}',
-        );
-      }
-    }
-  }
-
-  /// 构建收藏的记录卡片
-  ///
-  /// 与时间轴卡片保持一致的信息密度，菜单只保留「编辑」和「取消收藏」。
-  Widget _buildRecordCard(EncounterRecord record) {
-    final statusColor = record.status.getColor(context, ref);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -325,187 +330,22 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: statusColor.withValues(alpha: 0.3),
+          color: statusColor.withValues(alpha: borderAlpha),
           width: 2,
         ),
       ),
-      child: InkWell(
-        onTap: () => NavigationHelper.pushWithTransition(
-          context,
-          ref,
-          RecordDetailPage(record: record),
-        ),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 状态 + 创建时间 + 更多菜单
-              Row(
-                children: [
-                  Text(record.status.icon,
-                      style: const TextStyle(fontSize: 24)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      record.status.label,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '创建：${DateTimeHelper.formatRelativeTime(record.createdAt)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (value) => _handleRecordMenuAction(record, value),
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined),
-                            SizedBox(width: 8),
-                            Text('编辑'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // 地点
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      RecordHelper.getLocationText(record.location),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-
-              // 描述（如果有）
-              if (record.description != null &&
-                  record.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  record.description!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-
-              // 标签（如果有）
-              if (record.tags.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: record.tags.take(3).map((tag) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        tag.tag,
-                        style: TextStyle(fontSize: 12, color: statusColor),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-
-              // 底部：发生时间 + 更新时间 + 故事线
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Text(
-                          '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontSize: 11,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                        ),
-                        if (record.createdAt != record.updatedAt) ...[
-                          Text(
-                            ' | ',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  fontSize: 11,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                          ),
-                          Text(
-                            '更新：${DateTimeHelper.formatRelativeTime(record.updatedAt)}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  fontSize: 11,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (record.storyLineId != null)
-                    _buildStoryLineInfo(record.storyLineId!),
-                  // 取消收藏按钮
-                  const SizedBox(width: 4),
-                  GestureDetector(
-                    onTap: () => _unfavoriteRecord(record.id),
-                    child: Icon(
-                      Icons.bookmark,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+      child: isDeleted
+          ? content
+          : InkWell(
+              onTap: () => NavigationHelper.pushWithTransition(
+                context, ref, RecordDetailPage(record: record)),
+              borderRadius: BorderRadius.circular(16),
+              child: content,
+            ),
     );
   }
+
+  /// 故事线信息（右下角）
 
   /// 故事线信息（右下角）
   Widget _buildStoryLineInfo(String storyLineId) {
@@ -556,30 +396,42 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         );
         break;
       case 'unfavorite':
-        _unfavoriteRecord(record.id);
+        _unfavoriteRecord(recordId: record.id, isDeleted: false);
         break;
     }
   }
 
   /// 取消收藏记录
   ///
+  /// [isDeleted] 为 true 时提示语不同。
   /// 调用者：_buildRecordCard()
-  Future<void> _unfavoriteRecord(String recordId) async {
+  Future<void> _unfavoriteRecord({
+    required String recordId,
+    required bool isDeleted,
+  }) async {
+    final content = isDeleted
+        ? '该记录已被删除，确定要移除这条收藏记录吗？'
+        : '确定要取消收藏这条记录吗？';
     final confirmed = await DialogHelper.showDeleteConfirm(
       context: context,
       title: '取消收藏',
-      content: '确定要取消收藏这条记录吗？',
+      content: content,
     );
     if (confirmed != true || !mounted) return;
 
     try {
       await ref.read(favoritesProvider.notifier).unfavoriteRecord(recordId);
-      if (mounted) MessageHelper.showSuccess(context, '已取消收藏');
+      if (mounted) {
+        MessageHelper.showSuccess(
+          context,
+          isDeleted ? '已移除收藏' : '已取消收藏',
+        );
+      }
     } catch (e) {
       if (mounted) {
         MessageHelper.showError(
           context,
-          '取消收藏失败：${AuthErrorHelper.extractErrorMessage(e)}',
+          '${isDeleted ? '移除' : '取消收藏'}失败：${AuthErrorHelper.extractErrorMessage(e)}',
         );
       }
     }
