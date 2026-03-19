@@ -83,6 +83,9 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       // 更新 UI 状态（增量时间已由 SyncService 持久化，此处只更新手动同步时间）
       ref.read(syncStatusProvider.notifier).syncSuccess(result);
 
+      // 触发同步完成信号，让 syncHistoriesProvider 等自动刷新
+      ref.read(syncCompletedProvider.notifier).state++;
+
       ref.invalidate(recordsProvider);
       ref.invalidate(storyLinesProvider);
       ref.invalidate(checkInProvider);

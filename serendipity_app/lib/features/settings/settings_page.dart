@@ -9,6 +9,7 @@ import '../../core/providers/check_in_provider.dart';
 import '../../core/providers/first_launch_provider.dart';
 import '../../core/providers/user_settings_provider.dart';
 import '../../core/providers/sync_status_provider.dart';
+import '../../core/providers/records_provider.dart' show syncCompletedProvider;
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
@@ -1298,7 +1299,7 @@ class SettingsPage extends ConsumerWidget {
             onPressed: () async {
               Navigator.of(context).pop();
               
-              await AsyncActionHelper.execute(
+              final success = await AsyncActionHelper.execute(
                 context,
                 action: () async {
                   await ref.read(storageServiceProvider).clearAllSyncHistories();
@@ -1306,6 +1307,10 @@ class SettingsPage extends ConsumerWidget {
                 successMessage: '同步历史记录已清空',
                 errorMessagePrefix: '清空失败',
               );
+              
+              if (success) {
+                ref.read(syncCompletedProvider.notifier).state++;
+              }
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.orange,

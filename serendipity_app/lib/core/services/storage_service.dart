@@ -338,11 +338,20 @@ class StorageService implements IStorageService {
     await _settingsBoxOrThrow.put('user_settings', settings.toJson());
   }
   
-  // ==================== 同步历史相关操作 ====================
+// ==================== 同步历史相关操作 ====================
   
+  /// 同步历史记录最大保留条数
+  /// 
+  /// 超出此数量时，自动删除最旧的记录（按 syncTime 排序）。
+  /// 用户没有手动清理入口，因此由存储层自动维护上限。
+  static const int _maxSyncHistories = 100;
+
   /// 保存同步历史记录
   /// 
   /// 调用者：SyncStatusNotifier.syncSuccess() / syncError()
+  /// 
+  /// 自动维护上限：保存后若总数超过 [_maxSyncHistories]，
+  /// 删除最旧的记录，保证存储不无限增长。
   /// 
   /// Fail Fast：
   /// - history.id 为空：由 SyncHistory 构造函数保证
@@ -350,6 +359,17 @@ class StorageService implements IStorageService {
   Future<void> saveSyncHistory(SyncHistory history) async {
     assert(history.id.isNotEmpty, 'SyncHistory ID cannot be empty');
     await _syncHistoriesBoxOrThrow.put(history.id, history);
+    
+    // 超出上限时，删除最旧的记录
+    final box = _syncHistoriesBoxOrThrow;
+    if (box.length > _maxSyncHistories) {
+      final sorted = box.values.toList()
+        ..sort((a, b) => a.syncTime.compareTo(b.syncTime)); // 升序，最旧在前
+      final toDelete = sorted.take(box.length - _maxSyncHistories);
+      for (final old in toDelete) {
+        await box.delete(old.id);
+      }
+    }
   }
   
   /// 获取所有同步历史记录（按时间倒序）

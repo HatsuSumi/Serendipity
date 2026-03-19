@@ -45,6 +45,7 @@ class SyncHistoryDialog extends ConsumerWidget {
       title: const Text('同步历史'),
       content: SizedBox(
         width: double.maxFinite,
+        height: 480,
         child: histories.isEmpty
             ? _buildEmptyState(context)
             : _buildHistoryList(context, histories),
@@ -104,7 +105,6 @@ class SyncHistoryDialog extends ConsumerWidget {
   /// - 用户体验：按时间分组（今天、昨天、更早）
   Widget _buildHistoryList(BuildContext context, List<SyncHistory> histories) {
     return ListView.builder(
-      shrinkWrap: true,
       itemCount: histories.length,
       itemBuilder: (context, index) {
         final history = histories[index];

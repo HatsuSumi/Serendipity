@@ -68,7 +68,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '说明：以上同步会记录到"同步历史"，支持多设备数据同步。',
+              '说明：以上同步会记录到"同步历史"，支持多设备数据同步，最多保留最近 100 条记录。',
             ),
             const SizedBox(height: 16),
             _buildInfoText(
