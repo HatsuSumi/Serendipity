@@ -8,6 +8,7 @@ import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
+import '../../../models/community_post.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../record/create_record_page.dart';
 import 'widgets/community_post_card.dart';
@@ -329,7 +330,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
             post: post,
             onDelete: post.isOwner ? () => _deletePost(post.id) : null,
             isFavorited: favoritesState?.isPostFavorited(post.id) ?? false,
-            onFavorite: () => _toggleFavoritePost(post.id, favoritesState?.isPostFavorited(post.id) ?? false),
+            onFavorite: () => _toggleFavoritePost(post, favoritesState?.isPostFavorited(post.id) ?? false),
             highlightKeywords: filterCriteria.tags,
             tagMatchMode: filterCriteria.tagMatchMode,
           );
@@ -365,14 +366,14 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with AutomaticKee
   /// 切换帖子收藏状态
   ///
   /// 调用者：_buildPostsList() 的 CommunityPostCard.onFavorite
-  Future<void> _toggleFavoritePost(String postId, bool isFavorited) async {
+  Future<void> _toggleFavoritePost(CommunityPost post, bool isFavorited) async {
     final notifier = ref.read(favoritesProvider.notifier);
     try {
       if (isFavorited) {
-        await notifier.unfavoritePost(postId);
+        await notifier.unfavoritePost(post.id);
         if (mounted) MessageHelper.showSuccess(context, '已取消收藏');
       } else {
-        await notifier.favoritePost(postId);
+        await notifier.favoritePost(post);
         if (mounted) MessageHelper.showSuccess(context, '已收藏');
       }
     } catch (e) {

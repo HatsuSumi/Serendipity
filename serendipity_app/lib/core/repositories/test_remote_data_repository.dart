@@ -5,7 +5,7 @@ import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
 import 'i_remote_data_repository.dart';
-import '../providers/favorites_provider.dart' show FavoritedPostsResult;
+import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
 
 /// 测试远程数据仓库
 /// 
@@ -250,6 +250,12 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   Future<Set<String>> getFavoritedRecordIds(String userId) async {
     // 测试模式：返回空集合
     return {};
+  }
+
+  @override
+  Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) async {
+    // 测试模式：返回空结果
+    return const FavoritedRecordsResult(recordIds: {}, deletedRecordIds: {});
   }
 }
 

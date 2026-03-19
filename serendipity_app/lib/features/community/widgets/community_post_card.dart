@@ -19,6 +19,11 @@ class CommunityPostCard extends StatelessWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onFavorite;
   final bool isFavorited;
+
+  /// 该帖子是否已被删除（在收藏页展示时使用）
+  /// 为 true 时在底部显示「该帖子已被删除」标注
+  final bool isDeleted;
+
   final List<String>? highlightKeywords;
   final TagMatchMode tagMatchMode;
 
@@ -28,6 +33,7 @@ class CommunityPostCard extends StatelessWidget {
     this.onDelete,
     this.onFavorite,
     this.isFavorited = false,
+    this.isDeleted = false,
     this.highlightKeywords,
     this.tagMatchMode = TagMatchMode.contains,
   });
@@ -61,8 +67,12 @@ class CommunityPostCard extends StatelessWidget {
               const SizedBox(height: 12),
             ],
             
-            // 第五行：发布时间
+            // 第五行：发布时间 + 已删除标注
             _buildPublishTime(context),
+            if (isDeleted) ...[  
+              const SizedBox(height: 8),
+              _buildDeletedLabel(context),
+            ],
           ],
         ),
       ),
@@ -238,6 +248,30 @@ class CommunityPostCard extends StatelessWidget {
           ],
         );
       }).toList(),
+    );
+  }
+
+  /// 构建「该帖子已被删除」标注
+  Widget _buildDeletedLabel(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Icon(
+          Icons.info_outline,
+          size: 12,
+          color: theme.colorScheme.error,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '该帖子已被删除',
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontSize: 11,
+            color: theme.colorScheme.error,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 

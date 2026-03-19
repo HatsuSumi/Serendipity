@@ -197,7 +197,7 @@ export const initializeContainer = (): Container => {
   const userService = new UserService(userRepository, userSettingsRepository);
   const checkInService = new CheckInService(checkInRepository);
   const achievementUnlockService = new AchievementUnlockService(achievementUnlockRepository);
-  const favoriteService = new FavoriteService(favoriteRepository, communityPostRepository);
+  const favoriteService = new FavoriteService(favoriteRepository, communityPostRepository, recordRepository);
 
   container.register(TYPES.VerificationService, verificationService);
   container.register(TYPES.AuthService, authService);

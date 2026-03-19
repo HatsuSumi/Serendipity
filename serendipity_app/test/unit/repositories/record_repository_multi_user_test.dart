@@ -255,6 +255,41 @@ class InMemoryStorageService implements IStorageService {
     _userSettings = null;
   }
 
+  // ==================== 收藏快照（测试模式：内存存储） ====================
+
+  final Map<String, EncounterRecord> _favoritedRecordSnapshots = {};
+  final Map<String, Map<String, dynamic>> _favoritedPostSnapshots = {};
+
+  @override
+  Future<void> saveFavoritedRecordSnapshot(EncounterRecord record) async {
+    _favoritedRecordSnapshots[record.id] = record;
+  }
+
+  @override
+  EncounterRecord? getFavoritedRecordSnapshot(String recordId) {
+    return _favoritedRecordSnapshots[recordId];
+  }
+
+  @override
+  Future<void> deleteFavoritedRecordSnapshot(String recordId) async {
+    _favoritedRecordSnapshots.remove(recordId);
+  }
+
+  @override
+  Future<void> saveFavoritedPostSnapshot(String postId, Map<String, dynamic> postJson) async {
+    _favoritedPostSnapshots[postId] = postJson;
+  }
+
+  @override
+  Map<String, dynamic>? getFavoritedPostSnapshot(String postId) {
+    return _favoritedPostSnapshots[postId];
+  }
+
+  @override
+  Future<void> deleteFavoritedPostSnapshot(String postId) async {
+    _favoritedPostSnapshots.remove(postId);
+  }
+
   @override
   void validateDataConsistency() {}
 }

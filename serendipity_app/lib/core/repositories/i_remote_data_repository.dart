@@ -4,7 +4,7 @@ import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
-import '../providers/favorites_provider.dart' show FavoritedPostsResult;
+import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
 
 /// 远程数据仓库接口
 /// 
@@ -623,5 +623,16 @@ abstract class IRemoteDataRepository {
   ///
   /// 调用者：CommunityRepository.getFavoritedRecordIds()
   Future<Set<String>> getFavoritedRecordIds(String userId);
+
+  /// 获取用户收藏的记录（区分存在和已删除）
+  ///
+  /// 返回 [FavoritedRecordsResult]，包含正常记录 ID 集合和已删除记录 ID 集合。
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常
+  ///
+  /// 调用者：CommunityRepository.getFavoritedRecordsResult()
+  Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId);
 }
 

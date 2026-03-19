@@ -150,6 +150,28 @@ abstract class IStorageService {
   
   /// 清空所有同步历史记录
   Future<void> clearAllSyncHistories();
+
+  // ==================== 收藏快照（已删除条目的完整数据缓存） ====================
+
+  /// 保存收藏记录快照（收藏时调用，用于记录删除后仍能展示完整数据）
+  Future<void> saveFavoritedRecordSnapshot(EncounterRecord record);
+
+  /// 获取收藏记录快照
+  EncounterRecord? getFavoritedRecordSnapshot(String recordId);
+
+  /// 删除收藏记录快照（取消收藏时调用）
+  Future<void> deleteFavoritedRecordSnapshot(String recordId);
+
+  /// 保存收藏帖子快照（收藏时调用，用于帖子删除后仍能展示完整数据）
+  /// [postJson] 为 CommunityPost.toJson() 的结果
+  Future<void> saveFavoritedPostSnapshot(String postId, Map<String, dynamic> postJson);
+
+  /// 获取收藏帖子快照
+  /// 返回 CommunityPost.fromJson() 可用的 Map
+  Map<String, dynamic>? getFavoritedPostSnapshot(String postId);
+
+  /// 删除收藏帖子快照（取消收藏时调用）
+  Future<void> deleteFavoritedPostSnapshot(String postId);
   
   // ==================== 同步时间（增量同步用） ====================
   

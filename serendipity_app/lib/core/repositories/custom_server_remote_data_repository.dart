@@ -8,7 +8,7 @@ import 'i_remote_data_repository.dart';
 import '../services/http_client_service.dart';
 import '../config/server_config.dart';
 import '../utils/address_helper.dart';
-import '../providers/favorites_provider.dart' show FavoritedPostsResult;
+import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
 
 /// 自建服务器远程数据仓库实现
 /// 
@@ -932,6 +932,27 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       return ids.map((e) => e as String).toSet();
     } on HttpException catch (e) {
       throw Exception('获取收藏记录 ID 失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
+    try {
+      final response = await _httpClient.get(ServerConfig.favoriteRecords);
+      final data = response['data'] as Map<String, dynamic>;
+      final recordIds = ((data['recordIds'] as List?) ?? [])
+          .map((e) => e as String)
+          .toSet();
+      final deletedRecordIds = ((data['deletedRecordIds'] as List?) ?? [])
+          .map((e) => e as String)
+          .toSet();
+      return FavoritedRecordsResult(
+        recordIds: recordIds,
+        deletedRecordIds: deletedRecordIds,
+      );
+    } on HttpException catch (e) {
+      throw Exception('获取收藏记录失败：${e.message}');
     }
   }
 }

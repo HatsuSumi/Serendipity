@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
@@ -17,6 +18,8 @@ class StorageService implements IStorageService {
   static const String _achievementsBoxName = 'achievements';
   static const String _checkInsBoxName = 'check_ins';
   static const String _syncHistoriesBoxName = 'sync_histories';
+  static const String _favoritedRecordSnapshotsBoxName = 'favorited_record_snapshots';
+  static const String _favoritedPostSnapshotsBoxName = 'favorited_post_snapshots';
   
   // 单例模式
   static final StorageService _instance = StorageService._internal();
@@ -30,6 +33,8 @@ class StorageService implements IStorageService {
   Box<Achievement>? _achievementsBox;
   Box<CheckInRecord>? _checkInsBox;
   Box<SyncHistory>? _syncHistoriesBox;
+  Box<EncounterRecord>? _favoritedRecordSnapshotsBox;
+  Box<String>? _favoritedPostSnapshotsBox;
   
   // Box getters with initialization check
   Box<EncounterRecord> get _recordsBoxOrThrow {
@@ -73,6 +78,20 @@ class StorageService implements IStorageService {
     }
     return _syncHistoriesBox!;
   }
+
+  Box<EncounterRecord> get _favoritedRecordSnapshotsBoxOrThrow {
+    if (_favoritedRecordSnapshotsBox == null) {
+      throw StateError('StorageService not initialized. Call init() first.');
+    }
+    return _favoritedRecordSnapshotsBox!;
+  }
+
+  Box<String> get _favoritedPostSnapshotsBoxOrThrow {
+    if (_favoritedPostSnapshotsBox == null) {
+      throw StateError('StorageService not initialized. Call init() first.');
+    }
+    return _favoritedPostSnapshotsBox!;
+  }
   
   /// 初始化所有 Box
   @override
@@ -83,6 +102,8 @@ class StorageService implements IStorageService {
     _achievementsBox = await Hive.openBox<Achievement>(_achievementsBoxName);
     _checkInsBox = await Hive.openBox<CheckInRecord>(_checkInsBoxName);
     _syncHistoriesBox = await Hive.openBox<SyncHistory>(_syncHistoriesBoxName);
+    _favoritedRecordSnapshotsBox = await Hive.openBox<EncounterRecord>(_favoritedRecordSnapshotsBoxName);
+    _favoritedPostSnapshotsBox = await Hive.openBox<String>(_favoritedPostSnapshotsBoxName);
   }
   
   /// 关闭所有 Box
@@ -94,6 +115,8 @@ class StorageService implements IStorageService {
     await _achievementsBox?.close();
     await _checkInsBox?.close();
     await _syncHistoriesBox?.close();
+    await _favoritedRecordSnapshotsBox?.close();
+    await _favoritedPostSnapshotsBox?.close();
   }
   
   // ==================== 记录相关操作 ====================
@@ -601,6 +624,40 @@ class StorageService implements IStorageService {
   @override
   Future<void> clearAuthData() async {
     await _settingsBoxOrThrow.delete('user_settings');
+  }
+
+  // ==================== 收藏快照 ====================
+
+  @override
+  Future<void> saveFavoritedRecordSnapshot(EncounterRecord record) async {
+    await _favoritedRecordSnapshotsBoxOrThrow.put(record.id, record);
+  }
+
+  @override
+  EncounterRecord? getFavoritedRecordSnapshot(String recordId) {
+    return _favoritedRecordSnapshotsBoxOrThrow.get(recordId);
+  }
+
+  @override
+  Future<void> deleteFavoritedRecordSnapshot(String recordId) async {
+    await _favoritedRecordSnapshotsBoxOrThrow.delete(recordId);
+  }
+
+  @override
+  Future<void> saveFavoritedPostSnapshot(String postId, Map<String, dynamic> postJson) async {
+    await _favoritedPostSnapshotsBoxOrThrow.put(postId, jsonEncode(postJson));
+  }
+
+  @override
+  Map<String, dynamic>? getFavoritedPostSnapshot(String postId) {
+    final raw = _favoritedPostSnapshotsBoxOrThrow.get(postId);
+    if (raw == null) return null;
+    return jsonDecode(raw) as Map<String, dynamic>;
+  }
+
+  @override
+  Future<void> deleteFavoritedPostSnapshot(String postId) async {
+    await _favoritedPostSnapshotsBoxOrThrow.delete(postId);
   }
 }
 

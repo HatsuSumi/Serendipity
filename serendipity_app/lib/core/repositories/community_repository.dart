@@ -3,7 +3,7 @@ import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../../core/utils/address_helper.dart';
-import '../providers/favorites_provider.dart' show FavoritedPostsResult;
+import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
 import 'i_community_data_source.dart';
 
 /// 社区仓储
@@ -386,6 +386,18 @@ class CommunityRepository {
   Future<Set<String>> getFavoritedRecordIds(String userId) async {
     if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
     return await _dataSource.getFavoritedRecordIds(userId);
+  }
+
+  /// 获取用户收藏的记录（区分存在和已删除）
+  ///
+  /// 返回 [FavoritedRecordsResult]，包含：
+  /// - recordIds：仍然存在的记录 ID 集合
+  /// - deletedRecordIds：已被删除的记录 ID 集合
+  ///
+  /// 调用者：FavoritesNotifier.build()
+  Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    return await _dataSource.getFavoritedRecordsResult(userId);
   }
 }
 

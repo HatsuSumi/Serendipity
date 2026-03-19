@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/favorites_provider.dart';
+import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/message_helper.dart';
@@ -8,6 +9,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/theme/status_color_extension.dart';
+import '../../models/community_post.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../models/encounter_record.dart';
@@ -89,9 +91,15 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   /// 构建收藏的记录 Tab
   Widget _buildFavoritedRecordsTab(FavoritesState favoritesState) {
-    final records = ref.read(favoritesProvider.notifier).getFavoritedRecords();
+    final allRecords = ref.watch(recordsProvider).value ?? [];
+    final favoritedIds = favoritesState.favoritedRecordIds;
+    final records = favoritedIds.isEmpty
+        ? <EncounterRecord>[]
+        : allRecords.where((r) => favoritedIds.contains(r.id)).toList();
+    final deletedRecords = favoritesState.deletedFavoritedRecords;
+    final totalCount = records.length + deletedRecords.length;
 
-    if (records.isEmpty) {
+    if (totalCount == 0) {
       return RefreshIndicator(
         onRefresh: _onRefresh,
         child: ListView(
@@ -113,12 +121,176 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 16),
-        itemCount: records.length,
+        itemCount: totalCount,
         itemBuilder: (context, index) {
-          return _buildRecordCard(records[index]);
+          if (index < records.length) {
+            return _buildRecordCard(records[index]);
+          } else {
+            final deletedRecord = deletedRecords[index - records.length];
+            return _buildDeletedRecordCard(deletedRecord);
+          }
         },
       ),
     );
+  }
+
+  /// 构建已删除记录的卡片（保留完整信息，右下角标注「该记录已被删除」）
+  ///
+  /// 调用者：_buildFavoritedRecordsTab()
+  Widget _buildDeletedRecordCard(EncounterRecord record) {
+    final statusColor = record.status.getColor(context, ref);
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: statusColor.withValues(alpha: 0.2),
+          width: 2,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 状态 + 创建时间
+            Row(
+              children: [
+                Text(record.status.icon, style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    record.status.label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+                Text(
+                  '创建：${DateTimeHelper.formatRelativeTime(record.createdAt)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // 地点
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.location_on, size: 16,
+                    color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    RecordHelper.getLocationText(record.location),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            // 描述
+            if (record.description != null && record.description!.isNotEmpty) ...[  
+              const SizedBox(height: 8),
+              Text(
+                record.description!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            // 标签
+            if (record.tags.isNotEmpty) ...[  
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: record.tags.take(3).map((tag) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(tag.tag,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: statusColor.withValues(alpha: 0.7))),
+                  );
+                }).toList(),
+              ),
+            ],
+            const SizedBox(height: 12),
+            // 底部：发生时间 + 「已被删除」标注 + 取消收藏
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Text(
+                  '该记录已被删除',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _unfavoriteDeletedRecord(record.id),
+                  child: Icon(
+                    Icons.bookmark,
+                    size: 16,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 取消收藏已删除的记录
+  ///
+  /// 调用者：_buildDeletedRecordCard()
+  Future<void> _unfavoriteDeletedRecord(String recordId) async {
+    final confirmed = await DialogHelper.showDeleteConfirm(
+      context: context,
+      title: '取消收藏',
+      content: '该记录已被删除，确定要移除这条收藏记录吗？',
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(favoritesProvider.notifier).unfavoriteRecord(recordId);
+      if (mounted) MessageHelper.showSuccess(context, '已移除收藏');
+    } catch (e) {
+      if (mounted) {
+        MessageHelper.showError(
+          context,
+          '移除失败：${AuthErrorHelper.extractErrorMessage(e)}',
+        );
+      }
+    }
   }
 
   /// 构建收藏的记录卡片
@@ -398,8 +570,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   /// 构建收藏的社区帖子 Tab
   Widget _buildFavoritedPostsTab(FavoritesState favoritesState) {
     final posts = favoritesState.favoritedPosts;
-    final deletedPostIds = favoritesState.deletedFavoritedPostIds;
-    final totalCount = posts.length + deletedPostIds.length;
+    final deletedPosts = favoritesState.deletedFavoritedPosts;
+    final totalCount = posts.length + deletedPosts.length;
 
     if (totalCount == 0) {
       return RefreshIndicator(
@@ -418,9 +590,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
       );
     }
 
-    // 合并正常帖子和已删除帖子 ID，已删除的排在最后
-    final deletedIdList = deletedPostIds.toList();
-
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView.builder(
@@ -435,50 +604,23 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
               onFavorite: () => _unfavoritePost(post.id),
             );
           } else {
-            final deletedPostId = deletedIdList[index - posts.length];
-            return _buildDeletedPostCard(deletedPostId);
+            final deletedPost = deletedPosts[index - posts.length];
+            return _buildDeletedPostCard(deletedPost);
           }
         },
       ),
     );
   }
 
-  /// 构建已删除帖子的占位卡片
+  /// 构建已删除帖子的卡片（保留完整信息，右下角标注「该帖子已被删除」）
   ///
   /// 调用者：_buildFavoritedPostsTab()
-  Widget _buildDeletedPostCard(String postId) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              Icons.hide_source_outlined,
-              size: 32,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '该帖子已被删除',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.bookmark,
-                color: theme.colorScheme.primary.withValues(alpha: 0.5),
-              ),
-              tooltip: '取消收藏',
-              onPressed: () => _unfavoriteDeletedPost(postId),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildDeletedPostCard(CommunityPost post) {
+    return CommunityPostCard(
+      post: post,
+      isFavorited: true,
+      isDeleted: true,
+      onFavorite: () => _unfavoriteDeletedPost(post.id),
     );
   }
 

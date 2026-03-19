@@ -1,5 +1,6 @@
 import { IFavoriteRepository } from '../repositories/favoriteRepository';
 import { ICommunityPostRepository } from '../repositories/communityPostRepository';
+import { IRecordRepository } from '../repositories/recordRepository';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
 import { fromJsonValue } from '../utils/prisma-json';
@@ -13,6 +14,8 @@ export interface FavoritedPostsResponseDto {
 
 export interface FavoritedRecordIdsResponseDto {
   recordIds: string[];
+  /// 已被删除但仍在收藏列表中的记录 ID（孤儿收藏）
+  deletedRecordIds: string[];
 }
 
 export interface CommunityPostResponseDto {
@@ -46,6 +49,7 @@ export class FavoriteService implements IFavoriteService {
   constructor(
     private favoriteRepository: IFavoriteRepository,
     private communityPostRepository: ICommunityPostRepository,
+    private recordRepository: IRecordRepository,
   ) {}
 
   async favoritePost(userId: string, postId: string): Promise<void> {
@@ -106,8 +110,21 @@ export class FavoriteService implements IFavoriteService {
   async getFavoritedRecordIds(userId: string): Promise<FavoritedRecordIdsResponseDto> {
     if (!userId) throw new AppError('userId is required', ErrorCode.VALIDATION_ERROR);
 
-    const recordIds = await this.favoriteRepository.getFavoritedRecordIds(userId);
-    return { recordIds };
+    const allRecordIds = await this.favoriteRepository.getFavoritedRecordIds(userId);
+
+    // 批量检查记录是否仍存在，区分正常记录和已删除记录
+    const recordIds: string[] = [];
+    const deletedRecordIds: string[] = [];
+    for (const recordId of allRecordIds) {
+      const record = await this.recordRepository.findById(recordId, userId);
+      if (record) {
+        recordIds.push(recordId);
+      } else {
+        deletedRecordIds.push(recordId);
+      }
+    }
+
+    return { recordIds, deletedRecordIds };
   }
 
   private toPostDto(post: CommunityPost): CommunityPostResponseDto {

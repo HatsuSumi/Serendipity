@@ -9,6 +9,7 @@ import '../utils/auth_error_helper.dart';
 import '../config/app_config.dart';
 import 'auth_provider.dart';
 import 'community_filter_provider.dart';
+import 'favorites_provider.dart';
 import 'my_posts_filter_provider.dart';
 
 // 导出发布 Provider
@@ -183,10 +184,8 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
       return;
     }
     _lastTimestamp = null;
-    final result = await AsyncValue.guard(() => future);
-    if (result.hasValue) {
-      state = result;
-    }
+    ref.invalidateSelf();
+    await future;
   }
 
   /// 加载更多帖子
@@ -246,6 +245,9 @@ class CommunityNotifier extends AsyncNotifier<CommunityState> {
     try {
       // 删除帖子
       await _repository.deletePost(postId, currentUser.id);
+
+      // 通知收藏 Provider 刷新（帖子删除后收藏页需要展示「已被删除」标注）
+      ref.invalidate(favoritesProvider);
 
       // 静默刷新帖子列表（避免页面闪烁）
       await refreshSilently();
@@ -379,17 +381,14 @@ class MyPostsNotifier extends AsyncNotifier<List<CommunityPost>> {
       throw Exception(AuthErrorHelper.extractErrorMessage(e));
     }
 
+    // 通知收藏 Provider 刷新（帖子删除后收藏页需要展示「已被删除」标注）
+    ref.invalidate(favoritesProvider);
+
     // 通知树洞列表同步（静默，不阻塞当前页面）
     ref.read(communityProvider.notifier).refreshSilently();
 
     // 静默刷新自身列表（避免页面闪烁）
-    if (state.value == null) {
-      await refresh();
-      return;
-    }
-    final result = await AsyncValue.guard(() => future);
-    if (result.hasValue) {
-      state = result;
-    }
+    ref.invalidateSelf();
+    await future;
   }
 }

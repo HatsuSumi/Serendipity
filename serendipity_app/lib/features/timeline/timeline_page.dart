@@ -581,7 +581,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                               false;
                           return GestureDetector(
                             onTap: () => _toggleFavoriteRecord(
-                                context, ref, record.id),
+                                context, ref, record),
                             child: Icon(
                               isFavorited
                                   ? Icons.bookmark
@@ -613,7 +613,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         _togglePinRecord(context, ref, record);
         break;
       case 'favorite':
-        _toggleFavoriteRecord(context, ref, record.id);
+        _toggleFavoriteRecord(context, ref, record);
         break;
       case 'link':
         _showLinkToStoryLineDialog(context, ref, record);
@@ -647,16 +647,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   /// 切换记录收藏状态
   ///
   /// 调用者：_handleMenuAction()
-  void _toggleFavoriteRecord(BuildContext context, WidgetRef ref, String recordId) async {
+  void _toggleFavoriteRecord(BuildContext context, WidgetRef ref, EncounterRecord record) async {
     final isFavorited =
-        ref.read(favoritesProvider).valueOrNull?.isRecordFavorited(recordId) ?? false;
+        ref.read(favoritesProvider).valueOrNull?.isRecordFavorited(record.id) ?? false;
     final notifier = ref.read(favoritesProvider.notifier);
     try {
       if (isFavorited) {
-        await notifier.unfavoriteRecord(recordId);
+        await notifier.unfavoriteRecord(record.id);
         if (context.mounted) MessageHelper.showSuccess(context, '已取消收藏');
       } else {
-        await notifier.favoriteRecord(recordId);
+        await notifier.favoriteRecord(record);
         if (context.mounted) MessageHelper.showSuccess(context, '已收藏');
       }
     } catch (e) {

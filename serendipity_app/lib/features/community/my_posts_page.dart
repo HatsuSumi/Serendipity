@@ -129,7 +129,7 @@ class MyPostsPage extends ConsumerWidget {
             post: post,
             onDelete: () => _deletePost(context, ref, post.id),
             isFavorited: favoritesState?.isPostFavorited(post.id) ?? false,
-            onFavorite: () => _toggleFavoritePost(context, ref, post.id,
+            onFavorite: () => _toggleFavoritePost(context, ref, post,
                 favoritesState?.isPostFavorited(post.id) ?? false),
             highlightKeywords: filterCriteria.tags,
             tagMatchMode: filterCriteria.tagMatchMode,
@@ -145,16 +145,16 @@ class MyPostsPage extends ConsumerWidget {
   Future<void> _toggleFavoritePost(
     BuildContext context,
     WidgetRef ref,
-    String postId,
+    CommunityPost post,
     bool isFavorited,
   ) async {
     final notifier = ref.read(favoritesProvider.notifier);
     try {
       if (isFavorited) {
-        await notifier.unfavoritePost(postId);
+        await notifier.unfavoritePost(post.id);
         if (context.mounted) MessageHelper.showSuccess(context, '已取消收藏');
       } else {
-        await notifier.favoritePost(postId);
+        await notifier.favoritePost(post);
         if (context.mounted) MessageHelper.showSuccess(context, '已收藏');
       }
     } catch (e) {
