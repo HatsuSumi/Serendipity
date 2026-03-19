@@ -60,9 +60,7 @@ class _FavoritesIntroDialogState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return PopScope(
-      canPop: false,
-      child: AlertDialog(
+    return AlertDialog(
       title: Row(
         children: [
           Icon(
@@ -117,7 +115,6 @@ class _FavoritesIntroDialogState
           ),
         ),
       ],
-    ),
     );
   }
 }
