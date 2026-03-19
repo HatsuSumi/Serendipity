@@ -5,7 +5,6 @@ import '../repositories/community_repository.dart';
 import '../utils/auth_error_helper.dart';
 import 'auth_provider.dart';
 import 'community_provider.dart';
-import 'records_provider.dart';
 
 /// 获取收藏记录的结果
 ///
@@ -332,25 +331,6 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
       state = AsyncData(currentState);
       throw Exception(AuthErrorHelper.extractErrorMessage(e));
     }
-  }
-
-  /// 获取收藏的记录列表
-  ///
-  /// 返回：
-  /// - records：仍存在的收藏记录列表（从本地 Hive 按 ID 过滤）
-  /// - deletedRecords：已被删除的收藏记录完整数据（从本地快照读取）
-  ///
-  /// 调用者：FavoritesPage（收藏的记录 Tab）
-  ({List<EncounterRecord> records, List<EncounterRecord> deletedRecords}) getFavoritedRecords() {
-    final favoritedIds = state.value?.favoritedRecordIds ?? {};
-    final deletedRecords = state.value?.deletedFavoritedRecords ?? [];
-
-    final allRecords = ref.read(recordsProvider).value ?? [];
-    final records = favoritedIds.isEmpty
-        ? <EncounterRecord>[]
-        : allRecords.where((r) => favoritedIds.contains(r.id)).toList();
-
-    return (records: records, deletedRecords: deletedRecords);
   }
 }
 
