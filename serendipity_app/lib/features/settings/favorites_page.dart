@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/favorites_provider.dart';
+import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/auth_error_helper.dart';
 import 'dialogs/favorites_intro_dialog.dart';
@@ -104,13 +105,13 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   // ==================== 收藏的记录 Tab ====================
 
   /// 构建收藏的记录 Tab
-  ///
-  /// 记录列表由 [FavoritesNotifier.getFavoritedRecords] 提供，
-  /// UI 层不重复业务逻辑（按 ID 过滤等），遵循分层约束。
   Widget _buildFavoritedRecordsTab(FavoritesState favoritesState) {
-    // 业务逻辑委托给 Provider 层
-    final (:records, :deletedRecords) =
-        ref.read(favoritesProvider.notifier).getFavoritedRecords();
+    final allRecords = ref.watch(recordsProvider).value ?? [];
+    final favoritedIds = favoritesState.favoritedRecordIds;
+    final records = favoritedIds.isEmpty
+        ? <EncounterRecord>[]
+        : allRecords.where((r) => favoritedIds.contains(r.id)).toList();
+    final deletedRecords = favoritesState.deletedFavoritedRecords;
     final totalCount = records.length + deletedRecords.length;
 
     if (totalCount == 0) {
