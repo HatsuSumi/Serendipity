@@ -43,6 +43,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  bool _isShowingIntroDialog = false;
+
   @override
   void initState() {
     super.initState();
@@ -60,13 +62,21 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   ///
   /// 调用者：initState()
   void _checkAndShowIntroDialog() {
-    final hasSeenIntro =
-        ref.read(userSettingsProvider).hasSeenFavoritesIntro;
-    if (hasSeenIntro) return;
+    // 快速退出：已看过则不显示
+    if (ref.read(userSettingsProvider).hasSeenFavoritesIntro) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+
+      // 竞态保护：防止重复弹出
+      if (_isShowingIntroDialog) return;
+
+      // 再次读取最新状态（postFrameCallback 时 _loadSettings 已完成）
+      if (ref.read(userSettingsProvider).hasSeenFavoritesIntro) return;
+
+      _isShowingIntroDialog = true;
       await FavoritesIntroDialog.show(context, ref);
+      _isShowingIntroDialog = false;
     });
   }
 
