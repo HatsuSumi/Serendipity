@@ -574,11 +574,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       const SizedBox(width: 4),
                       Consumer(
                         builder: (context, ref, _) {
-                          final isFavorited = ref
-                                  .watch(favoritesProvider)
-                                  .valueOrNull
-                                  ?.isRecordFavorited(record.id) ??
-                              false;
+                          final isFavorited = ref.watch(isRecordFavoritedProvider(record.id));
                           return GestureDetector(
                             onTap: () => _toggleFavoriteRecord(
                                 context, ref, record),

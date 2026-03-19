@@ -339,8 +339,17 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
 /// 调用者：
 /// - FavoritesPage
 /// - CommunityPostCard
-/// - TimelinePage
 final favoritesProvider =
     AsyncNotifierProvider<FavoritesNotifier, FavoritesState>(() {
   return FavoritesNotifier();
+});
+
+/// 某条记录是否已收藏（轻量派生 Provider）
+///
+/// 使用 family 按 recordId 参数化，避免 TimelinePage watch 整个 favoritesProvider
+/// 导致 provider 永不 dispose，从而造成收藏页进入时无法重新 build 的问题。
+///
+/// 调用者：TimelinePage（记录卡片收藏书签图标）
+final isRecordFavoritedProvider = Provider.family<bool, String>((ref, recordId) {
+  return ref.watch(favoritesProvider).valueOrNull?.isRecordFavorited(recordId) ?? false;
 });
