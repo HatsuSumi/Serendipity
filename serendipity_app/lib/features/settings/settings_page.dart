@@ -474,6 +474,12 @@ class SettingsPage extends ConsumerWidget {
             onTap: () => _showResetCommunityIntroDialog(context, ref),
           ),
           ListTile(
+            leading: const Icon(Icons.bookmark_outline, color: Colors.blue),
+            title: const Text('重置收藏页介绍对话框'),
+            subtitle: const Text('重新显示"关于收藏"介绍对话框'),
+            onTap: () => _showResetFavoritesIntroDialog(context, ref),
+          ),
+          ListTile(
             leading: const Icon(Icons.refresh, color: Colors.orange),
             title: const Text('重置所有成就'),
             subtitle: const Text('清空所有已解锁的成就和进度'),
@@ -1420,6 +1426,41 @@ class SettingsPage extends ConsumerWidget {
                   await ref.read(userSettingsProvider.notifier).markCommunityIntroSeen(false);
                 },
                 successMessage: '社区介绍对话框已重置',
+                errorMessagePrefix: '重置失败',
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.blue,
+            ),
+            child: const Text('确定重置'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示重置收藏页介绍对话框确认对话框
+  void _showResetFavoritesIntroDialog(BuildContext context, WidgetRef ref) {
+    DialogHelper.show(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('重置收藏页介绍对话框'),
+        content: const Text('确定要重置收藏页介绍对话框吗？\n\n重置后，下次进入收藏页面时将重新显示"关于收藏"介绍对话框。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+
+              await AsyncActionHelper.execute(
+                context,
+                action: () async {
+                  await ref.read(userSettingsProvider.notifier).markFavoritesIntroSeen(false);
+                },
+                successMessage: '收藏页介绍对话框已重置',
                 errorMessagePrefix: '重置失败',
               );
             },
