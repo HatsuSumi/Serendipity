@@ -112,13 +112,7 @@ class SyncService {
   final IStorageService _storageService;
   final AchievementRepository _achievementRepository;
   
-  // 同步时间存储键前缀（用于 IStorageService.setLastSyncTime/getLastSyncTime）
-  // 
-  // 设计说明：
-  // - IStorageService 已提供 getLastSyncTime(userId) 和 setLastSyncTime(userId, time) 方法
-  // - 这些方法内部使用 'last_sync_time_$userId' 作为键名
-  // - 此常量仅用于文档和代码可读性，实际键名由 IStorageService 管理
-  static const String _lastSyncTimeKeyPrefix = 'last_sync_time_';
+  // 同步时间存储键（由 IStorageService.getLastSyncTime/setLastSyncTime 管理）
   
   SyncService({
     required IRemoteDataRepository remoteRepository,
@@ -559,19 +553,19 @@ class SyncService {
     // 下载并合并记录
     final remoteRecords = performFullSync
         ? await _remoteRepository.downloadRecords(user.id)
-        : await _remoteRepository.downloadRecordsSince(user.id, lastSyncTime!);
+        : await _remoteRepository.downloadRecordsSince(user.id, lastSyncTime);
     mergedRecords = await _mergeRecords(remoteRecords, user.id, performFullSync);
 
     // 下载并合并故事线
     final remoteStoryLines = performFullSync
         ? await _remoteRepository.downloadStoryLines(user.id)
-        : await _remoteRepository.downloadStoryLinesSince(user.id, lastSyncTime!);
+        : await _remoteRepository.downloadStoryLinesSince(user.id, lastSyncTime);
     mergedStoryLines = await _mergeStoryLines(remoteStoryLines, user.id, performFullSync);
 
     // 下载并合并签到记录
     final remoteCheckIns = performFullSync
         ? await _remoteRepository.downloadCheckIns(user.id)
-        : await _remoteRepository.downloadCheckInsSince(user.id, lastSyncTime!);
+        : await _remoteRepository.downloadCheckInsSince(user.id, lastSyncTime);
     mergedCheckIns = await _mergeCheckIns(remoteCheckIns, user.id, performFullSync);
 
     return {
@@ -861,7 +855,7 @@ class SyncService {
     UserSettings remoteSettings,
   ) async {
     // 辅助函数：根据时间戳选择值
-    T _selectByTimestamp<T>(
+    T selectByTimestamp<T>(
       T localValue,
       T remoteValue,
       DateTime localTime,
@@ -876,19 +870,19 @@ class SyncService {
       userId: localSettings.userId,
       
       // 主题设置：比较 themeUpdatedAt
-      theme: _selectByTimestamp(
+      theme: selectByTimestamp(
         localSettings.theme,
         remoteSettings.theme,
         localSettings.themeUpdatedAt,
         remoteSettings.themeUpdatedAt,
       ),
-      pageTransition: _selectByTimestamp(
+      pageTransition: selectByTimestamp(
         localSettings.pageTransition,
         remoteSettings.pageTransition,
         localSettings.themeUpdatedAt,
         remoteSettings.themeUpdatedAt,
       ),
-      dialogAnimation: _selectByTimestamp(
+      dialogAnimation: selectByTimestamp(
         localSettings.dialogAnimation,
         remoteSettings.dialogAnimation,
         localSettings.themeUpdatedAt,
@@ -899,7 +893,7 @@ class SyncService {
           : remoteSettings.themeUpdatedAt,
       
       // 强调色设置：比较 accentColorUpdatedAt（独立追踪）
-      accentColor: _selectByTimestamp(
+      accentColor: selectByTimestamp(
         localSettings.accentColor,
         remoteSettings.accentColor,
         localSettings.accentColorUpdatedAt,
@@ -910,25 +904,25 @@ class SyncService {
           : remoteSettings.accentColorUpdatedAt,
       
       // 通知设置：比较 notificationsUpdatedAt
-      achievementNotification: _selectByTimestamp(
+      achievementNotification: selectByTimestamp(
         localSettings.achievementNotification,
         remoteSettings.achievementNotification,
         localSettings.notificationsUpdatedAt,
         remoteSettings.notificationsUpdatedAt,
       ),
-      anniversaryReminder: _selectByTimestamp(
+      anniversaryReminder: selectByTimestamp(
         localSettings.anniversaryReminder,
         remoteSettings.anniversaryReminder,
         localSettings.notificationsUpdatedAt,
         remoteSettings.notificationsUpdatedAt,
       ),
-      checkInReminderEnabled: _selectByTimestamp(
+      checkInReminderEnabled: selectByTimestamp(
         localSettings.checkInReminderEnabled,
         remoteSettings.checkInReminderEnabled,
         localSettings.notificationsUpdatedAt,
         remoteSettings.notificationsUpdatedAt,
       ),
-      checkInReminderTime: _selectByTimestamp(
+      checkInReminderTime: selectByTimestamp(
         localSettings.checkInReminderTime,
         remoteSettings.checkInReminderTime,
         localSettings.notificationsUpdatedAt,
@@ -939,13 +933,13 @@ class SyncService {
           : remoteSettings.notificationsUpdatedAt,
       
       // 签到设置：比较 checkInUpdatedAt
-      checkInVibrationEnabled: _selectByTimestamp(
+      checkInVibrationEnabled: selectByTimestamp(
         localSettings.checkInVibrationEnabled,
         remoteSettings.checkInVibrationEnabled,
         localSettings.checkInUpdatedAt,
         remoteSettings.checkInUpdatedAt,
       ),
-      checkInConfettiEnabled: _selectByTimestamp(
+      checkInConfettiEnabled: selectByTimestamp(
         localSettings.checkInConfettiEnabled,
         remoteSettings.checkInConfettiEnabled,
         localSettings.checkInUpdatedAt,
@@ -956,19 +950,19 @@ class SyncService {
           : remoteSettings.checkInUpdatedAt,
       
       // 社区设置：比较 communityUpdatedAt
-      hidePublishWarning: _selectByTimestamp(
+      hidePublishWarning: selectByTimestamp(
         localSettings.hidePublishWarning,
         remoteSettings.hidePublishWarning,
         localSettings.communityUpdatedAt,
         remoteSettings.communityUpdatedAt,
       ),
-      hasSeenPublishWarning: _selectByTimestamp(
+      hasSeenPublishWarning: selectByTimestamp(
         localSettings.hasSeenPublishWarning,
         remoteSettings.hasSeenPublishWarning,
         localSettings.communityUpdatedAt,
         remoteSettings.communityUpdatedAt,
       ),
-      hasSeenCommunityIntro: _selectByTimestamp(
+      hasSeenCommunityIntro: selectByTimestamp(
         localSettings.hasSeenCommunityIntro,
         remoteSettings.hasSeenCommunityIntro,
         localSettings.communityUpdatedAt,

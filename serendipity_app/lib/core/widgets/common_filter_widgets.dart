@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/enums.dart';
 import '../../models/region_data.dart';
 import '../utils/dialog_helper.dart';
-import '../utils/validation_helper.dart';
-import '../utils/date_time_helper.dart';
-import '../widgets/empty_state_widget.dart';
-import '../theme/status_color_extension.dart';
 import '../../features/community/widgets/region_picker_dialog.dart';
 
 /// 筛选区块组件
@@ -18,6 +14,7 @@ class FilterSection extends StatelessWidget {
   final Widget child;
 
   const FilterSection({
+    super.key,
     required this.title,
     required this.child,
   });
@@ -58,6 +55,7 @@ class TimeRangeSelector extends StatelessWidget {
   final ValueChanged<DateTime?> onEndDateChanged;
 
   const TimeRangeSelector({
+    super.key,
     required this.startDate,
     required this.endDate,
     required this.onStartDateChanged,
@@ -240,6 +238,7 @@ class RegionSelector extends StatelessWidget {
   final ValueChanged<SelectedRegion?> onRegionChanged;
 
   const RegionSelector({
+    super.key,
     required this.selectedRegion,
     required this.onRegionChanged,
   });
@@ -296,6 +295,7 @@ class TagInputField extends StatelessWidget {
   final TextEditingController controller;
 
   const TagInputField({
+    super.key,
     required this.controller,
   });
 

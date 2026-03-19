@@ -6,8 +6,6 @@ import 'package:http/http.dart' as http;
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
 import '../providers/auth_provider.dart';
-import '../providers/records_provider.dart';
-import '../providers/check_in_provider.dart';
 import '../config/server_config.dart';
 import 'sync_service.dart';
 import 'sync_orchestrator.dart';

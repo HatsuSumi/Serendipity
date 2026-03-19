@@ -292,7 +292,6 @@ class InMemoryStorageService implements IStorageService {
     _favoritedPostSnapshots.remove(postId);
   }
 
-  @override
   void validateDataConsistency() {}
 }
 

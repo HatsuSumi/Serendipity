@@ -6,7 +6,6 @@ import '../../../core/providers/community_filter_provider.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/message_helper.dart';
 import '../../../core/widgets/common_filter_widgets.dart';
-import '../widgets/region_picker_dialog.dart';
 
 /// 社区筛选对话框
 /// 

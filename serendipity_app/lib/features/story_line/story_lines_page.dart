@@ -46,7 +46,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
         title: countAsync.when(
           data: (count) => Text('我的故事线 (共$count条)'),
           loading: () => const Text('我的故事线'),
-          error: (_, __) => const Text('我的故事线'),
+          error: (_, e) => const Text('我的故事线'),
         ),
         actions: [
           PopupMenuButton<StoryLineSortType>(

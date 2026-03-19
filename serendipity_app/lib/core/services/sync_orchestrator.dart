@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
-import '../providers/auth_provider.dart';
 import '../providers/records_provider.dart';
 import 'sync_service.dart';
 
