@@ -62,7 +62,9 @@ class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> wit
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AlertDialog(
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
       title: Row(
         children: [
           Icon(
@@ -121,6 +123,7 @@ class _CommunityIntroDialogState extends ConsumerState<CommunityIntroDialog> wit
           child: Text(countdownFinished ? '我知道了' : '我知道了 ($countdown)'),
         ),
       ],
+    ),
     );
   }
 }
