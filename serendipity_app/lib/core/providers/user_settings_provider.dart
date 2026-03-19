@@ -157,8 +157,14 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       final serverSettings = await syncService.uploadSettings(settings);
       
       // 用服务端的 updatedAt 更新本地，确保下次同步时时间戳对齐
-      await _storageService.saveUserSettings(serverSettings);
-      state = serverSettings;
+      // 注意：hasSeen* 系列字段为纯本地字段，服务端不存储，需保留本地值
+      final merged = serverSettings.copyWith(
+        hasSeenFavoritesIntro: settings.hasSeenFavoritesIntro,
+        hasSeenCommunityIntro: settings.hasSeenCommunityIntro,
+        hasSeenPublishWarning: settings.hasSeenPublishWarning,
+      );
+      await _storageService.saveUserSettings(merged);
+      state = merged;
     } catch (e) {
       // 上传失败，回滚本地状态到上一个已知的好状态
       // 重新从存储加载，确保本地和存储一致
