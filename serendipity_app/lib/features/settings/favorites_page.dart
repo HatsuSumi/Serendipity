@@ -398,8 +398,10 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   /// 构建收藏的社区帖子 Tab
   Widget _buildFavoritedPostsTab(FavoritesState favoritesState) {
     final posts = favoritesState.favoritedPosts;
+    final deletedPostIds = favoritesState.deletedFavoritedPostIds;
+    final totalCount = posts.length + deletedPostIds.length;
 
-    if (posts.isEmpty) {
+    if (totalCount == 0) {
       return RefreshIndicator(
         onRefresh: _onRefresh,
         child: ListView(
@@ -416,21 +418,92 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
       );
     }
 
+    // 合并正常帖子和已删除帖子 ID，已删除的排在最后
+    final deletedIdList = deletedPostIds.toList();
+
     return RefreshIndicator(
       onRefresh: _onRefresh,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: posts.length,
+        itemCount: totalCount,
         itemBuilder: (context, index) {
-          final post = posts[index];
-          return CommunityPostCard(
-            post: post,
-            isFavorited: true,
-            onFavorite: () => _unfavoritePost(post.id),
-          );
+          if (index < posts.length) {
+            final post = posts[index];
+            return CommunityPostCard(
+              post: post,
+              isFavorited: true,
+              onFavorite: () => _unfavoritePost(post.id),
+            );
+          } else {
+            final deletedPostId = deletedIdList[index - posts.length];
+            return _buildDeletedPostCard(deletedPostId);
+          }
         },
       ),
     );
+  }
+
+  /// 构建已删除帖子的占位卡片
+  ///
+  /// 调用者：_buildFavoritedPostsTab()
+  Widget _buildDeletedPostCard(String postId) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              Icons.hide_source_outlined,
+              size: 32,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '该帖子已被删除',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.bookmark,
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              ),
+              tooltip: '取消收藏',
+              onPressed: () => _unfavoriteDeletedPost(postId),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 取消收藏已删除的帖子
+  ///
+  /// 调用者：_buildDeletedPostCard()
+  Future<void> _unfavoriteDeletedPost(String postId) async {
+    final confirmed = await DialogHelper.showDeleteConfirm(
+      context: context,
+      title: '取消收藏',
+      content: '该帖子已被删除，确定要移除这条收藏记录吗？',
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(favoritesProvider.notifier).unfavoritePost(postId);
+      if (mounted) MessageHelper.showSuccess(context, '已移除收藏');
+    } catch (e) {
+      if (mounted) {
+        MessageHelper.showError(
+          context,
+          '移除失败：${AuthErrorHelper.extractErrorMessage(e)}',
+        );
+      }
+    }
   }
 
   /// 取消收藏社区帖子

@@ -8,6 +8,7 @@ import 'i_remote_data_repository.dart';
 import '../services/http_client_service.dart';
 import '../config/server_config.dart';
 import '../utils/address_helper.dart';
+import '../providers/favorites_provider.dart' show FavoritedPostsResult;
 
 /// 自建服务器远程数据仓库实现
 /// 
@@ -872,6 +873,28 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       return postsJson
           .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
           .toList();
+    } on HttpException catch (e) {
+      throw Exception('获取收藏帖子失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
+    try {
+      final response = await _httpClient.get(ServerConfig.favoritePosts);
+      final data = response['data'] as Map<String, dynamic>;
+      final postsJson = data['posts'] as List;
+      final posts = postsJson
+          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
+          .toList();
+      final deletedPostIds = ((data['deletedPostIds'] as List?) ?? [])
+          .map((e) => e as String)
+          .toSet();
+      return FavoritedPostsResult(
+        posts: posts,
+        deletedPostIds: deletedPostIds,
+      );
     } on HttpException catch (e) {
       throw Exception('获取收藏帖子失败：${e.message}');
     }

@@ -2,7 +2,8 @@ import 'package:uuid/uuid.dart';
 import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
-import '../utils/address_helper.dart';
+import '../../core/utils/address_helper.dart';
+import '../providers/favorites_provider.dart' show FavoritedPostsResult;
 import 'i_community_data_source.dart';
 
 /// 社区仓储
@@ -337,6 +338,18 @@ class CommunityRepository {
   Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
     if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
     return await _dataSource.getFavoritedPosts(userId);
+  }
+
+  /// 获取用户收藏的社区帖子（区分存在和已删除）
+  ///
+  /// 返回 [FavoritedPostsResult]，包含：
+  /// - posts：仍然存在的帖子列表
+  /// - deletedPostIds：已被删除的帖子 ID 集合
+  ///
+  /// 调用者：FavoritesNotifier.build()
+  Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    return await _dataSource.getFavoritedPostsResult(userId);
   }
 
   /// 收藏私人记录

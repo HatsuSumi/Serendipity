@@ -7,6 +7,8 @@ import { CommunityPost } from '@prisma/client';
 
 export interface FavoritedPostsResponseDto {
   posts: CommunityPostResponseDto[];
+  /// 已被删除但仍在收藏列表中的帖子 ID（孤儿收藏）
+  deletedPostIds: string[];
 }
 
 export interface FavoritedRecordIdsResponseDto {
@@ -68,15 +70,22 @@ export class FavoriteService implements IFavoriteService {
 
     const postIds = await this.favoriteRepository.getFavoritedPosts(userId);
 
-    // 批量查询帖子详情
+    // 批量查询帖子详情，区分存在和已删除的帖子
     const posts: CommunityPost[] = [];
+    const deletedPostIds: string[] = [];
     for (const postId of postIds) {
       const post = await this.communityPostRepository.findById(postId);
-      if (post) posts.push(post);
+      if (post) {
+        posts.push(post);
+      } else {
+        // 帖子已被删除，记录孤儿收藏 ID
+        deletedPostIds.push(postId);
+      }
     }
 
     return {
       posts: posts.map(post => this.toPostDto(post)),
+      deletedPostIds,
     };
   }
 

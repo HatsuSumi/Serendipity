@@ -4,6 +4,7 @@ import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
+import '../providers/favorites_provider.dart' show FavoritedPostsResult;
 
 /// 远程数据仓库接口
 /// 
@@ -580,6 +581,17 @@ abstract class IRemoteDataRepository {
   ///
   /// 调用者：CommunityRepository.getFavoritedPosts()
   Future<List<CommunityPost>> getFavoritedPosts(String userId);
+
+  /// 获取用户收藏的社区帖子（区分存在和已删除）
+  ///
+  /// 返回 [FavoritedPostsResult]，包含正常帖子列表和已删除帖子 ID 集合。
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  /// - 网络错误：抛出具体的网络异常
+  ///
+  /// 调用者：CommunityRepository.getFavoritedPostsResult()
+  Future<FavoritedPostsResult> getFavoritedPostsResult(String userId);
 
   /// 收藏私人记录
   ///

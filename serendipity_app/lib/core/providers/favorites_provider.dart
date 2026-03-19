@@ -7,33 +7,60 @@ import 'auth_provider.dart';
 import 'community_provider.dart';
 import 'records_provider.dart';
 
+/// 获取收藏帖子的结果
+///
+/// 区分仍存在的帖子和已被删除的帖子 ID，
+/// 避免将「帖子不存在」与「网络错误」混淆。
+class FavoritedPostsResult {
+  /// 仍然存在的收藏帖子
+  final List<CommunityPost> posts;
+
+  /// 已被删除但收藏关系仍存在的帖子 ID
+  final Set<String> deletedPostIds;
+
+  const FavoritedPostsResult({
+    required this.posts,
+    required this.deletedPostIds,
+  });
+}
+
 /// 收藏状态
 ///
 /// 职责：
 /// - 存储收藏的社区帖子列表
+/// - 存储已被删除但仍在收藏中的帖子 ID（孤儿收藏）
 /// - 存储收藏的记录 ID 集合（用于判断某条记录是否已收藏）
 ///
 /// 设计原则：
 /// - 单一职责（SRP）：只负责收藏状态
 /// - 不可变对象：使用 copyWith 模式
 class FavoritesState {
-  /// 收藏的社区帖子列表（从服务端拉取）
+  /// 收藏的社区帖子列表（从服务端拉取，帖子仍存在）
   final List<CommunityPost> favoritedPosts;
+
+  /// 已被删除但仍在收藏中的帖子 ID 集合（孤儿收藏）
+  ///
+  /// 这些帖子已从服务端删除，但收藏关系仍保留。
+  /// UI 层展示占位卡片提示用户「该帖子已被删除」。
+  final Set<String> deletedFavoritedPostIds;
 
   /// 收藏的记录 ID 集合（从服务端拉取，用于本地 Hive 过滤展示）
   final Set<String> favoritedRecordIds;
 
   const FavoritesState({
     this.favoritedPosts = const [],
+    this.deletedFavoritedPostIds = const {},
     this.favoritedRecordIds = const {},
   });
 
   FavoritesState copyWith({
     List<CommunityPost>? favoritedPosts,
+    Set<String>? deletedFavoritedPostIds,
     Set<String>? favoritedRecordIds,
   }) {
     return FavoritesState(
       favoritedPosts: favoritedPosts ?? this.favoritedPosts,
+      deletedFavoritedPostIds: deletedFavoritedPostIds ?? this.deletedFavoritedPostIds,
       favoritedRecordIds: favoritedRecordIds ?? this.favoritedRecordIds,
     );
   }
@@ -45,6 +72,10 @@ class FavoritesState {
   /// 判断某条记录是否已收藏（O(1) 查找）
   bool isRecordFavorited(String recordId) =>
       favoritedRecordIds.contains(recordId);
+
+  /// 判断某个帖子是否已被删除（O(1) 查找）
+  bool isPostDeleted(String postId) =>
+      deletedFavoritedPostIds.contains(postId);
 }
 
 /// 收藏状态管理
@@ -79,12 +110,14 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
     try {
       // 并发加载两类收藏数据
       final results = await Future.wait([
-        _repository.getFavoritedPosts(currentUser.id),
+        _repository.getFavoritedPostsResult(currentUser.id),
         _repository.getFavoritedRecordIds(currentUser.id),
       ]);
 
+      final postsResult = results[0] as FavoritedPostsResult;
       return FavoritesState(
-        favoritedPosts: results[0] as List<CommunityPost>,
+        favoritedPosts: postsResult.posts,
+        deletedFavoritedPostIds: postsResult.deletedPostIds,
         favoritedRecordIds: results[1] as Set<String>,
       );
     } catch (e) {
@@ -131,6 +164,7 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
   /// 取消收藏社区帖子
   ///
   /// 乐观更新：先从本地移除，再发请求，失败时回滚。
+  /// 已删除的帖子：从 deletedFavoritedPostIds 移除，服务端幂等处理。
   ///
   /// 调用者：CommunityPostCard、MyPostsPage、FavoritesPage
   Future<void> unfavoritePost(String postId) async {
@@ -140,10 +174,15 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
     final currentState = state.value;
     if (currentState == null) return;
 
-    // 乐观更新本地状态
+    // 乐观更新：从正常列表或已删除列表中移除
     final optimisticPosts =
         currentState.favoritedPosts.where((p) => p.id != postId).toList();
-    state = AsyncData(currentState.copyWith(favoritedPosts: optimisticPosts));
+    final optimisticDeletedIds =
+        {...currentState.deletedFavoritedPostIds}..remove(postId);
+    state = AsyncData(currentState.copyWith(
+      favoritedPosts: optimisticPosts,
+      deletedFavoritedPostIds: optimisticDeletedIds,
+    ));
 
     try {
       await _repository.unfavoritePost(currentUser.id, postId);

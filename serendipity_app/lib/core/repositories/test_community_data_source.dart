@@ -1,6 +1,7 @@
 import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
+import '../providers/favorites_provider.dart' show FavoritedPostsResult;
 import 'i_community_data_source.dart';
 
 /// 测试社区数据源
@@ -107,6 +108,12 @@ class TestCommunityDataSource implements ICommunityDataSource {
   Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
     // 测试模式：返回空列表
     return [];
+  }
+
+  @override
+  Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) async {
+    // 测试模式：返回空结果
+    return const FavoritedPostsResult(posts: [], deletedPostIds: {});
   }
 
   @override

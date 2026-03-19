@@ -1,6 +1,7 @@
 import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
+import '../providers/favorites_provider.dart' show FavoritedPostsResult;
 
 /// 社区数据源接口
 ///
@@ -125,6 +126,10 @@ abstract class ICommunityDataSource {
   /// 获取用户收藏的社区帖子列表
   /// 调用者：CommunityRepository.getFavoritedPosts()
   Future<List<CommunityPost>> getFavoritedPosts(String userId);
+
+  /// 获取用户收藏的社区帖子（区分存在和已删除）
+  /// 调用者：CommunityRepository.getFavoritedPostsResult()
+  Future<FavoritedPostsResult> getFavoritedPostsResult(String userId);
 
   /// 收藏私人记录
   /// 调用者：CommunityRepository.favoriteRecord()

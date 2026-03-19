@@ -1,6 +1,7 @@
 import '../../models/community_post.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
+import '../providers/favorites_provider.dart' show FavoritedPostsResult;
 import 'i_community_data_source.dart';
 import 'i_remote_data_repository.dart';
 
@@ -132,6 +133,11 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
   @override
   Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
     return await _remoteData.getFavoritedPosts(userId);
+  }
+
+  @override
+  Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) async {
+    return await _remoteData.getFavoritedPostsResult(userId);
   }
 
   @override
