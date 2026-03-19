@@ -240,10 +240,10 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       await refresh();
       return;
     }
-    final result = await AsyncValue.guard(() => future);
-    if (result.hasValue) {
-      state = result;
-    }
+    // 保留当前数据，invalidateSelf 触发 build() 重新执行
+    ref.invalidateSelf();
+    // 等待新数据加载完成，期间 state 保持旧值不触发 loading
+    await future;
   }
 
   /// 保存记录（自动处理故事线关联）
