@@ -46,6 +46,7 @@ export interface UserSettingsDto {
     confettiEnabled: boolean;
   };
   hasSeenCommunityIntro: boolean;
+  hasSeenFavoritesIntro: boolean;
   hasSeenPublishWarning: boolean;
   hidePublishWarning: boolean;
   updatedAt: string; // ISO 8601
@@ -66,6 +67,7 @@ export interface UpdateUserSettingsDto {
     confettiEnabled?: boolean;
   };
   hasSeenCommunityIntro?: boolean;
+  hasSeenFavoritesIntro?: boolean;
   hasSeenPublishWarning?: boolean;
   hidePublishWarning?: boolean;
 }

@@ -54,6 +54,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         },
         hasSeenCommunityIntro: false,
         hasSeenPublishWarning: false,
+        hasSeenFavoritesIntro: false,
         hidePublishWarning: false,
       },
     });
@@ -76,6 +77,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         checkIn: data.checkIn as Prisma.InputJsonValue | undefined,
         hasSeenCommunityIntro: data.hasSeenCommunityIntro,
         hasSeenPublishWarning: data.hasSeenPublishWarning,
+        hasSeenFavoritesIntro: data.hasSeenFavoritesIntro,
         hidePublishWarning: data.hidePublishWarning,
         updatedAt: new Date(),
       },
@@ -99,6 +101,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         checkIn: data.checkIn as Prisma.InputJsonValue | undefined,
         hasSeenCommunityIntro: data.hasSeenCommunityIntro,
         hasSeenPublishWarning: data.hasSeenPublishWarning,
+        hasSeenFavoritesIntro: data.hasSeenFavoritesIntro,
         hidePublishWarning: data.hidePublishWarning,
         updatedAt: new Date(),
       },
@@ -118,6 +121,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         }) as Prisma.InputJsonValue,
         hasSeenCommunityIntro: data.hasSeenCommunityIntro ?? false,
         hasSeenPublishWarning: data.hasSeenPublishWarning ?? false,
+        hasSeenFavoritesIntro: data.hasSeenFavoritesIntro ?? false,
         hidePublishWarning: data.hidePublishWarning ?? false,
       },
     });

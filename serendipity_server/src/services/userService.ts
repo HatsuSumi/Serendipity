@@ -128,6 +128,7 @@ export class UserService implements IUserService {
       },
       hasSeenCommunityIntro: settings.hasSeenCommunityIntro,
       hasSeenPublishWarning: settings.hasSeenPublishWarning,
+      hasSeenFavoritesIntro: settings.hasSeenFavoritesIntro,
       hidePublishWarning: settings.hidePublishWarning,
       updatedAt: settings.updatedAt.toISOString(),
     };
