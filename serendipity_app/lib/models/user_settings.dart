@@ -35,6 +35,7 @@ class UserSettings {
   final bool hidePublishWarning;
   final bool hasSeenPublishWarning;
   final bool hasSeenCommunityIntro;
+  final bool hasSeenFavoritesIntro;
   final DateTime communityUpdatedAt; // 社区设置的更新时间
   
   final DateTime createdAt;
@@ -60,6 +61,7 @@ class UserSettings {
     required this.hidePublishWarning,
     required this.hasSeenPublishWarning,
     required this.hasSeenCommunityIntro,
+    required this.hasSeenFavoritesIntro,
     required this.communityUpdatedAt,
     required this.createdAt,
     required this.updatedAt,
@@ -91,6 +93,7 @@ class UserSettings {
       hidePublishWarning: false,
       hasSeenPublishWarning: false,
       hasSeenCommunityIntro: false,
+      hasSeenFavoritesIntro: false,
       communityUpdatedAt: now,
       createdAt: now,
       updatedAt: now,
@@ -152,6 +155,7 @@ class UserSettings {
       hidePublishWarning: json['hidePublishWarning'] as bool? ?? false,
       hasSeenPublishWarning: json['hasSeenPublishWarning'] as bool? ?? false,
       hasSeenCommunityIntro: json['hasSeenCommunityIntro'] as bool? ?? false,
+      hasSeenFavoritesIntro: json['hasSeenFavoritesIntro'] as bool? ?? false,
       communityUpdatedAt: json['communityUpdatedAt'] != null
           ? DateTime.parse(json['communityUpdatedAt'] as String)
           : now,
@@ -203,6 +207,7 @@ class UserSettings {
       hidePublishWarning: dto['hidePublishWarning'] as bool? ?? false,
       hasSeenPublishWarning: dto['hasSeenPublishWarning'] as bool? ?? false,
       hasSeenCommunityIntro: dto['hasSeenCommunityIntro'] as bool? ?? false,
+      hasSeenFavoritesIntro: dto['hasSeenFavoritesIntro'] as bool? ?? false,
       communityUpdatedAt: updatedAt,
       createdAt: now,
       updatedAt: updatedAt,
@@ -234,6 +239,7 @@ class UserSettings {
       'hidePublishWarning': hidePublishWarning,
       'hasSeenPublishWarning': hasSeenPublishWarning,
       'hasSeenCommunityIntro': hasSeenCommunityIntro,
+      'hasSeenFavoritesIntro': hasSeenFavoritesIntro,
       'communityUpdatedAt': communityUpdatedAt.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -260,6 +266,7 @@ class UserSettings {
         'confettiEnabled': checkInConfettiEnabled,
       },
       'hasSeenCommunityIntro': hasSeenCommunityIntro,
+      'hasSeenFavoritesIntro': hasSeenFavoritesIntro,
       'hasSeenPublishWarning': hasSeenPublishWarning,
       'hidePublishWarning': hidePublishWarning,
     };
@@ -285,6 +292,7 @@ class UserSettings {
     bool? hidePublishWarning,
     bool? hasSeenPublishWarning,
     bool? hasSeenCommunityIntro,
+    bool? hasSeenFavoritesIntro,
     DateTime? communityUpdatedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -309,6 +317,7 @@ class UserSettings {
       hidePublishWarning: hidePublishWarning ?? this.hidePublishWarning,
       hasSeenPublishWarning: hasSeenPublishWarning ?? this.hasSeenPublishWarning,
       hasSeenCommunityIntro: hasSeenCommunityIntro ?? this.hasSeenCommunityIntro,
+      hasSeenFavoritesIntro: hasSeenFavoritesIntro ?? this.hasSeenFavoritesIntro,
       communityUpdatedAt: communityUpdatedAt ?? this.communityUpdatedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -344,6 +353,7 @@ class UserSettings {
         other.hidePublishWarning == hidePublishWarning &&
         other.hasSeenPublishWarning == hasSeenPublishWarning &&
         other.hasSeenCommunityIntro == hasSeenCommunityIntro &&
+        other.hasSeenFavoritesIntro == hasSeenFavoritesIntro &&
         other.communityUpdatedAt == communityUpdatedAt &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
@@ -370,6 +380,7 @@ class UserSettings {
         hidePublishWarning.hashCode ^
         hasSeenPublishWarning.hashCode ^
         hasSeenCommunityIntro.hashCode ^
+        hasSeenFavoritesIntro.hashCode ^
         communityUpdatedAt.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;

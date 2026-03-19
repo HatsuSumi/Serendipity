@@ -968,6 +968,12 @@ class SyncService {
         localSettings.communityUpdatedAt,
         remoteSettings.communityUpdatedAt,
       ),
+      hasSeenFavoritesIntro: selectByTimestamp(
+        localSettings.hasSeenFavoritesIntro,
+        remoteSettings.hasSeenFavoritesIntro,
+        localSettings.communityUpdatedAt,
+        remoteSettings.communityUpdatedAt,
+      ),
       communityUpdatedAt: localSettings.communityUpdatedAt.isAfter(remoteSettings.communityUpdatedAt)
           ? localSettings.communityUpdatedAt
           : remoteSettings.communityUpdatedAt,

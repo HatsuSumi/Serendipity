@@ -69,6 +69,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       hidePublishWarning: false,
       hasSeenPublishWarning: false,
       hasSeenCommunityIntro: false,
+      hasSeenFavoritesIntro: false,
       themeUpdatedAt: now,
       accentColorUpdatedAt: now,
       notificationsUpdatedAt: now,
@@ -387,6 +388,27 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     await _storageService.saveUserSettings(updated);
     state = updated;
     
+    // 上传到云端
+    await _uploadToCloud(updated);
+  }
+
+  /// 标记用户已看过收藏页介绍
+  ///
+  /// [seen] 是否已看过（默认 true）
+  ///
+  /// 调用者：
+  /// - FavoritesIntroDialog（用户点击"我知道了"时）
+  Future<void> markFavoritesIntroSeen([bool seen = true]) async {
+    final now = DateTime.now();
+    final updated = state.copyWith(
+      hasSeenFavoritesIntro: seen,
+      communityUpdatedAt: now,
+      updatedAt: now,
+    );
+
+    await _storageService.saveUserSettings(updated);
+    state = updated;
+
     // 上传到云端
     await _uploadToCloud(updated);
   }

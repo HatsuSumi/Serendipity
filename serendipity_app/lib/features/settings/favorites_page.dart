@@ -4,6 +4,8 @@ import '../../core/providers/favorites_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/auth_error_helper.dart';
+import '../../core/providers/user_settings_provider.dart';
+import 'dialogs/favorites_intro_dialog.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/dialog_helper.dart';
@@ -45,12 +47,27 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _checkAndShowIntroDialog();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// 检查并显示收藏页介绍对话框
+  ///
+  /// 调用者：initState()
+  void _checkAndShowIntroDialog() {
+    final hasSeenIntro =
+        ref.read(userSettingsProvider).hasSeenFavoritesIntro;
+    if (hasSeenIntro) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await FavoritesIntroDialog.show(context, ref);
+    });
   }
 
   /// 下拉刷新
