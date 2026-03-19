@@ -69,12 +69,23 @@ class FavoritesState {
   /// UI 层在卡片右下角显示「该记录已被删除」。
   final List<EncounterRecord> deletedFavoritedRecords;
 
-  const FavoritesState({
+  /// 收藏的帖子 ID 集合（派生自 favoritedPosts，用于 O(1) 查找）
+  final Set<String> _favoritedPostIds;
+
+  /// 已被删除的帖子 ID 集合（派生自 deletedFavoritedPosts，用于 O(1) 查找）
+  final Set<String> _deletedFavoritedPostIds;
+
+  /// 已被删除的记录 ID 集合（派生自 deletedFavoritedRecords，用于 O(1) 查找）
+  final Set<String> _deletedFavoritedRecordIds;
+
+  FavoritesState({
     this.favoritedPosts = const [],
     this.deletedFavoritedPosts = const [],
     this.favoritedRecordIds = const {},
     this.deletedFavoritedRecords = const [],
-  });
+  })  : _favoritedPostIds = {for (final p in favoritedPosts) p.id},
+        _deletedFavoritedPostIds = {for (final p in deletedFavoritedPosts) p.id},
+        _deletedFavoritedRecordIds = {for (final r in deletedFavoritedRecords) r.id};
 
   FavoritesState copyWith({
     List<CommunityPost>? favoritedPosts,
@@ -91,20 +102,19 @@ class FavoritesState {
   }
 
   /// 判断某个帖子是否已收藏（O(1) 查找）
-  bool isPostFavorited(String postId) =>
-      favoritedPosts.any((p) => p.id == postId);
+  bool isPostFavorited(String postId) => _favoritedPostIds.contains(postId);
 
   /// 判断某条记录是否已收藏（O(1) 查找）
   bool isRecordFavorited(String recordId) =>
       favoritedRecordIds.contains(recordId);
 
-  /// 判断某个帖子是否已被删除（从已删除列表查找）
+  /// 判断某个帖子是否已被删除（O(1) 查找）
   bool isPostDeleted(String postId) =>
-      deletedFavoritedPosts.any((p) => p.id == postId);
+      _deletedFavoritedPostIds.contains(postId);
 
-  /// 判断某条记录是否已被删除（从已删除列表查找）
+  /// 判断某条记录是否已被删除（O(1) 查找）
   bool isRecordDeleted(String recordId) =>
-      deletedFavoritedRecords.any((r) => r.id == recordId);
+      _deletedFavoritedRecordIds.contains(recordId);
 }
 
 /// 收藏状态管理

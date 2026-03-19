@@ -77,6 +77,14 @@ export interface IRecordRepository {
    * 更新记录
    * @param id - 记录 ID
    * @param data - 更新数据
+  /**
+   * 批量根据 ID 列表查找记录（跨用户，用于收藏有效性检查）
+   * @param ids - 记录 ID 列表
+   * @returns 存在的记录列表
+   */
+  findManyByIds(ids: string[]): Promise<Record[]>;
+
+  /**
    * @returns 更新后的记录
    * @note 权限验证应在 Service 层完成
    */
@@ -404,6 +412,16 @@ export class RecordRepository implements IRecordRepository {
     const total = Number(countResult[0].count);
 
     return { records, total };
+  }
+
+  /**
+   * 批量根据 ID 列表查找记录（跨用户，用于收藏有效性检查）
+   */
+  async findManyByIds(ids: string[]): Promise<Record[]> {
+    if (ids.length === 0) return [];
+    return this.prisma.record.findMany({
+      where: { id: { in: ids } },
+    });
   }
 
   /**

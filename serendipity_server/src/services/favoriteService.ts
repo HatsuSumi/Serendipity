@@ -73,22 +73,21 @@ export class FavoriteService implements IFavoriteService {
     if (!userId) throw new AppError('userId is required', ErrorCode.VALIDATION_ERROR);
 
     const postIds = await this.favoriteRepository.getFavoritedPosts(userId);
+    if (postIds.length === 0) return { posts: [], deletedPostIds: [] };
 
-    // 批量查询帖子详情，区分存在和已删除的帖子
-    const posts: CommunityPost[] = [];
-    const deletedPostIds: string[] = [];
-    for (const postId of postIds) {
-      const post = await this.communityPostRepository.findById(postId);
-      if (post) {
-        posts.push(post);
-      } else {
-        // 帖子已被删除，记录孤儿收藏 ID
-        deletedPostIds.push(postId);
-      }
-    }
+    // 单次批量查询，消除 N+1 问题
+    const existingPosts = await this.communityPostRepository.findManyByIds(postIds);
+    const existingIdSet = new Set(existingPosts.map(p => p.id));
+    const deletedPostIds = postIds.filter(id => !existingIdSet.has(id));
+
+    // 保持原始收藏顺序
+    const postMap = new Map(existingPosts.map(p => [p.id, p]));
+    const orderedPosts = postIds
+      .filter(id => existingIdSet.has(id))
+      .map(id => postMap.get(id)!);
 
     return {
-      posts: posts.map(post => this.toPostDto(post)),
+      posts: orderedPosts.map(post => this.toPostDto(post)),
       deletedPostIds,
     };
   }
@@ -111,18 +110,13 @@ export class FavoriteService implements IFavoriteService {
     if (!userId) throw new AppError('userId is required', ErrorCode.VALIDATION_ERROR);
 
     const allRecordIds = await this.favoriteRepository.getFavoritedRecordIds(userId);
+    if (allRecordIds.length === 0) return { recordIds: [], deletedRecordIds: [] };
 
-    // 批量检查记录是否仍存在，区分正常记录和已删除记录
-    const recordIds: string[] = [];
-    const deletedRecordIds: string[] = [];
-    for (const recordId of allRecordIds) {
-      const record = await this.recordRepository.findById(recordId, userId);
-      if (record) {
-        recordIds.push(recordId);
-      } else {
-        deletedRecordIds.push(recordId);
-      }
-    }
+    // 单次批量查询，消除 N+1 问题
+    const existingRecords = await this.recordRepository.findManyByIds(allRecordIds);
+    const existingIdSet = new Set(existingRecords.map(r => r.id));
+    const recordIds = allRecordIds.filter(id => existingIdSet.has(id));
+    const deletedRecordIds = allRecordIds.filter(id => !existingIdSet.has(id));
 
     return { recordIds, deletedRecordIds };
   }

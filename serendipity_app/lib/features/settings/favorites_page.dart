@@ -1,10 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/favorites_provider.dart';
-import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/auth_error_helper.dart';
-import '../../core/providers/user_settings_provider.dart';
 import 'dialogs/favorites_intro_dialog.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
@@ -47,7 +45,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _checkAndShowIntroDialog();
+    _showIntroDialogIfNeeded();
   }
 
   @override
@@ -56,14 +54,13 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     super.dispose();
   }
 
-  /// 检查并显示收藏页介绍对话框
+  /// 首次进入时显示收藏页介绍对话框
   ///
   /// 调用者：initState()
-  void _checkAndShowIntroDialog() {
-    final hasSeenIntro =
-        ref.read(userSettingsProvider).hasSeenFavoritesIntro;
-    if (hasSeenIntro) return;
-
+  ///
+  /// 是否显示的判断完全委托给 [FavoritesIntroDialog.show]，
+  /// 此处不做二次检查，遵循单一职责原则。
+  void _showIntroDialogIfNeeded() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await FavoritesIntroDialog.show(context, ref);
@@ -107,13 +104,13 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   // ==================== 收藏的记录 Tab ====================
 
   /// 构建收藏的记录 Tab
+  ///
+  /// 记录列表由 [FavoritesNotifier.getFavoritedRecords] 提供，
+  /// UI 层不重复业务逻辑（按 ID 过滤等），遵循分层约束。
   Widget _buildFavoritedRecordsTab(FavoritesState favoritesState) {
-    final allRecords = ref.watch(recordsProvider).value ?? [];
-    final favoritedIds = favoritesState.favoritedRecordIds;
-    final records = favoritedIds.isEmpty
-        ? <EncounterRecord>[]
-        : allRecords.where((r) => favoritedIds.contains(r.id)).toList();
-    final deletedRecords = favoritesState.deletedFavoritedRecords;
+    // 业务逻辑委托给 Provider 层
+    final (:records, :deletedRecords) =
+        ref.read(favoritesProvider.notifier).getFavoritedRecords();
     final totalCount = records.length + deletedRecords.length;
 
     if (totalCount == 0) {
@@ -143,15 +140,20 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
           if (index < records.length) {
             return _buildRecordCard(records[index]);
           } else {
-            final deletedRecord = deletedRecords[index - records.length];
-            return _buildDeletedRecordCard(deletedRecord);
+            return _buildDeletedRecordCard(deletedRecords[index - records.length]);
           }
         },
       ),
     );
   }
 
-  /// 构建已删除记录的卡片（保留完整信息，右下角标注「该记录已被删除」）
+  /// 构建记录卡片（统一处理正常记录和已删除记录）
+  ///
+  /// [isDeleted] 为 true 时：
+  /// - 不可点击（无 InkWell 包裹）
+  /// - 状态颜色半透明，视觉区分
+  /// - 底部显示「该记录已被删除」错误标注
+  /// - 书签图标半透明
   ///
   /// 调用者：_buildFavoritedRecordsTab()
   Widget _buildDeletedRecordCard(EncounterRecord record) {

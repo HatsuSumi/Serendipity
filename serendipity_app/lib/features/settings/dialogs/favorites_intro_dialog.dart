@@ -22,9 +22,9 @@ class FavoritesIntroDialog extends ConsumerStatefulWidget {
   /// 显示对话框（静态工厂方法）
   ///
   /// 调用者：
-  /// - FavoritesPage._checkAndShowIntroDialog()
+  /// - FavoritesPage._showIntroDialogIfNeeded()
   ///
-  /// 如果用户已看过介绍，直接返回不显示
+  /// 是否显示的判断在此处统一处理（单点职责），调用者无需额外检查。
   static Future<void> show(
     BuildContext context,
     WidgetRef ref,

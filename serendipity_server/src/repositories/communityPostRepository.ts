@@ -25,6 +25,7 @@ export interface ICommunityPostRepository {
     limit: number;
   }): Promise<CommunityPost[]>;
   findByUserAndRecords(userId: string, recordIds: string[]): Promise<CommunityPost[]>;
+  findManyByIds(ids: string[]): Promise<CommunityPost[]>;
   deleteById(id: string, userId: string): Promise<void>;
   deleteByUserAndRecord(userId: string, recordId: string): Promise<void>;
 }
@@ -91,6 +92,14 @@ export class CommunityPostRepository implements ICommunityPostRepository {
           in: recordIds,
         },
       },
+    });
+  }
+
+  async findManyByIds(ids: string[]): Promise<CommunityPost[]> {
+    if (ids.length === 0) return [];
+    return this.prisma.communityPost.findMany({
+      where: { id: { in: ids } },
+      orderBy: { publishedAt: 'desc' },
     });
   }
 

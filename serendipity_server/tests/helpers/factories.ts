@@ -34,6 +34,7 @@ export const createMockUserSettings = (overrides?: Partial<UserSettings>): UserS
   },
   hasSeenCommunityIntro: false,
   hasSeenPublishWarning: false,
+  hasSeenFavoritesIntro: false,
   hidePublishWarning: false,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
