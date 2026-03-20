@@ -908,19 +908,6 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
-  Future<Set<String>> getFavoritedRecordIds(String userId) async {
-    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
-    try {
-      final response = await _httpClient.get(ServerConfig.favoriteRecords);
-      final data = response['data'] as Map<String, dynamic>;
-      final ids = data['recordIds'] as List;
-      return ids.map((e) => e as String).toSet();
-    } on HttpException catch (e) {
-      throw Exception('获取收藏记录 ID 失败：${e.message}');
-    }
-  }
-
-  @override
   Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) async {
     if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
     try {

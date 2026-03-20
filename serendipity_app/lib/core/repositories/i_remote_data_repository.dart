@@ -602,17 +602,6 @@ abstract class IRemoteDataRepository {
   /// 调用者：CommunityRepository.unfavoriteRecord()
   Future<void> unfavoriteRecord(String userId, String recordId);
 
-  /// 获取用户收藏的记录 ID 列表
-  ///
-  /// 返回：收藏的 recordId 集合（用于本地 Hive 过滤展示）
-  ///
-  /// Fail Fast：
-  /// - userId 为空：抛出 ArgumentError
-  /// - 网络错误：抛出具体的网络异常
-  ///
-  /// 调用者：CommunityRepository.getFavoritedRecordIds()
-  Future<Set<String>> getFavoritedRecordIds(String userId);
-
   /// 获取用户收藏的记录（区分存在和已删除）
   ///
   /// 返回 [FavoritedRecordsResult]，包含正常记录 ID 集合和已删除记录 ID 集合。

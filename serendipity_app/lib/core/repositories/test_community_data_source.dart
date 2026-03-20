@@ -105,12 +105,6 @@ class TestCommunityDataSource implements ICommunityDataSource {
   }
 
   @override
-  Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
-    // 测试模式：返回空列表
-    return [];
-  }
-
-  @override
   Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) async {
     // 测试模式：返回空结果
     return const FavoritedPostsResult(posts: [], deletedPostIds: {});
@@ -124,12 +118,6 @@ class TestCommunityDataSource implements ICommunityDataSource {
   @override
   Future<void> unfavoriteRecord(String userId, String recordId) async {
     // 测试模式：直接返回成功
-  }
-
-  @override
-  Future<Set<String>> getFavoritedRecordIds(String userId) async {
-    // 测试模式：返回空集合
-    return {};
   }
 
   @override

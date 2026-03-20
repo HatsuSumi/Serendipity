@@ -368,16 +368,6 @@ class CommunityRepository {
     await _dataSource.unfavoriteRecord(userId, recordId);
   }
 
-  /// 获取用户收藏的记录 ID 集合
-  ///
-  /// Fail Fast：userId 为空抛出 ArgumentError
-  ///
-  /// 调用者：FavoritesNotifier.build()
-  Future<Set<String>> getFavoritedRecordIds(String userId) async {
-    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
-    return await _dataSource.getFavoritedRecordIds(userId);
-  }
-
   /// 获取用户收藏的记录（区分存在和已删除）
   ///
   /// 返回 [FavoritedRecordsResult]，包含：

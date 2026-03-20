@@ -108,7 +108,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   /// 构建收藏的记录 Tab
   Widget _buildFavoritedRecordsTab(FavoritesState favoritesState) {
-    final allRecords = ref.read(recordsProvider).value ?? [];
+    final allRecords = ref.watch(recordsProvider).value ?? [];
     final favoritedIds = favoritesState.favoritedRecordIds;
     final records = favoritedIds.isEmpty
         ? <EncounterRecord>[]
@@ -348,42 +348,31 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   }
 
   /// 故事线信息（右下角）
-
-  /// 故事线信息（右下角）
+  ///
+  /// 使用 firstWhereOrNull 替代 try/catch，符合 Dart 惯用法。
+  /// 故事线不存在（已删除或 ID 不匹配）时静默返回空。
   Widget _buildStoryLineInfo(String storyLineId) {
-    final storyLinesAsync = ref.watch(storyLinesProvider);
-    return storyLinesAsync.when(
-      data: (storyLines) {
-        try {
-          final storyLine =
-              storyLines.firstWhere((sl) => sl.id == storyLineId);
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.auto_stories,
-                size: 12,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                storyLine.name,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          );
-        } catch (_) {
-          return const SizedBox.shrink();
-        }
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (err, stack) => const SizedBox.shrink(),
+    final storyLines = ref.watch(storyLinesProvider).valueOrNull ?? [];
+    final storyLine = storyLines.where((sl) => sl.id == storyLineId).firstOrNull;
+    if (storyLine == null) return const SizedBox.shrink();
+
+    final primary = Theme.of(context).colorScheme.primary;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.auto_stories, size: 12, color: primary),
+        const SizedBox(width: 4),
+        Text(
+          storyLine.name,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: 11,
+            color: primary,
+            fontWeight: FontWeight.w500,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 

@@ -135,10 +135,6 @@ abstract class ICommunityDataSource {
   /// 调用者：CommunityRepository.unfavoriteRecord()
   Future<void> unfavoriteRecord(String userId, String recordId);
 
-  /// 获取用户收藏的记录 ID 集合
-  /// 调用者：CommunityRepository.getFavoritedRecordIds()
-  Future<Set<String>> getFavoritedRecordIds(String userId);
-
   /// 获取用户收藏的记录（区分存在和已删除）
   /// 调用者：CommunityRepository.getFavoritedRecordsResult()
   Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId);
