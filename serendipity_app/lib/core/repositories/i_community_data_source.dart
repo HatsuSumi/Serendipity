@@ -123,10 +123,6 @@ abstract class ICommunityDataSource {
   /// 调用者：CommunityRepository.unfavoritePost()
   Future<void> unfavoritePost(String userId, String postId);
 
-  /// 获取用户收藏的社区帖子列表
-  /// 调用者：CommunityRepository.getFavoritedPosts()
-  Future<List<CommunityPost>> getFavoritedPosts(String userId);
-
   /// 获取用户收藏的社区帖子（区分存在和已删除）
   /// 调用者：CommunityRepository.getFavoritedPostsResult()
   Future<FavoritedPostsResult> getFavoritedPostsResult(String userId);

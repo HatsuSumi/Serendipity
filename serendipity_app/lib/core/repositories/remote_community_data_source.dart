@@ -131,11 +131,6 @@ class RemoteCommunityDataSource implements ICommunityDataSource {
   }
 
   @override
-  Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
-    return await _remoteData.getFavoritedPosts(userId);
-  }
-
-  @override
   Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) async {
     return await _remoteData.getFavoritedPostsResult(userId);
   }

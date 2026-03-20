@@ -571,17 +571,6 @@ abstract class IRemoteDataRepository {
   /// 调用者：CommunityRepository.unfavoritePost()
   Future<void> unfavoritePost(String userId, String postId);
 
-  /// 获取用户收藏的社区帖子列表
-  ///
-  /// 返回：收藏的 CommunityPost 列表（按收藏时间倒序）
-  ///
-  /// Fail Fast：
-  /// - userId 为空：抛出 ArgumentError
-  /// - 网络错误：抛出具体的网络异常
-  ///
-  /// 调用者：CommunityRepository.getFavoritedPosts()
-  Future<List<CommunityPost>> getFavoritedPosts(String userId);
-
   /// 获取用户收藏的社区帖子（区分存在和已删除）
   ///
   /// 返回 [FavoritedPostsResult]，包含正常帖子列表和已删除帖子 ID 集合。

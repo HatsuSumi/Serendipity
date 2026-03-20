@@ -864,21 +864,6 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
-  Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
-    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
-    try {
-      final response = await _httpClient.get(ServerConfig.favoritePosts);
-      final data = response['data'] as Map<String, dynamic>;
-      final postsJson = data['posts'] as List;
-      return postsJson
-          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('获取收藏帖子失败：${e.message}');
-    }
-  }
-
-  @override
   Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) async {
     if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
     try {

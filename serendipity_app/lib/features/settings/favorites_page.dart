@@ -106,7 +106,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   /// 构建收藏的记录 Tab
   Widget _buildFavoritedRecordsTab(FavoritesState favoritesState) {
-    final allRecords = ref.watch(recordsProvider).value ?? [];
+    final allRecords = ref.read(recordsProvider).value ?? [];
     final favoritedIds = favoritesState.favoritedRecordIds;
     final records = favoritedIds.isEmpty
         ? <EncounterRecord>[]

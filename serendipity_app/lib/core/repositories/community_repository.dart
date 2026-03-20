@@ -330,16 +330,6 @@ class CommunityRepository {
     await _dataSource.unfavoritePost(userId, postId);
   }
 
-  /// 获取用户收藏的社区帖子列表
-  ///
-  /// Fail Fast：userId 为空抛出 ArgumentError
-  ///
-  /// 调用者：FavoritesNotifier.build()
-  Future<List<CommunityPost>> getFavoritedPosts(String userId) async {
-    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
-    return await _dataSource.getFavoritedPosts(userId);
-  }
-
   /// 获取用户收藏的社区帖子（区分存在和已删除）
   ///
   /// 返回 [FavoritedPostsResult]，包含：
