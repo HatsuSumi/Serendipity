@@ -6,6 +6,7 @@ import '../services/sync_service.dart';
 import '../repositories/record_repository.dart';
 import '../repositories/story_line_repository.dart';
 import 'community_provider.dart';
+import 'favorites_provider.dart';
 import 'story_lines_provider.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
@@ -439,10 +440,12 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
         // 社区帖子删除失败不影响记录删除（静默处理）
       }
     }
-    
+
     // 4. 无论云端是否成功，UI 都静默刷新（避免 loading 闪烁）
     await refreshSilently();
-    
+    // 刷新收藏状态，确保已删除记录的快照在收藏页正确显示
+    ref.invalidate(favoritesProvider);
+
     // 5. 云端失败时再向上抛出，让 UI 层显示提示
     if (syncException != null) throw syncException;
   }
