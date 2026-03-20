@@ -215,15 +215,15 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
     final storage = ref.read(storageServiceProvider);
     await storage.saveFavoritedPostSnapshot(post.id, post.toJson());
 
+    // 乐观更新：直接将完整帖子对象追加到列表（无需额外网络请求）
+    final optimisticPosts = [...currentState.favoritedPosts, post];
+    state = AsyncData(currentState.copyWith(favoritedPosts: optimisticPosts));
+
     try {
       await _repository.favoritePost(currentUser.id, post.id);
-      // 重新拉取以获得完整帖子数据
-      final updatedPosts = await _repository.getFavoritedPosts(currentUser.id);
-      state = AsyncData(
-        currentState.copyWith(favoritedPosts: updatedPosts),
-      );
     } catch (e) {
-      // 快照无需回滚（下次收藏会覆盖）
+      // 回滚状态（快照无需回滚，下次收藏会覆盖）
+      state = AsyncData(currentState);
       throw Exception(AuthErrorHelper.extractErrorMessage(e));
     }
   }

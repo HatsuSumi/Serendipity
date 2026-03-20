@@ -571,20 +571,20 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       if (record.storyLineId != null)
                         _buildStoryLineInfo(context, ref, record.storyLineId!),
                       // 收藏按钮
-                      const SizedBox(width: 4),
                       Consumer(
                         builder: (context, ref, _) {
                           final isFavorited = ref.watch(isRecordFavoritedProvider(record.id));
-                          return GestureDetector(
-                            onTap: () => _toggleFavoriteRecord(
-                                context, ref, record),
-                            child: Icon(
+                          return IconButton(
+                            icon: Icon(
                               isFavorited
                                   ? Icons.bookmark
                                   : Icons.bookmark_border,
-                              size: 16,
+                              size: 20,
                               color: Theme.of(context).colorScheme.primary,
                             ),
+                            tooltip: isFavorited ? '取消收藏' : '收藏',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () => _toggleFavoriteRecord(context, ref, record),
                           );
                         },
                       ),
