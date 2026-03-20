@@ -65,6 +65,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await FavoritesIntroDialog.show(context, ref);
+      // await 后再次检查，防止对话框关闭时页面已销毁
+      if (!mounted) return;
     });
   }
 
