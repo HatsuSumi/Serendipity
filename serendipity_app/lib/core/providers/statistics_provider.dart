@@ -11,6 +11,11 @@ import 'membership_provider.dart';
 /// null = 全部状态，非 null = 仅显示该状态
 final monthlyStatusFilterProvider = StateProvider<EncounterStatus?>((ref) => null);
 
+/// 状态统计视图模式 Provider
+/// 
+/// true = 列表视图，false = 饼图视图
+final statusViewModeProvider = StateProvider<bool>((ref) => true);
+
 /// 基础统计 Provider
 /// 
 /// 职责：

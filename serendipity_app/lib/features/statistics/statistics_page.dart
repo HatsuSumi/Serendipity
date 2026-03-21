@@ -87,7 +87,7 @@ class _BasicStatisticsCard extends ConsumerWidget {
         const SizedBox(height: 16),
 
         // 状态统计卡片
-        _StatusStatisticsGrid(stats: stats),
+        _StatusStatisticsCard(stats: stats),
         const SizedBox(height: 16),
 
         // 成功率、地点和时间统计
@@ -97,16 +97,27 @@ class _BasicStatisticsCard extends ConsumerWidget {
   }
 }
 
-/// 状态统计列表
-class _StatusStatisticsGrid extends StatelessWidget {
+/// 状态统计卡片（列表/饼图可切换）
+class _StatusStatisticsCard extends ConsumerWidget {
   final dynamic stats;
 
-  const _StatusStatisticsGrid({required this.stats});
+  const _StatusStatisticsCard({required this.stats});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+    final isListMode = ref.watch(statusViewModeProvider);
+
+    final counts = <int>[
+      stats.missedCount as int,
+      stats.avoidCount as int,
+      stats.reencounterCount as int,
+      stats.metCount as int,
+      stats.reunionCount as int,
+      stats.farewellCount as int,
+      stats.lostCount as int,
+    ];
+
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
@@ -116,23 +127,233 @@ class _StatusStatisticsGrid extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StatusLine('总共记录', stats.totalRecords, '📋', colorScheme),
+          // 顶部：总计 + tab 切换
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '📋 总共记录 ${stats.totalRecords} 条',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              // Tab 切换按钮
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _TabButton(
+                      icon: Icons.list_rounded,
+                      selected: isListMode,
+                      onTap: () => ref.read(statusViewModeProvider.notifier).state = true,
+                      colorScheme: colorScheme,
+                    ),
+                    _TabButton(
+                      icon: Icons.pie_chart_outline_rounded,
+                      selected: !isListMode,
+                      onTap: () => ref.read(statusViewModeProvider.notifier).state = false,
+                      colorScheme: colorScheme,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
-          _StatusLine('错过', stats.missedCount, '🌫️', colorScheme),
-          const SizedBox(height: 12),
-          _StatusLine('回避', stats.avoidCount, '🙈', colorScheme),
-          const SizedBox(height: 12),
-          _StatusLine('再遇', stats.reencounterCount, '🌟', colorScheme),
-          const SizedBox(height: 12),
-          _StatusLine('邂逅', stats.metCount, '💫', colorScheme),
-          const SizedBox(height: 12),
-          _StatusLine('重逢', stats.reunionCount, '💝', colorScheme, highlight: true),
-          const SizedBox(height: 12),
-          _StatusLine('别离', stats.farewellCount, '🥀', colorScheme),
-          const SizedBox(height: 12),
-          _StatusLine('失联', stats.lostCount, '🍂', colorScheme),
+
+          // 内容区
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: isListMode
+                ? _StatusList(
+                    key: const ValueKey('list'),
+                    counts: counts,
+                    colorScheme: colorScheme,
+                  )
+                : _StatusPieChart(
+                    key: const ValueKey('pie'),
+                    counts: counts,
+                    colorScheme: colorScheme,
+                  ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// Tab 切换按钮
+class _TabButton extends StatelessWidget {
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+  final ColorScheme colorScheme;
+
+  const _TabButton({
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          size: 16,
+          color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+/// 列表视图
+class _StatusList extends StatelessWidget {
+  final List<int> counts;
+  final ColorScheme colorScheme;
+
+  const _StatusList({super.key, required this.counts, required this.colorScheme});
+
+  static const _labels = ['错过', '回避', '再遇', '邂逅', '重逢', '别离', '失联'];
+  static const _icons  = ['🌫️', '🙈', '🌟', '💫', '💝', '🥀', '🍂'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(_labels.length, (i) {
+        final isLast = i == _labels.length - 1;
+        return Column(
+          children: [
+            _StatusLine(
+              _labels[i],
+              counts[i],
+              _icons[i],
+              colorScheme,
+              highlight: i == 4, // 重逢
+            ),
+            if (!isLast) const SizedBox(height: 12),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+/// 饼图视图
+class _StatusPieChart extends StatelessWidget {
+  final List<int> counts;
+  final ColorScheme colorScheme;
+
+  const _StatusPieChart({super.key, required this.counts, required this.colorScheme});
+
+  static const _labels = ['错过', '回避', '再遇', '邂逅', '重逢', '别离', '失联'];
+  static const _icons  = ['🌫️', '🙈', '🌟', '💫', '💝', '🥀', '🍂'];
+
+  // 与状态情感色调对应的颜色
+  static const _colors = [
+    Color(0xFF90A4AE), // 错过：灰蓝
+    Color(0xFFFFB74D), // 回避：橙黄
+    Color(0xFFFFD54F), // 再遇：金色
+    Color(0xFFFF8A65), // 邂逅：粉橙
+    Color(0xFFEC407A), // 重逢：玫瑰金
+    Color(0xFFB0BEC5), // 别离：玫瑰灰
+    Color(0xFFBCAAA4), // 失联：秋叶
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final total = counts.fold(0, (a, b) => a + b);
+    if (total == 0) {
+      return SizedBox(
+        height: 160,
+        child: Center(
+          child: Text(
+            '暂无数据',
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+
+    final sections = <PieChartSectionData>[];
+    for (int i = 0; i < counts.length; i++) {
+      if (counts[i] == 0) continue;
+      final pct = counts[i] / total * 100;
+      sections.add(
+        PieChartSectionData(
+          value: counts[i].toDouble(),
+          color: _colors[i],
+          title: pct >= 8 ? '${pct.toStringAsFixed(0)}%' : '',
+          titleStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          radius: 64,
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 160,
+          child: PieChart(
+            PieChartData(
+              sections: sections,
+              centerSpaceRadius: 32,
+              sectionsSpace: 2,
+              borderData: FlBorderData(show: false),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 图例
+        Wrap(
+          spacing: 12,
+          runSpacing: 6,
+          children: List.generate(counts.length, (i) {
+            if (counts[i] == 0) return const SizedBox.shrink();
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: _colors[i],
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${_icons[i]} ${_labels[i]} ${counts[i]}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
+      ],
     );
   }
 }
