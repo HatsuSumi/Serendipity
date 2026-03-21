@@ -843,10 +843,9 @@ class SyncService {
   /// 
   /// 字段分组：
   /// 1. 主题设置（theme, pageTransition, dialogAnimation）→ themeUpdatedAt
-  /// 2. 强调色设置（accentColor）→ accentColorUpdatedAt（独立追踪）
-  /// 3. 通知设置（achievementNotification, checkInReminderEnabled 等）→ notificationsUpdatedAt
-  /// 4. 签到设置（checkInVibrationEnabled, checkInConfettiEnabled）→ checkInUpdatedAt
-  /// 5. 社区设置（hidePublishWarning, hasSeenPublishWarning 等）→ communityUpdatedAt
+  /// 2. 通知设置（achievementNotification, checkInReminderEnabled 等）→ notificationsUpdatedAt
+  /// 3. 签到设置（checkInVibrationEnabled, checkInConfettiEnabled）→ checkInUpdatedAt
+  /// 4. 社区设置（hidePublishWarning, hasSeenPublishWarning 等）→ communityUpdatedAt
   /// 
   /// 合并后上传到云端，用服务端返回的 updatedAt 更新本地，
   /// 确保下次同步时 LWW 策略能正确工作。

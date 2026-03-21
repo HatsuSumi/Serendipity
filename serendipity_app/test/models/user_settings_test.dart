@@ -12,7 +12,6 @@ void main() {
         id: 'settings001',
         userId: 'user123',
         theme: ThemeOption.dark,
-        accentColor: '#FF5722',
         pageTransition: PageTransitionType.slideFromRight,
         dialogAnimation: DialogAnimationType.fadeScale,
         achievementNotification: true,
@@ -26,7 +25,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -37,7 +35,6 @@ void main() {
       expect(settings.id, 'settings001');
       expect(settings.userId, 'user123');
       expect(settings.theme, ThemeOption.dark);
-      expect(settings.accentColor, '#FF5722');
       expect(settings.pageTransition, PageTransitionType.slideFromRight);
       expect(settings.dialogAnimation, DialogAnimationType.fadeScale);
       expect(settings.checkInReminderEnabled, true);
@@ -65,7 +62,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -74,7 +70,6 @@ void main() {
       );
 
       expect(settings.theme, ThemeOption.system);
-      expect(settings.accentColor, isNull);
       expect(settings.pageTransition, PageTransitionType.random);
       expect(settings.dialogAnimation, DialogAnimationType.random);
     });
@@ -86,7 +81,6 @@ void main() {
         id: 'settings001',
         userId: 'user123',
         theme: ThemeOption.dark,
-        accentColor: '#FF5722',
         pageTransition: PageTransitionType.slideFromRight,
         dialogAnimation: DialogAnimationType.fadeScale,
         achievementNotification: true,
@@ -100,7 +94,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -113,7 +106,6 @@ void main() {
       expect(json['id'], 'settings001');
       expect(json['userId'], 'user123');
       expect(json['theme'], 'dark');
-      expect(json['accentColor'], '#FF5722');
       expect(json['pageTransition'], 'slide_from_right');
       expect(json['dialogAnimation'], 'fade_scale');
       expect(json['checkInReminderEnabled'], true);
@@ -144,7 +136,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -155,7 +146,6 @@ void main() {
       final json = settings.toJson();
 
       expect(json['theme'], 'system');
-      expect(json['accentColor'], isNull);
       expect(json['pageTransition'], 'random');
       expect(json['dialogAnimation'], 'random');
     });
@@ -165,7 +155,6 @@ void main() {
         'id': 'settings001',
         'userId': 'user123',
         'theme': 'dark',
-        'accentColor': '#FF5722',
         'pageTransition': 'slide_from_right',
         'dialogAnimation': 'fade_scale',
         'achievementNotification': true,
@@ -181,7 +170,6 @@ void main() {
         'hasSeenPublishWarning': false,
         'hasSeenCommunityIntro': false,
         'themeUpdatedAt': '2026-02-12T10:00:00.000',
-        'accentColorUpdatedAt': '2026-02-12T10:00:00.000',
         'notificationsUpdatedAt': '2026-02-12T10:00:00.000',
         'checkInUpdatedAt': '2026-02-12T10:00:00.000',
         'communityUpdatedAt': '2026-02-12T10:00:00.000',
@@ -194,7 +182,6 @@ void main() {
       expect(settings.id, 'settings001');
       expect(settings.userId, 'user123');
       expect(settings.theme, ThemeOption.dark);
-      expect(settings.accentColor, '#FF5722');
       expect(settings.pageTransition, PageTransitionType.slideFromRight);
       expect(settings.dialogAnimation, DialogAnimationType.fadeScale);
       expect(settings.checkInReminderEnabled, true);
@@ -209,7 +196,6 @@ void main() {
         'id': 'settings001',
         'userId': 'user123',
         'theme': 'system',
-        'accentColor': null,
         'pageTransition': 'random',
         'dialogAnimation': 'random',
         'achievementNotification': true,
@@ -225,7 +211,6 @@ void main() {
         'hasSeenPublishWarning': false,
         'hasSeenCommunityIntro': false,
         'themeUpdatedAt': '2026-02-12T10:00:00.000',
-        'accentColorUpdatedAt': '2026-02-12T10:00:00.000',
         'notificationsUpdatedAt': '2026-02-12T10:00:00.000',
         'checkInUpdatedAt': '2026-02-12T10:00:00.000',
         'communityUpdatedAt': '2026-02-12T10:00:00.000',
@@ -236,7 +221,6 @@ void main() {
       final settings = UserSettings.fromJson(json);
 
       expect(settings.theme, ThemeOption.system);
-      expect(settings.accentColor, isNull);
       expect(settings.pageTransition, PageTransitionType.random);
       expect(settings.dialogAnimation, DialogAnimationType.random);
     });
@@ -248,7 +232,6 @@ void main() {
         id: 'settings001',
         userId: 'user123',
         theme: ThemeOption.dark,
-        accentColor: '#FF5722',
         pageTransition: PageTransitionType.slideFromRight,
         dialogAnimation: DialogAnimationType.fadeScale,
         achievementNotification: true,
@@ -262,7 +245,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -276,7 +258,6 @@ void main() {
       expect(restored.id, original.id);
       expect(restored.userId, original.userId);
       expect(restored.theme, original.theme);
-      expect(restored.accentColor, original.accentColor);
       expect(restored.pageTransition, original.pageTransition);
       expect(restored.dialogAnimation, original.dialogAnimation);
       expect(restored.checkInReminderEnabled, original.checkInReminderEnabled);
@@ -304,7 +285,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -348,7 +328,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -373,7 +352,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -398,7 +376,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -430,7 +407,6 @@ void main() {
         hasSeenCommunityIntro: false,
         hasSeenFavoritesIntro: false,
         themeUpdatedAt: now,
-        accentColorUpdatedAt: now,
         notificationsUpdatedAt: now,
         checkInUpdatedAt: now,
         communityUpdatedAt: now,
@@ -474,7 +450,6 @@ void main() {
           hasSeenCommunityIntro: false,
           hasSeenFavoritesIntro: false,
           themeUpdatedAt: now,
-          accentColorUpdatedAt: now,
           notificationsUpdatedAt: now,
           checkInUpdatedAt: now,
           communityUpdatedAt: now,

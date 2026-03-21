@@ -867,7 +867,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     String label,
     String content,
     String keyword,
-    Color accentColor,
+    Color statusColor,
   ) {
     final displayContent = _isMasked ? _maskText(content) : content;
     final displayKeyword = _isMasked ? null : keyword;
@@ -878,7 +878,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: accentColor,
+                color: statusColor,
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -886,7 +886,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         buildHighlightedText(
           displayContent,
           keywords: displayKeyword != null ? [displayKeyword] : null,
-          highlightColor: accentColor.withValues(alpha: 0.3),
+          highlightColor: statusColor.withValues(alpha: 0.3),
           textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
