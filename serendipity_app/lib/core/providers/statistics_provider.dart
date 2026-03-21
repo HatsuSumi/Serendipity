@@ -6,6 +6,12 @@ import '../services/statistics_service.dart';
 import 'records_provider.dart';
 import 'membership_provider.dart';
 
+/// 字段排名维度筛选 Provider
+///
+/// 控制字段排名表格当前展示哪个维度
+final fieldRankingDimensionProvider =
+    StateProvider<FieldRankingDimension>((ref) => FieldRankingDimension.weather);
+
 /// 月度图表状态筛选 Provider
 /// 
 /// null = 全部状态，非 null = 仅显示该状态

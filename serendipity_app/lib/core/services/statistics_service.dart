@@ -264,6 +264,9 @@ class StatisticsService {
     // 8. 月度成功率趋势
     final monthlySuccessRates = _calculateMonthlySuccessRates(records);
 
+    // 9. 字段完整排名表格
+    final fieldRankings = _calculateFieldRankings(records, tagCloud);
+
     return AdvancedStatistics(
       basic: basic,
       tagCloud: tagCloud,
@@ -273,6 +276,7 @@ class StatisticsService {
       weatherDistribution: weatherDistribution,
       placeTypeDistribution: placeTypeDistribution,
       monthlySuccessRates: monthlySuccessRates,
+      fieldRankings: fieldRankings,
     );
   }
 
@@ -526,6 +530,121 @@ class StatisticsService {
           ..sort((a, b) => b.count.compareTo(a.count)))
         .take(8)
         .toList();
+  }
+
+  /// 计算所有维度的字段完整排名表格
+  ///
+  /// 设计说明：
+  /// - 7个维度：天气、场所类型、省份、城市、地点名称、时间段、标签
+  /// - 天气/场所类型：全量枚举（含长尾），按记录数降序
+  /// - 省份/城市/地点名称：自由文本聚合，按记录数降序
+  /// - 时间段：0-23小时，展示为 "HH:00-HH:00"，按记录数降序
+  /// - 标签：复用 tagCloud 计算结果，转换格式
+  /// - 无数据的维度返回空列表
+  static Map<FieldRankingDimension, FieldRankingTable> _calculateFieldRankings(
+    List<EncounterRecord> records,
+    List<TagCloudItem> tagCloud,
+  ) {
+    // --- 天气 ---
+    final weatherCounts = <Weather, int>{};
+    // --- 场所类型 ---
+    final placeTypeCounts = <PlaceType, int>{};
+    // --- 省份 ---
+    final provinceCounts = <String, int>{};
+    // --- 城市 ---
+    final cityCounts = <String, int>{};
+    // --- 地点名称 ---
+    final placeNameCounts = <String, int>{};
+    // --- 时间段 ---
+    final hourCounts = <int, int>{};
+
+    for (final record in records) {
+      // 天气（多选）
+      for (final w in record.weather) {
+        weatherCounts[w] = (weatherCounts[w] ?? 0) + 1;
+      }
+      // 场所类型
+      final pt = record.location.placeType;
+      if (pt != null) {
+        placeTypeCounts[pt] = (placeTypeCounts[pt] ?? 0) + 1;
+      }
+      // 省份
+      final prov = record.location.province;
+      if (prov != null && prov.isNotEmpty) {
+        provinceCounts[prov] = (provinceCounts[prov] ?? 0) + 1;
+      }
+      // 城市
+      final city = record.location.city;
+      if (city != null && city.isNotEmpty) {
+        cityCounts[city] = (cityCounts[city] ?? 0) + 1;
+      }
+      // 地点名称
+      final pn = record.location.placeName;
+      if (pn != null && pn.isNotEmpty) {
+        placeNameCounts[pn] = (placeNameCounts[pn] ?? 0) + 1;
+      }
+      // 时间段
+      final h = record.timestamp.hour;
+      hourCounts[h] = (hourCounts[h] ?? 0) + 1;
+    }
+
+    // 转换辅助
+    List<FieldRankingItem> sortedItems<K>(
+      Map<K, int> counts,
+      String Function(K) labelOf,
+    ) {
+      final items = counts.entries
+          .map((e) => FieldRankingItem(label: labelOf(e.key), count: e.value))
+          .toList()
+        ..sort((a, b) => b.count.compareTo(a.count));
+      return items;
+    }
+
+    return {
+      FieldRankingDimension.weather: FieldRankingTable(
+        dimension: FieldRankingDimension.weather,
+        items: sortedItems(
+          weatherCounts,
+          (w) => '${w.icon} ${w.label}',
+        ),
+      ),
+      FieldRankingDimension.placeType: FieldRankingTable(
+        dimension: FieldRankingDimension.placeType,
+        items: sortedItems(
+          placeTypeCounts,
+          (pt) => '${pt.icon} ${pt.label}',
+        ),
+      ),
+      FieldRankingDimension.province: FieldRankingTable(
+        dimension: FieldRankingDimension.province,
+        items: sortedItems(provinceCounts, (s) => s),
+      ),
+      FieldRankingDimension.city: FieldRankingTable(
+        dimension: FieldRankingDimension.city,
+        items: sortedItems(cityCounts, (s) => s),
+      ),
+      FieldRankingDimension.placeName: FieldRankingTable(
+        dimension: FieldRankingDimension.placeName,
+        items: sortedItems(placeNameCounts, (s) => s),
+      ),
+      FieldRankingDimension.hour: FieldRankingTable(
+        dimension: FieldRankingDimension.hour,
+        items: (hourCounts.entries
+                .map((e) => FieldRankingItem(
+                      label: '${e.key.toString().padLeft(2, "0")}:00-'
+                          '${(e.key + 1).toString().padLeft(2, "0")}:00',
+                      count: e.value,
+                    ))
+                .toList()
+              ..sort((a, b) => b.count.compareTo(a.count))),
+      ),
+      FieldRankingDimension.tag: FieldRankingTable(
+        dimension: FieldRankingDimension.tag,
+        items: tagCloud
+            .map((t) => FieldRankingItem(label: t.tag, count: t.count))
+            .toList(),
+      ),
+    };
   }
 
   /// 计算月度成功率趋势（最近12个月）

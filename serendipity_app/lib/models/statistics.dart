@@ -354,6 +354,68 @@ class PlaceDistributionItem {
 }
 
 // ---------------------------------------------------------------------------
+// 字段排名表格
+// ---------------------------------------------------------------------------
+
+/// 字段排名维度
+enum FieldRankingDimension {
+  weather('天气', '🌤️'),
+  placeType('场所类型', '📍'),
+  province('省份', '🗺️'),
+  city('城市', '🏙️'),
+  placeName('地点名称', '📌'),
+  hour('时间段', '🕐'),
+  tag('标签', '🏷️');
+
+  final String label;
+  final String icon;
+  const FieldRankingDimension(this.label, this.icon);
+}
+
+/// 字段排名单行数据项
+class FieldRankingItem {
+  /// 显示名称（如 "☀️ 晴天"、"12:00-13:00"）
+  final String label;
+
+  /// 记录数
+  final int count;
+
+  const FieldRankingItem({required this.label, required this.count});
+
+  @override
+  String toString() => 'FieldRankingItem($label: $count)';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is FieldRankingItem &&
+        other.label == label &&
+        other.count == count;
+  }
+
+  @override
+  int get hashCode => label.hashCode ^ count.hashCode;
+}
+
+/// 单个维度的完整排名表
+class FieldRankingTable {
+  /// 维度
+  final FieldRankingDimension dimension;
+
+  /// 按记录数降序排列的完整列表
+  final List<FieldRankingItem> items;
+
+  const FieldRankingTable({
+    required this.dimension,
+    required this.items,
+  });
+
+  @override
+  String toString() =>
+      'FieldRankingTable(${dimension.label}: ${items.length} items)';
+}
+
+// ---------------------------------------------------------------------------
 // 高级统计（会员版）
 // ---------------------------------------------------------------------------
 
@@ -384,6 +446,9 @@ class AdvancedStatistics {
   /// 月度成功率趋势（最近12个月，按时间正序）
   final List<MonthlySuccessRate> monthlySuccessRates;
 
+  /// 字段排名表格（按维度索引，完整排名，含长尾数据）
+  final Map<FieldRankingDimension, FieldRankingTable> fieldRankings;
+
   const AdvancedStatistics({
     required this.basic,
     required this.tagCloud,
@@ -393,6 +458,7 @@ class AdvancedStatistics {
     required this.weatherDistribution,
     required this.placeTypeDistribution,
     required this.monthlySuccessRates,
+    required this.fieldRankings,
   });
 
   @override
@@ -411,7 +477,8 @@ class AdvancedStatistics {
         other.emotionIntensityDistribution == emotionIntensityDistribution &&
         other.weatherDistribution == weatherDistribution &&
         other.placeTypeDistribution == placeTypeDistribution &&
-        other.monthlySuccessRates == monthlySuccessRates;
+        other.monthlySuccessRates == monthlySuccessRates &&
+        other.fieldRankings == fieldRankings;
   }
 
   @override
@@ -423,5 +490,6 @@ class AdvancedStatistics {
       emotionIntensityDistribution.hashCode ^
       weatherDistribution.hashCode ^
       placeTypeDistribution.hashCode ^
-      monthlySuccessRates.hashCode;
+      monthlySuccessRates.hashCode ^
+      fieldRankings.hashCode;
 }
