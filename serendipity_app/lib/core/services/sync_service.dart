@@ -892,17 +892,6 @@ class SyncService {
           ? localSettings.themeUpdatedAt
           : remoteSettings.themeUpdatedAt,
       
-      // 强调色设置：比较 accentColorUpdatedAt（独立追踪）
-      accentColor: selectByTimestamp(
-        localSettings.accentColor,
-        remoteSettings.accentColor,
-        localSettings.accentColorUpdatedAt,
-        remoteSettings.accentColorUpdatedAt,
-      ),
-      accentColorUpdatedAt: localSettings.accentColorUpdatedAt.isAfter(remoteSettings.accentColorUpdatedAt)
-          ? localSettings.accentColorUpdatedAt
-          : remoteSettings.accentColorUpdatedAt,
-      
       // 通知设置：比较 notificationsUpdatedAt
       achievementNotification: selectByTimestamp(
         localSettings.achievementNotification,

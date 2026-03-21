@@ -13,11 +13,9 @@ class UserSettings {
   
   // 主题设置
   final ThemeOption theme;
-  final String? accentColor;
   final PageTransitionType pageTransition;
   final DialogAnimationType dialogAnimation;
   final DateTime themeUpdatedAt; // 主题和页面切换动画的更新时间
-  final DateTime accentColorUpdatedAt; // 强调色的更新时间（独立追踪）
   
   // 通知设置
   final bool achievementNotification;
@@ -45,11 +43,9 @@ class UserSettings {
     required this.id,
     required this.userId,
     required this.theme,
-    this.accentColor,
     required this.pageTransition,
     required this.dialogAnimation,
     required this.themeUpdatedAt,
-    required this.accentColorUpdatedAt,
     required this.achievementNotification,
     required this.anniversaryReminder,
     required this.checkInReminderEnabled,
@@ -66,9 +62,7 @@ class UserSettings {
     required this.createdAt,
     required this.updatedAt,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
-       assert(userId.isNotEmpty, 'User ID cannot be empty'),
-       assert(accentColor == null || accentColor.startsWith('#'), 
-         'Accent color must be a valid hex color starting with #');
+       assert(userId.isNotEmpty, 'User ID cannot be empty');
 
   /// 创建默认设置
   factory UserSettings.createDefault({required String userId}) {
@@ -77,11 +71,9 @@ class UserSettings {
       id: 'settings_$userId',
       userId: userId,
       theme: ThemeOption.system,
-      accentColor: null,
       pageTransition: PageTransitionType.random,
       dialogAnimation: DialogAnimationType.random,
       themeUpdatedAt: now,
-      accentColorUpdatedAt: now,
       achievementNotification: true,
       anniversaryReminder: true,
       checkInReminderEnabled: true,
@@ -125,7 +117,6 @@ class UserSettings {
           'Expected one of: ${ThemeOption.values.map((e) => e.value).join(", ")}'
         ),
       ),
-      accentColor: json['accentColor'] as String?,
       pageTransition: PageTransitionType.values.firstWhere(
         (e) => e.value == json['pageTransition'] as String,
         orElse: () => PageTransitionType.random,
@@ -136,9 +127,6 @@ class UserSettings {
       ),
       themeUpdatedAt: json['themeUpdatedAt'] != null
           ? DateTime.parse(json['themeUpdatedAt'] as String)
-          : now,
-      accentColorUpdatedAt: json['accentColorUpdatedAt'] != null
-          ? DateTime.parse(json['accentColorUpdatedAt'] as String)
           : now,
       achievementNotification: json['achievementNotification'] as bool,
       anniversaryReminder: json['anniversaryReminder'] as bool,
@@ -185,7 +173,6 @@ class UserSettings {
         (e) => e.value == dto['theme'] as String,
         orElse: () => ThemeOption.system,
       ),
-      accentColor: dto['accentColor'] as String?,
       pageTransition: PageTransitionType.values.firstWhere(
         (e) => e.value == dto['pageTransition'] as String,
         orElse: () => PageTransitionType.random,
@@ -195,7 +182,6 @@ class UserSettings {
         orElse: () => DialogAnimationType.random,
       ),
       themeUpdatedAt: updatedAt,
-      accentColorUpdatedAt: updatedAt,
       achievementNotification: notifications['achievementUnlocked'] as bool,
       anniversaryReminder: notifications['anniversaryReminder'] as bool? ?? true,
       checkInReminderEnabled: notifications['checkInReminder'] as bool,
@@ -220,11 +206,9 @@ class UserSettings {
       'id': id,
       'userId': userId,
       'theme': theme.value,
-      'accentColor': accentColor,
       'pageTransition': pageTransition.value,
       'dialogAnimation': dialogAnimation.value,
       'themeUpdatedAt': themeUpdatedAt.toIso8601String(),
-      'accentColorUpdatedAt': accentColorUpdatedAt.toIso8601String(),
       'achievementNotification': achievementNotification,
       'anniversaryReminder': anniversaryReminder,
       'checkInReminderEnabled': checkInReminderEnabled,
@@ -276,11 +260,9 @@ class UserSettings {
     String? id,
     String? userId,
     ThemeOption? theme,
-    String? Function()? accentColor,
     PageTransitionType? pageTransition,
     DialogAnimationType? dialogAnimation,
     DateTime? themeUpdatedAt,
-    DateTime? accentColorUpdatedAt,
     bool? achievementNotification,
     bool? anniversaryReminder,
     bool? checkInReminderEnabled,
@@ -301,11 +283,9 @@ class UserSettings {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       theme: theme ?? this.theme,
-      accentColor: accentColor != null ? accentColor() : this.accentColor,
       pageTransition: pageTransition ?? this.pageTransition,
       dialogAnimation: dialogAnimation ?? this.dialogAnimation,
       themeUpdatedAt: themeUpdatedAt ?? this.themeUpdatedAt,
-      accentColorUpdatedAt: accentColorUpdatedAt ?? this.accentColorUpdatedAt,
       achievementNotification: achievementNotification ?? this.achievementNotification,
       anniversaryReminder: anniversaryReminder ?? this.anniversaryReminder,
       checkInReminderEnabled: checkInReminderEnabled ?? this.checkInReminderEnabled,
@@ -337,11 +317,9 @@ class UserSettings {
         other.id == id &&
         other.userId == userId &&
         other.theme == theme &&
-        other.accentColor == accentColor &&
         other.pageTransition == pageTransition &&
         other.dialogAnimation == dialogAnimation &&
         other.themeUpdatedAt == themeUpdatedAt &&
-        other.accentColorUpdatedAt == accentColorUpdatedAt &&
         other.achievementNotification == achievementNotification &&
         other.anniversaryReminder == anniversaryReminder &&
         other.checkInReminderEnabled == checkInReminderEnabled &&
@@ -364,11 +342,9 @@ class UserSettings {
     return id.hashCode ^
         userId.hashCode ^
         theme.hashCode ^
-        accentColor.hashCode ^
         pageTransition.hashCode ^
         dialogAnimation.hashCode ^
         themeUpdatedAt.hashCode ^
-        accentColorUpdatedAt.hashCode ^
         achievementNotification.hashCode ^
         anniversaryReminder.hashCode ^
         checkInReminderEnabled.hashCode ^

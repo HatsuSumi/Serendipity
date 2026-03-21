@@ -71,7 +71,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       hasSeenCommunityIntro: false,
       hasSeenFavoritesIntro: false,
       themeUpdatedAt: now,
-      accentColorUpdatedAt: now,
       notificationsUpdatedAt: now,
       checkInUpdatedAt: now,
       communityUpdatedAt: now,

@@ -1109,14 +1109,9 @@ void checkConsecutiveDaysAchievement(User user) {
 - **温暖** 💎 会员专属 - 米黄色调，温馨柔和
 - **秋日** 💎 会员专属 - 橙棕色调，怀旧复古
 
-**强调色**（会员专属）：
-- 自定义按钮、链接、重要元素的颜色
-- 预设颜色：蓝色、粉色、绿色、橙色、紫色
-- 自定义颜色：色轮选择器
-
 **说明**：
 - 免费用户可使用：浅色、深色、跟随系统
-- 会员用户额外解锁：朦胧、深夜、温暖、秋日 + 自定义强调色
+- 会员用户额外解锁：朦胧、深夜、温暖、秋日
 
 **页面切换动画**：
 - 无动画 🚫
@@ -1252,7 +1247,6 @@ void checkConsecutiveDaysAchievement(User user) {
 │ 📖 无限故事线            │
 │ 🏷️  标签词云图           │
 │ 🎨 高级主题              │
-│ 🗺️  地图热力图           │
 │ 🔔 智能提醒              │
 │                         │
 │ ━━━━━━━━━━━━━━━━━━━━━  │
@@ -1308,7 +1302,6 @@ void checkConsecutiveDaysAchievement(User user) {
 **色彩应用规则**：
 - **整体界面**：使用用户选择的主题（浅色/深色/跟随系统/朦胧/深夜/温暖/秋日）
 - **状态卡片**：根据记录状态动态应用情感色调（叠加在主题之上）
-- **强调色**：用于按钮、链接、重要提示（会员可自定义）
 
 **不同状态的视觉语言**：
 - **错过** 🌫️：朦胧、柔和、灰蓝色调
@@ -1726,7 +1719,6 @@ class UserSettings {
   
   // 主题设置
   ThemeOption theme;            // 主题选择：light / dark / system / misty / midnight / warm / autumn
-  String? accentColor;          // 强调色（会员专属）
   PageTransitionType pageTransition; // 页面切换动画类型
   DialogAnimationType dialogAnimation; // 对话框动画类型
   
