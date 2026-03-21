@@ -10,6 +10,7 @@ import 'package:serendipity_app/models/user_settings.dart';
 import 'package:serendipity_app/models/achievement.dart';
 import 'package:serendipity_app/models/story_line.dart';
 import 'package:serendipity_app/models/sync_history.dart';
+import 'package:serendipity_app/models/membership.dart';
 
 /// 简单的内存存储实现，用于测试
 class InMemoryStorageService implements IStorageService {
@@ -18,6 +19,7 @@ class InMemoryStorageService implements IStorageService {
   final Map<String, Achievement> _achievements = {};
   final Map<String, CheckInRecord> _checkIns = {};
   final Map<String, dynamic> _keyValues = {};
+  final Map<String, Membership> _memberships = {};
   UserSettings? _userSettings;
 
   @override
@@ -290,6 +292,23 @@ class InMemoryStorageService implements IStorageService {
   @override
   Future<void> deleteFavoritedPostSnapshot(String postId) async {
     _favoritedPostSnapshots.remove(postId);
+  }
+
+  // ==================== 会员相关操作 ====================
+
+  @override
+  Future<Membership?> getMembership(String userId) async {
+    return _memberships[userId];
+  }
+
+  @override
+  Future<void> saveMembership(Membership membership) async {
+    _memberships[membership.userId] = membership;
+  }
+
+  @override
+  Future<void> deleteMembership(String userId) async {
+    _memberships.remove(userId);
   }
 
   void validateDataConsistency() {}

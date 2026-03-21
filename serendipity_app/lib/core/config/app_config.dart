@@ -26,5 +26,13 @@ class AppConfig {
   /// 
   /// ⚠️ 注意：生产环境使用 ServerType.customServer
   static const ServerType serverType = ServerType.customServer;
+
+  /// 开发者模式
+  /// 
+  /// - true：跳过会员检查，所有会员功能对开发者开放
+  /// - false：正常会员权限验证
+  /// 
+  /// ⚠️ 注意：上线前必须设为 false
+  static const bool isDeveloperMode = true;
 }
 

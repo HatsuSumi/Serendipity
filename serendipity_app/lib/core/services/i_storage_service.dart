@@ -4,6 +4,7 @@ import '../../models/achievement.dart';
 import '../../models/check_in_record.dart';
 import '../../models/user_settings.dart';
 import '../../models/sync_history.dart';
+import '../../models/membership.dart';
 
 /// 存储服务接口
 /// 
@@ -125,6 +126,29 @@ abstract class IStorageService {
   
   /// 保存用户设置
   Future<void> saveUserSettings(UserSettings settings);
+  
+  // ==================== 会员相关操作 ====================
+  
+  /// 获取用户的会员信息
+  /// 
+  /// 参数：
+  /// - userId: 用户ID
+  /// 
+  /// 返回：
+  /// - Membership：会员信息，如果用户未开通会员返回 null
+  Future<Membership?> getMembership(String userId);
+  
+  /// 保存会员信息
+  /// 
+  /// 参数：
+  /// - membership: 会员信息
+  Future<void> saveMembership(Membership membership);
+  
+  /// 删除会员信息
+  /// 
+  /// 参数：
+  /// - userId: 用户ID
+  Future<void> deleteMembership(String userId);
   
   // ==================== 同步历史相关操作 ====================
   

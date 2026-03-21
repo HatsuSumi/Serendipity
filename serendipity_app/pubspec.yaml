@@ -68,6 +68,9 @@ dependencies:
   
   # 网络状态监听
   connectivity_plus: ^7.0.0
+  
+  # 图表
+  fl_chart: ^0.70.2
 
 dev_dependencies:
   flutter_test:

@@ -6,6 +6,7 @@ import '../../models/achievement.dart';
 import '../../models/check_in_record.dart';
 import '../../models/user_settings.dart';
 import '../../models/sync_history.dart';
+import '../../models/membership.dart';
 import 'i_storage_service.dart';
 
 /// 本地存储服务（Hive 实现）
@@ -20,6 +21,7 @@ class StorageService implements IStorageService {
   static const String _syncHistoriesBoxName = 'sync_histories';
   static const String _favoritedRecordSnapshotsBoxName = 'favorited_record_snapshots';
   static const String _favoritedPostSnapshotsBoxName = 'favorited_post_snapshots';
+  static const String _membershipsBoxName = 'memberships';
   
   // 单例模式
   static final StorageService _instance = StorageService._internal();
@@ -35,6 +37,7 @@ class StorageService implements IStorageService {
   Box<SyncHistory>? _syncHistoriesBox;
   Box<EncounterRecord>? _favoritedRecordSnapshotsBox;
   Box<String>? _favoritedPostSnapshotsBox;
+  Box<Membership>? _membershipsBox;
   
   // Box getters with initialization check
   Box<EncounterRecord> get _recordsBoxOrThrow {
@@ -93,6 +96,13 @@ class StorageService implements IStorageService {
     return _favoritedPostSnapshotsBox!;
   }
   
+  Box<Membership> get _membershipsBoxOrThrow {
+    if (_membershipsBox == null) {
+      throw StateError('StorageService not initialized. Call init() first.');
+    }
+    return _membershipsBox!;
+  }
+  
   /// 初始化所有 Box
   @override
   Future<void> init() async {
@@ -104,6 +114,7 @@ class StorageService implements IStorageService {
     _syncHistoriesBox = await Hive.openBox<SyncHistory>(_syncHistoriesBoxName);
     _favoritedRecordSnapshotsBox = await Hive.openBox<EncounterRecord>(_favoritedRecordSnapshotsBoxName);
     _favoritedPostSnapshotsBox = await Hive.openBox<String>(_favoritedPostSnapshotsBoxName);
+    _membershipsBox = await Hive.openBox<Membership>(_membershipsBoxName);
   }
   
   /// 关闭所有 Box
@@ -117,6 +128,7 @@ class StorageService implements IStorageService {
     await _syncHistoriesBox?.close();
     await _favoritedRecordSnapshotsBox?.close();
     await _favoritedPostSnapshotsBox?.close();
+    await _membershipsBox?.close();
   }
   
   // ==================== 记录相关操作 ====================
@@ -658,6 +670,35 @@ class StorageService implements IStorageService {
   @override
   Future<void> deleteFavoritedPostSnapshot(String postId) async {
     await _favoritedPostSnapshotsBoxOrThrow.delete(postId);
+  }
+  
+  // ==================== 会员相关操作 ====================
+  
+  /// 获取用户的会员信息
+  @override
+  Future<Membership?> getMembership(String userId) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('userId cannot be empty');
+    }
+    return _membershipsBoxOrThrow.get(userId);
+  }
+  
+  /// 保存会员信息
+  @override
+  Future<void> saveMembership(Membership membership) async {
+    if (membership.userId.isEmpty) {
+      throw ArgumentError('membership.userId cannot be empty');
+    }
+    await _membershipsBoxOrThrow.put(membership.userId, membership);
+  }
+  
+  /// 删除会员信息
+  @override
+  Future<void> deleteMembership(String userId) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('userId cannot be empty');
+    }
+    await _membershipsBoxOrThrow.delete(userId);
   }
 }
 

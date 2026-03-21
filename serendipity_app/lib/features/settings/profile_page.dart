@@ -30,6 +30,7 @@ import 'dialogs/manual_sync_dialog.dart';
 import 'dialogs/sync_info_dialog.dart';
 import 'dialogs/sync_history_dialog.dart';
 import 'favorites_page.dart';
+import '../statistics/statistics_page.dart';
 
 /// 个人资料页面（我的页面）
 /// 
@@ -138,6 +139,20 @@ class ProfilePage extends ConsumerWidget {
                 context,
                 ref,
                 const FavoritesPage(),
+              );
+            },
+          ),
+          
+          // 统计面板入口
+          ListTile(
+            leading: const Icon(Icons.bar_chart_outlined),
+            title: const Text('统计面板'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              NavigationHelper.pushWithTransition(
+                context,
+                ref,
+                const StatisticsPage(),
               );
             },
           ),
