@@ -10,7 +10,7 @@ import '../../models/encounter_record.dart';
 import '../timeline/timeline_page.dart';
 import '../story_line/story_lines_page.dart';
 import '../community/community_page.dart';
-import '../settings/settings_page.dart';
+import '../settings/profile_page.dart';
 import '../record/create_record_page.dart';
 import '../achievement/achievements_page.dart';
 
@@ -114,7 +114,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
           const TimelinePage(), // 时间轴
           const StoryLinesPage(), // 故事线
           CommunityPage(isVisible: _currentIndex == 2), // 社区页面
-          const SettingsPage(), // 我的
+          const ProfilePage(), // 我的
         ],
       ),
       bottomNavigationBar: NavigationBar(

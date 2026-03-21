@@ -31,19 +31,19 @@ import 'dialogs/sync_info_dialog.dart';
 import 'dialogs/sync_history_dialog.dart';
 import 'favorites_page.dart';
 
-/// 设置页面（我的页面）
+/// 个人资料页面（我的页面）
 /// 
 /// 显示用户信息、功能入口、设置选项等。
 /// 
 /// 遵循原则：
-/// - 单一职责（SRP）：只负责展示设置界面和处理用户交互
+/// - 单一职责（SRP）：只负责展示个人资料界面和处理用户交互
 /// - 分层约束：UI层不包含业务逻辑，通过Provider调用
 /// - 用户体验优先：未登录时显示登录/注册入口，不阻碍功能使用
 /// 
 /// 调用者：
 /// - MainNavigationPage：底部导航栏的"我的"标签
-class SettingsPage extends ConsumerWidget {
-  const SettingsPage({super.key});
+class ProfilePage extends ConsumerWidget {
+  const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
