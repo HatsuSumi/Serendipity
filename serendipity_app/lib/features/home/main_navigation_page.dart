@@ -113,8 +113,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
         children: [
           const TimelinePage(), // 时间轴
           const StoryLinesPage(), // 故事线
-          const Center(child: Text('地图')), // TODO: 地图页面
-          CommunityPage(isVisible: _currentIndex == 3), // 社区页面
+          CommunityPage(isVisible: _currentIndex == 2), // 社区页面
           const SettingsPage(), // 我的
         ],
       ),
@@ -135,11 +134,6 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
             icon: Icon(Icons.auto_stories_outlined),
             selectedIcon: Icon(Icons.auto_stories),
             label: '故事线',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: '地图',
           ),
           NavigationDestination(
             icon: Icon(Icons.cloud_outlined),

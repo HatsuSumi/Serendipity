@@ -1758,7 +1758,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                '高德地图 Flutter 插件与当前 Flutter 版本不兼容（使用了已废弃的 API），暂时无法提供地图选点功能。',
+                'amap_flutter_map 和 amap_flutter_base 包使用了 Dart 2.x 时代的 hashValues() 方法，该方法在 Dart 3.x 中已被移除。所有版本的高德地图 Flutter 插件都未更新以支持 Dart 3.x，导致无法编译。暂时无法提供地图选点功能。',
                 style: TextStyle(
                   fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

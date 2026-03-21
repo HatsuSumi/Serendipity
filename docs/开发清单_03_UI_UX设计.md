@@ -184,10 +184,18 @@
 - [ ] 标签词云图（💎 会员功能）
 
 #### 5.7 地图页面
-- [ ] 地图组件（高德地图）
-- [ ] 标记所有记录的地点
-- [ ] 点击标记查看详情
-- [ ] 热力图（💎 会员功能）
+- [x] ~~地图组件（高德地图）~~ ❌ 已移除
+- [x] ~~标记所有记录的地点~~ ❌ 已移除
+- [x] ~~点击标记查看详情~~ ❌ 已移除
+- [x] ~~热力图（💎 会员功能）~~ ❌ 已移除
+
+**移除原因**：高德地图 Flutter 插件与 Dart 3.x 不兼容，无法编译。
+
+**底部导航调整**：地图标签已从底部导航移除，现为 4 个标签：
+- TA（时间轴）
+- 故事线
+- 树洞（社区）
+- 我的
 
 #### 5.8 社区页面
 - [ ] 顶部文案
@@ -430,7 +438,7 @@
 - [x] 使用 Material Icons（清晰、专业、跨平台一致）
 - [x] TA - `Icons.auto_awesome` / `Icons.auto_awesome_outlined`
 - [x] 故事线 - `Icons.auto_stories` / `Icons.auto_stories_outlined`
-- [x] 地图 - `Icons.map` / `Icons.map_outlined`
+- [x] ~~地图 - `Icons.map` / `Icons.map_outlined`~~ ❌ 已移除
 - [x] 树洞 - `Icons.cloud` / `Icons.cloud_outlined`
 - [x] 我的 - `Icons.person` / `Icons.person_outline`
 
