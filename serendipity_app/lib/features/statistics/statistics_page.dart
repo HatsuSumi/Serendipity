@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../core/providers/statistics_provider.dart';
 import '../../models/enums.dart';
 import '../../models/statistics.dart';
+import '../../core/utils/dialog_helper.dart';
 
 /// 统计页面
 /// 
@@ -726,9 +727,23 @@ class _SuccessRateCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '成功率',
-                style: TextStyle(fontSize: 14),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    '成功率',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: () => _showSuccessRateDialog(context),
+                    child: Icon(
+                      Icons.help_outline_rounded,
+                      size: 15,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
               Text(
                 '${successRate.toStringAsFixed(1)}%',
@@ -867,6 +882,46 @@ class _SuccessRateCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 成功率计算公式说明对话框
+void _showSuccessRateDialog(BuildContext context) {
+  final colorScheme = Theme.of(context).colorScheme;
+  DialogHelper.show(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('成功率计算公式'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '成功率 = (邂逅 + 重逢) ÷ 总记录数 × 100%',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '「邂逅」和「重逢」代表你们有过真实的交流，是记录里最珍贵的两种状态。',
+            style: TextStyle(
+              fontSize: 13,
+              color: colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('知道了'),
+        ),
+      ],
+    ),
+  );
 }
 
 /// 高级统计卡片（会员版）
