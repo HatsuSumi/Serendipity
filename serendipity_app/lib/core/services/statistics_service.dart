@@ -1,7 +1,7 @@
 import '../../models/encounter_record.dart';
 import '../../models/statistics.dart';
 import '../../models/enums.dart';
-
+ 
 /// 统计服务
 /// 
 /// 职责：
@@ -236,18 +236,9 @@ class StatisticsService {
   }
 
   /// 计算高级统计数据（会员版）
-  /// 
-  /// 参数：
-  /// - records：所有记录列表
-  /// 
-  /// 返回：
-  /// - AdvancedStatistics：高级统计数据
-  /// 
-  /// 设计说明：
-  /// - 包含基础统计 + 标签词云 + 月度分布 + 地点分布
-  /// - 标签词云：统计所有标签的出现频率，按频率排序
-  /// - 月度分布：按状态分组，统计最近12个月各月记录数
-  /// - 地点分布：返回前5个最常错过的地点
+  ///
+  /// 包含：基础统计 + 标签词云 + 月度分布 + 地点分布
+  ///      + 情绪强度分布 + 天气分布 + 场所类型分布 + 月度成功率
   static AdvancedStatistics calculateAdvancedStatistics(List<EncounterRecord> records) {
     // 1. 计算基础统计
     final basic = calculateBasicStatistics(records);
@@ -261,11 +252,27 @@ class StatisticsService {
     // 4. 计算地点分布（前5个）
     final topPlaces = _calculateTopPlaces(records);
 
+    // 5. 情绪强度分布
+    final emotionIntensityDistribution = _calculateEmotionIntensityDistribution(records);
+
+    // 6. 天气分布
+    final weatherDistribution = _calculateWeatherDistribution(records);
+
+    // 7. 场所类型分布（前8）
+    final placeTypeDistribution = _calculatePlaceTypeDistribution(records);
+
+    // 8. 月度成功率趋势
+    final monthlySuccessRates = _calculateMonthlySuccessRates(records);
+
     return AdvancedStatistics(
       basic: basic,
       tagCloud: tagCloud,
       monthlyDistribution: monthlyDistribution,
       topPlaces: topPlaces,
+      emotionIntensityDistribution: emotionIntensityDistribution,
+      weatherDistribution: weatherDistribution,
+      placeTypeDistribution: placeTypeDistribution,
+      monthlySuccessRates: monthlySuccessRates,
     );
   }
 
@@ -442,6 +449,133 @@ class StatisticsService {
 
     // 返回前5个
     return items.take(5).toList();
+  }
+
+  /// 计算情绪强度分布
+  ///
+  /// 设计说明：
+  /// - 按强度 1-5 分组，每组统计记录数
+  /// - emotion 为 null 的记录不计入
+  /// - 结果按强度正序排列（方便柱状图左→右展示）
+  static List<EmotionIntensityItem> _calculateEmotionIntensityDistribution(
+    List<EncounterRecord> records,
+  ) {
+    // 初始化 1-5 的计数
+    final counts = <int, int>{1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+
+    for (final record in records) {
+      if (record.emotion == null) continue;
+      final v = record.emotion!.value; // EmotionIntensity.value 为 1-5
+      counts[v] = (counts[v] ?? 0) + 1;
+    }
+
+    return counts.entries
+        .map((e) => EmotionIntensityItem(intensity: e.key, count: e.value))
+        .toList()
+      ..sort((a, b) => a.intensity.compareTo(b.intensity));
+  }
+
+  /// 计算天气分布
+  ///
+  /// 设计说明：
+  /// - 统计所有天气类型的出现频率
+  /// - 只返回出现过的天气（count > 0）
+  /// - 按记录数降序排列
+  static List<WeatherDistributionItem> _calculateWeatherDistribution(
+    List<EncounterRecord> records,
+  ) {
+    final counts = <Weather, int>{};
+
+    for (final record in records) {
+      for (final w in record.weather) {
+        counts[w] = (counts[w] ?? 0) + 1;
+      }
+    }
+
+    if (counts.isEmpty) return [];
+
+    return counts.entries
+        .map((e) => WeatherDistributionItem(weather: e.key, count: e.value))
+        .toList()
+      ..sort((a, b) => b.count.compareTo(a.count));
+  }
+
+  /// 计算场所类型分布（前8个）
+  ///
+  /// 设计说明：
+  /// - 按场所类型分组统计记录数
+  /// - 只统计有明确 placeType 的记录
+  /// - 按记录数降序排列，返回前8
+  static List<PlaceTypeDistributionItem> _calculatePlaceTypeDistribution(
+    List<EncounterRecord> records,
+  ) {
+    final counts = <PlaceType, int>{};
+
+    for (final record in records) {
+      final pt = record.location.placeType;
+      if (pt == null) continue;
+      counts[pt] = (counts[pt] ?? 0) + 1;
+    }
+
+    if (counts.isEmpty) return [];
+
+    return (counts.entries
+            .map((e) =>
+                PlaceTypeDistributionItem(placeType: e.key, count: e.value))
+            .toList()
+          ..sort((a, b) => b.count.compareTo(a.count)))
+        .take(8)
+        .toList();
+  }
+
+  /// 计算月度成功率趋势（最近12个月）
+  ///
+  /// 设计说明：
+  /// - 成功 = 状态为 met 或 reunion
+  /// - 每月成功率 = 当月成功记录数 / 当月总记录数 * 100
+  /// - 当月无记录时成功率为 0.0
+  /// - 结果按时间正序排列
+  static List<MonthlySuccessRate> _calculateMonthlySuccessRates(
+    List<EncounterRecord> records,
+  ) {
+    final now = DateTime.now();
+    final months = List.generate(12, (i) {
+      final dt = DateTime(now.year, now.month - 11 + i);
+      return (dt.year, dt.month);
+    });
+
+    // 统计每月总数和成功数
+    final totalMap = <String, int>{};
+    final successMap = <String, int>{};
+    for (final (y, m) in months) {
+      totalMap['$y-$m'] = 0;
+      successMap['$y-$m'] = 0;
+    }
+
+    final cutoff = DateTime(now.year, now.month - 11);
+    for (final record in records) {
+      final ts = record.timestamp;
+      if (ts.isBefore(cutoff)) continue;
+      final key = '${ts.year}-${ts.month}';
+      if (!totalMap.containsKey(key)) continue;
+      totalMap[key] = totalMap[key]! + 1;
+      if (record.status == EncounterStatus.met ||
+          record.status == EncounterStatus.reunion) {
+        successMap[key] = successMap[key]! + 1;
+      }
+    }
+
+    return months.map((ym) {
+      final key = '${ym.$1}-${ym.$2}';
+      final total = totalMap[key] ?? 0;
+      final success = successMap[key] ?? 0;
+      final rate = total == 0 ? 0.0 : success / total * 100;
+      return MonthlySuccessRate(
+        year: ym.$1,
+        month: ym.$2,
+        successRate: double.parse(rate.toStringAsFixed(1)),
+      );
+    }).toList();
   }
 }
 
