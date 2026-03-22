@@ -694,6 +694,8 @@ class StatisticsService {
         year: ym.$1,
         month: ym.$2,
         successRate: double.parse(rate.toStringAsFixed(1)),
+        successCount: success,
+        totalCount: total,
       );
     }).toList();
   }

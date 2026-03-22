@@ -291,14 +291,23 @@ class MonthlySuccessRate {
   /// 成功率（0.0 - 100.0）
   final double successRate;
 
+  /// 成功记录数（邂逅 + 重逢）
+  final int successCount;
+
+  /// 当月总记录数
+  final int totalCount;
+
   const MonthlySuccessRate({
     required this.year,
     required this.month,
     required this.successRate,
+    required this.successCount,
+    required this.totalCount,
   });
 
   @override
-  String toString() => 'MonthlySuccessRate($year-$month: $successRate%)';
+  String toString() =>
+      'MonthlySuccessRate($year-$month: $successRate%, success: $successCount, total: $totalCount)';
 
   @override
   bool operator ==(Object other) {
@@ -306,12 +315,18 @@ class MonthlySuccessRate {
     return other is MonthlySuccessRate &&
         other.year == year &&
         other.month == month &&
-        other.successRate == successRate;
+        other.successRate == successRate &&
+        other.successCount == successCount &&
+        other.totalCount == totalCount;
   }
 
   @override
   int get hashCode =>
-      year.hashCode ^ month.hashCode ^ successRate.hashCode;
+      year.hashCode ^
+      month.hashCode ^
+      successRate.hashCode ^
+      successCount.hashCode ^
+      totalCount.hashCode;
 }
 
 // ---------------------------------------------------------------------------

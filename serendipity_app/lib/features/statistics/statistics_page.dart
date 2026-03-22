@@ -344,126 +344,6 @@ class _RankingTable extends StatelessWidget {
   }
 }
 
-class _StatisticsSimpleTableHeader extends StatelessWidget {
-  final String leftTitle;
-  final String middleTitle;
-  final String rightTitle;
-  final double leftWidth;
-  final double rightWidth;
-  final ColorScheme colorScheme;
-
-  const _StatisticsSimpleTableHeader({
-    required this.leftTitle,
-    required this.middleTitle,
-    required this.rightTitle,
-    required this.leftWidth,
-    required this.rightWidth,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final headerStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      color: colorScheme.onSurfaceVariant,
-    );
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: leftWidth,
-            child: Text(leftTitle, style: headerStyle),
-          ),
-          Expanded(
-            child: Text(middleTitle, style: headerStyle),
-          ),
-          const SizedBox(width: 80),
-          SizedBox(
-            width: rightWidth,
-            child: Text(
-              rightTitle,
-              textAlign: TextAlign.right,
-              style: headerStyle,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatisticsSimpleTableRow extends StatelessWidget {
-  final String leftLabel;
-  final double progress;
-  final String rightLabel;
-  final double leftWidth;
-  final double rightWidth;
-  final Color progressColor;
-  final ColorScheme colorScheme;
-
-  const _StatisticsSimpleTableRow({
-    required this.leftLabel,
-    required this.progress,
-    required this.rightLabel,
-    required this.leftWidth,
-    required this.rightWidth,
-    required this.progressColor,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: leftWidth,
-            child: Text(
-              leftLabel,
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurface,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 8,
-                  backgroundColor: colorScheme.outline.withValues(alpha: 0.12),
-                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            width: rightWidth,
-            child: Text(
-              rightLabel,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// 基础统计卡片
 class _BasicStatisticsCard extends ConsumerWidget {
   const _BasicStatisticsCard();
@@ -1619,16 +1499,36 @@ class _MonthlyRecordTable extends StatelessWidget {
     final maxCount = records
         .map((record) => (record.count as int))
         .reduce((a, b) => a > b ? a : b);
+    final headerStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: colorScheme.onSurfaceVariant,
+    );
 
     return Column(
       children: [
-        _StatisticsSimpleTableHeader(
-          leftTitle: '月份',
-          middleTitle: '记录数',
-          rightTitle: '次数',
-          leftWidth: 72,
-          rightWidth: 40,
-          colorScheme: colorScheme,
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 72,
+                child: Text('月份', style: headerStyle),
+              ),
+              Expanded(
+                child: Text('记录数', style: headerStyle),
+              ),
+              const SizedBox(width: 80),
+              SizedBox(
+                width: 40,
+                child: Text(
+                  '次数',
+                  textAlign: TextAlign.right,
+                  style: headerStyle,
+                ),
+              ),
+            ],
+          ),
         ),
         Divider(
           height: 1,
@@ -1641,14 +1541,53 @@ class _MonthlyRecordTable extends StatelessWidget {
           final monthLabel =
               '${record.year}/${record.month.toString().padLeft(2, '0')}';
 
-          return _StatisticsSimpleTableRow(
-            leftLabel: monthLabel,
-            progress: ratio,
-            rightLabel: '$count',
-            leftWidth: 72,
-            rightWidth: 40,
-            progressColor: colorScheme.primary.withValues(alpha: 0.7),
-            colorScheme: colorScheme,
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 72,
+                  child: Text(
+                    monthLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: ratio,
+                        minHeight: 8,
+                        backgroundColor:
+                            colorScheme.outline.withValues(alpha: 0.12),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colorScheme.primary.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 40,
+                  child: Text(
+                    '$count',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         }),
       ],
@@ -2305,7 +2244,7 @@ class _SuccessRateTrendCard extends ConsumerWidget {
 }
 
 class _SuccessRateTable extends StatelessWidget {
-  final List<dynamic> monthlySuccessRates;
+  final List<MonthlySuccessRate> monthlySuccessRates;
   final ColorScheme colorScheme;
 
   const _SuccessRateTable({
@@ -2329,13 +2268,58 @@ class _SuccessRateTable extends StatelessWidget {
 
     return Column(
       children: [
-        _StatisticsSimpleTableHeader(
-          leftTitle: '月份',
-          middleTitle: '成功率',
-          rightTitle: '占比',
-          leftWidth: 72,
-          rightWidth: 52,
-          colorScheme: colorScheme,
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 72,
+                child: Text(
+                  '月份',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  '成功率',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 52,
+                child: Text(
+                  '成功数',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 40,
+                child: Text(
+                  '总数',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         Divider(
           height: 1,
@@ -2343,19 +2327,60 @@ class _SuccessRateTable extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ...monthlySuccessRates.reversed.map((record) {
-          final successRate = record.successRate as double;
-          final ratio = (successRate / 100).clamp(0.0, 1.0);
           final monthLabel =
               '${record.year}/${record.month.toString().padLeft(2, '0')}';
 
-          return _StatisticsSimpleTableRow(
-            leftLabel: monthLabel,
-            progress: ratio,
-            rightLabel: '${successRate.toStringAsFixed(1)}%',
-            leftWidth: 72,
-            rightWidth: 52,
-            progressColor: colorScheme.tertiary.withValues(alpha: 0.75),
-            colorScheme: colorScheme,
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 72,
+                  child: Text(
+                    monthLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    '${record.successRate.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 52,
+                  child: Text(
+                    '${record.successCount}',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 40,
+                  child: Text(
+                    '${record.totalCount}',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         }),
       ],
