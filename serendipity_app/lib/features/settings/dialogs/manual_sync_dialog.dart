@@ -195,6 +195,8 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
           checkIns: result.downloadedCheckIns,
         ),
         const SizedBox(height: 8),
+        _buildAchievementRow(context, result.syncedAchievements),
+        const SizedBox(height: 8),
         if (result.mergedRecords > 0 ||
             result.mergedStoryLines > 0 ||
             result.mergedCheckIns > 0) ...[
@@ -242,6 +244,31 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildAchievementRow(BuildContext context, int syncedAchievements) {
+    return Row(
+      children: [
+        Icon(
+          Icons.emoji_events_outlined,
+          size: 20,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '成就：',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        Text(
+          '新增解锁 $syncedAchievements 个',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
       ],
     );
   }

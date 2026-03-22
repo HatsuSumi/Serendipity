@@ -15,9 +15,53 @@ import '../providers/favorites_provider.dart' show FavoritedPostsResult, Favorit
 /// 使用自建 Node.js 后端，支持记录、故事线、社区帖子的 CRUD 操作。
 class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   final HttpClientService _httpClient;
+  static const int _syncPageSize = 100;
   
   CustomServerRemoteDataRepository({required HttpClientService httpClient})
       : _httpClient = httpClient;
+
+  Future<List<EncounterRecord>> _downloadRecordsPaged(
+    String userId, {
+    DateTime? lastSyncTime,
+  }) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+
+    final allRecords = <EncounterRecord>[];
+    var offset = 0;
+    var hasMore = true;
+
+    while (hasMore) {
+      final queryParams = <String, String>{
+        'limit': _syncPageSize.toString(),
+        'offset': offset.toString(),
+      };
+      if (lastSyncTime != null) {
+        queryParams['lastSyncTime'] = lastSyncTime.toIso8601String();
+      }
+
+      final response = await _httpClient.get(
+        ServerConfig.records,
+        queryParams: queryParams,
+      );
+      final data = response['data'] as Map<String, dynamic>;
+      final recordsJson = data['records'] as List;
+      final pageRecords = recordsJson
+          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      allRecords.addAll(pageRecords);
+      hasMore = data['hasMore'] as bool? ?? false;
+      offset += pageRecords.length;
+
+      if (pageRecords.isEmpty) {
+        break;
+      }
+    }
+
+    return allRecords;
+  }
   
   // ==================== 记录相关操作 ====================
   
@@ -131,19 +175,8 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   
   @override
   Future<List<EncounterRecord>> downloadRecords(String userId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
     try {
-      final response = await _httpClient.get(ServerConfig.records);
-      final data = response['data'] as Map<String, dynamic>;
-      final recordsJson = data['records'] as List;
-      
-      return recordsJson
-          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
-          .toList();
+      return await _downloadRecordsPaged(userId);
     } on HttpException catch (e) {
       throw Exception('下载记录失败：${e.message}');
     }
@@ -151,24 +184,11 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   
   @override
   Future<List<EncounterRecord>> downloadRecordsSince(String userId, DateTime lastSyncTime) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
     try {
-      final response = await _httpClient.get(
-        ServerConfig.records,
-        queryParams: {
-          'lastSyncTime': lastSyncTime.toIso8601String(),
-        },
+      return await _downloadRecordsPaged(
+        userId,
+        lastSyncTime: lastSyncTime,
       );
-      final data = response['data'] as Map<String, dynamic>;
-      final recordsJson = data['records'] as List;
-      
-      return recordsJson
-          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
-          .toList();
     } on HttpException catch (e) {
       throw Exception('下载增量记录失败：${e.message}');
     }
