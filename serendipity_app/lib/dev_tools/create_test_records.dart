@@ -197,6 +197,9 @@ Future<void> createTestRecords() async {
           address: address,
           placeName: placeType.label,
           placeType: placeType,
+          province: addressData['province'],
+          city: addressData['city'],
+          area: addressData['area'],
         );
         
         // 随机选择 2-4 个标签

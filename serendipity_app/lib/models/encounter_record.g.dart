@@ -59,13 +59,16 @@ class LocationAdapter extends TypeAdapter<Location> {
       address: fields[2] as String?,
       placeName: fields[3] as String?,
       placeType: fields[4] as PlaceType?,
+      province: fields[5] as String?,
+      city: fields[6] as String?,
+      area: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Location obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.latitude)
       ..writeByte(1)
@@ -75,7 +78,13 @@ class LocationAdapter extends TypeAdapter<Location> {
       ..writeByte(3)
       ..write(obj.placeName)
       ..writeByte(4)
-      ..write(obj.placeType);
+      ..write(obj.placeType)
+      ..writeByte(5)
+      ..write(obj.province)
+      ..writeByte(6)
+      ..write(obj.city)
+      ..writeByte(7)
+      ..write(obj.area);
   }
 
   @override
