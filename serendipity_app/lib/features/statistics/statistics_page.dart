@@ -111,7 +111,7 @@ class _FieldRankingCard extends ConsumerWidget {
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // 维度切换 chips（横向可滚动）
           SizedBox(
@@ -340,6 +340,126 @@ class _RankingTable extends StatelessWidget {
           );
         }),
       ],
+    );
+  }
+}
+
+class _StatisticsSimpleTableHeader extends StatelessWidget {
+  final String leftTitle;
+  final String middleTitle;
+  final String rightTitle;
+  final double leftWidth;
+  final double rightWidth;
+  final ColorScheme colorScheme;
+
+  const _StatisticsSimpleTableHeader({
+    required this.leftTitle,
+    required this.middleTitle,
+    required this.rightTitle,
+    required this.leftWidth,
+    required this.rightWidth,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final headerStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      color: colorScheme.onSurfaceVariant,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: leftWidth,
+            child: Text(leftTitle, style: headerStyle),
+          ),
+          Expanded(
+            child: Text(middleTitle, style: headerStyle),
+          ),
+          const SizedBox(width: 80),
+          SizedBox(
+            width: rightWidth,
+            child: Text(
+              rightTitle,
+              textAlign: TextAlign.right,
+              style: headerStyle,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatisticsSimpleTableRow extends StatelessWidget {
+  final String leftLabel;
+  final double progress;
+  final String rightLabel;
+  final double leftWidth;
+  final double rightWidth;
+  final Color progressColor;
+  final ColorScheme colorScheme;
+
+  const _StatisticsSimpleTableRow({
+    required this.leftLabel,
+    required this.progress,
+    required this.rightLabel,
+    required this.leftWidth,
+    required this.rightWidth,
+    required this.progressColor,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: leftWidth,
+            child: Text(
+              leftLabel,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: colorScheme.outline.withValues(alpha: 0.12),
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: rightWidth,
+            child: Text(
+              rightLabel,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -614,7 +734,7 @@ class _StatusPieChart extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
         // 图例
         Wrap(
           spacing: 12,
@@ -1077,12 +1197,13 @@ class _AdvancedStatisticsCard extends ConsumerWidget {
         const SizedBox(height: 16),
 
         // 月度记录数图表
-        _MonthlyChartCard(monthlyDistribution: stats.monthlyDistribution),
+        _MonthlyChartCard(monthlyDistributionByRange: stats.monthlyDistributionByRange),
         const SizedBox(height: 16),
 
         // 成功率趋势
         _SuccessRateTrendCard(
-            monthlySuccessRates: stats.monthlySuccessRates),
+          monthlySuccessRatesByRange: stats.monthlySuccessRatesByRange,
+        ),
         const SizedBox(height: 16),
 
         // 字段完整排名表格
@@ -1174,9 +1295,9 @@ class _TagCloudCard extends StatelessWidget {
 
 /// 月度记录数图表卡片（会员版）
 class _MonthlyChartCard extends ConsumerWidget {
-  final Map<dynamic, dynamic> monthlyDistribution;
+  final Map<dynamic, dynamic> monthlyDistributionByRange;
 
-  const _MonthlyChartCard({required this.monthlyDistribution});
+  const _MonthlyChartCard({required this.monthlyDistributionByRange});
 
   static const _statusOptions = [
     (null, '全部', '📋'),
@@ -1189,13 +1310,31 @@ class _MonthlyChartCard extends ConsumerWidget {
     (EncounterStatus.lost, '失联', '🍂'),
   ];
 
+  static int _buildMonthLabelStep(int length) {
+    if (length <= 12) return 2;
+    if (length <= 24) return 3;
+    if (length <= 36) return 4;
+    return 6;
+  }
+
+  static double _buildChartWidth(int length) {
+    const baseWidth = 520.0;
+    final computedWidth = length * 52.0;
+    return computedWidth < baseWidth ? baseWidth : computedWidth;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final selectedStatus = ref.watch(monthlyStatusFilterProvider);
+    final chartRange = ref.watch(monthlyChartRangeProvider);
+    final monthlyDistribution =
+        (monthlyDistributionByRange[chartRange] as Map?) ?? const {};
     final records = (monthlyDistribution[selectedStatus] as List?) ?? [];
+    final isAllRange = chartRange == StatisticsChartRange.all;
+    final monthLabelStep = _buildMonthLabelStep(records.length);
+    final chartWidth = _buildChartWidth(records.length);
 
-    // 构造折线图数据点
     final spots = <FlSpot>[];
     for (int i = 0; i < records.length; i++) {
       spots.add(FlSpot(i.toDouble(), (records[i].count as int).toDouble()));
@@ -1204,10 +1343,10 @@ class _MonthlyChartCard extends ConsumerWidget {
     final maxY = records.isEmpty
         ? 5.0
         : records
-              .map((r) => (r.count as int).toDouble())
-              .reduce((a, b) => a > b ? a : b)
-              .clamp(1.0, double.infinity) *
-          1.2;
+                  .map((r) => (r.count as int).toDouble())
+                  .reduce((a, b) => a > b ? a : b)
+                  .clamp(1.0, double.infinity) *
+              1.3;
 
     final now = DateTime.now();
     final currentYear = now.year;
@@ -1230,8 +1369,55 @@ class _MonthlyChartCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
+          SizedBox(
+            height: 32,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: StatisticsChartRange.values.map((range) {
+                final isSelected = chartRange == range;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => ref
+                        .read(monthlyChartRangeProvider.notifier)
+                        .state = range,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.outline.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Text(
+                        range.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: isSelected
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
 
-          // 状态筛选 chips
           SizedBox(
             height: 32,
             child: ListView(
@@ -1281,104 +1467,191 @@ class _MonthlyChartCard extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // 折线图
-          SizedBox(
-            height: 160,
-            child: records.isEmpty
-                ? Center(
-                    child: Text(
-                      '暂无数据',
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                  )
-                : LineChart(
-                    LineChartData(
-                      minY: 0,
-                      maxY: maxY,
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: (maxY / 4).ceilToDouble(),
-                        getDrawingHorizontalLine: (value) => FlLine(
-                          color: colorScheme.outline.withValues(alpha: 0.2),
-                          strokeWidth: 1,
-                        ),
+          if (isAllRange)
+            _MonthlyRecordTable(
+              records: records.cast<dynamic>(),
+              colorScheme: colorScheme,
+            )
+          else
+            SizedBox(
+              height: 160,
+              child: records.isEmpty
+                  ? Center(
+                      child: Text(
+                        '暂无数据',
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
-                      borderData: FlBorderData(show: false),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 28,
-                            interval: (maxY / 4).ceilToDouble(),
-                            getTitlesWidget: (value, meta) => Text(
-                              value.toInt().toString(),
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 22,
-                            getTitlesWidget: (value, meta) {
-                              final idx = value.toInt();
-                              if (idx < 0 || idx >= records.length) {
-                                return const SizedBox.shrink();
-                              }
-                              // 每隔2个显示一个标签，避免拥挤
-                              if (idx % 2 != 0) return const SizedBox.shrink();
-                              final r = records[idx];
-                              final label = r.year == currentYear
-                                  ? '${r.month}月'
-                                  : '${r.year}/${r.month}';
-                              return Text(
-                                label,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: colorScheme.onSurfaceVariant,
+                    )
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: chartWidth + 16,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: LineChart(
+                            LineChartData(
+                              minY: 0,
+                              maxY: maxY,
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                horizontalInterval: (maxY / 4).ceilToDouble(),
+                                getDrawingHorizontalLine: (value) => FlLine(
+                                  color: colorScheme.outline.withValues(alpha: 0.2),
+                                  strokeWidth: 1,
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                      ),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: spots,
-                          isCurved: true,
-                          curveSmoothness: 0.3,
-                          color: colorScheme.primary,
-                          barWidth: 2.5,
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter: (spot, percent, bar, index) =>
-                                FlDotCirclePainter(
-                              radius: 3,
-                              color: colorScheme.primary,
-                              strokeWidth: 0,
+                              ),
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 28,
+                                    interval: (maxY / 4).ceilToDouble(),
+                                    getTitlesWidget: (value, meta) => Text(
+                                      value.toInt().toString(),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 24,
+                                    getTitlesWidget: (value, meta) {
+                                      final idx = value.round();
+                                      if ((value - idx).abs() > 0.001) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      if (idx < 0 || idx >= records.length) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      if (idx % monthLabelStep != 0 &&
+                                          idx != records.length - 1) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final r = records[idx];
+                                      final label = r.year == currentYear
+                                          ? '${r.month}月'
+                                          : '${r.year}/${r.month}';
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          label,
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                              ),
+                              lineTouchData: const LineTouchData(enabled: true),
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: spots,
+                                  isCurved: true,
+                                  curveSmoothness: 0.3,
+                                  color: colorScheme.primary,
+                                  barWidth: 2.5,
+                                  dotData: FlDotData(
+                                    show: true,
+                                    getDotPainter: (spot, percent, bar, index) =>
+                                        FlDotCirclePainter(
+                                      radius: 3,
+                                      color: colorScheme.primary,
+                                      strokeWidth: 0,
+                                    ),
+                                  ),
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    color: colorScheme.primary
+                                        .withValues(alpha: 0.08),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: colorScheme.primary.withValues(alpha: 0.08),
-                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-          ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+class _MonthlyRecordTable extends StatelessWidget {
+  final List<dynamic> records;
+  final ColorScheme colorScheme;
+
+  const _MonthlyRecordTable({
+    required this.records,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (records.isEmpty) {
+      return SizedBox(
+        height: 60,
+        child: Center(
+          child: Text(
+            '暂无数据',
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+
+    final maxCount = records
+        .map((record) => (record.count as int))
+        .reduce((a, b) => a > b ? a : b);
+
+    return Column(
+      children: [
+        _StatisticsSimpleTableHeader(
+          leftTitle: '月份',
+          middleTitle: '记录数',
+          rightTitle: '次数',
+          leftWidth: 72,
+          rightWidth: 40,
+          colorScheme: colorScheme,
+        ),
+        Divider(
+          height: 1,
+          color: colorScheme.outline.withValues(alpha: 0.2),
+        ),
+        const SizedBox(height: 8),
+        ...records.reversed.map((record) {
+          final count = record.count as int;
+          final ratio = maxCount == 0 ? 0.0 : count / maxCount;
+          final monthLabel =
+              '${record.year}/${record.month.toString().padLeft(2, '0')}';
+
+          return _StatisticsSimpleTableRow(
+            leftLabel: monthLabel,
+            progress: ratio,
+            rightLabel: '$count',
+            leftWidth: 72,
+            rightWidth: 40,
+            progressColor: colorScheme.primary.withValues(alpha: 0.7),
+            colorScheme: colorScheme,
+          );
+        }),
+      ],
     );
   }
 }
@@ -1473,8 +1746,30 @@ class _EmotionIntensityCard extends StatelessWidget {
                         sideTitles: SideTitles(showTitles: false)),
                     rightTitles: const AxisTitles(
                         sideTitles: SideTitles(showTitles: false)),
-                    topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 24,
+                        getTitlesWidget: (value, meta) {
+                          final idx = value.toInt();
+                          if (idx < 0 || idx >= distribution.length) {
+                            return const SizedBox.shrink();
+                          }
+                          final count = distribution[idx].count as int;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              '$count',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -1756,26 +2051,47 @@ class _PlaceTypeDistributionCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 /// 成功率趋势卡片
-class _SuccessRateTrendCard extends StatelessWidget {
-  final List<dynamic> monthlySuccessRates;
+class _SuccessRateTrendCard extends ConsumerWidget {
+  final Map<dynamic, dynamic> monthlySuccessRatesByRange;
 
-  const _SuccessRateTrendCard({required this.monthlySuccessRates});
+  const _SuccessRateTrendCard({required this.monthlySuccessRatesByRange});
+
+  static int _buildMonthLabelStep(int length) {
+    if (length <= 12) return 2;
+    if (length <= 24) return 3;
+    if (length <= 36) return 4;
+    return 6;
+  }
+
+  static double _buildChartWidth(int length) {
+    const baseWidth = 520.0;
+    final computedWidth = length * 52.0;
+    return computedWidth < baseWidth ? baseWidth : computedWidth;
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final currentYear = now.year;
+    final chartRange = ref.watch(successRateChartRangeProvider);
+    final monthlySuccessRates =
+        (monthlySuccessRatesByRange[chartRange] as List?) ?? const [];
+    final isAllRange = chartRange == StatisticsChartRange.all;
+    final monthLabelStep = _buildMonthLabelStep(monthlySuccessRates.length);
+    final chartWidth = _buildChartWidth(monthlySuccessRates.length);
 
     final spots = <FlSpot>[];
     for (int i = 0; i < monthlySuccessRates.length; i++) {
       spots.add(FlSpot(
-          i.toDouble(),
-          (monthlySuccessRates[i].successRate as double)));
+        i.toDouble(),
+        (monthlySuccessRates[i].successRate as double),
+      ));
     }
 
     final hasData = monthlySuccessRates.any(
-        (r) => (r.successRate as double) > 0);
+      (r) => (r.successRate as double) > 0,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -1796,117 +2112,253 @@ class _SuccessRateTrendCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '每月邂逅/重逢占比',
+            isAllRange ? '全部时间，每月邂逅/重逢占比' : '每月邂逅/重逢占比',
             style: TextStyle(
               fontSize: 11,
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           SizedBox(
-            height: 160,
-            child: !hasData
-                ? Center(
-                    child: Text(
-                      '暂无数据',
-                      style: TextStyle(
-                          color: colorScheme.onSurfaceVariant),
-                    ),
-                  )
-                : LineChart(
-                    LineChartData(
-                      minY: 0,
-                      maxY: 100,
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: 25,
-                        getDrawingHorizontalLine: (_) => FlLine(
-                          color: colorScheme.outline
-                              .withValues(alpha: 0.2),
-                          strokeWidth: 1,
+            height: 32,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: StatisticsChartRange.values.map((range) {
+                final isSelected = chartRange == range;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => ref
+                        .read(successRateChartRangeProvider.notifier)
+                        .state = range,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.outline.withValues(alpha: 0.4),
                         ),
                       ),
-                      borderData: FlBorderData(show: false),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 32,
-                            interval: 25,
-                            getTitlesWidget: (value, meta) => Text(
-                              '${value.toInt()}%',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
+                      child: Text(
+                        range.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: isSelected
+                              ? colorScheme.onPrimary
+                              : colorScheme.onSurface,
                         ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 22,
-                            getTitlesWidget: (value, meta) {
-                              final idx = value.toInt();
-                              if (idx < 0 ||
-                                  idx >= monthlySuccessRates.length) {
-                                return const SizedBox.shrink();
-                              }
-                              if (idx % 2 != 0) {
-                                return const SizedBox.shrink();
-                              }
-                              final r = monthlySuccessRates[idx];
-                              final label = (r.year as int) == currentYear
-                                  ? '${r.month}月'
-                                  : '${r.year}/${r.month}';
-                              return Text(
-                                label,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
                       ),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: spots,
-                          isCurved: true,
-                          curveSmoothness: 0.35,
-                          color: colorScheme.tertiary,
-                          barWidth: 2.5,
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter:
-                                (spot, percent, bar, index) =>
-                                    FlDotCirclePainter(
-                              radius: spot.y > 0 ? 3.5 : 2,
-                              color: spot.y > 0
-                                  ? colorScheme.tertiary
-                                  : colorScheme.outline
-                                      .withValues(alpha: 0.4),
-                              strokeWidth: 0,
-                            ),
-                          ),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: colorScheme.tertiary
-                                .withValues(alpha: 0.08),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
+                );
+              }).toList(),
+            ),
           ),
+          const SizedBox(height: 16),
+          if (isAllRange)
+            _SuccessRateTable(
+              monthlySuccessRates: monthlySuccessRates.cast<dynamic>(),
+              colorScheme: colorScheme,
+            )
+          else
+            SizedBox(
+              height: 160,
+              child: !hasData
+                  ? Center(
+                      child: Text(
+                        '暂无数据',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: chartWidth + 16,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: LineChart(
+                            LineChartData(
+                              minY: 0,
+                              maxY: 105,
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                horizontalInterval: 25,
+                                getDrawingHorizontalLine: (_) => FlLine(
+                                  color: colorScheme.outline.withValues(alpha: 0.2),
+                                  strokeWidth: 1,
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 32,
+                                    interval: 25,
+                                    getTitlesWidget: (value, meta) {
+                                      if (value > 100) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Text(
+                                        '${value.toInt()}%',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 24,
+                                    getTitlesWidget: (value, meta) {
+                                      final idx = value.round();
+                                      if ((value - idx).abs() > 0.001) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      if (idx < 0 ||
+                                          idx >= monthlySuccessRates.length) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      if (idx % monthLabelStep != 0 &&
+                                          idx != monthlySuccessRates.length - 1) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final r = monthlySuccessRates[idx];
+                                      final label = (r.year as int) == currentYear
+                                          ? '${r.month}月'
+                                          : '${r.year}/${r.month}';
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          label,
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                              ),
+                              lineBarsData: [
+                                LineChartBarData(
+                                  spots: spots,
+                                  isCurved: true,
+                                  curveSmoothness: 0.35,
+                                  color: colorScheme.tertiary,
+                                  barWidth: 2.5,
+                                  dotData: FlDotData(
+                                    show: true,
+                                    getDotPainter:
+                                        (spot, percent, bar, index) =>
+                                            FlDotCirclePainter(
+                                      radius: spot.y > 0 ? 3.5 : 2,
+                                      color: spot.y > 0
+                                          ? colorScheme.tertiary
+                                          : colorScheme.outline
+                                              .withValues(alpha: 0.4),
+                                      strokeWidth: 0,
+                                    ),
+                                  ),
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    color: colorScheme.tertiary
+                                        .withValues(alpha: 0.08),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+class _SuccessRateTable extends StatelessWidget {
+  final List<dynamic> monthlySuccessRates;
+  final ColorScheme colorScheme;
+
+  const _SuccessRateTable({
+    required this.monthlySuccessRates,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (monthlySuccessRates.isEmpty) {
+      return SizedBox(
+        height: 60,
+        child: Center(
+          child: Text(
+            '暂无数据',
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        _StatisticsSimpleTableHeader(
+          leftTitle: '月份',
+          middleTitle: '成功率',
+          rightTitle: '占比',
+          leftWidth: 72,
+          rightWidth: 52,
+          colorScheme: colorScheme,
+        ),
+        Divider(
+          height: 1,
+          color: colorScheme.outline.withValues(alpha: 0.2),
+        ),
+        const SizedBox(height: 8),
+        ...monthlySuccessRates.reversed.map((record) {
+          final successRate = record.successRate as double;
+          final ratio = (successRate / 100).clamp(0.0, 1.0);
+          final monthLabel =
+              '${record.year}/${record.month.toString().padLeft(2, '0')}';
+
+          return _StatisticsSimpleTableRow(
+            leftLabel: monthLabel,
+            progress: ratio,
+            rightLabel: '${successRate.toStringAsFixed(1)}%',
+            leftWidth: 72,
+            rightWidth: 52,
+            progressColor: colorScheme.tertiary.withValues(alpha: 0.75),
+            colorScheme: colorScheme,
+          );
+        }),
+      ],
     );
   }
 }

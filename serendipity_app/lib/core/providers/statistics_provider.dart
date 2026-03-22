@@ -17,6 +17,18 @@ final fieldRankingDimensionProvider =
 /// null = 全部状态，非 null = 仅显示该状态
 final monthlyStatusFilterProvider = StateProvider<EncounterStatus?>((ref) => null);
 
+/// 月度记录数图表时间范围 Provider
+///
+/// 控制月度记录数图表使用最近12个月还是全部月份。
+final monthlyChartRangeProvider =
+    StateProvider<StatisticsChartRange>((ref) => StatisticsChartRange.last12Months);
+
+/// 成功率趋势图表时间范围 Provider
+///
+/// 控制成功率趋势图表使用最近12个月还是全部月份。
+final successRateChartRangeProvider =
+    StateProvider<StatisticsChartRange>((ref) => StatisticsChartRange.last12Months);
+
 /// 状态统计视图模式 Provider
 /// 
 /// true = 列表视图，false = 饼图视图
@@ -38,17 +50,14 @@ final statusViewModeProvider = StateProvider<bool>((ref) => true);
 /// - StatisticsPage：UI 层
 /// - AdvancedStatisticsProvider：高级统计依赖
 final basicStatisticsProvider = FutureProvider<BasicStatistics>((ref) async {
-  // 监听记录列表变化
   final recordsAsync = ref.watch(recordsProvider);
-  
-  // 等待记录列表加载完成
+
   final records = await recordsAsync.when(
     data: (data) async => data,
     loading: () async => throw Exception('Records loading'),
     error: (error, stack) async => throw error,
   );
-  
-  // 计算基础统计
+
   return StatisticsService.calculateBasicStatistics(records);
 });
 
@@ -67,31 +76,26 @@ final basicStatisticsProvider = FutureProvider<BasicStatistics>((ref) async {
 /// 调用者：
 /// - StatisticsPage：UI 层（会员功能部分）
 final advancedStatisticsProvider = FutureProvider<AdvancedStatistics?>((ref) async {
-  // 检查用户是否为会员
   final membershipAsync = ref.watch(membershipProvider);
-  // 检查用户是否为会员（开发者模式下直接放行）
+
   final isPremium = AppConfig.isDeveloperMode || await membershipAsync.when(
     data: (membership) async => membership.isPremium,
     loading: () async => false,
     error: (error, stackTrace) async => false,
   );
-  
-  // 非会员返回 null
+
   if (!isPremium) {
     return null;
   }
-  
-  // 监听记录列表变化
+
   final recordsAsync = ref.watch(recordsProvider);
-  
-  // 等待记录列表加载完成
+
   final records = await recordsAsync.when(
     data: (data) async => data,
     loading: () async => throw Exception('Records loading'),
     error: (error, stack) async => throw error,
   );
-  
-  // 计算高级统计
+
   return StatisticsService.calculateAdvancedStatistics(records);
 });
 
@@ -114,7 +118,7 @@ final statisticsSummaryProvider = FutureProvider<({
   double successRate,
 })>((ref) async {
   final stats = await ref.watch(basicStatisticsProvider.future);
-  
+
   return (
     total: stats.totalRecords,
     met: stats.metCount,
@@ -122,4 +126,3 @@ final statisticsSummaryProvider = FutureProvider<({
     successRate: stats.successRate,
   );
 });
-

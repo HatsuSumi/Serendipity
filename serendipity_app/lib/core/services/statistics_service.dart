@@ -246,8 +246,11 @@ class StatisticsService {
     // 2. 计算标签词云
     final tagCloud = _calculateTagCloud(records);
 
-    // 3. 计算月度分布（全部 + 各状态）
-    final monthlyDistribution = _calculateMonthlyDistribution(records);
+    // 3. 计算月度分布（按时间范围缓存）
+    final monthlyDistributionByRange = {
+      for (final range in StatisticsChartRange.values)
+        range: _calculateMonthlyDistribution(records, chartRange: range),
+    };
 
     // 4. 计算地点分布（前5个）
     final topPlaces = _calculateTopPlaces(records);
@@ -261,8 +264,11 @@ class StatisticsService {
     // 7. 场所类型分布（前8）
     final placeTypeDistribution = _calculatePlaceTypeDistribution(records);
 
-    // 8. 月度成功率趋势
-    final monthlySuccessRates = _calculateMonthlySuccessRates(records);
+    // 8. 月度成功率趋势（按时间范围缓存）
+    final monthlySuccessRatesByRange = {
+      for (final range in StatisticsChartRange.values)
+        range: _calculateMonthlySuccessRates(records, chartRange: range),
+    };
 
     // 9. 字段完整排名表格
     final fieldRankings = _calculateFieldRankings(records, tagCloud);
@@ -270,36 +276,37 @@ class StatisticsService {
     return AdvancedStatistics(
       basic: basic,
       tagCloud: tagCloud,
-      monthlyDistribution: monthlyDistribution,
+      monthlyDistributionByRange: monthlyDistributionByRange,
       topPlaces: topPlaces,
       emotionIntensityDistribution: emotionIntensityDistribution,
       weatherDistribution: weatherDistribution,
       placeTypeDistribution: placeTypeDistribution,
-      monthlySuccessRates: monthlySuccessRates,
+      monthlySuccessRatesByRange: monthlySuccessRatesByRange,
       fieldRankings: fieldRankings,
     );
   }
 
-  /// 计算月度记录数分布（最近12个月）
+  /// 计算月度记录数分布
   /// 
   /// 设计说明：
   /// - 返回 Map(EncounterStatus?, List(MonthlyRecord))
   ///   - key = null：全部状态合计
   ///   - key = 某状态：仅该状态的记录数
   /// - 每个列表按时间正序排列，保证折线图从左到右
-  /// - 只包含最近12个月，空月份补0保持连续性
+  /// - 空月份补0保持连续性
   static Map<EncounterStatus?, List<MonthlyRecord>> _calculateMonthlyDistribution(
-    List<EncounterRecord> records,
-  ) {
-    final now = DateTime.now();
-    // 生成最近12个月的 (year, month) 列表，正序
-    final months = List.generate(12, (i) {
-      final dt = DateTime(now.year, now.month - 11 + i);
-      return (dt.year, dt.month);
-    });
-
-    // 初始化所有 key 的计数 Map
+    List<EncounterRecord> records, {
+    required StatisticsChartRange chartRange,
+  }) {
+    final months = _buildMonthlyWindow(records, chartRange);
     final allKeys = <EncounterStatus?>[null, ...EncounterStatus.values];
+
+    if (months.isEmpty) {
+      return {
+        for (final key in allKeys) key: const <MonthlyRecord>[],
+      };
+    }
+
     final counts = <EncounterStatus?, Map<String, int>>{};
     for (final key in allKeys) {
       counts[key] = {};
@@ -308,17 +315,14 @@ class StatisticsService {
       }
     }
 
-    // 统计 — 只处理最近12个月内的记录
-    final cutoff = DateTime(now.year, now.month - 11);
     for (final record in records) {
       final ts = record.timestamp;
-      if (ts.isBefore(cutoff)) continue;
       final key = '${ts.year}-${ts.month}';
+      if (!counts[null]!.containsKey(key)) continue;
       counts[null]![key] = (counts[null]![key] ?? 0) + 1;
       counts[record.status]![key] = (counts[record.status]![key] ?? 0) + 1;
     }
 
-    // 转换为有序 List<MonthlyRecord>
     final result = <EncounterStatus?, List<MonthlyRecord>>{};
     for (final statusKey in allKeys) {
       result[statusKey] = months
@@ -647,7 +651,7 @@ class StatisticsService {
     };
   }
 
-  /// 计算月度成功率趋势（最近12个月）
+  /// 计算月度成功率趋势
   ///
   /// 设计说明：
   /// - 成功 = 状态为 met 或 reunion
@@ -655,15 +659,14 @@ class StatisticsService {
   /// - 当月无记录时成功率为 0.0
   /// - 结果按时间正序排列
   static List<MonthlySuccessRate> _calculateMonthlySuccessRates(
-    List<EncounterRecord> records,
-  ) {
-    final now = DateTime.now();
-    final months = List.generate(12, (i) {
-      final dt = DateTime(now.year, now.month - 11 + i);
-      return (dt.year, dt.month);
-    });
+    List<EncounterRecord> records, {
+    required StatisticsChartRange chartRange,
+  }) {
+    final months = _buildMonthlyWindow(records, chartRange);
+    if (months.isEmpty) {
+      return const <MonthlySuccessRate>[];
+    }
 
-    // 统计每月总数和成功数
     final totalMap = <String, int>{};
     final successMap = <String, int>{};
     for (final (y, m) in months) {
@@ -671,10 +674,8 @@ class StatisticsService {
       successMap['$y-$m'] = 0;
     }
 
-    final cutoff = DateTime(now.year, now.month - 11);
     for (final record in records) {
       final ts = record.timestamp;
-      if (ts.isBefore(cutoff)) continue;
       final key = '${ts.year}-${ts.month}';
       if (!totalMap.containsKey(key)) continue;
       totalMap[key] = totalMap[key]! + 1;
@@ -695,6 +696,46 @@ class StatisticsService {
         successRate: double.parse(rate.toStringAsFixed(1)),
       );
     }).toList();
+  }
+
+  /// 构建月度时间窗口
+  ///
+  /// 调用者：
+  /// - _calculateMonthlyDistribution()
+  /// - _calculateMonthlySuccessRates()
+  ///
+  /// 规则：
+  /// - last12Months：最近12个月（含当前月）
+  /// - all：从第一条记录所在月份到当前月份
+  static List<(int, int)> _buildMonthlyWindow(
+    List<EncounterRecord> records,
+    StatisticsChartRange chartRange,
+  ) {
+    final now = DateTime.now();
+
+    switch (chartRange) {
+      case StatisticsChartRange.last12Months:
+        return List.generate(12, (i) {
+          final dt = DateTime(now.year, now.month - 11 + i);
+          return (dt.year, dt.month);
+        });
+      case StatisticsChartRange.all:
+        if (records.isEmpty) {
+          return const <(int, int)>[];
+        }
+        final firstRecord = records.reduce(
+          (a, b) => a.timestamp.isBefore(b.timestamp) ? a : b,
+        );
+        final start = DateTime(firstRecord.timestamp.year, firstRecord.timestamp.month);
+        final monthCount = (now.year - start.year) * 12 + now.month - start.month + 1;
+        if (monthCount <= 0) {
+          throw StateError('月度时间窗口计算失败：monthCount 必须大于 0');
+        }
+        return List.generate(monthCount, (i) {
+          final dt = DateTime(start.year, start.month + i);
+          return (dt.year, dt.month);
+        });
+    }
   }
 }
 

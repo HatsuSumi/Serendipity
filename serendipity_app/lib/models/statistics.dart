@@ -353,6 +353,14 @@ class PlaceDistributionItem {
       placeName.hashCode ^ count.hashCode ^ placeType.hashCode;
 }
 
+enum StatisticsChartRange {
+  last12Months('近12个月'),
+  all('全部');
+
+  final String label;
+  const StatisticsChartRange(this.label);
+}
+
 // ---------------------------------------------------------------------------
 // 字段排名表格
 // ---------------------------------------------------------------------------
@@ -427,9 +435,10 @@ class AdvancedStatistics {
   /// 标签词云（按频率排序）
   final List<TagCloudItem> tagCloud;
 
-  /// 月度记录数（最近12个月，按时间正序）
-  /// key: null = 全部状态，非 null = 指定状态
-  final Map<EncounterStatus?, List<MonthlyRecord>> monthlyDistribution;
+  /// 月度记录数（按时间范围索引）
+  /// key1: StatisticsChartRange，key2: null = 全部状态，非 null = 指定状态
+  final Map<StatisticsChartRange, Map<EncounterStatus?, List<MonthlyRecord>>>
+      monthlyDistributionByRange;
 
   /// 地点分布（前5个最常错过的地点）
   final List<PlaceDistributionItem> topPlaces;
@@ -443,8 +452,9 @@ class AdvancedStatistics {
   /// 场所类型分布（按记录数降序，前8个）
   final List<PlaceTypeDistributionItem> placeTypeDistribution;
 
-  /// 月度成功率趋势（最近12个月，按时间正序）
-  final List<MonthlySuccessRate> monthlySuccessRates;
+  /// 月度成功率趋势（按时间范围索引，按时间正序）
+  final Map<StatisticsChartRange, List<MonthlySuccessRate>>
+      monthlySuccessRatesByRange;
 
   /// 字段排名表格（按维度索引，完整排名，含长尾数据）
   final Map<FieldRankingDimension, FieldRankingTable> fieldRankings;
@@ -452,12 +462,12 @@ class AdvancedStatistics {
   const AdvancedStatistics({
     required this.basic,
     required this.tagCloud,
-    required this.monthlyDistribution,
+    required this.monthlyDistributionByRange,
     required this.topPlaces,
     required this.emotionIntensityDistribution,
     required this.weatherDistribution,
     required this.placeTypeDistribution,
-    required this.monthlySuccessRates,
+    required this.monthlySuccessRatesByRange,
     required this.fieldRankings,
   });
 
@@ -472,12 +482,12 @@ class AdvancedStatistics {
     return other is AdvancedStatistics &&
         other.basic == basic &&
         other.tagCloud == tagCloud &&
-        other.monthlyDistribution == monthlyDistribution &&
+        other.monthlyDistributionByRange == monthlyDistributionByRange &&
         other.topPlaces == topPlaces &&
         other.emotionIntensityDistribution == emotionIntensityDistribution &&
         other.weatherDistribution == weatherDistribution &&
         other.placeTypeDistribution == placeTypeDistribution &&
-        other.monthlySuccessRates == monthlySuccessRates &&
+        other.monthlySuccessRatesByRange == monthlySuccessRatesByRange &&
         other.fieldRankings == fieldRankings;
   }
 
@@ -485,11 +495,11 @@ class AdvancedStatistics {
   int get hashCode =>
       basic.hashCode ^
       tagCloud.hashCode ^
-      monthlyDistribution.hashCode ^
+      monthlyDistributionByRange.hashCode ^
       topPlaces.hashCode ^
       emotionIntensityDistribution.hashCode ^
       weatherDistribution.hashCode ^
       placeTypeDistribution.hashCode ^
-      monthlySuccessRates.hashCode ^
+      monthlySuccessRatesByRange.hashCode ^
       fieldRankings.hashCode;
 }
