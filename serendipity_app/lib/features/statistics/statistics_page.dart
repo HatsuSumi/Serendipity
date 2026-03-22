@@ -2108,7 +2108,7 @@ class _SuccessRateTrendCard extends ConsumerWidget {
           const SizedBox(height: 16),
           if (isAllRange)
             _SuccessRateTable(
-              monthlySuccessRates: monthlySuccessRates.cast<dynamic>(),
+              monthlySuccessRates: monthlySuccessRates.cast<MonthlySuccessRate>(),
               colorScheme: colorScheme,
             )
           else
@@ -2266,57 +2266,54 @@ class _SuccessRateTable extends StatelessWidget {
       );
     }
 
+    Widget buildCell(
+      String text, {
+      TextAlign textAlign = TextAlign.left,
+      FontWeight? fontWeight,
+      Color? color,
+    }) {
+      return Expanded(
+        child: Text(
+          text,
+          textAlign: textAlign,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: fontWeight,
+            color: color,
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Row(
             children: [
-              SizedBox(
-                width: 72,
-                child: Text(
-                  '月份',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
+              buildCell(
+                '月份',
+                textAlign: TextAlign.center,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurfaceVariant,
               ),
-              Expanded(
-                child: Text(
-                  '成功率',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
+              buildCell(
+                '成功率',
+                textAlign: TextAlign.center,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurfaceVariant,
               ),
-              SizedBox(
-                width: 52,
-                child: Text(
-                  '成功数',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
+              buildCell(
+                '成功数',
+                textAlign: TextAlign.center,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 40,
-                child: Text(
-                  '总数',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
+              buildCell(
+                '总数',
+                textAlign: TextAlign.center,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -2334,50 +2331,28 @@ class _SuccessRateTable extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
               children: [
-                SizedBox(
-                  width: 72,
-                  child: Text(
-                    monthLabel,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
+                buildCell(
+                  monthLabel,
+                  textAlign: TextAlign.center,
+                  color: colorScheme.onSurface,
                 ),
-                Expanded(
-                  child: Text(
-                    '${record.successRate.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
+                buildCell(
+                  '${record.successRate.toStringAsFixed(1)}%',
+                  textAlign: TextAlign.center,
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
                 ),
-                SizedBox(
-                  width: 52,
-                  child: Text(
-                    '${record.successCount}',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
+                buildCell(
+                  '${record.successCount}',
+                  textAlign: TextAlign.center,
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 40,
-                  child: Text(
-                    '${record.totalCount}',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
+                buildCell(
+                  '${record.totalCount}',
+                  textAlign: TextAlign.center,
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
                 ),
               ],
             ),
