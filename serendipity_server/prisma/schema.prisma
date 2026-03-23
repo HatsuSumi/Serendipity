@@ -66,6 +66,7 @@ model StoryLine {
   userId    String   @map("user_id")
   name      String   @db.VarChar(255)
   recordIds Json     @default("[]") @map("record_ids")
+  isPinned  Boolean  @default(false) @map("is_pinned")
   createdAt DateTime @map("created_at")
   updatedAt DateTime @map("updated_at")
   records   Record[]

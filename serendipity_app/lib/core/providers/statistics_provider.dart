@@ -1,15 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../models/statistics.dart';
 import '../../models/enums.dart';
 import '../config/app_config.dart';
-import '../services/statistics_service.dart';
-import '../repositories/check_in_repository.dart';
+import '../repositories/local_statistics_data_source.dart';
+import '../repositories/remote_statistics_data_source.dart';
+import '../repositories/statistics_repository.dart';
 import 'auth_provider.dart';
 import 'check_in_provider.dart';
 import 'favorites_provider.dart';
-import 'records_provider.dart';
 import 'membership_provider.dart';
-import 'story_lines_provider.dart';
+import 'records_provider.dart';
+
+// ---------------------------------------------------------------------------
+// UI 状态 Providers（与数据源无关的纯 UI 状态）
+// ---------------------------------------------------------------------------
 
 /// 字段排名维度筛选 Provider
 ///
@@ -18,7 +23,7 @@ final fieldRankingDimensionProvider =
     StateProvider<FieldRankingDimension>((ref) => FieldRankingDimension.weather);
 
 /// 月度图表状态筛选 Provider
-/// 
+///
 /// null = 全部状态，非 null = 仅显示该状态
 final monthlyStatusFilterProvider = StateProvider<EncounterStatus?>((ref) => null);
 
@@ -35,169 +40,126 @@ final successRateChartRangeProvider =
     StateProvider<StatisticsChartRange>((ref) => StatisticsChartRange.last12Months);
 
 /// 状态统计视图模式 Provider
-/// 
+///
 /// true = 列表视图，false = 饼图视图
 final statusViewModeProvider = StateProvider<bool>((ref) => true);
 
-/// 基础统计 Provider
-/// 
-/// 职责：
-/// - 依赖 recordsProvider，自动响应数据变化
-/// - 计算基础统计数据
-/// - 支持异步加载和错误处理
-/// 
-/// 设计原则：
-/// - 单一职责：只负责基础统计的状态管理
-/// - 自动响应：监听 recordsProvider 变化，自动重新计算
-/// - 依赖倒置：依赖 StatisticsService，不依赖具体的计算逻辑
-/// 
-/// 调用者：
-/// - StatisticsPage：UI 层
-/// - AdvancedStatisticsProvider：高级统计依赖
-final basicStatisticsProvider = FutureProvider<BasicStatistics>((ref) async {
-  final recordsAsync = ref.watch(recordsProvider);
+// ---------------------------------------------------------------------------
+// Infrastructure Providers
+// ---------------------------------------------------------------------------
 
-  final records = await recordsAsync.when(
-    data: (data) async => data,
-    loading: () async => throw Exception('Records loading'),
-    error: (error, stack) async => throw error,
+/// 本地统计数据源 Provider
+final _localStatisticsDataSourceProvider = Provider<LocalStatisticsDataSource>((ref) {
+  return LocalStatisticsDataSource(
+    storage: ref.read(storageServiceProvider),
+    checkInRepository: ref.read(checkInRepositoryProvider),
   );
-
-  return StatisticsService.calculateBasicStatistics(records);
 });
 
+/// 远端统计数据源 Provider
+final _remoteStatisticsDataSourceProvider = Provider<RemoteStatisticsDataSource>((ref) {
+  return RemoteStatisticsDataSource(
+    httpClient: ref.read(httpClientServiceProvider),
+  );
+});
+
+/// 统计仓储 Provider
+///
+/// 统计层的唯一入口；所有统计 Provider 均通过此仓储获取数据。
+final statisticsRepositoryProvider = Provider<StatisticsRepository>((ref) {
+  return StatisticsRepository(
+    local: ref.read(_localStatisticsDataSourceProvider),
+    remote: ref.read(_remoteStatisticsDataSourceProvider),
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Data Providers
+// ---------------------------------------------------------------------------
+
 /// 统计页总览 Provider
-/// 
+///
 /// 职责：
-/// - 聚合记录基础统计与故事线数量
-/// - 为统计页基础区提供展示所需数据
-/// 
+/// - 通过 StatisticsRepository 获取总览数据
+/// - 注入账号级字段（registeredAt、favorites）
+/// - 自动响应 recordsProvider、storyLinesProvider、checkInProvider、
+///   favoritesProvider、authProvider 的变化
+///
 /// 设计原则：
-/// - 聚合职责留在 Provider 层，不污染统计服务
-/// - 自动响应 recordsProvider 与 storyLinesProvider 的变化
+/// - Provider 层不做聚合计算，只负责依赖编排与参数准备
+/// - 账号级字段由 Provider 层从对应 Provider 读取后注入 Repository
 final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) async {
-  final basic = await ref.watch(basicStatisticsProvider.future);
-  final recordsAsync = ref.watch(recordsProvider);
-  final storyLinesAsync = ref.watch(storyLinesProvider);
-  final checkInAsync = ref.watch(checkInProvider.future);
+  // 监听所有依赖，任意变化时自动重算
+  ref.watch(recordsProvider);
+  ref.watch(syncCompletedProvider);
+
   final currentUser = ref.watch(authProvider).value;
-  final checkInRepository = ref.read(checkInRepositoryProvider);
+  final repository = ref.read(statisticsRepositoryProvider);
 
-  final records = await recordsAsync.when(
-    data: (data) async => data,
-    loading: () async => throw Exception('Records loading'),
-    error: (error, stack) async => throw error,
-  );
-
-  final storyLines = await storyLinesAsync.when(
-    data: (data) async => data,
-    loading: () async => throw Exception('Story lines loading'),
-    error: (error, stack) async => throw error,
-  );
-
-  final linkedRecordCount = records.where((record) {
-    final storyLineId = record.storyLineId;
-    return storyLineId != null && storyLineId.isNotEmpty;
-  }).length;
-  final unlinkedRecordCount = records.length - linkedRecordCount;
-  final totalRecords = records.length;
-  final linkedRecordPercentage =
-      totalRecords == 0 ? 0.0 : (linkedRecordCount / totalRecords) * 100;
-  final unlinkedRecordPercentage =
-      totalRecords == 0 ? 0.0 : (unlinkedRecordCount / totalRecords) * 100;
-
-  final pinnedRecords = records.where((record) => record.isPinned).toList();
-  final pinnedRecordCount = pinnedRecords.length;
-  final pinnedStoryLineCount =
-      storyLines.where((storyLine) => storyLine.isPinned).length;
-
-  final checkInState = await checkInAsync;
-  final checkInDateRange =
-      checkInRepository.getCheckInDateRange(userId: currentUser?.id);
-  final longestCheckInStreak =
-      checkInRepository.calculateLongestConsecutiveStreak(userId: currentUser?.id);
-
+  // 收藏数据：仅登录后可用
   int favoritedRecordCount = 0;
   int favoritedPostCount = 0;
-  final favoritesAvailable = currentUser != null;
-  if (favoritesAvailable) {
-    final favoritesState = await ref.watch(favoritesProvider.future);
-    favoritedRecordCount = favoritesState.favoritedRecordIds.length;
-    favoritedPostCount = favoritesState.favoritedPosts.length;
+  if (currentUser != null) {
+    try {
+      final favoritesState = await ref.watch(favoritesProvider.future);
+      favoritedRecordCount = favoritesState.favoritedRecordIds.length;
+      favoritedPostCount = favoritesState.favoritedPosts.length;
+    } catch (_) {
+      // 收藏加载失败不影响统计总览展示
+    }
   }
 
-  return StatisticsOverview(
-    basic: basic,
-    storyLineCount: storyLines.length,
-    linkedRecordCount: linkedRecordCount,
-    unlinkedRecordCount: unlinkedRecordCount,
-    linkedRecordPercentage: linkedRecordPercentage,
-    unlinkedRecordPercentage: unlinkedRecordPercentage,
-    registeredAt: currentUser?.createdAt,
-    totalCheckInDays: checkInState.totalDays,
-    totalCheckInStartDate: checkInDateRange.startDate,
-    totalCheckInEndDate: checkInDateRange.endDate,
-    longestCheckInStreakDays: longestCheckInStreak.days,
-    longestCheckInStreakStartDate: longestCheckInStreak.startDate,
-    longestCheckInStreakEndDate: longestCheckInStreak.endDate,
-    favoritesAvailable: favoritesAvailable,
+  return repository.getOverview(
+    currentUser: currentUser,
     favoritedRecordCount: favoritedRecordCount,
     favoritedPostCount: favoritedPostCount,
-    pinnedRecordCount: pinnedRecordCount,
-    pinnedStoryLineCount: pinnedStoryLineCount,
   );
+});
+
+/// 基础统计 Provider
+///
+/// 提供 BasicStatistics 供不需要完整 StatisticsOverview 的场景使用。
+/// 依赖 statisticsOverviewProvider，避免重复计算。
+final basicStatisticsProvider = FutureProvider<BasicStatistics>((ref) async {
+  final overview = await ref.watch(statisticsOverviewProvider.future);
+  return overview.basic;
 });
 
 /// 高级统计 Provider（会员版）
-/// 
+///
 /// 职责：
-/// - 依赖 basicStatisticsProvider 和 membershipProvider
-/// - 计算高级统计数据（仅会员可用）
-/// - 支持异步加载和错误处理
-/// 
+/// - 会员权限检查（非会员返回 null）
+/// - 通过 StatisticsRepository 获取图表数据
+/// - 自动响应 recordsProvider 与 membershipProvider 的变化
+///
 /// 设计原则：
-/// - 单一职责：只负责高级统计的状态管理
-/// - 权限检查：检查用户是否为会员，非会员返回 null
-/// - 自动响应：监听 recordsProvider 和 membershipProvider 变化
-/// 
-/// 调用者：
-/// - StatisticsPage：UI 层（会员功能部分）
+/// - 权限门控留在 Provider 层，Repository 层不感知会员状态
 final advancedStatisticsProvider = FutureProvider<AdvancedStatistics?>((ref) async {
   final membershipAsync = ref.watch(membershipProvider);
 
-  final isPremium = AppConfig.isDeveloperMode || await membershipAsync.when(
-    data: (membership) async => membership.isPremium,
-    loading: () async => false,
-    error: (error, stackTrace) async => false,
-  );
+  final isPremium = AppConfig.isDeveloperMode ||
+      await membershipAsync.when(
+        data: (m) async => m.isPremium,
+        loading: () async => false,
+        error: (_, _) async => false,
+      );
 
-  if (!isPremium) {
-    return null;
-  }
+  if (!isPremium) return null;
 
-  final recordsAsync = ref.watch(recordsProvider);
+  // 监听记录变化，记录更新时自动重算图表
+  ref.watch(recordsProvider);
+  ref.watch(syncCompletedProvider);
 
-  final records = await recordsAsync.when(
-    data: (data) async => data,
-    loading: () async => throw Exception('Records loading'),
-    error: (error, stack) async => throw error,
-  );
+  final currentUser = ref.watch(authProvider).value;
+  final repository = ref.read(statisticsRepositoryProvider);
 
-  return StatisticsService.calculateAdvancedStatistics(records);
+  return repository.getAdvancedStatistics(currentUser: currentUser);
 });
 
 /// 基础统计摘要 Provider
-/// 
-/// 职责：
-/// - 提供统计数据的简化版本（用于卡片展示）
-/// - 包含：总数、各状态数、成功率
-/// 
-/// 设计原则：
-/// - 单一职责：只提供摘要数据，不提供完整统计
-/// - 性能优化：避免重复计算，直接依赖 basicStatisticsProvider
-/// 
-/// 调用者：
-/// - StatisticsPage：UI 层（摘要卡片）
+///
+/// 提供统计数据的简化版本（总数、各状态数、成功率），
+/// 直接复用 basicStatisticsProvider，避免重复计算。
 final statisticsSummaryProvider = FutureProvider<({
   int total,
   int met,
@@ -205,7 +167,6 @@ final statisticsSummaryProvider = FutureProvider<({
   double successRate,
 })>((ref) async {
   final stats = await ref.watch(basicStatisticsProvider.future);
-
   return (
     total: stats.totalRecords,
     met: stats.metCount,

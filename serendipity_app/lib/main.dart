@@ -22,8 +22,8 @@ import 'models/user.dart' as app_user;
 import 'models/achievement.dart';
 import 'models/check_in_record.dart';
 import 'models/sync_history.dart';
-import 'dev_tools/clear_all_data.dart'; // 🧹 开发工具
-import 'dev_tools/create_test_records.dart'; // 📝 创建测试记录
+// import 'dev_tools/clear_all_data.dart'; // 🧹 开发工具
+// import 'dev_tools/create_test_records.dart'; // 📝 创建测试记录
 
 void main() async {
   // 确保 Flutter 绑定初始化
@@ -32,7 +32,7 @@ void main() async {
   // 🧹 开发工具：清空所有数据（测试用）
   // await clearAllData();
   // return; // 清空完后直接退出，不启动 app
-  
+
   // 📝 开发工具：创建测试记录（测试用）
   // await createTestRecords();
   // return; // 创建完后直接退出，不启动 app

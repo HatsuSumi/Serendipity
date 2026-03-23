@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 
 import '../../../core/providers/statistics_provider.dart';
 import '../../../core/utils/dialog_helper.dart';
-import '../../../models/enums.dart';
 import '../../../models/statistics.dart';
 
 class BasicStatisticsSection extends ConsumerWidget {

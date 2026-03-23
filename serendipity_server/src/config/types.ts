@@ -38,7 +38,14 @@ export const TYPES = {
   AchievementUnlockService:      Symbol.for('achievementUnlockService'),
   FavoriteService:               Symbol.for('favoriteService'),
 
+  // Repositories (Statistics)
+  StatisticsRepository:          Symbol.for('statisticsRepository'),
+
+  // Domain Services (Statistics)
+  StatisticsService:             Symbol.for('statisticsService'),
+
   // Controllers
+  StatisticsController:          Symbol.for('statisticsController'),
   AuthController:                Symbol.for('authController'),
   RecordController:              Symbol.for('recordController'),
   StoryLineController:           Symbol.for('storyLineController'),

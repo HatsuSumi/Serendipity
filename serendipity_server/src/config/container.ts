@@ -26,6 +26,9 @@ import { AchievementUnlockController } from '../controllers/achievementUnlockCon
 import { FavoriteRepository } from '../repositories/favoriteRepository';
 import { FavoriteService } from '../services/favoriteService';
 import { FavoriteController } from '../controllers/favoriteController';
+import { StatisticsRepository } from '../repositories/statisticsRepository';
+import { StatisticsService } from '../services/statisticsService';
+import { StatisticsController } from '../controllers/statisticsController';
 import { RecordService } from '../services/recordService';
 import { StoryLineService } from '../services/storyLineService';
 import { CommunityPostService } from '../services/communityPostService';
@@ -170,6 +173,7 @@ export const initializeContainer = (): Container => {
   const checkInRepository = new CheckInRepository(prisma);
   const achievementUnlockRepository = new AchievementUnlockRepository(prisma);
   const favoriteRepository = new FavoriteRepository(prisma);
+  const statisticsRepository = new StatisticsRepository(prisma);
 
   container.register(TYPES.UserRepository, userRepository);
   container.register(TYPES.RefreshTokenRepository, refreshTokenRepository);
@@ -182,6 +186,7 @@ export const initializeContainer = (): Container => {
   container.register(TYPES.CheckInRepository, checkInRepository);
   container.register(TYPES.AchievementUnlockRepository, achievementUnlockRepository);
   container.register(TYPES.FavoriteRepository, favoriteRepository);
+  container.register(TYPES.StatisticsRepository, statisticsRepository);
 
   // 初始化 Services
   const verificationService = new VerificationService(verificationCodeRepository);
@@ -198,6 +203,7 @@ export const initializeContainer = (): Container => {
   const checkInService = new CheckInService(checkInRepository);
   const achievementUnlockService = new AchievementUnlockService(achievementUnlockRepository);
   const favoriteService = new FavoriteService(favoriteRepository, communityPostRepository, recordRepository);
+  const statisticsService = new StatisticsService(statisticsRepository);
 
   container.register(TYPES.VerificationService, verificationService);
   container.register(TYPES.AuthService, authService);
@@ -208,6 +214,7 @@ export const initializeContainer = (): Container => {
   container.register(TYPES.CheckInService, checkInService);
   container.register(TYPES.AchievementUnlockService, achievementUnlockService);
   container.register(TYPES.FavoriteService, favoriteService);
+  container.register(TYPES.StatisticsService, statisticsService);
 
   // 初始化 Controllers
   const authController = new AuthController(authService, verificationService);
@@ -218,6 +225,7 @@ export const initializeContainer = (): Container => {
   const checkInController = new CheckInController(checkInService);
   const achievementUnlockController = new AchievementUnlockController(achievementUnlockService);
   const favoriteController = new FavoriteController(favoriteService);
+  const statisticsController = new StatisticsController(statisticsService);
 
   container.register(TYPES.AuthController, authController);
   container.register(TYPES.RecordController, recordController);
@@ -227,6 +235,7 @@ export const initializeContainer = (): Container => {
   container.register(TYPES.CheckInController, checkInController);
   container.register(TYPES.AchievementUnlockController, achievementUnlockController);
   container.register(TYPES.FavoriteController, favoriteController);
+  container.register(TYPES.StatisticsController, statisticsController);
 
   return container;
 };
