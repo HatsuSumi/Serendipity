@@ -363,7 +363,7 @@ class _BasicStatisticsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildBasicStatistics(BuildContext context, dynamic stats) {
+  Widget _buildBasicStatistics(BuildContext context, BasicStatistics stats) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -390,7 +390,7 @@ class _BasicStatisticsCard extends ConsumerWidget {
 
 /// 状态统计卡片（列表/饼图可切换）
 class _StatusStatisticsCard extends ConsumerWidget {
-  final dynamic stats;
+  final BasicStatistics stats;
 
   const _StatusStatisticsCard({required this.stats});
 
@@ -400,13 +400,13 @@ class _StatusStatisticsCard extends ConsumerWidget {
     final isListMode = ref.watch(statusViewModeProvider);
 
     final counts = <int>[
-      stats.missedCount as int,
-      stats.avoidCount as int,
-      stats.reencounterCount as int,
-      stats.metCount as int,
-      stats.reunionCount as int,
-      stats.farewellCount as int,
-      stats.lostCount as int,
+      stats.missedCount,
+      stats.avoidCount,
+      stats.reencounterCount,
+      stats.metCount,
+      stats.reunionCount,
+      stats.farewellCount,
+      stats.lostCount,
     ];
 
     return Container(
@@ -692,7 +692,7 @@ class _StatusLine extends StatelessWidget {
 
 /// 成功率和地点时间卡片（合并）
 class _SuccessRateCard extends StatelessWidget {
-  final dynamic stats;
+  final BasicStatistics stats;
 
   const _SuccessRateCard({required this.stats});
 
@@ -1045,7 +1045,7 @@ class _AdvancedStatisticsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildAdvancedStatistics(BuildContext context, dynamic stats) {
+  Widget _buildAdvancedStatistics(BuildContext context, AdvancedStatistics stats) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1095,7 +1095,7 @@ class _AdvancedStatisticsCard extends ConsumerWidget {
 
 /// 标签词云卡片
 class _TagCloudCard extends StatelessWidget {
-  final List<dynamic> tagCloud;
+  final List<TagCloudItem> tagCloud;
 
   const _TagCloudCard({required this.tagCloud});
 
@@ -1175,7 +1175,7 @@ class _TagCloudCard extends StatelessWidget {
 
 /// 月度记录数图表卡片（会员版）
 class _MonthlyChartCard extends ConsumerWidget {
-  final Map<dynamic, dynamic> monthlyDistributionByRange;
+  final Map<StatisticsChartRange, Map<EncounterStatus?, List<MonthlyRecord>>> monthlyDistributionByRange;
 
   const _MonthlyChartCard({required this.monthlyDistributionByRange});
 
@@ -1209,21 +1209,21 @@ class _MonthlyChartCard extends ConsumerWidget {
     final selectedStatus = ref.watch(monthlyStatusFilterProvider);
     final chartRange = ref.watch(monthlyChartRangeProvider);
     final monthlyDistribution =
-        (monthlyDistributionByRange[chartRange] as Map?) ?? const {};
-    final records = (monthlyDistribution[selectedStatus] as List?) ?? [];
+        monthlyDistributionByRange[chartRange] ?? const {};
+    final records = monthlyDistribution[selectedStatus] ?? const <MonthlyRecord>[];
     final isAllRange = chartRange == StatisticsChartRange.all;
     final monthLabelStep = _buildMonthLabelStep(records.length);
     final chartWidth = _buildChartWidth(records.length);
 
     final spots = <FlSpot>[];
     for (int i = 0; i < records.length; i++) {
-      spots.add(FlSpot(i.toDouble(), (records[i].count as int).toDouble()));
+      spots.add(FlSpot(i.toDouble(), records[i].count.toDouble()));
     }
 
     final maxY = records.isEmpty
         ? 5.0
         : records
-                  .map((r) => (r.count as int).toDouble())
+                  .map((r) => r.count.toDouble())
                   .reduce((a, b) => a > b ? a : b)
                   .clamp(1.0, double.infinity) *
               1.3;
@@ -1349,7 +1349,7 @@ class _MonthlyChartCard extends ConsumerWidget {
 
           if (isAllRange)
             _MonthlyRecordTable(
-              records: records.cast<dynamic>(),
+              records: records,
               colorScheme: colorScheme,
             )
           else
@@ -1474,7 +1474,7 @@ class _MonthlyChartCard extends ConsumerWidget {
 }
 
 class _MonthlyRecordTable extends StatelessWidget {
-  final List<dynamic> records;
+  final List<MonthlyRecord> records;
   final ColorScheme colorScheme;
 
   const _MonthlyRecordTable({
@@ -1497,7 +1497,7 @@ class _MonthlyRecordTable extends StatelessWidget {
     }
 
     final maxCount = records
-        .map((record) => (record.count as int))
+        .map((record) => record.count)
         .reduce((a, b) => a > b ? a : b);
     final headerStyle = TextStyle(
       fontSize: 11,
@@ -1536,7 +1536,7 @@ class _MonthlyRecordTable extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ...records.reversed.map((record) {
-          final count = record.count as int;
+          final count = record.count;
           final ratio = maxCount == 0 ? 0.0 : count / maxCount;
           final monthLabel =
               '${record.year}/${record.month.toString().padLeft(2, '0')}';
@@ -1601,7 +1601,7 @@ class _MonthlyRecordTable extends StatelessWidget {
 
 /// 情绪强度分布卡片
 class _EmotionIntensityCard extends StatelessWidget {
-  final List<dynamic> distribution;
+  final List<EmotionIntensityItem> distribution;
 
   const _EmotionIntensityCard({required this.distribution});
 
@@ -1626,7 +1626,7 @@ class _EmotionIntensityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final total = distribution.fold<int>(
-        0, (sum, item) => sum + (item.count as int));
+        0, (sum, item) => sum + item.count);
 
     return Container(
       decoration: BoxDecoration(
@@ -1664,7 +1664,7 @@ class _EmotionIntensityCard extends StatelessWidget {
                 BarChartData(
                   alignment: BarChartAlignment.spaceAround,
                   maxY: distribution
-                          .map((e) => (e.count as int).toDouble())
+                          .map((e) => e.count.toDouble())
                           .reduce((a, b) => a > b ? a : b) *
                       1.25,
                   barTouchData: BarTouchData(
@@ -1694,7 +1694,7 @@ class _EmotionIntensityCard extends StatelessWidget {
                           if (idx < 0 || idx >= distribution.length) {
                             return const SizedBox.shrink();
                           }
-                          final count = distribution[idx].count as int;
+                          final count = distribution[idx].count;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 4),
                             child: Text(
@@ -1743,7 +1743,7 @@ class _EmotionIntensityCard extends StatelessWidget {
                   ),
                   borderData: FlBorderData(show: false),
                   barGroups: List.generate(distribution.length, (i) {
-                    final count = (distribution[i].count as int).toDouble();
+                    final count = distribution[i].count.toDouble();
                     return BarChartGroupData(
                       x: i,
                       barRods: [
@@ -1757,7 +1757,7 @@ class _EmotionIntensityCard extends StatelessWidget {
                           backDrawRodData: BackgroundBarChartRodData(
                             show: true,
                             toY: distribution
-                                    .map((e) => (e.count as int).toDouble())
+                                    .map((e) => e.count.toDouble())
                                     .reduce((a, b) => a > b ? a : b) *
                                 1.25,
                             color: colorScheme.outline
@@ -1782,7 +1782,7 @@ class _EmotionIntensityCard extends StatelessWidget {
 
 /// 天气分布卡片
 class _WeatherDistributionCard extends StatelessWidget {
-  final List<dynamic> distribution;
+  final List<WeatherDistributionItem> distribution;
 
   const _WeatherDistributionCard({required this.distribution});
 
@@ -1821,8 +1821,8 @@ class _WeatherDistributionCard extends StatelessWidget {
             )
           else
             ...distribution.take(8).map((item) {
-              final maxCount = (distribution.first.count as int);
-              final count = item.count as int;
+              final maxCount = distribution.first.count;
+              final count = item.count;
               final ratio = maxCount == 0 ? 0.0 : count / maxCount;
               final weather = item.weather;
               return Padding(
@@ -1888,7 +1888,7 @@ class _WeatherDistributionCard extends StatelessWidget {
 
 /// 场所类型分布卡片
 class _PlaceTypeDistributionCard extends StatelessWidget {
-  final List<dynamic> distribution;
+  final List<PlaceTypeDistributionItem> distribution;
 
   const _PlaceTypeDistributionCard({required this.distribution});
 
@@ -1927,8 +1927,8 @@ class _PlaceTypeDistributionCard extends StatelessWidget {
             )
           else
             ...distribution.map((item) {
-              final maxCount = (distribution.first.count as int);
-              final count = item.count as int;
+              final maxCount = distribution.first.count;
+              final count = item.count;
               final ratio = maxCount == 0 ? 0.0 : count / maxCount;
               final placeType = item.placeType;
               return Padding(
@@ -1991,7 +1991,7 @@ class _PlaceTypeDistributionCard extends StatelessWidget {
 
 /// 成功率趋势卡片
 class _SuccessRateTrendCard extends ConsumerWidget {
-  final Map<dynamic, dynamic> monthlySuccessRatesByRange;
+  final Map<StatisticsChartRange, List<MonthlySuccessRate>> monthlySuccessRatesByRange;
 
   const _SuccessRateTrendCard({required this.monthlySuccessRatesByRange});
 
@@ -2015,7 +2015,7 @@ class _SuccessRateTrendCard extends ConsumerWidget {
     final currentYear = now.year;
     final chartRange = ref.watch(successRateChartRangeProvider);
     final monthlySuccessRates =
-        (monthlySuccessRatesByRange[chartRange] as List?) ?? const [];
+        monthlySuccessRatesByRange[chartRange] ?? const <MonthlySuccessRate>[];
     final isAllRange = chartRange == StatisticsChartRange.all;
     final monthLabelStep = _buildMonthLabelStep(monthlySuccessRates.length);
     final chartWidth = _buildChartWidth(monthlySuccessRates.length);
@@ -2024,12 +2024,12 @@ class _SuccessRateTrendCard extends ConsumerWidget {
     for (int i = 0; i < monthlySuccessRates.length; i++) {
       spots.add(FlSpot(
         i.toDouble(),
-        (monthlySuccessRates[i].successRate as double),
+        monthlySuccessRates[i].successRate,
       ));
     }
 
     final hasData = monthlySuccessRates.any(
-      (r) => (r.successRate as double) > 0,
+      (r) => r.successRate > 0,
     );
 
     return Container(
@@ -2181,7 +2181,7 @@ class _SuccessRateTrendCard extends ConsumerWidget {
                                         return const SizedBox.shrink();
                                       }
                                       final r = monthlySuccessRates[idx];
-                                      final label = (r.year as int) == currentYear
+                                      final label = r.year == currentYear
                                           ? '${r.month}月'
                                           : '${r.year}/${r.month}';
                                       return Padding(

@@ -31,7 +31,6 @@ class StatisticsService {
   /// 设计说明：
   /// - 循环不变量前置：所有与单条记录无关的计算在循环外完成
   /// - 一次遍历：只遍历一次记录列表，计算所有统计指标
-  /// - 地点聚类：GPS < 100米范围内算同一地点
   /// - 时间统计：按小时统计，找出频率最高的时间段
   static BasicStatistics calculateBasicStatistics(List<EncounterRecord> records) {
     // Fail Fast：空列表直接返回默认值
@@ -237,7 +236,7 @@ class StatisticsService {
 
   /// 计算高级统计数据（会员版）
   ///
-  /// 包含：基础统计 + 标签词云 + 月度分布 + 地点分布
+  /// 包含：基础统计 + 标签词云 + 月度分布
   ///      + 情绪强度分布 + 天气分布 + 场所类型分布 + 月度成功率
   static AdvancedStatistics calculateAdvancedStatistics(List<EncounterRecord> records) {
     // 1. 计算基础统计
@@ -252,32 +251,28 @@ class StatisticsService {
         range: _calculateMonthlyDistribution(records, chartRange: range),
     };
 
-    // 4. 计算地点分布（前5个）
-    final topPlaces = _calculateTopPlaces(records);
-
-    // 5. 情绪强度分布
+    // 4. 情绪强度分布
     final emotionIntensityDistribution = _calculateEmotionIntensityDistribution(records);
 
-    // 6. 天气分布
+    // 5. 天气分布
     final weatherDistribution = _calculateWeatherDistribution(records);
 
-    // 7. 场所类型分布（前8）
+    // 6. 场所类型分布（前8）
     final placeTypeDistribution = _calculatePlaceTypeDistribution(records);
 
-    // 8. 月度成功率趋势（按时间范围缓存）
+    // 7. 月度成功率趋势（按时间范围缓存）
     final monthlySuccessRatesByRange = {
       for (final range in StatisticsChartRange.values)
         range: _calculateMonthlySuccessRates(records, chartRange: range),
     };
 
-    // 9. 字段完整排名表格
+    // 8. 字段完整排名表格
     final fieldRankings = _calculateFieldRankings(records, tagCloud);
 
     return AdvancedStatistics(
       basic: basic,
       tagCloud: tagCloud,
       monthlyDistributionByRange: monthlyDistributionByRange,
-      topPlaces: topPlaces,
       emotionIntensityDistribution: emotionIntensityDistribution,
       weatherDistribution: weatherDistribution,
       placeTypeDistribution: placeTypeDistribution,
@@ -379,84 +374,6 @@ class StatisticsService {
     items.sort((a, b) => b.count.compareTo(a.count));
 
     return items;
-  }
-
-  /// 计算地点分布（前5个最常错过的地点）
-  /// 
-  /// 设计说明：
-  /// - 按记录数从高到低排序
-  /// - 返回前5个地点
-  /// - 地点名称优先级：address > placeName > placeType.label > "未知地点"
-  static List<PlaceDistributionItem> _calculateTopPlaces(List<EncounterRecord> records) {
-    if (records.isEmpty) {
-      return [];
-    }
-
-    // 地点聚类：Map<地点标识, (地点名称, 场所类型, 记录数)>
-    final Map<String, (String, PlaceType?, int)> placeCluster = {};
-
-    for (final record in records) {
-      // 生成地点标识（GPS坐标或地点名称）
-      String placeKey;
-      String placeName;
-      PlaceType? placeType = record.location.placeType;
-
-      if (record.location.latitude != null && record.location.longitude != null) {
-        // 有 GPS 坐标，使用坐标作为标识
-        final lat = (record.location.latitude! * 10).round() / 10;
-        final lng = (record.location.longitude! * 10).round() / 10;
-        placeKey = '$lat,$lng';
-        
-        // 地点名称优先级：address > placeName > placeType.label > "未知地点"
-        if (record.location.address != null && record.location.address!.isNotEmpty) {
-          placeName = record.location.address!;
-        } else if (record.location.placeName != null && record.location.placeName!.isNotEmpty) {
-          placeName = record.location.placeName!;
-        } else if (placeType != null) {
-          placeName = placeType.label;
-        } else {
-          placeName = '未知地点';
-        }
-      } else {
-        // 无 GPS 坐标，使用地点名称或场所类型作为标识
-        if (record.location.placeName != null && record.location.placeName!.isNotEmpty) {
-          placeKey = record.location.placeName!;
-          placeName = record.location.placeName!;
-        } else if (placeType != null) {
-          placeKey = placeType.label;
-          placeName = placeType.label;
-        } else {
-          placeKey = '未知地点';
-          placeName = '未知地点';
-        }
-      }
-
-      // 聚类
-      if (placeCluster.containsKey(placeKey)) {
-        final (name, type, count) = placeCluster[placeKey]!;
-        placeCluster[placeKey] = (name, type, count + 1);
-      } else {
-        placeCluster[placeKey] = (placeName, placeType, 1);
-      }
-    }
-
-    // 转换为 PlaceDistributionItem 并排序
-    final items = placeCluster.entries
-        .map((entry) {
-          final (placeName, placeType, count) = entry.value;
-          return PlaceDistributionItem(
-            placeName: placeName,
-            count: count,
-            placeType: placeType,
-          );
-        })
-        .toList();
-
-    // 按记录数从高到低排序
-    items.sort((a, b) => b.count.compareTo(a.count));
-
-    // 返回前5个
-    return items.take(5).toList();
   }
 
   /// 计算情绪强度分布

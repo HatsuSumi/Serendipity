@@ -329,45 +329,6 @@ class MonthlySuccessRate {
       totalCount.hashCode;
 }
 
-// ---------------------------------------------------------------------------
-// 地点分布
-// ---------------------------------------------------------------------------
-
-/// 地点分布数据项
-class PlaceDistributionItem {
-  /// 地点名称
-  final String placeName;
-
-  /// 该地点的记录数
-  final int count;
-
-  /// 场所类型（如果有）
-  final PlaceType? placeType;
-
-  const PlaceDistributionItem({
-    required this.placeName,
-    required this.count,
-    this.placeType,
-  });
-
-  @override
-  String toString() =>
-      'PlaceDistributionItem(placeName: $placeName, count: $count)';
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is PlaceDistributionItem &&
-        other.placeName == placeName &&
-        other.count == count &&
-        other.placeType == placeType;
-  }
-
-  @override
-  int get hashCode =>
-      placeName.hashCode ^ count.hashCode ^ placeType.hashCode;
-}
-
 enum StatisticsChartRange {
   last12Months('近12个月'),
   all('全部');
@@ -455,9 +416,6 @@ class AdvancedStatistics {
   final Map<StatisticsChartRange, Map<EncounterStatus?, List<MonthlyRecord>>>
       monthlyDistributionByRange;
 
-  /// 地点分布（前5个最常错过的地点）
-  final List<PlaceDistributionItem> topPlaces;
-
   /// 情绪强度分布（强度1-5，按强度正序，共5条）
   final List<EmotionIntensityItem> emotionIntensityDistribution;
 
@@ -478,7 +436,6 @@ class AdvancedStatistics {
     required this.basic,
     required this.tagCloud,
     required this.monthlyDistributionByRange,
-    required this.topPlaces,
     required this.emotionIntensityDistribution,
     required this.weatherDistribution,
     required this.placeTypeDistribution,
@@ -488,8 +445,7 @@ class AdvancedStatistics {
 
   @override
   String toString() =>
-      'AdvancedStatistics(basic: $basic, tagCloud: ${tagCloud.length}, '
-      'topPlaces: ${topPlaces.length})';
+      'AdvancedStatistics(basic: $basic, tagCloud: ${tagCloud.length})';
 
   @override
   bool operator ==(Object other) {
@@ -498,7 +454,6 @@ class AdvancedStatistics {
         other.basic == basic &&
         other.tagCloud == tagCloud &&
         other.monthlyDistributionByRange == monthlyDistributionByRange &&
-        other.topPlaces == topPlaces &&
         other.emotionIntensityDistribution == emotionIntensityDistribution &&
         other.weatherDistribution == weatherDistribution &&
         other.placeTypeDistribution == placeTypeDistribution &&
@@ -511,7 +466,6 @@ class AdvancedStatistics {
       basic.hashCode ^
       tagCloud.hashCode ^
       monthlyDistributionByRange.hashCode ^
-      topPlaces.hashCode ^
       emotionIntensityDistribution.hashCode ^
       weatherDistribution.hashCode ^
       placeTypeDistribution.hashCode ^
