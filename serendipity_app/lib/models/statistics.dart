@@ -129,6 +129,9 @@ class StatisticsOverview {
   /// 已收藏的记录数量
   final int favoritedRecordCount;
 
+  /// 已收藏的帖子数量
+  final int favoritedPostCount;
+
   /// 已置顶的记录总数
   final int pinnedRecordCount;
 
@@ -144,6 +147,7 @@ class StatisticsOverview {
     required this.unlinkedRecordPercentage,
     required this.favoritesAvailable,
     required this.favoritedRecordCount,
+    required this.favoritedPostCount,
     required this.pinnedRecordCount,
     required this.pinnedStoryLineCount,
   });

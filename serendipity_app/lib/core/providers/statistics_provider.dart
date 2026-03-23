@@ -108,10 +108,12 @@ final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) asyn
       storyLines.where((storyLine) => storyLine.isPinned).length;
 
   int favoritedRecordCount = 0;
+  int favoritedPostCount = 0;
   final favoritesAvailable = currentUser != null;
   if (favoritesAvailable) {
     final favoritesState = await ref.watch(favoritesProvider.future);
     favoritedRecordCount = favoritesState.favoritedRecordIds.length;
+    favoritedPostCount = favoritesState.favoritedPosts.length;
   }
 
   return StatisticsOverview(
@@ -123,6 +125,7 @@ final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) asyn
     unlinkedRecordPercentage: unlinkedRecordPercentage,
     favoritesAvailable: favoritesAvailable,
     favoritedRecordCount: favoritedRecordCount,
+    favoritedPostCount: favoritedPostCount,
     pinnedRecordCount: pinnedRecordCount,
     pinnedStoryLineCount: pinnedStoryLineCount,
   );

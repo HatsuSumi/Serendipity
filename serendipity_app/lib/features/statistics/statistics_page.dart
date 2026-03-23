@@ -27,7 +27,7 @@ class StatisticsPage extends ConsumerWidget {
           children: [
             Icon(Icons.bar_chart_outlined, size: 24),
             const SizedBox(width: 8),
-            const Text('我的记录统计'),
+            const Text('我的数据统计'),
           ],
         ),
         centerTitle: true,

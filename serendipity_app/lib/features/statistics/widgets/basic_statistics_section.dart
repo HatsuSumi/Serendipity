@@ -35,7 +35,7 @@ class BasicStatisticsSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '记录统计',
+          '数据总览',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -126,20 +126,36 @@ class _OverviewSummaryCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _SummaryMetricTile(
-                icon: Icons.push_pin_rounded,
-                label: '已置顶记录',
-                value: '${overview.pinnedRecordCount}',
+                icon: Icons.forum_rounded,
+                label: '已收藏帖子',
+                value: '${overview.favoritedPostCount}',
+                subtitle: overview.favoritesAvailable ? null : '登录后可用',
                 colorScheme: colorScheme,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        _SummaryMetricTile(
-          icon: Icons.push_pin_rounded,
-          label: '已置顶故事线',
-          value: '${overview.pinnedStoryLineCount}',
-          colorScheme: colorScheme,
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.push_pin_rounded,
+                label: '已置顶记录',
+                value: '${overview.pinnedRecordCount}',
+                colorScheme: colorScheme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.push_pin_rounded,
+                label: '已置顶故事线',
+                value: '${overview.pinnedStoryLineCount}',
+                colorScheme: colorScheme,
+              ),
+            ),
+          ],
         ),
       ],
     );
