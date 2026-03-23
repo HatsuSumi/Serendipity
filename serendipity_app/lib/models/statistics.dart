@@ -103,6 +103,52 @@ class BasicStatistics {
       mostCommonWeather.hashCode;
 }
 
+/// 统计页总览数据
+class StatisticsOverview {
+  /// 记录维度基础统计
+  final BasicStatistics basic;
+
+  /// 故事线总数
+  final int storyLineCount;
+
+  /// 已关联故事线的记录数
+  final int linkedRecordCount;
+
+  /// 未关联故事线的记录数
+  final int unlinkedRecordCount;
+
+  /// 已关联故事线记录占比（0-100）
+  final double linkedRecordPercentage;
+
+  /// 未关联故事线记录占比（0-100）
+  final double unlinkedRecordPercentage;
+
+  /// 当前用户是否可查看收藏统计
+  final bool favoritesAvailable;
+
+  /// 已收藏的记录数量
+  final int favoritedRecordCount;
+
+  /// 已置顶的记录总数
+  final int pinnedRecordCount;
+
+  /// 已置顶的故事线数量
+  final int pinnedStoryLineCount;
+
+  const StatisticsOverview({
+    required this.basic,
+    required this.storyLineCount,
+    required this.linkedRecordCount,
+    required this.unlinkedRecordCount,
+    required this.linkedRecordPercentage,
+    required this.unlinkedRecordPercentage,
+    required this.favoritesAvailable,
+    required this.favoritedRecordCount,
+    required this.pinnedRecordCount,
+    required this.pinnedStoryLineCount,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // 标签词云
 // ---------------------------------------------------------------------------

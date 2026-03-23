@@ -3,8 +3,11 @@ import '../../models/statistics.dart';
 import '../../models/enums.dart';
 import '../config/app_config.dart';
 import '../services/statistics_service.dart';
+import 'auth_provider.dart';
+import 'favorites_provider.dart';
 import 'records_provider.dart';
 import 'membership_provider.dart';
+import 'story_lines_provider.dart';
 
 /// 字段排名维度筛选 Provider
 ///
@@ -59,6 +62,70 @@ final basicStatisticsProvider = FutureProvider<BasicStatistics>((ref) async {
   );
 
   return StatisticsService.calculateBasicStatistics(records);
+});
+
+/// 统计页总览 Provider
+/// 
+/// 职责：
+/// - 聚合记录基础统计与故事线数量
+/// - 为统计页基础区提供展示所需数据
+/// 
+/// 设计原则：
+/// - 聚合职责留在 Provider 层，不污染统计服务
+/// - 自动响应 recordsProvider 与 storyLinesProvider 的变化
+final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) async {
+  final basic = await ref.watch(basicStatisticsProvider.future);
+  final recordsAsync = ref.watch(recordsProvider);
+  final storyLinesAsync = ref.watch(storyLinesProvider);
+  final currentUser = ref.watch(authProvider).value;
+
+  final records = await recordsAsync.when(
+    data: (data) async => data,
+    loading: () async => throw Exception('Records loading'),
+    error: (error, stack) async => throw error,
+  );
+
+  final storyLines = await storyLinesAsync.when(
+    data: (data) async => data,
+    loading: () async => throw Exception('Story lines loading'),
+    error: (error, stack) async => throw error,
+  );
+
+  final linkedRecordCount = records.where((record) {
+    final storyLineId = record.storyLineId;
+    return storyLineId != null && storyLineId.isNotEmpty;
+  }).length;
+  final unlinkedRecordCount = records.length - linkedRecordCount;
+  final totalRecords = records.length;
+  final linkedRecordPercentage =
+      totalRecords == 0 ? 0.0 : (linkedRecordCount / totalRecords) * 100;
+  final unlinkedRecordPercentage =
+      totalRecords == 0 ? 0.0 : (unlinkedRecordCount / totalRecords) * 100;
+
+  final pinnedRecords = records.where((record) => record.isPinned).toList();
+  final pinnedRecordCount = pinnedRecords.length;
+  final pinnedStoryLineCount =
+      storyLines.where((storyLine) => storyLine.isPinned).length;
+
+  int favoritedRecordCount = 0;
+  final favoritesAvailable = currentUser != null;
+  if (favoritesAvailable) {
+    final favoritesState = await ref.watch(favoritesProvider.future);
+    favoritedRecordCount = favoritesState.favoritedRecordIds.length;
+  }
+
+  return StatisticsOverview(
+    basic: basic,
+    storyLineCount: storyLines.length,
+    linkedRecordCount: linkedRecordCount,
+    unlinkedRecordCount: unlinkedRecordCount,
+    linkedRecordPercentage: linkedRecordPercentage,
+    unlinkedRecordPercentage: unlinkedRecordPercentage,
+    favoritesAvailable: favoritesAvailable,
+    favoritedRecordCount: favoritedRecordCount,
+    pinnedRecordCount: pinnedRecordCount,
+    pinnedStoryLineCount: pinnedStoryLineCount,
+  );
 });
 
 /// 高级统计 Provider（会员版）

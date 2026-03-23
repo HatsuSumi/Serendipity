@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/statistics_provider.dart';
 import '../../../core/utils/dialog_helper.dart';
+import '../../../models/enums.dart';
 import '../../../models/statistics.dart';
 
 class BasicStatisticsSection extends ConsumerWidget {
@@ -11,10 +12,10 @@ class BasicStatisticsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final basicStatsAsync = ref.watch(basicStatisticsProvider);
+    final overviewAsync = ref.watch(statisticsOverviewProvider);
 
-    return basicStatsAsync.when(
-      data: (stats) => _buildBasicStatistics(context, stats),
+    return overviewAsync.when(
+      data: (overview) => _buildBasicStatistics(context, overview),
       loading: () => const Center(
         child: CircularProgressIndicator(),
       ),
@@ -24,7 +25,12 @@ class BasicStatisticsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildBasicStatistics(BuildContext context, BasicStatistics stats) {
+  Widget _buildBasicStatistics(
+    BuildContext context,
+    StatisticsOverview overview,
+  ) {
+    final stats = overview.basic;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -36,10 +42,167 @@ class BasicStatisticsSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
+        _OverviewSummaryCard(overview: overview),
+        const SizedBox(height: 16),
         _StatusStatisticsCard(stats: stats),
         const SizedBox(height: 16),
         _SuccessRateCard(stats: stats),
       ],
+    );
+  }
+}
+
+class _OverviewSummaryCard extends StatelessWidget {
+  final StatisticsOverview overview;
+
+  const _OverviewSummaryCard({required this.overview});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.receipt_long_rounded,
+                label: '记录数量',
+                value: '${overview.basic.totalRecords}',
+                colorScheme: colorScheme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.auto_stories_rounded,
+                label: '故事线数量',
+                value: '${overview.storyLineCount}',
+                colorScheme: colorScheme,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.link_rounded,
+                label: '已关联故事线记录',
+                value: '${overview.linkedRecordCount}',
+                subtitle:
+                    '${overview.linkedRecordPercentage.toStringAsFixed(1)}%',
+                colorScheme: colorScheme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.link_off_rounded,
+                label: '未关联故事线记录',
+                value: '${overview.unlinkedRecordCount}',
+                subtitle:
+                    '${overview.unlinkedRecordPercentage.toStringAsFixed(1)}%',
+                colorScheme: colorScheme,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.favorite_rounded,
+                label: '已收藏记录',
+                value: '${overview.favoritedRecordCount}',
+                subtitle: overview.favoritesAvailable ? null : '登录后可用',
+                colorScheme: colorScheme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.push_pin_rounded,
+                label: '已置顶记录',
+                value: '${overview.pinnedRecordCount}',
+                colorScheme: colorScheme,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _SummaryMetricTile(
+          icon: Icons.push_pin_rounded,
+          label: '已置顶故事线',
+          value: '${overview.pinnedStoryLineCount}',
+          colorScheme: colorScheme,
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryMetricTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String? subtitle;
+  final ColorScheme colorScheme;
+
+  const _SummaryMetricTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.subtitle,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: colorScheme.primary),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle!,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.primary,
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
