@@ -80,7 +80,7 @@ Serendipity/
 
 ### 后端
 - Node.js 20 LTS（运行环境）
-- Express 4.x（Web 框架）
+- Express 5.x（Web 框架）
 - TypeScript 5.x（类型安全）
 - Prisma（ORM）
 - PostgreSQL 15（数据库）

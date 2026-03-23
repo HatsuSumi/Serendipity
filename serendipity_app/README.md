@@ -1,16 +1,30 @@
-# serendipity_app
+# Serendipity App
 
-A new Flutter project.
+Serendipity 的 Flutter 客户端。
 
-## Getting Started
+## 技术栈
 
-This project is a starting point for a Flutter application.
+- Flutter 3.x
+- Dart 3.x
+- Riverpod 2.x
+- Hive
+- go_router
 
-A few resources to get you started if this is your first Flutter project:
+## 项目结构
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```text
+lib/
+├── core/       # 基础设施：providers、repositories、services、utils
+├── features/   # 按业务功能划分的页面与组件
+├── models/     # 数据模型
+└── main.dart   # 应用入口
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 常用命令
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter run
+```
