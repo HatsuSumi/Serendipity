@@ -133,6 +133,7 @@ final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) asyn
     unlinkedRecordCount: unlinkedRecordCount,
     linkedRecordPercentage: linkedRecordPercentage,
     unlinkedRecordPercentage: unlinkedRecordPercentage,
+    registeredAt: currentUser?.createdAt,
     totalCheckInDays: checkInState.totalDays,
     totalCheckInStartDate: checkInDateRange.startDate,
     totalCheckInEndDate: checkInDateRange.endDate,

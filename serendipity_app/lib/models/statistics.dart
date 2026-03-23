@@ -123,6 +123,9 @@ class StatisticsOverview {
   /// 未关联故事线记录占比（0-100）
   final double unlinkedRecordPercentage;
 
+  /// 账号注册时间
+  final DateTime? registeredAt;
+
   /// 累计签到天数
   final int totalCheckInDays;
 
@@ -163,6 +166,7 @@ class StatisticsOverview {
     required this.unlinkedRecordCount,
     required this.linkedRecordPercentage,
     required this.unlinkedRecordPercentage,
+    required this.registeredAt,
     required this.totalCheckInDays,
     required this.totalCheckInStartDate,
     required this.totalCheckInEndDate,

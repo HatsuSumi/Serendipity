@@ -59,6 +59,7 @@ class _OverviewSummaryCard extends StatelessWidget {
   const _OverviewSummaryCard({required this.overview});
 
   static final DateFormat _dateFormatter = DateFormat('yyyy/MM/dd');
+  static final DateFormat _dateTimeFormatter = DateFormat('yyyy/MM/dd HH:mm:ss');
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +68,13 @@ class _OverviewSummaryCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _SummaryWideTile(
+          icon: Icons.schedule_rounded,
+          label: '账号注册时间',
+          value: _formatDateTime(overview.registeredAt) ?? '未登录',
+          colorScheme: colorScheme,
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -200,6 +208,70 @@ class _OverviewSummaryCard extends StatelessWidget {
     }
 
     return '${_dateFormatter.format(startDate)}-${_dateFormatter.format(endDate)}';
+  }
+
+  String? _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) {
+      return null;
+    }
+
+    return _dateTimeFormatter.format(dateTime);
+  }
+}
+
+class _SummaryWideTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final ColorScheme colorScheme;
+
+  const _SummaryWideTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
