@@ -3,7 +3,9 @@ import '../../models/statistics.dart';
 import '../../models/enums.dart';
 import '../config/app_config.dart';
 import '../services/statistics_service.dart';
+import '../repositories/check_in_repository.dart';
 import 'auth_provider.dart';
+import 'check_in_provider.dart';
 import 'favorites_provider.dart';
 import 'records_provider.dart';
 import 'membership_provider.dart';
@@ -77,7 +79,9 @@ final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) asyn
   final basic = await ref.watch(basicStatisticsProvider.future);
   final recordsAsync = ref.watch(recordsProvider);
   final storyLinesAsync = ref.watch(storyLinesProvider);
+  final checkInAsync = ref.watch(checkInProvider.future);
   final currentUser = ref.watch(authProvider).value;
+  final checkInRepository = ref.read(checkInRepositoryProvider);
 
   final records = await recordsAsync.when(
     data: (data) async => data,
@@ -107,6 +111,12 @@ final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) asyn
   final pinnedStoryLineCount =
       storyLines.where((storyLine) => storyLine.isPinned).length;
 
+  final checkInState = await checkInAsync;
+  final checkInDateRange =
+      checkInRepository.getCheckInDateRange(userId: currentUser?.id);
+  final longestCheckInStreak =
+      checkInRepository.calculateLongestConsecutiveStreak(userId: currentUser?.id);
+
   int favoritedRecordCount = 0;
   int favoritedPostCount = 0;
   final favoritesAvailable = currentUser != null;
@@ -123,6 +133,12 @@ final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) asyn
     unlinkedRecordCount: unlinkedRecordCount,
     linkedRecordPercentage: linkedRecordPercentage,
     unlinkedRecordPercentage: unlinkedRecordPercentage,
+    totalCheckInDays: checkInState.totalDays,
+    totalCheckInStartDate: checkInDateRange.startDate,
+    totalCheckInEndDate: checkInDateRange.endDate,
+    longestCheckInStreakDays: longestCheckInStreak.days,
+    longestCheckInStreakStartDate: longestCheckInStreak.startDate,
+    longestCheckInStreakEndDate: longestCheckInStreak.endDate,
     favoritesAvailable: favoritesAvailable,
     favoritedRecordCount: favoritedRecordCount,
     favoritedPostCount: favoritedPostCount,

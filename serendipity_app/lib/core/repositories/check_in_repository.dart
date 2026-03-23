@@ -1,6 +1,28 @@
 import '../../models/check_in_record.dart';
 import '../services/i_storage_service.dart';
 
+class CheckInDateRange {
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  const CheckInDateRange({
+    required this.startDate,
+    required this.endDate,
+  });
+}
+
+class CheckInStreakSummary {
+  final int days;
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  const CheckInStreakSummary({
+    required this.days,
+    required this.startDate,
+    required this.endDate,
+  });
+}
+
 /// 签到仓储
 /// 
 /// 负责签到数据的持久化和查询
@@ -49,29 +71,11 @@ class CheckInRepository {
     return userCheckIns.any((c) => c.date == today);
   }
 
-  /// 获取指定用户的所有签到记录
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
-  List<CheckInRecord> getAllCheckInsByUser(String? userId) {
-    return _storageService.getCheckInsByUser(userId);
-  }
-
   /// 获取签到记录列表（按日期倒序）
   /// 
   /// 参数：
   /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
   List<CheckInRecord> getCheckInsSortedByDate({String? userId}) {
-    return _storageService.getCheckInsByUser(userId);
-  }
-  
-  /// 获取指定用户的签到记录列表（按日期倒序）
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
-  /// 
-  /// 调用者：CheckInProvider
-  List<CheckInRecord> getCheckInsByUser(String? userId) {
     return _storageService.getCheckInsByUser(userId);
   }
 
@@ -142,11 +146,95 @@ class CheckInRepository {
   /// - userId: 用户ID，null 表示离线数据
   List<DateTime> getCheckInDatesInMonth(int year, int month, {String? userId}) {
     final checkIns = _storageService.getCheckInsByUser(userId);
-    
+
     return checkIns
         .where((c) => c.date.year == year && c.date.month == month)
         .map((c) => c.date)
         .toList();
+  }
+
+  /// 获取累计签到日期范围
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示离线数据
+  CheckInDateRange getCheckInDateRange({String? userId}) {
+    final checkIns = _storageService.getCheckInsByUser(userId);
+    if (checkIns.isEmpty) {
+      return const CheckInDateRange(startDate: null, endDate: null);
+    }
+
+    final sortedDates = checkIns
+        .map((record) => record.date)
+        .toSet()
+        .toList()
+      ..sort();
+
+    return CheckInDateRange(
+      startDate: sortedDates.first,
+      endDate: sortedDates.last,
+    );
+  }
+
+  /// 计算最长连续签到摘要
+  /// 
+  /// 参数：
+  /// - userId: 用户ID，null 表示离线数据
+  CheckInStreakSummary calculateLongestConsecutiveStreak({String? userId}) {
+    final checkIns = _storageService.getCheckInsByUser(userId);
+    if (checkIns.isEmpty) {
+      return const CheckInStreakSummary(
+        days: 0,
+        startDate: null,
+        endDate: null,
+      );
+    }
+
+    final sortedDates = checkIns
+        .map((record) => record.date)
+        .toSet()
+        .toList()
+      ..sort();
+
+    var bestStart = sortedDates.first;
+    var bestEnd = sortedDates.first;
+    var bestDays = 1;
+
+    var currentStart = sortedDates.first;
+    var currentEnd = sortedDates.first;
+    var currentDays = 1;
+
+    for (var i = 1; i < sortedDates.length; i++) {
+      final date = sortedDates[i];
+      final previousDate = sortedDates[i - 1];
+      final isConsecutive =
+          date.difference(previousDate).inDays == 1;
+
+      if (isConsecutive) {
+        currentEnd = date;
+        currentDays++;
+      } else {
+        if (currentDays > bestDays) {
+          bestStart = currentStart;
+          bestEnd = currentEnd;
+          bestDays = currentDays;
+        }
+        currentStart = date;
+        currentEnd = date;
+        currentDays = 1;
+      }
+    }
+
+    if (currentDays > bestDays) {
+      bestStart = currentStart;
+      bestEnd = currentEnd;
+      bestDays = currentDays;
+    }
+
+    return CheckInStreakSummary(
+      days: bestDays,
+      startDate: bestStart,
+      endDate: bestEnd,
+    );
   }
 
   /// 获取今天的日期（只保留年月日）

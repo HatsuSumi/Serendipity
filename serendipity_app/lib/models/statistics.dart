@@ -123,6 +123,24 @@ class StatisticsOverview {
   /// 未关联故事线记录占比（0-100）
   final double unlinkedRecordPercentage;
 
+  /// 累计签到天数
+  final int totalCheckInDays;
+
+  /// 累计签到起始日期
+  final DateTime? totalCheckInStartDate;
+
+  /// 累计签到结束日期
+  final DateTime? totalCheckInEndDate;
+
+  /// 最长连续签到天数
+  final int longestCheckInStreakDays;
+
+  /// 最长连续签到起始日期
+  final DateTime? longestCheckInStreakStartDate;
+
+  /// 最长连续签到结束日期
+  final DateTime? longestCheckInStreakEndDate;
+
   /// 当前用户是否可查看收藏统计
   final bool favoritesAvailable;
 
@@ -145,6 +163,12 @@ class StatisticsOverview {
     required this.unlinkedRecordCount,
     required this.linkedRecordPercentage,
     required this.unlinkedRecordPercentage,
+    required this.totalCheckInDays,
+    required this.totalCheckInStartDate,
+    required this.totalCheckInEndDate,
+    required this.longestCheckInStreakDays,
+    required this.longestCheckInStreakStartDate,
+    required this.longestCheckInStreakEndDate,
     required this.favoritesAvailable,
     required this.favoritedRecordCount,
     required this.favoritedPostCount,

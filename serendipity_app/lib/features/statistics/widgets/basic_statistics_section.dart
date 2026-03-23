@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/providers/statistics_provider.dart';
 import '../../../core/utils/dialog_helper.dart';
@@ -57,6 +58,8 @@ class _OverviewSummaryCard extends StatelessWidget {
 
   const _OverviewSummaryCard({required this.overview});
 
+  static final DateFormat _dateFormatter = DateFormat('yyyy/MM/dd');
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -80,6 +83,36 @@ class _OverviewSummaryCard extends StatelessWidget {
                 icon: Icons.auto_stories_rounded,
                 label: '故事线数量',
                 value: '${overview.storyLineCount}',
+                colorScheme: colorScheme,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.calendar_month_rounded,
+                label: '累计签到天数',
+                value: '${overview.totalCheckInDays}',
+                subtitle: _formatDateRange(
+                  overview.totalCheckInStartDate,
+                  overview.totalCheckInEndDate,
+                ),
+                colorScheme: colorScheme,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SummaryMetricTile(
+                icon: Icons.local_fire_department_rounded,
+                label: '最长连续签到天数',
+                value: '${overview.longestCheckInStreakDays}',
+                subtitle: _formatDateRange(
+                  overview.longestCheckInStreakStartDate,
+                  overview.longestCheckInStreakEndDate,
+                ),
                 colorScheme: colorScheme,
               ),
             ),
@@ -159,6 +192,14 @@ class _OverviewSummaryCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String? _formatDateRange(DateTime? startDate, DateTime? endDate) {
+    if (startDate == null || endDate == null) {
+      return null;
+    }
+
+    return '${_dateFormatter.format(startDate)}-${_dateFormatter.format(endDate)}';
   }
 }
 
