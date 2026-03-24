@@ -79,18 +79,17 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   @override
   Widget build(BuildContext context) {
+    final favoritesAsync = ref.watch(favoritesProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的收藏'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.notes), text: '收藏的记录'),
-            Tab(icon: Icon(Icons.people_outline), text: '收藏的帖子'),
-          ],
+          tabs: _buildTabs(favoritesAsync),
         ),
       ),
-      body: ref.watch(favoritesProvider).when(
+      body: favoritesAsync.when(
         data: (favoritesState) => TabBarView(
           controller: _tabController,
           children: [
@@ -102,6 +101,44 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         error: (error, _) => _buildError(error),
       ),
     );
+  }
+
+  List<Widget> _buildTabs(AsyncValue<FavoritesState> favoritesAsync) {
+    return favoritesAsync.when(
+      data: (favoritesState) {
+        final recordCount = _getFavoritedRecordCount(favoritesState);
+        final postCount = _getFavoritedPostCount(favoritesState);
+
+        return [
+          Tab(icon: const Icon(Icons.notes), text: '收藏的记录（共$recordCount条）'),
+          Tab(
+            icon: const Icon(Icons.people_outline),
+            text: '收藏的帖子（共$postCount条）',
+          ),
+        ];
+      },
+      loading: () => const [
+        Tab(icon: Icon(Icons.notes), text: '收藏的记录'),
+        Tab(icon: Icon(Icons.people_outline), text: '收藏的帖子'),
+      ],
+      error: (_, __) => const [
+        Tab(icon: Icon(Icons.notes), text: '收藏的记录'),
+        Tab(icon: Icon(Icons.people_outline), text: '收藏的帖子'),
+      ],
+    );
+  }
+
+  int _getFavoritedRecordCount(FavoritesState favoritesState) {
+    final allRecords = ref.watch(recordsProvider).value ?? [];
+    final existingCount = allRecords
+        .where((record) => favoritesState.favoritedRecordIds.contains(record.id))
+        .length;
+    return existingCount + favoritesState.deletedFavoritedRecords.length;
+  }
+
+  int _getFavoritedPostCount(FavoritesState favoritesState) {
+    return favoritesState.favoritedPosts.length +
+        favoritesState.deletedFavoritedPosts.length;
   }
 
   // ==================== 收藏的记录 Tab ====================
