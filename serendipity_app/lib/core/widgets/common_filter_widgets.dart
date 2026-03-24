@@ -663,8 +663,11 @@ Widget buildHighlightedText(
     );
   }
 
+  final sortedKeywords = [...keywordList]
+    ..sort((a, b) => b.length.compareTo(a.length));
+
   // 构建正则表达式，匹配任意一个关键词
-  final pattern = keywordList.map((k) => RegExp.escape(k)).join('|');
+  final pattern = sortedKeywords.map((k) => RegExp.escape(k)).join('|');
   final regex = RegExp(pattern, caseSensitive: false);
   final matches = regex.allMatches(text).toList();
   
