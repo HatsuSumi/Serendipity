@@ -619,23 +619,68 @@ Create repository/data-source layers first, then move fields by category.
 ## Checklist
 
 ### Flutter app
-- [ ] add statistics repository abstraction
-- [ ] add local statistics data source
-- [ ] add remote statistics data source
-- [ ] move overview provider to repository
-- [ ] move advanced statistics provider to repository
-- [ ] keep current models stable
+- [x] add statistics repository abstraction (`IStatisticsDataSource`)
+- [x] add local statistics data source (`LocalStatisticsDataSource`)
+- [x] add remote statistics data source (`RemoteStatisticsDataSource`)
+- [x] move overview provider to repository (`statisticsOverviewProvider` → `StatisticsRepository`)
+- [x] move advanced statistics provider to repository (`advancedStatisticsProvider` → `StatisticsRepository`)
+- [x] keep current models stable (`StatisticsOverview`, `BasicStatistics`, `AdvancedStatistics` unchanged)
+- [x] narrow catch clauses in `StatisticsRepository` to infrastructure errors only (rethrow others)
+- [x] add `getLocalBasicStatistics()` to `IStatisticsDataSource` and implement in `LocalStatisticsDataSource`
+- [x] merge local `mostCommon*` fields into remote overview via `_mergeLocalBasicIntoRemote()`
 
 ### Server
-- [ ] add overview statistics route
-- [ ] add overview statistics controller/service/repository logic
-- [ ] freeze business definitions for all overview fields
-- [ ] return a versioned DTO
+- [x] add overview statistics route (`GET /statistics/overview`)
+- [x] add overview statistics controller / service / repository logic
+- [x] freeze business definitions for all overview fields (see Consistency rules section)
+- [ ] return a versioned DTO (`sourceVersion`, `computedAt` — deferred, not yet needed)
 
 ### Product/architecture
-- [ ] document timezone rule
-- [ ] document success rate rule
-- [ ] document favorite count rule
-- [ ] document orphan/deleted entity counting rule
-- [ ] document fallback behavior when remote overview fails
+- [x] document fallback behavior when remote overview fails (graceful degradation to local)
+- [ ] document timezone rule (deferred — currently using local device timezone)
+- [x] document success rate rule (`(met + reunion) / totalRecords * 100`)
+- [ ] document favorite count rule (deferred)
+- [ ] document orphan/deleted entity counting rule (deferred)
+
+---
+
+## Implementation notes
+
+### Deviation: `mostCommon*` fields temporarily broken after Phase 1
+
+During Phase 1 implementation, `RemoteStatisticsDataSource._mapOverviewDto` hardcoded all 7
+local-aggregation fields (`mostCommonPlace`, `mostCommonPlaceType`, `mostCommonProvince`,
+`mostCommonCity`, `mostCommonArea`, `mostCommonHour`, `mostCommonWeather`) as `null`.
+
+This caused logged-in users to see "未知" for those fields, which was a regression from
+pre-refactor behaviour.
+
+**Root cause**: The fields were (correctly) classified as "keep local for now" in this document,
+but the implementation forgot to re-inject them after fetching the remote overview.
+
+**Fix applied** (commit `e713da7`):
+- Added `getLocalBasicStatistics({required String? userId})` to `IStatisticsDataSource`
+- `LocalStatisticsDataSource` implements it by delegating to `StatisticsService.calculateBasicStatistics`
+- `RemoteStatisticsDataSource` throws `UnsupportedError` (not applicable)
+- `StatisticsRepository._fetchOverview` now calls `_local.getLocalBasicStatistics` after a
+  successful remote fetch and merges the 7 fields via `_mergeLocalBasicIntoRemote()`
+- All other fields in the remote response remain authoritative
+
+**Current field ownership (logged-in)**:
+
+| Field group | Source |
+|---|---|
+| Count/summary fields (records, check-ins, story lines, favorites, pinned, status counts, success rate) | Server (`GET /statistics/overview`) |
+| `mostCommonPlace/PlaceType/Province/City/Area/Hour/Weather` | Local (`StatisticsService.calculateBasicStatistics`) |
+| `registeredAt` | Server (via `currentUser.createdAt`) |
+
+### `sourceVersion` / `computedAt` not implemented
+
+The planned DTO fields `sourceVersion` and `computedAt` are not yet returned by the server
+nor consumed by the client. This is intentional — they are only useful when:
+- multiple app versions coexist in production
+- client-side caching of overview data is introduced
+- UI needs to display data freshness
+
+Deferred until one of the above conditions is met.
 
