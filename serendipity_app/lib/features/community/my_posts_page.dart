@@ -76,7 +76,15 @@ class MyPostsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('我的发布'),
+        title: myPostsAsync.when(
+          data: (posts) => Text(
+            filterCriteria.isActive
+                ? '我的发布(筛选后共${posts.length}条)'
+                : '我的发布(共${posts.length}条)',
+          ),
+          loading: () => const Text('我的发布'),
+          error: (_, __) => const Text('我的发布'),
+        ),
         actions: [
           // 筛选按钮
           IconButton(
