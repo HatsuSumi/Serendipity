@@ -82,14 +82,13 @@ final statisticsRepositoryProvider = Provider<StatisticsRepository>((ref) {
 /// 职责：
 /// - 通过 StatisticsRepository 获取总览数据
 /// - 注入账号级字段（registeredAt、favorites）
-/// - 自动响应 recordsProvider、storyLinesProvider、checkInProvider、
-///   favoritesProvider、authProvider 的变化
+/// - 自动响应 recordsProvider、syncCompletedProvider、favoritesProvider、authProvider 的变化
 ///
 /// 设计原则：
 /// - Provider 层不做聚合计算，只负责依赖编排与参数准备
 /// - 账号级字段由 Provider 层从对应 Provider 读取后注入 Repository
 final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) async {
-  // 监听所有依赖，任意变化时自动重算
+  // 监听记录/同步/认证/收藏相关依赖变化，变化时自动重算
   ref.watch(recordsProvider);
   ref.watch(syncCompletedProvider);
 

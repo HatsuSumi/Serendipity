@@ -12,7 +12,7 @@ import 'i_statistics_data_source.dart';
 /// - mostCommonPlace / mostCommonPlaceType / province / city / area / hour / weather：
 ///   服务端 overview 接口不返回这些图表级字段，统一置为 null
 ///   （这些字段属于本地聚合域，只在 LocalStatisticsDataSource 填充）
-/// - pinnedStoryLineCount：服务端 StoryLine 表无 isPinned 字段，固定返回 0
+/// - pinnedStoryLineCount：由服务端 overview 直接返回账号全局值
 ///
 /// 设计原则：
 /// - 依赖倒置：依赖 HttpClientService，不依赖具体 HTTP 库
