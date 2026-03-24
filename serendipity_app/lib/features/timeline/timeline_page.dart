@@ -77,7 +77,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     return Scaffold(
       appBar: AppBar(
         title: countAsync.when(
-          data: (count) => Text('TA (共$count条)'),
+          data: (count) => Text(
+            filterCriteria.isActive ? 'TA (筛选后共$count条)' : 'TA (共$count条)',
+          ),
           loading: () => const Text('TA'),
           error: (e, _) => const Text('TA'),
         ),
