@@ -58,10 +58,8 @@ final class StatisticsRepository {
     final userId = currentUser?.id;
     final favoritesAvailable = currentUser != null;
 
-    // 选择数据源并获取基础 overview（已登录时优先尝试远端）
     final base = await _fetchOverview(userId: userId);
 
-    // 注入本地数据源无法填充的账号级字段
     return _injectAccountFields(
       base: base,
       registeredAt: currentUser?.createdAt,
@@ -78,9 +76,6 @@ final class StatisticsRepository {
   /// 获取高级图表统计数据
   ///
   /// 权限门控由调用方（Provider 层）完成，此方法不做会员检查。
-  ///
-  /// 参数：
-  /// - currentUser：当前登录用户，null 表示未登录
   Future<AdvancedStatistics> getAdvancedStatistics({
     required User? currentUser,
   }) async {
@@ -94,30 +89,27 @@ final class StatisticsRepository {
 
   /// 选择数据源并获取 overview
   ///
-  /// - 未登录：直接使用本地
-  /// - 开发者模式强制本地：直接使用本地（便于调试）
-  /// - 已登录：优先远端，UnsupportedError / Exception 时静默降级本地
+  /// - 未登录 / 强制本地：直接使用本地
+  /// - 已登录：优先远端；成功后用本地补齐 mostCommon* 字段；失败则降级本地
   Future<StatisticsOverview> _fetchOverview({required String? userId}) async {
     if (userId == null || AppConfig.forceLocalStatistics) {
       return _local.getOverview(userId: userId);
     }
 
     try {
-      return await _remote.getOverview(userId: userId);
+      final remote = await _remote.getOverview(userId: userId);
+      // 服务端不返回本地聚合字段（mostCommon*），从本地补齐
+      final localBasic = await _local.getLocalBasicStatistics(userId: userId);
+      return _mergeLocalBasicIntoRemote(remote: remote, localBasic: localBasic);
     } on UnsupportedError {
-      // 远端接口尚未实现，静默降级
       return _local.getOverview(userId: userId);
     } on HttpException {
-      // HTTP 4xx/5xx，静默降级（服务端暂不可用）
       return _local.getOverview(userId: userId);
     } on TimeoutException {
-      // 请求超时，静默降级
       return _local.getOverview(userId: userId);
     } on SocketException {
-      // 网络不通，静默降级
       return _local.getOverview(userId: userId);
     } on http.ClientException {
-      // HTTP 客户端层错误（DNS 失败等），静默降级
       return _local.getOverview(userId: userId);
     }
     // 其他异常（编程错误、本地存储异常等）继续向上传播
@@ -125,12 +117,10 @@ final class StatisticsRepository {
 
   /// 选择数据源并获取高级统计
   ///
-  /// 图表类统计短期内始终使用本地；
-  /// 远端返回 UnsupportedError 时静默降级。
+  /// 图表类统计短期内始终使用本地；远端 UnsupportedError 时静默降级。
   Future<AdvancedStatistics> _fetchAdvancedStatistics({
     required String? userId,
   }) async {
-    // 图表类统计短期内始终本地优先
     if (userId == null || AppConfig.forceLocalStatistics) {
       return _local.getAdvancedStatistics(userId: userId);
     }
@@ -152,7 +142,7 @@ final class StatisticsRepository {
   }
 
   // ---------------------------------------------------------------------------
-  // Private: field injection
+  // Private: field injection / merge
   // ---------------------------------------------------------------------------
 
   /// 将账号级字段注入 overview
@@ -167,24 +157,77 @@ final class StatisticsRepository {
     required int favoritedPostCount,
   }) {
     return StatisticsOverview(
-      basic: base.basic,
-      storyLineCount: base.storyLineCount,
-      linkedRecordCount: base.linkedRecordCount,
-      unlinkedRecordCount: base.unlinkedRecordCount,
-      linkedRecordPercentage: base.linkedRecordPercentage,
-      unlinkedRecordPercentage: base.unlinkedRecordPercentage,
-      registeredAt: registeredAt,
-      totalCheckInDays: base.totalCheckInDays,
-      totalCheckInStartDate: base.totalCheckInStartDate,
-      totalCheckInEndDate: base.totalCheckInEndDate,
-      longestCheckInStreakDays: base.longestCheckInStreakDays,
+      basic:                         base.basic,
+      storyLineCount:                base.storyLineCount,
+      linkedRecordCount:             base.linkedRecordCount,
+      unlinkedRecordCount:           base.unlinkedRecordCount,
+      linkedRecordPercentage:        base.linkedRecordPercentage,
+      unlinkedRecordPercentage:      base.unlinkedRecordPercentage,
+      registeredAt:                  registeredAt,
+      totalCheckInDays:              base.totalCheckInDays,
+      totalCheckInStartDate:         base.totalCheckInStartDate,
+      totalCheckInEndDate:           base.totalCheckInEndDate,
+      longestCheckInStreakDays:      base.longestCheckInStreakDays,
       longestCheckInStreakStartDate: base.longestCheckInStreakStartDate,
-      longestCheckInStreakEndDate: base.longestCheckInStreakEndDate,
-      favoritesAvailable: favoritesAvailable,
-      favoritedRecordCount: favoritedRecordCount,
-      favoritedPostCount: favoritedPostCount,
-      pinnedRecordCount: base.pinnedRecordCount,
-      pinnedStoryLineCount: base.pinnedStoryLineCount,
+      longestCheckInStreakEndDate:   base.longestCheckInStreakEndDate,
+      favoritesAvailable:            favoritesAvailable,
+      favoritedRecordCount:          favoritedRecordCount,
+      favoritedPostCount:            favoritedPostCount,
+      pinnedRecordCount:             base.pinnedRecordCount,
+      pinnedStoryLineCount:          base.pinnedStoryLineCount,
+    );
+  }
+
+  /// 将本地聚合的 BasicStatistics 字段合并进远端 overview
+  ///
+  /// 服务端 overview 不返回以下本地聚合字段：
+  /// mostCommonPlace / mostCommonPlaceType / mostCommonProvince /
+  /// mostCommonCity / mostCommonArea / mostCommonHour / mostCommonWeather
+  ///
+  /// 此方法将这 7 个字段从本地计算结果注入，其余字段保持远端值。
+  StatisticsOverview _mergeLocalBasicIntoRemote({
+    required StatisticsOverview remote,
+    required BasicStatistics localBasic,
+  }) {
+    final mergedBasic = BasicStatistics(
+      totalRecords:        remote.basic.totalRecords,
+      missedCount:         remote.basic.missedCount,
+      avoidCount:          remote.basic.avoidCount,
+      reencounterCount:    remote.basic.reencounterCount,
+      metCount:            remote.basic.metCount,
+      reunionCount:        remote.basic.reunionCount,
+      farewellCount:       remote.basic.farewellCount,
+      lostCount:           remote.basic.lostCount,
+      successRate:         remote.basic.successRate,
+      // 以下 7 个字段服务端不返回，从本地聚合补齐
+      mostCommonPlace:     localBasic.mostCommonPlace,
+      mostCommonPlaceType: localBasic.mostCommonPlaceType,
+      mostCommonProvince:  localBasic.mostCommonProvince,
+      mostCommonCity:      localBasic.mostCommonCity,
+      mostCommonArea:      localBasic.mostCommonArea,
+      mostCommonHour:      localBasic.mostCommonHour,
+      mostCommonWeather:   localBasic.mostCommonWeather,
+    );
+
+    return StatisticsOverview(
+      basic:                         mergedBasic,
+      storyLineCount:                remote.storyLineCount,
+      linkedRecordCount:             remote.linkedRecordCount,
+      unlinkedRecordCount:           remote.unlinkedRecordCount,
+      linkedRecordPercentage:        remote.linkedRecordPercentage,
+      unlinkedRecordPercentage:      remote.unlinkedRecordPercentage,
+      registeredAt:                  remote.registeredAt,
+      totalCheckInDays:              remote.totalCheckInDays,
+      totalCheckInStartDate:         remote.totalCheckInStartDate,
+      totalCheckInEndDate:           remote.totalCheckInEndDate,
+      longestCheckInStreakDays:      remote.longestCheckInStreakDays,
+      longestCheckInStreakStartDate: remote.longestCheckInStreakStartDate,
+      longestCheckInStreakEndDate:   remote.longestCheckInStreakEndDate,
+      favoritesAvailable:            remote.favoritesAvailable,
+      favoritedRecordCount:          remote.favoritedRecordCount,
+      favoritedPostCount:            remote.favoritedPostCount,
+      pinnedRecordCount:             remote.pinnedRecordCount,
+      pinnedStoryLineCount:          remote.pinnedStoryLineCount,
     );
   }
 }

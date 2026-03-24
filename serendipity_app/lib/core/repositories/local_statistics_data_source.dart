@@ -78,6 +78,14 @@ final class LocalStatisticsDataSource implements IStatisticsDataSource {
   }
 
   @override
+  Future<BasicStatistics> getLocalBasicStatistics({
+    required String? userId,
+  }) async {
+    final records = _storage.getRecordsByUser(userId);
+    return StatisticsService.calculateBasicStatistics(records);
+  }
+
+  @override
   Future<AdvancedStatistics> getAdvancedStatistics({
     required String? userId,
   }) async {

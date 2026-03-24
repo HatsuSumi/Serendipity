@@ -43,6 +43,17 @@ final class RemoteStatisticsDataSource implements IStatisticsDataSource {
   // Advanced Statistics
   // ---------------------------------------------------------------------------
 
+  /// 本地聚合字段不走远端，始终降级到本地
+  @override
+  Future<BasicStatistics> getLocalBasicStatistics({
+    required String? userId,
+  }) async {
+    throw UnsupportedError(
+      'RemoteStatisticsDataSource does not support getLocalBasicStatistics. '
+      'Use LocalStatisticsDataSource instead.',
+    );
+  }
+
   /// 高级图表数据不走远端，始终降级到本地
   ///
   /// 图表类统计交互频繁，短期内继续由本地聚合；
