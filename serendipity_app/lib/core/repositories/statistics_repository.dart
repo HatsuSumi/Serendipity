@@ -1,6 +1,12 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+
 import '../../models/statistics.dart';
 import '../../models/user.dart';
 import '../config/app_config.dart';
+import '../services/http_client_service.dart';
 import 'i_statistics_data_source.dart';
 
 /// 统计仓储
@@ -101,10 +107,20 @@ final class StatisticsRepository {
     } on UnsupportedError {
       // 远端接口尚未实现，静默降级
       return _local.getOverview(userId: userId);
-    } catch (_) {
-      // 网络错误/超时等，静默降级
+    } on HttpException {
+      // HTTP 4xx/5xx，静默降级（服务端暂不可用）
+      return _local.getOverview(userId: userId);
+    } on TimeoutException {
+      // 请求超时，静默降级
+      return _local.getOverview(userId: userId);
+    } on SocketException {
+      // 网络不通，静默降级
+      return _local.getOverview(userId: userId);
+    } on http.ClientException {
+      // HTTP 客户端层错误（DNS 失败等），静默降级
       return _local.getOverview(userId: userId);
     }
+    // 其他异常（编程错误、本地存储异常等）继续向上传播
   }
 
   /// 选择数据源并获取高级统计
@@ -123,9 +139,16 @@ final class StatisticsRepository {
       return await _remote.getAdvancedStatistics(userId: userId);
     } on UnsupportedError {
       return _local.getAdvancedStatistics(userId: userId);
-    } catch (_) {
+    } on HttpException {
+      return _local.getAdvancedStatistics(userId: userId);
+    } on TimeoutException {
+      return _local.getAdvancedStatistics(userId: userId);
+    } on SocketException {
+      return _local.getAdvancedStatistics(userId: userId);
+    } on http.ClientException {
       return _local.getAdvancedStatistics(userId: userId);
     }
+    // 其他异常继续向上传播
   }
 
   // ---------------------------------------------------------------------------
