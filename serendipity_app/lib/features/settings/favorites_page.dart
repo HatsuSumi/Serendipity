@@ -121,7 +121,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         Tab(icon: Icon(Icons.notes), text: '收藏的记录'),
         Tab(icon: Icon(Icons.people_outline), text: '收藏的帖子'),
       ],
-      error: (_, __) => const [
+      error: (error, _) => const [
         Tab(icon: Icon(Icons.notes), text: '收藏的记录'),
         Tab(icon: Icon(Icons.people_outline), text: '收藏的帖子'),
       ],

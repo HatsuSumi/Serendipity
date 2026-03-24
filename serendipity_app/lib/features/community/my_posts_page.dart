@@ -83,7 +83,7 @@ class MyPostsPage extends ConsumerWidget {
                 : '我的发布(共${posts.length}条)',
           ),
           loading: () => const Text('我的发布'),
-          error: (_, __) => const Text('我的发布'),
+          error: (error, _) => const Text('我的发布'),
         ),
         actions: [
           // 筛选按钮
