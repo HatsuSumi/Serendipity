@@ -219,6 +219,11 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     String? province,
     String? city,
     String? area,
+    List<String>? placeNameKeywords,
+    List<String>? descriptionKeywords,
+    List<String>? ifReencounterKeywords,
+    List<String>? conversationStarterKeywords,
+    List<String>? backgroundMusicKeywords,
     List<String>? placeTypes,
     List<String>? tags,
     List<String>? statuses,
@@ -266,6 +271,21 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       }
       if (area != null && area.isNotEmpty) {
         queryParams['area'] = area;
+      }
+      if (placeNameKeywords != null && placeNameKeywords.isNotEmpty) {
+        queryParams['placeNameKeywords'] = placeNameKeywords.join(',');
+      }
+      if (descriptionKeywords != null && descriptionKeywords.isNotEmpty) {
+        queryParams['descriptionKeywords'] = descriptionKeywords.join(',');
+      }
+      if (ifReencounterKeywords != null && ifReencounterKeywords.isNotEmpty) {
+        queryParams['ifReencounterKeywords'] = ifReencounterKeywords.join(',');
+      }
+      if (conversationStarterKeywords != null && conversationStarterKeywords.isNotEmpty) {
+        queryParams['conversationStarterKeywords'] = conversationStarterKeywords.join(',');
+      }
+      if (backgroundMusicKeywords != null && backgroundMusicKeywords.isNotEmpty) {
+        queryParams['backgroundMusicKeywords'] = backgroundMusicKeywords.join(',');
       }
       if (placeTypes != null && placeTypes.isNotEmpty) {
         queryParams['placeTypes'] = placeTypes.join(',');

@@ -14,16 +14,17 @@ class RecordsFilterCriteria {
   final String? province;
   final String? city;
   final String? area;
+  final List<String>? placeNameKeywords;
   final List<PlaceType>? placeTypes;
   final List<EncounterStatus>? statuses;
   final List<EmotionIntensity>? emotionIntensities;
   final List<Weather>? weathers;
   final List<String>? tags;
   final TagMatchMode tagMatchMode;
-  final String? descriptionKeyword;
-  final String? ifReencounterKeyword;
-  final String? conversationStarterKeyword;
-  final String? backgroundMusicKeyword;
+  final List<String>? descriptionKeywords;
+  final List<String>? ifReencounterKeywords;
+  final List<String>? conversationStarterKeywords;
+  final List<String>? backgroundMusicKeywords;
 
   const RecordsFilterCriteria({
     this.startDate,
@@ -33,16 +34,17 @@ class RecordsFilterCriteria {
     this.province,
     this.city,
     this.area,
+    this.placeNameKeywords,
     this.placeTypes,
     this.statuses,
     this.emotionIntensities,
     this.weathers,
     this.tags,
     this.tagMatchMode = TagMatchMode.contains,
-    this.descriptionKeyword,
-    this.ifReencounterKeyword,
-    this.conversationStarterKeyword,
-    this.backgroundMusicKeyword,
+    this.descriptionKeywords,
+    this.ifReencounterKeywords,
+    this.conversationStarterKeywords,
+    this.backgroundMusicKeywords,
   });
 
   /// 是否有活跃的筛选条件
@@ -54,15 +56,16 @@ class RecordsFilterCriteria {
         province != null ||
         city != null ||
         area != null ||
+        (placeNameKeywords?.isNotEmpty ?? false) ||
         (placeTypes?.isNotEmpty ?? false) ||
         (statuses?.isNotEmpty ?? false) ||
         (emotionIntensities?.isNotEmpty ?? false) ||
         (weathers?.isNotEmpty ?? false) ||
         (tags?.isNotEmpty ?? false) ||
-        (descriptionKeyword?.isNotEmpty ?? false) ||
-        (ifReencounterKeyword?.isNotEmpty ?? false) ||
-        (conversationStarterKeyword?.isNotEmpty ?? false) ||
-        (backgroundMusicKeyword?.isNotEmpty ?? false);
+        (descriptionKeywords?.isNotEmpty ?? false) ||
+        (ifReencounterKeywords?.isNotEmpty ?? false) ||
+        (conversationStarterKeywords?.isNotEmpty ?? false) ||
+        (backgroundMusicKeywords?.isNotEmpty ?? false);
   }
 
   /// 复制并修改
@@ -74,16 +77,17 @@ class RecordsFilterCriteria {
     String? province,
     String? city,
     String? area,
+    List<String>? placeNameKeywords,
     List<PlaceType>? placeTypes,
     List<EncounterStatus>? statuses,
     List<EmotionIntensity>? emotionIntensities,
     List<Weather>? weathers,
     List<String>? tags,
     TagMatchMode? tagMatchMode,
-    String? descriptionKeyword,
-    String? ifReencounterKeyword,
-    String? conversationStarterKeyword,
-    String? backgroundMusicKeyword,
+    List<String>? descriptionKeywords,
+    List<String>? ifReencounterKeywords,
+    List<String>? conversationStarterKeywords,
+    List<String>? backgroundMusicKeywords,
     bool clearStartDate = false,
     bool clearEndDate = false,
     bool clearCreatedStartDate = false,
@@ -91,10 +95,11 @@ class RecordsFilterCriteria {
     bool clearProvince = false,
     bool clearCity = false,
     bool clearArea = false,
-    bool clearDescriptionKeyword = false,
-    bool clearIfReencounterKeyword = false,
-    bool clearConversationStarterKeyword = false,
-    bool clearBackgroundMusicKeyword = false,
+    bool clearPlaceNameKeywords = false,
+    bool clearDescriptionKeywords = false,
+    bool clearIfReencounterKeywords = false,
+    bool clearConversationStarterKeywords = false,
+    bool clearBackgroundMusicKeywords = false,
   }) {
     return RecordsFilterCriteria(
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
@@ -104,16 +109,17 @@ class RecordsFilterCriteria {
       province: clearProvince ? null : (province ?? this.province),
       city: clearCity ? null : (city ?? this.city),
       area: clearArea ? null : (area ?? this.area),
+      placeNameKeywords: clearPlaceNameKeywords ? null : (placeNameKeywords ?? this.placeNameKeywords),
       placeTypes: placeTypes ?? this.placeTypes,
       statuses: statuses ?? this.statuses,
       emotionIntensities: emotionIntensities ?? this.emotionIntensities,
       weathers: weathers ?? this.weathers,
       tags: tags ?? this.tags,
       tagMatchMode: tagMatchMode ?? this.tagMatchMode,
-      descriptionKeyword: clearDescriptionKeyword ? null : (descriptionKeyword ?? this.descriptionKeyword),
-      ifReencounterKeyword: clearIfReencounterKeyword ? null : (ifReencounterKeyword ?? this.ifReencounterKeyword),
-      conversationStarterKeyword: clearConversationStarterKeyword ? null : (conversationStarterKeyword ?? this.conversationStarterKeyword),
-      backgroundMusicKeyword: clearBackgroundMusicKeyword ? null : (backgroundMusicKeyword ?? this.backgroundMusicKeyword),
+      descriptionKeywords: clearDescriptionKeywords ? null : (descriptionKeywords ?? this.descriptionKeywords),
+      ifReencounterKeywords: clearIfReencounterKeywords ? null : (ifReencounterKeywords ?? this.ifReencounterKeywords),
+      conversationStarterKeywords: clearConversationStarterKeywords ? null : (conversationStarterKeywords ?? this.conversationStarterKeywords),
+      backgroundMusicKeywords: clearBackgroundMusicKeywords ? null : (backgroundMusicKeywords ?? this.backgroundMusicKeywords),
     );
   }
 }

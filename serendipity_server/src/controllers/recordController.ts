@@ -110,6 +110,11 @@ export class RecordController {
       const province = getQueryAsString(req.query.province);
       const city = getQueryAsString(req.query.city);
       const area = getQueryAsString(req.query.area);
+      const placeNameKeywords = getQueryAsString(req.query.placeNameKeywords);
+      const descriptionKeywords = getQueryAsString(req.query.descriptionKeywords);
+      const ifReencounterKeywords = getQueryAsString(req.query.ifReencounterKeywords);
+      const conversationStarterKeywords = getQueryAsString(req.query.conversationStarterKeywords);
+      const backgroundMusicKeywords = getQueryAsString(req.query.backgroundMusicKeywords);
       const placeTypes = getQueryAsString(req.query.placeTypes);
       const tags = getQueryAsString(req.query.tags);
       const statuses = getQueryAsString(req.query.statuses);
@@ -127,6 +132,11 @@ export class RecordController {
         province,
         city,
         area,
+        placeNameKeywords,
+        descriptionKeywords,
+        ifReencounterKeywords,
+        conversationStarterKeywords,
+        backgroundMusicKeywords,
         placeTypes,
         tags,
         statuses,

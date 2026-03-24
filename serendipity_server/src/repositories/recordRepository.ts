@@ -60,6 +60,11 @@ export interface IRecordRepository {
       province?: string;
       city?: string;
       area?: string;
+      placeNameKeywords?: string[];
+      descriptionKeywords?: string[];
+      ifReencounterKeywords?: string[];
+      conversationStarterKeywords?: string[];
+      backgroundMusicKeywords?: string[];
       placeTypes?: string[];
       statuses?: string[];
       emotionIntensities?: string[];
@@ -266,6 +271,11 @@ export class RecordRepository implements IRecordRepository {
       province?: string;
       city?: string;
       area?: string;
+      placeNameKeywords?: string[];
+      descriptionKeywords?: string[];
+      ifReencounterKeywords?: string[];
+      conversationStarterKeywords?: string[];
+      backgroundMusicKeywords?: string[];
       placeTypes?: string[];
       statuses?: string[];
       emotionIntensities?: string[];
@@ -313,6 +323,40 @@ export class RecordRepository implements IRecordRepository {
     }
     if (filters.area) {
       conditions.push(Prisma.sql`location->>'area' = ${filters.area}`);
+    }
+    if (filters.placeNameKeywords && filters.placeNameKeywords.length > 0) {
+      const placeNameConditions = filters.placeNameKeywords.map(
+        (keyword) => Prisma.sql`COALESCE(location->>'placeName', '') ILIKE ${`%${keyword}%`}`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(placeNameConditions, ' OR ')})`);
+    }
+
+    if (filters.descriptionKeywords && filters.descriptionKeywords.length > 0) {
+      const descriptionConditions = filters.descriptionKeywords.map(
+        (keyword) => Prisma.sql`COALESCE(description, '') ILIKE ${`%${keyword}%`}`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(descriptionConditions, ' OR ')})`);
+    }
+
+    if (filters.ifReencounterKeywords && filters.ifReencounterKeywords.length > 0) {
+      const ifReencounterConditions = filters.ifReencounterKeywords.map(
+        (keyword) => Prisma.sql`COALESCE(if_reencounter, '') ILIKE ${`%${keyword}%`}`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(ifReencounterConditions, ' OR ')})`);
+    }
+
+    if (filters.conversationStarterKeywords && filters.conversationStarterKeywords.length > 0) {
+      const conversationStarterConditions = filters.conversationStarterKeywords.map(
+        (keyword) => Prisma.sql`COALESCE(conversation_starter, '') ILIKE ${`%${keyword}%`}`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(conversationStarterConditions, ' OR ')})`);
+    }
+
+    if (filters.backgroundMusicKeywords && filters.backgroundMusicKeywords.length > 0) {
+      const backgroundMusicConditions = filters.backgroundMusicKeywords.map(
+        (keyword) => Prisma.sql`COALESCE(background_music, '') ILIKE ${`%${keyword}%`}`
+      );
+      conditions.push(Prisma.sql`(${Prisma.join(backgroundMusicConditions, ' OR ')})`);
     }
 
     // 场所类型筛选

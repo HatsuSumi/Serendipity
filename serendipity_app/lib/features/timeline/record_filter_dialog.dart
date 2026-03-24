@@ -7,6 +7,11 @@ import '../../core/utils/message_helper.dart';
 import '../../core/widgets/common_filter_widgets.dart';
 import '../../core/providers/records_filter_provider.dart';
 
+String? _joinKeywords(List<String>? keywords) {
+  if (keywords == null || keywords.isEmpty) return null;
+  return keywords.join(', ');
+}
+
 /// 记录筛选对话框
 /// 
 /// 职责：
@@ -52,6 +57,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
   Set<EmotionIntensity> _selectedIntensities = {};
   Set<Weather> _selectedWeathers = {};
   final TextEditingController _tagController = TextEditingController();
+  final TextEditingController _placeNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _ifReencounterController = TextEditingController();
   final TextEditingController _conversationStarterController = TextEditingController();
@@ -79,10 +85,11 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
       _selectedWeathers = criteria.weathers?.toSet() ?? {};
       _tagController.text = criteria.tags?.join(', ') ?? '';
       _tagMatchMode = criteria.tagMatchMode;
-      _descriptionController.text = criteria.descriptionKeyword ?? '';
-      _ifReencounterController.text = criteria.ifReencounterKeyword ?? '';
-      _conversationStarterController.text = criteria.conversationStarterKeyword ?? '';
-      _backgroundMusicController.text = criteria.backgroundMusicKeyword ?? '';
+      _placeNameController.text = _joinKeywords(criteria.placeNameKeywords) ?? '';
+      _descriptionController.text = _joinKeywords(criteria.descriptionKeywords) ?? '';
+      _ifReencounterController.text = _joinKeywords(criteria.ifReencounterKeywords) ?? '';
+      _conversationStarterController.text = _joinKeywords(criteria.conversationStarterKeywords) ?? '';
+      _backgroundMusicController.text = _joinKeywords(criteria.backgroundMusicKeywords) ?? '';
       
       // 恢复地区选择
       if (criteria.province != null || criteria.city != null || criteria.area != null) {
@@ -98,6 +105,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
   @override
   void dispose() {
     _tagController.dispose();
+    _placeNameController.dispose();
     _descriptionController.dispose();
     _ifReencounterController.dispose();
     _conversationStarterController.dispose();
@@ -197,13 +205,31 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
               ),
             ),
 
+            // 地点名称关键词
+            FilterSection(
+              title: '地点名称',
+              child: TextField(
+                controller: _placeNameController,
+                decoration: const InputDecoration(
+                  hintText: '输入手动填写的地点名称，多个关键词用逗号分隔',
+                  helperText: '支持中英文逗号（, 或 ，）',
+                  helperMaxLines: 1,
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                maxLines: 1,
+              ),
+            ),
+
             // 描述关键词
             FilterSection(
               title: '描述关键词',
               child: TextField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(
-                  hintText: '输入关键词搜索描述',
+                  hintText: '输入关键词搜索描述，多个关键词用逗号分隔',
+                  helperText: '支持中英文逗号（, 或 ，）',
+                  helperMaxLines: 1,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -217,7 +243,9 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
               child: TextField(
                 controller: _ifReencounterController,
                 decoration: const InputDecoration(
-                  hintText: '输入关键词搜索',
+                  hintText: '输入关键词搜索，多个关键词用逗号分隔',
+                  helperText: '支持中英文逗号（, 或 ，）',
+                  helperMaxLines: 1,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -231,7 +259,9 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
               child: TextField(
                 controller: _conversationStarterController,
                 decoration: const InputDecoration(
-                  hintText: '输入关键词搜索',
+                  hintText: '输入关键词搜索，多个关键词用逗号分隔',
+                  helperText: '支持中英文逗号（, 或 ，）',
+                  helperMaxLines: 1,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -245,7 +275,9 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
               child: TextField(
                 controller: _backgroundMusicController,
                 decoration: const InputDecoration(
-                  hintText: '输入关键词搜索',
+                  hintText: '输入关键词搜索，多个关键词用逗号分隔',
+                  helperText: '支持中英文逗号（, 或 ，）',
+                  helperMaxLines: 1,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -300,18 +332,11 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
     }
 
     final tags = parseTags(_tagController.text.trim());
-    final descriptionKeyword = _descriptionController.text.trim().isEmpty 
-        ? null 
-        : _descriptionController.text.trim();
-    final ifReencounterKeyword = _ifReencounterController.text.trim().isEmpty
-        ? null
-        : _ifReencounterController.text.trim();
-    final conversationStarterKeyword = _conversationStarterController.text.trim().isEmpty
-        ? null
-        : _conversationStarterController.text.trim();
-    final backgroundMusicKeyword = _backgroundMusicController.text.trim().isEmpty
-        ? null
-        : _backgroundMusicController.text.trim();
+    final placeNameKeywords = parseCommaSeparatedKeywords(_placeNameController.text.trim());
+    final descriptionKeywords = parseCommaSeparatedKeywords(_descriptionController.text.trim());
+    final ifReencounterKeywords = parseCommaSeparatedKeywords(_ifReencounterController.text.trim());
+    final conversationStarterKeywords = parseCommaSeparatedKeywords(_conversationStarterController.text.trim());
+    final backgroundMusicKeywords = parseCommaSeparatedKeywords(_backgroundMusicController.text.trim());
 
     // 构建筛选条件
     final criteria = RecordsFilterCriteria(
@@ -322,16 +347,17 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
       province: _selectedRegion?.province,
       city: _selectedRegion?.city,
       area: _selectedRegion?.area,
+      placeNameKeywords: placeNameKeywords,
       placeTypes: _selectedPlaceTypes.isEmpty ? null : _selectedPlaceTypes.toList(),
       statuses: _selectedStatuses.isEmpty ? null : _selectedStatuses.toList(),
       emotionIntensities: _selectedIntensities.isEmpty ? null : _selectedIntensities.toList(),
       weathers: _selectedWeathers.isEmpty ? null : _selectedWeathers.toList(),
       tags: tags,
       tagMatchMode: _tagMatchMode,
-      descriptionKeyword: descriptionKeyword,
-      ifReencounterKeyword: ifReencounterKeyword,
-      conversationStarterKeyword: conversationStarterKeyword,
-      backgroundMusicKeyword: backgroundMusicKeyword,
+      descriptionKeywords: descriptionKeywords,
+      ifReencounterKeywords: ifReencounterKeywords,
+      conversationStarterKeywords: conversationStarterKeywords,
+      backgroundMusicKeywords: backgroundMusicKeywords,
     );
 
     // 更新 Provider，RecordsNotifier 会自动监听并过滤

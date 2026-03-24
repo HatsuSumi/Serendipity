@@ -412,6 +412,27 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   ),
                 ],
               ),
+
+              // 地点名称（仅在筛选时显示）
+              if ((filterCriteria.placeNameKeywords?.isNotEmpty ?? false) &&
+                  record.location.placeName != null &&
+                  record.location.placeName!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Builder(
+                  builder: (context) {
+                    return buildHighlightedText(
+                      _isMasked ? _maskText(record.location.placeName!) : record.location.placeName!,
+                      keywords: _isMasked ? null : filterCriteria.placeNameKeywords,
+                      highlightColor: statusColor.withValues(alpha: 0.3),
+                      textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  },
+                ),
+              ],
               
               // 描述（如果有）
               if (record.description != null && record.description!.isNotEmpty) ...[
@@ -420,7 +441,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       builder: (context) {
                         return buildHighlightedText(
                           _isMasked ? _maskText(record.description!) : record.description!,
-                          keywords: _isMasked ? null : (filterCriteria.descriptionKeyword != null ? [filterCriteria.descriptionKeyword!] : null),
+                          keywords: _isMasked ? null : filterCriteria.descriptionKeywords,
                           highlightColor: statusColor.withValues(alpha: 0.3),
                           textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -491,8 +512,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   ],
 
                   // 如果再遇备忘（仅在筛选时显示）
-                  if (filterCriteria.ifReencounterKeyword != null && 
-                      filterCriteria.ifReencounterKeyword!.isNotEmpty &&
+                  if ((filterCriteria.ifReencounterKeywords?.isNotEmpty ?? false) && 
                       record.ifReencounter != null && 
                       record.ifReencounter!.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -500,14 +520,13 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       context,
                       '如果再遇',
                       record.ifReencounter!,
-                      filterCriteria.ifReencounterKeyword!,
+                      filterCriteria.ifReencounterKeywords!,
                       statusColor,
                     ),
                   ],
 
                   // 对话契机（仅在筛选时显示）
-                  if (filterCriteria.conversationStarterKeyword != null && 
-                      filterCriteria.conversationStarterKeyword!.isNotEmpty &&
+                  if ((filterCriteria.conversationStarterKeywords?.isNotEmpty ?? false) && 
                       record.conversationStarter != null && 
                       record.conversationStarter!.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -515,14 +534,13 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       context,
                       '对话契机',
                       record.conversationStarter!,
-                      filterCriteria.conversationStarterKeyword!,
+                      filterCriteria.conversationStarterKeywords!,
                       statusColor,
                     ),
                   ],
 
                   // 背景音乐（仅在筛选时显示）
-                  if (filterCriteria.backgroundMusicKeyword != null && 
-                      filterCriteria.backgroundMusicKeyword!.isNotEmpty &&
+                  if ((filterCriteria.backgroundMusicKeywords?.isNotEmpty ?? false) && 
                       record.backgroundMusic != null && 
                       record.backgroundMusic!.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -530,7 +548,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       context,
                       '背景音乐',
                       record.backgroundMusic!,
-                      filterCriteria.backgroundMusicKeyword!,
+                      filterCriteria.backgroundMusicKeywords!,
                       statusColor,
                     ),
                   ],
@@ -868,11 +886,11 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     BuildContext context,
     String label,
     String content,
-    String keyword,
+    List<String> keywords,
     Color statusColor,
   ) {
     final displayContent = _isMasked ? _maskText(content) : content;
-    final displayKeyword = _isMasked ? null : keyword;
+    final displayKeywords = _isMasked ? null : keywords;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -887,7 +905,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         const SizedBox(height: 4),
         buildHighlightedText(
           displayContent,
-          keywords: displayKeyword != null ? [displayKeyword] : null,
+          keywords: displayKeywords,
           highlightColor: statusColor.withValues(alpha: 0.3),
           textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,

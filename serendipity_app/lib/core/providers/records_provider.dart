@@ -107,17 +107,20 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     final tagList = criteria.tags?.isNotEmpty == true ? criteria.tags! : null;
     final isWholeWord = criteria.tagMatchMode == TagMatchMode.wholeWord;
     // 关键词全部转小写，避免在每条记录里重复调用 toLowerCase()
-    final descKw = criteria.descriptionKeyword?.isNotEmpty == true
-        ? criteria.descriptionKeyword!.toLowerCase()
+    final descKeywords = criteria.descriptionKeywords?.isNotEmpty == true
+        ? criteria.descriptionKeywords!.map((keyword) => keyword.toLowerCase()).toList()
         : null;
-    final reencounterKw = criteria.ifReencounterKeyword?.isNotEmpty == true
-        ? criteria.ifReencounterKeyword!.toLowerCase()
+    final placeNameKeywords = criteria.placeNameKeywords?.isNotEmpty == true
+        ? criteria.placeNameKeywords!.map((keyword) => keyword.toLowerCase()).toList()
         : null;
-    final conversationKw = criteria.conversationStarterKeyword?.isNotEmpty == true
-        ? criteria.conversationStarterKeyword!.toLowerCase()
+    final reencounterKeywords = criteria.ifReencounterKeywords?.isNotEmpty == true
+        ? criteria.ifReencounterKeywords!.map((keyword) => keyword.toLowerCase()).toList()
         : null;
-    final musicKw = criteria.backgroundMusicKeyword?.isNotEmpty == true
-        ? criteria.backgroundMusicKeyword!.toLowerCase()
+    final conversationKeywords = criteria.conversationStarterKeywords?.isNotEmpty == true
+        ? criteria.conversationStarterKeywords!.map((keyword) => keyword.toLowerCase()).toList()
+        : null;
+    final musicKeywords = criteria.backgroundMusicKeywords?.isNotEmpty == true
+        ? criteria.backgroundMusicKeywords!.map((keyword) => keyword.toLowerCase()).toList()
         : null;
 
     return records.where((record) {
@@ -168,6 +171,14 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
         return false;
       }
 
+      // 地点名称关键词筛选
+      if (placeNameKeywords != null) {
+        final recordPlaceName = (record.location.placeName ?? '').toLowerCase();
+        if (!placeNameKeywords.any(recordPlaceName.contains)) {
+          return false;
+        }
+      }
+
       // 标签筛选
       // - 全词匹配：record tags 转 Set，O(1) 查找
       // - 包含匹配：线性扫描，但 tagMatchMode 判断已提到循环外
@@ -185,29 +196,33 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
       }
 
       // 描述关键词筛选（关键词已预转小写）
-      if (descKw != null) {
-        if (!(record.description ?? '').toLowerCase().contains(descKw)) {
+      if (descKeywords != null) {
+        final recordDescription = (record.description ?? '').toLowerCase();
+        if (!descKeywords.any(recordDescription.contains)) {
           return false;
         }
       }
 
       // 如果再遇备忘关键词筛选
-      if (reencounterKw != null) {
-        if (!(record.ifReencounter ?? '').toLowerCase().contains(reencounterKw)) {
+      if (reencounterKeywords != null) {
+        final recordIfReencounter = (record.ifReencounter ?? '').toLowerCase();
+        if (!reencounterKeywords.any(recordIfReencounter.contains)) {
           return false;
         }
       }
 
       // 对话契机关键词筛选
-      if (conversationKw != null) {
-        if (!(record.conversationStarter ?? '').toLowerCase().contains(conversationKw)) {
+      if (conversationKeywords != null) {
+        final recordConversationStarter = (record.conversationStarter ?? '').toLowerCase();
+        if (!conversationKeywords.any(recordConversationStarter.contains)) {
           return false;
         }
       }
 
       // 背景音乐关键词筛选
-      if (musicKw != null) {
-        if (!(record.backgroundMusic ?? '').toLowerCase().contains(musicKw)) {
+      if (musicKeywords != null) {
+        final recordBackgroundMusic = (record.backgroundMusic ?? '').toLowerCase();
+        if (!musicKeywords.any(recordBackgroundMusic.contains)) {
           return false;
         }
       }

@@ -95,6 +95,11 @@ export interface IRecordService {
       province?: string;
       city?: string;
       area?: string;
+      placeNameKeywords?: string;
+      descriptionKeywords?: string;
+      ifReencounterKeywords?: string;
+      conversationStarterKeywords?: string;
+      backgroundMusicKeywords?: string;
       placeTypes?: string;
       tags?: string;
       statuses?: string;
@@ -281,6 +286,11 @@ export class RecordService implements IRecordService {
       province?: string;
       city?: string;
       area?: string;
+      placeNameKeywords?: string;
+      descriptionKeywords?: string;
+      ifReencounterKeywords?: string;
+      conversationStarterKeywords?: string;
+      backgroundMusicKeywords?: string;
       placeTypes?: string;
       tags?: string;
       statuses?: string;
@@ -317,6 +327,21 @@ export class RecordService implements IRecordService {
     const placeTypes = filters.placeTypes
       ? filters.placeTypes.split(',').map(t => t.trim()).filter(t => t)
       : undefined;
+    const placeNameKeywords = filters.placeNameKeywords
+      ? filters.placeNameKeywords.split(',').map(k => k.trim()).filter(k => k)
+      : undefined;
+    const descriptionKeywords = filters.descriptionKeywords
+      ? filters.descriptionKeywords.split(',').map(k => k.trim()).filter(k => k)
+      : undefined;
+    const ifReencounterKeywords = filters.ifReencounterKeywords
+      ? filters.ifReencounterKeywords.split(',').map(k => k.trim()).filter(k => k)
+      : undefined;
+    const conversationStarterKeywords = filters.conversationStarterKeywords
+      ? filters.conversationStarterKeywords.split(',').map(k => k.trim()).filter(k => k)
+      : undefined;
+    const backgroundMusicKeywords = filters.backgroundMusicKeywords
+      ? filters.backgroundMusicKeywords.split(',').map(k => k.trim()).filter(k => k)
+      : undefined;
     const tags = filters.tags
       ? filters.tags.split(',').map(t => t.trim()).filter(t => t)
       : undefined;
@@ -337,6 +362,11 @@ export class RecordService implements IRecordService {
       province: filters.province,
       city: filters.city,
       area: filters.area,
+      placeNameKeywords,
+      descriptionKeywords,
+      ifReencounterKeywords,
+      conversationStarterKeywords,
+      backgroundMusicKeywords,
       placeTypes,
       statuses,
       emotionIntensities,

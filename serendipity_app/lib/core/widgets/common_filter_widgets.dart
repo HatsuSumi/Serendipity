@@ -605,20 +605,30 @@ class _WeatherMultiSelectDialogState extends State<_WeatherMultiSelectDialog> {
 
 /// 标签解析工具函数
 /// 
-/// 职责：解析用户输入的标签字符串
+/// 职责：解析用户输入的逗号分隔关键词字符串
 /// 
 /// 调用者：各筛选对话框
-List<String>? parseTags(String input) {
+List<String>? parseCommaSeparatedKeywords(String input) {
   if (input.isEmpty) return null;
   
-  final tags = input
+  final keywords = input
       .replaceAll('，', ',')  // 中文逗号 → 英文逗号
       .split(',')
       .map((t) => t.trim())
       .where((t) => t.isNotEmpty)
+      .toSet()
       .toList();
   
-  return tags.isEmpty ? null : tags;
+  return keywords.isEmpty ? null : keywords;
+}
+
+/// 标签解析工具函数
+/// 
+/// 职责：解析用户输入的标签字符串
+/// 
+/// 调用者：各筛选对话框
+List<String>? parseTags(String input) {
+  return parseCommaSeparatedKeywords(input);
 }
 
 /// 构建高亮文本 Widget
