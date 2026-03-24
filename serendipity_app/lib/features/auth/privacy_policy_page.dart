@@ -73,7 +73,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             Text(
               '我收集信息的唯一目的是提供服务：\n\n'
               '✅ 账号信息：用于登录验证\n'
-              '✅ 位置信息：在地图上显示记录、统计常去地点\n'
+              '✅ 位置信息：用于创建记录时获取定位、解析地址和地点名称\n'
               '✅ 记录内容：保存你的记录，支持云同步\n'
               '✅ 使用数据：提供个性化体验\n\n'
               '❌ 我不会：\n'
@@ -88,8 +88,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             Text(
               '数据存储在两个地方：\n\n'
               '📱 本地存储\n'
-              '使用 Hive 数据库存储在你的设备上\n'
-              '即使没有网络也能正常使用\n\n'
+              '使用 Hive 数据库存储在你的设备上\n\n'
               '☁️ 云端存储\n'
               '登录后数据会自动同步到服务器\n'
               '支持多设备访问（会员功能）\n'
@@ -123,7 +122,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             Text(
               'Serendipity 使用以下第三方服务：\n\n'
               '🗺️ 高德地图 API\n'
-              '用途：GPS 定位、地址解析、地图显示\n'
+              '用途：GPS 定位、逆地理编码（将坐标解析为地址和地点名称）\n'
               '隐私政策：https://lbs.amap.com/home/privacy/',
               style: bodyStyle,
             ),
