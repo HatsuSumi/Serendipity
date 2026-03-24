@@ -23,6 +23,7 @@ import '../auth/login_page.dart';
 import '../auth/register_page.dart';
 import '../auth/welcome_page.dart';
 import '../test/location_test_page.dart';
+import '../about/about_page.dart';
 import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
 import '../community/my_posts_page.dart';
@@ -291,6 +292,31 @@ class ProfilePage extends ConsumerWidget {
                 onChanged: (value) async {
                   await ref.read(userSettingsProvider.notifier).updateCheckInConfettiEnabled(value);
                 },
+              );
+            },
+          ),
+          
+          // 关于与说明
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              '关于与说明',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.error_outline),
+            title: const Text('关于 Serendipity'),
+            subtitle: const Text('产品定位、状态说明与记录方式'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              NavigationHelper.pushWithTransition(
+                context,
+                ref,
+                const AboutPage(),
               );
             },
           ),

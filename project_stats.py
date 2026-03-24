@@ -20,9 +20,12 @@
   py -3 project_stats.py
   py -3 project_stats.py "H:/path/to/project"
   python project_stats.py . --html
+  python project_stats.py . --json-out
+  python project_stats.py . --json-out "serendipity_app/assets/data/project_stats.json"
 
 可选参数：
   --html [FILE]      生成交互式 HTML 可视化报告（默认 project_stats_report.html）
+  --json-out [FILE]  导出机器可读 JSON 统计（默认 project_stats.json）
   --assets           统计非代码/资源文件（图片/音频/模型/二进制等）
   --no-ignore        不忽略常见目录（如 .git, node_modules）
   --include-hidden   也统计隐藏文件/目录
@@ -36,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import os
 import sys
 import threading
@@ -1627,6 +1631,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="生成 HTML 可视化报告（可选指定文件名；不带值默认 project_stats_report.html）",
     )
     ap.add_argument("--markdown", action="store_true", help="生成 Markdown 格式输出（适合直接复制到 README.md）")
+    ap.add_argument(
+        "--json-out",
+        nargs="?",
+        const="project_stats.json",
+        default=None,
+        help="导出机器可读 JSON 统计（可选指定文件名；不带值默认 project_stats.json）",
+    )
     args = ap.parse_args(argv)
 
     root = Path(args.path)
@@ -1818,6 +1829,20 @@ def main(argv: Optional[List[str]] = None) -> int:
             import traceback
             traceback.print_exc()
 
+    if args.json_out is not None:
+        try:
+            json_path = Path(args.json_out)
+            if not json_path.is_absolute():
+                json_path = Path.cwd() / json_path
+
+            json_payload = build_stats_payload(res, rows, total_lines, total_chars)
+            write_stats_json(json_path, json_payload)
+            emit(f"[+] JSON 统计已生成: {json_path}")
+        except Exception as e:
+            print(f"[Warn] 生成 JSON 统计失败: {e}")
+            import traceback
+            traceback.print_exc()
+
     # ----------------------------
     # 输出：Markdown 格式
     # ----------------------------
@@ -1896,6 +1921,68 @@ def generate_markdown_output(res, total_code_files: int, total_lines: int, total
             lines.append(f"  - {label}：{st.files} 个文件，{fmt_bytes(st.bytes)}")
     
     return "\n".join(lines)
+
+
+def build_stats_payload(res: AnalyzeResult, rows: List[Tuple[str, 'CodeStat']], total_lines: int, total_chars: int) -> Dict:
+    """构建可复用的 JSON 统计数据。"""
+    line_values = [st.code_lines for _, st in rows]
+    char_values = [st.code_chars for _, st in rows]
+    adjusted_line_pcts = adjust_percentages(line_values, total_lines)
+    adjusted_char_pcts = adjust_percentages(char_values, total_chars)
+
+    file_counts = [
+        {
+            "key": t,
+            "label": FILE_TYPE_LABELS.get(t, t),
+            "count": cnt,
+        }
+        for t, cnt in sorted(res.file_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        if cnt > 0
+    ]
+
+    code_lines = [
+        {
+            "key": t,
+            "label": CODE_TYPE_LABELS.get(t, t),
+            "count": st.code_lines,
+            "percentage": adjusted_line_pcts[i],
+        }
+        for i, (t, st) in enumerate(rows)
+    ]
+
+    code_chars = [
+        {
+            "key": t,
+            "label": CODE_TYPE_LABELS.get(t, t),
+            "count": st.code_chars,
+            "percentage": adjusted_char_pcts[i],
+        }
+        for i, (t, st) in enumerate(rows)
+    ]
+
+    return {
+        "generated_at": time.strftime("%Y-%m-%d"),
+        "root": str(res.root.resolve()),
+        "totals": {
+            "all_files": res.total_files + res.asset_total_files,
+            "code_files": sum(st.files for _, st in rows),
+            "code_lines": total_lines,
+            "code_chars": total_chars,
+            "asset_files": res.asset_total_files,
+            "asset_bytes": res.asset_total_bytes,
+        },
+        "file_counts": file_counts,
+        "code_lines": code_lines,
+        "code_chars": code_chars,
+    }
+
+
+def write_stats_json(output_path: Path, payload: Dict) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def generate_html_report(data: Dict, output_path: Path) -> None:

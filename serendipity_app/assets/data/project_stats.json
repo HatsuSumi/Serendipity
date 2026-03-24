@@ -1,0 +1,334 @@
+{
+  "generated_at": "2026-03-24",
+  "root": "D:\\Serendipity",
+  "totals": {
+    "all_files": 566,
+    "code_files": 380,
+    "code_lines": 77676,
+    "code_chars": 2594160,
+    "asset_files": 0,
+    "asset_bytes": 0
+  },
+  "file_counts": [
+    {
+      "key": "Dart",
+      "label": "Dart文件",
+      "count": 193
+    },
+    {
+      "key": "Markdown",
+      "label": "Markdown文档",
+      "count": 111
+    },
+    {
+      "key": "TypeScript",
+      "label": "TypeScript文件",
+      "count": 98
+    },
+    {
+      "key": "Other",
+      "label": "其他文件",
+      "count": 75
+    },
+    {
+      "key": "JavaScript",
+      "label": "JavaScript文件",
+      "count": 21
+    },
+    {
+      "key": "SQL",
+      "label": "SQL脚本",
+      "count": 17
+    },
+    {
+      "key": "JSON",
+      "label": "JSON文件",
+      "count": 10
+    },
+    {
+      "key": "C",
+      "label": "C文件",
+      "count": 7
+    },
+    {
+      "key": "C++",
+      "label": "C++文件",
+      "count": 6
+    },
+    {
+      "key": "Swift",
+      "label": "Swift文件",
+      "count": 6
+    },
+    {
+      "key": "XML",
+      "label": "XML文件",
+      "count": 6
+    },
+    {
+      "key": "Kotlin",
+      "label": "Kotlin文件",
+      "count": 4
+    },
+    {
+      "key": "INI",
+      "label": "INI/配置文件",
+      "count": 3
+    },
+    {
+      "key": "YAML",
+      "label": "YAML文件",
+      "count": 3
+    },
+    {
+      "key": "HTML",
+      "label": "HTML文件",
+      "count": 1
+    },
+    {
+      "key": "Java",
+      "label": "Java文件",
+      "count": 1
+    },
+    {
+      "key": "Objective-C",
+      "label": "Objective-C文件",
+      "count": 1
+    },
+    {
+      "key": "Python",
+      "label": "Python脚本",
+      "count": 1
+    },
+    {
+      "key": "TOML",
+      "label": "TOML文件",
+      "count": 1
+    },
+    {
+      "key": "批处理",
+      "label": "批处理脚本",
+      "count": 1
+    }
+  ],
+  "code_lines": [
+    {
+      "key": "Dart",
+      "label": "Dart",
+      "count": 37874,
+      "percentage": 48.8
+    },
+    {
+      "key": "JSON",
+      "label": "JSON",
+      "count": 27615,
+      "percentage": 35.5
+    },
+    {
+      "key": "TypeScript",
+      "label": "TypeScript",
+      "count": 7560,
+      "percentage": 9.7
+    },
+    {
+      "key": "JavaScript",
+      "label": "JavaScript",
+      "count": 3382,
+      "percentage": 4.4
+    },
+    {
+      "key": "C++",
+      "label": "C++",
+      "count": 442,
+      "percentage": 0.6
+    },
+    {
+      "key": "SQL",
+      "label": "SQL",
+      "count": 224,
+      "percentage": 0.3
+    },
+    {
+      "key": "C",
+      "label": "C",
+      "count": 105,
+      "percentage": 0.1
+    },
+    {
+      "key": "Kotlin",
+      "label": "Kotlin",
+      "count": 84,
+      "percentage": 0.1
+    },
+    {
+      "key": "YAML",
+      "label": "YAML",
+      "count": 76,
+      "percentage": 0.1
+    },
+    {
+      "key": "XML",
+      "label": "XML",
+      "count": 65,
+      "percentage": 0.1
+    },
+    {
+      "key": "批处理",
+      "label": "Batch",
+      "count": 64,
+      "percentage": 0.1
+    },
+    {
+      "key": "Swift",
+      "label": "Swift",
+      "count": 63,
+      "percentage": 0.1
+    },
+    {
+      "key": "Java",
+      "label": "Java",
+      "count": 41,
+      "percentage": 0.1
+    },
+    {
+      "key": "Objective-C",
+      "label": "ObjC",
+      "count": 35,
+      "percentage": 0.0
+    },
+    {
+      "key": "HTML",
+      "label": "HTML",
+      "count": 19,
+      "percentage": 0.0
+    },
+    {
+      "key": "Python",
+      "label": "Python",
+      "count": 18,
+      "percentage": 0.0
+    },
+    {
+      "key": "INI",
+      "label": "INI",
+      "count": 8,
+      "percentage": 0.0
+    },
+    {
+      "key": "TOML",
+      "label": "TOML",
+      "count": 1,
+      "percentage": 0.0
+    }
+  ],
+  "code_chars": [
+    {
+      "key": "Dart",
+      "label": "Dart",
+      "count": 1241107,
+      "percentage": 47.8
+    },
+    {
+      "key": "JSON",
+      "label": "JSON",
+      "count": 667284,
+      "percentage": 25.7
+    },
+    {
+      "key": "TypeScript",
+      "label": "TypeScript",
+      "count": 246296,
+      "percentage": 9.5
+    },
+    {
+      "key": "JavaScript",
+      "label": "JavaScript",
+      "count": 392670,
+      "percentage": 15.1
+    },
+    {
+      "key": "C++",
+      "label": "C++",
+      "count": 15306,
+      "percentage": 0.6
+    },
+    {
+      "key": "SQL",
+      "label": "SQL",
+      "count": 12209,
+      "percentage": 0.5
+    },
+    {
+      "key": "C",
+      "label": "C",
+      "count": 3231,
+      "percentage": 0.1
+    },
+    {
+      "key": "Kotlin",
+      "label": "Kotlin",
+      "count": 2297,
+      "percentage": 0.1
+    },
+    {
+      "key": "YAML",
+      "label": "YAML",
+      "count": 1580,
+      "percentage": 0.1
+    },
+    {
+      "key": "XML",
+      "label": "XML",
+      "count": 2809,
+      "percentage": 0.1
+    },
+    {
+      "key": "批处理",
+      "label": "Batch",
+      "count": 2107,
+      "percentage": 0.1
+    },
+    {
+      "key": "Swift",
+      "label": "Swift",
+      "count": 1980,
+      "percentage": 0.1
+    },
+    {
+      "key": "Java",
+      "label": "Java",
+      "count": 1971,
+      "percentage": 0.1
+    },
+    {
+      "key": "Objective-C",
+      "label": "ObjC",
+      "count": 1528,
+      "percentage": 0.1
+    },
+    {
+      "key": "HTML",
+      "label": "HTML",
+      "count": 657,
+      "percentage": 0.0
+    },
+    {
+      "key": "Python",
+      "label": "Python",
+      "count": 750,
+      "percentage": 0.0
+    },
+    {
+      "key": "INI",
+      "label": "INI",
+      "count": 355,
+      "percentage": 0.0
+    },
+    {
+      "key": "TOML",
+      "label": "TOML",
+      "count": 23,
+      "percentage": 0.0
+    }
+  ]
+}
