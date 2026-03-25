@@ -1890,6 +1890,15 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 '第 N 天终于说话了',
                 '→ 创建新记录，选择"邂逅"',
               ),
+              const SizedBox(height: 12),
+              Text(
+                '一直不说话，就一直选择"再遇"。',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
