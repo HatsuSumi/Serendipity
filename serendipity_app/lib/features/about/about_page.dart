@@ -35,56 +35,58 @@ class AboutPage extends ConsumerWidget {
           eyebrow: '关于 Serendipity',
           headline: 'Serendipity 是一个记录“错过”的 app。',
           description: '不是为了重逢，而是为了记住那些转瞬即逝的瞬间。',
-          children: [
-            if (isLoading)
-              const _AboutLoadingCard()
-            else if (hasError)
-              const _AboutStatsErrorCard()
-            else
-              ...?sections?.map(
-                (section) => AboutSectionCard(section: section),
-              ),
-            const _AboutStatementCard(statement: _serviceStatement),
-            const _AboutSponsorCard(),
-            const AboutVersionCard(),
-            const SizedBox(height: 8),
-            _AboutEntryCard(
-              icon: Icons.description_outlined,
-              title: '用户协议',
-              subtitle: '查看使用规则与服务说明',
-              onTap: () {
-                NavigationHelper.pushWithTransition(
-                  context,
-                  ref,
-                  const UserAgreementPage(),
-                );
-              },
-            ),
-            _AboutEntryCard(
-              icon: Icons.privacy_tip_outlined,
-              title: '隐私政策',
-              subtitle: '查看数据收集、使用与保护方式',
-              onTap: () {
-                NavigationHelper.pushWithTransition(
-                  context,
-                  ref,
-                  const PrivacyPolicyPage(),
-                );
-              },
-            ),
-            _AboutEntryCard(
-              icon: Icons.error_outline,
-              title: '查看更多设计决策',
-              subtitle: '为什么产品这样设计？',
-              onTap: () {
-                NavigationHelper.pushWithTransition(
-                  context,
-                  ref,
-                  const DesignDecisionsPage(),
-                );
-              },
-            ),
-          ],
+          children: isLoading
+              ? const [
+                  _AboutLoadingCard(),
+                ]
+              : [
+                  if (hasError)
+                    const _AboutStatsErrorCard()
+                  else
+                    ...?sections?.map(
+                      (section) => AboutSectionCard(section: section),
+                    ),
+                  const _AboutStatementCard(statement: _serviceStatement),
+                  const _AboutSponsorCard(),
+                  const AboutVersionCard(),
+                  const SizedBox(height: 8),
+                  _AboutEntryCard(
+                    icon: Icons.description_outlined,
+                    title: '用户协议',
+                    subtitle: '查看使用规则与服务说明',
+                    onTap: () {
+                      NavigationHelper.pushWithTransition(
+                        context,
+                        ref,
+                        const UserAgreementPage(),
+                      );
+                    },
+                  ),
+                  _AboutEntryCard(
+                    icon: Icons.privacy_tip_outlined,
+                    title: '隐私政策',
+                    subtitle: '查看数据收集、使用与保护方式',
+                    onTap: () {
+                      NavigationHelper.pushWithTransition(
+                        context,
+                        ref,
+                        const PrivacyPolicyPage(),
+                      );
+                    },
+                  ),
+                  _AboutEntryCard(
+                    icon: Icons.error_outline,
+                    title: '查看更多设计决策',
+                    subtitle: '为什么产品这样设计？',
+                    onTap: () {
+                      NavigationHelper.pushWithTransition(
+                        context,
+                        ref,
+                        const DesignDecisionsPage(),
+                      );
+                    },
+                  ),
+                ],
         );
       },
     );
