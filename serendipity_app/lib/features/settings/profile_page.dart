@@ -33,6 +33,44 @@ import 'dialogs/sync_history_dialog.dart';
 import 'favorites_page.dart';
 import '../statistics/statistics_page.dart';
 
+class _ProfileEmojiLeading extends StatelessWidget {
+  final String emoji;
+
+  const _ProfileEmojiLeading(this.emoji, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: Center(
+        child: Text(
+          emoji,
+          style: const TextStyle(fontSize: 22, height: 1),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileIconLeading extends StatelessWidget {
+  final IconData icon;
+
+  const _ProfileIconLeading(this.icon, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: Center(
+        child: Icon(icon, size: 22),
+      ),
+    );
+  }
+}
+
 /// 个人资料页面（我的页面）
 /// 
 /// 显示用户信息、功能入口、设置选项等。
@@ -90,7 +128,7 @@ class ProfilePage extends ConsumerWidget {
           
           // 每日签到入口
           ListTile(
-            leading: const Text('✨', style: TextStyle(fontSize: 24)),
+            leading: const _ProfileEmojiLeading('✨'),
             title: const Text('每日签到'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -104,7 +142,7 @@ class ProfilePage extends ConsumerWidget {
           
           // 成就入口
           ListTile(
-            leading: const Text('🏆', style: TextStyle(fontSize: 24)),
+            leading: const _ProfileEmojiLeading('🏆'),
             title: const Text('我的成就'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -118,7 +156,7 @@ class ProfilePage extends ConsumerWidget {
           
           // 我的发布入口
           ListTile(
-            leading: const Text('🌍', style: TextStyle(fontSize: 24)),
+            leading: const _ProfileEmojiLeading('🌍'),
             title: const Text('我的发布'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -132,7 +170,7 @@ class ProfilePage extends ConsumerWidget {
           
           // 我的收藏入口
           ListTile(
-            leading: const Text('🔖', style: TextStyle(fontSize: 24)),
+            leading: const _ProfileEmojiLeading('🔖'),
             title: const Text('我的收藏'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -146,7 +184,7 @@ class ProfilePage extends ConsumerWidget {
           
           // 统计面板入口
           ListTile(
-            leading: const Icon(Icons.bar_chart_outlined),
+            leading: const _ProfileIconLeading(Icons.bar_chart_outlined),
             title: const Text('统计面板'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -168,7 +206,7 @@ class ProfilePage extends ConsumerWidget {
                 children: [
                   // 手动同步
                   ListTile(
-                    leading: const Text('🔄', style: TextStyle(fontSize: 24)),
+                    leading: const _ProfileEmojiLeading('🔄'),
                     title: Row(
                       children: [
                         const Text('手动同步'),
@@ -198,7 +236,7 @@ class ProfilePage extends ConsumerWidget {
                   
                   // 同步历史
                   ListTile(
-                    leading: const Text('📋', style: TextStyle(fontSize: 24)),
+                    leading: const _ProfileEmojiLeading('📋'),
                     title: const Text('同步历史'),
                     subtitle: const Text('查看历史同步记录'),
                     trailing: const Icon(Icons.chevron_right),
