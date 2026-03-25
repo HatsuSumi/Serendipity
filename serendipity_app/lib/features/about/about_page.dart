@@ -1,8 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../auth/privacy_policy_page.dart';
 import '../auth/user_agreement_page.dart';
@@ -47,6 +49,7 @@ class AboutPage extends ConsumerWidget {
                       (section) => AboutSectionCard(section: section),
                     ),
                   const _AboutStatementCard(statement: _serviceStatement),
+                  const _AboutFeedbackCard(),
                   const _AboutSponsorCard(),
                   const AboutVersionCard(),
                   const SizedBox(height: 8),
@@ -206,6 +209,96 @@ class _AboutStatementCard extends StatelessWidget {
                 height: 1.8,
                 color: colorScheme.onErrorContainer,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AboutFeedbackCard extends StatelessWidget {
+  const _AboutFeedbackCard();
+
+  static const _feedbackEmail = 'hatsusumi-moe@163.com';
+  static const _feedbackPrefix =
+      '如有任何建议、意见、问题，或是想说句鼓励的话，都欢迎发邮件至：';
+
+  Future<void> _copyEmail(BuildContext context) async {
+    await Clipboard.setData(const ClipboardData(text: _feedbackEmail));
+    if (context.mounted) {
+      MessageHelper.showSuccess(context, '邮箱地址已复制');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.surface.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: 0.16),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.mail_outline, color: colorScheme.primary),
+                const SizedBox(width: 10),
+                Text(
+                  '联系与反馈',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              _feedbackPrefix,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                height: 1.8,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: SelectableText(
+                    _feedbackEmail,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      height: 1.8,
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _copyEmail(context),
+                  tooltip: '复制邮箱',
+                  icon: const Icon(Icons.copy_rounded),
+                ),
+              ],
             ),
           ],
         ),
