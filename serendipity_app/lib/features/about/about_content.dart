@@ -10,6 +10,16 @@ class AboutSectionContent {
     : assert(title != '');
 }
 
+class AboutPageSectionsResult {
+  final List<AboutSectionContent> sections;
+  final bool hasProjectStatsError;
+
+  const AboutPageSectionsResult({
+    required this.sections,
+    required this.hasProjectStatsError,
+  });
+}
+
 class ProjectStatsEntry {
   final String key;
   final String label;
@@ -172,19 +182,24 @@ const List<AboutSectionContent> _staticAboutPageSections = [
   ),
 ];
 
-Future<List<AboutSectionContent>> loadAboutPageSections() async {
+Future<AboutPageSectionsResult> loadAboutPageSections() async {
   try {
-    final rawJson = await rootBundle.loadString(
-      'assets/data/project_stats.json',
-    );
+    final rawJson = await rootBundle.loadString('assets/data/project_stats.json');
     final decoded = jsonDecode(rawJson) as Map<String, dynamic>;
     final stats = ProjectStatsData.fromJson(decoded);
-    return List<AboutSectionContent>.unmodifiable([
-      ..._staticAboutPageSections,
-      ...stats.toAboutSections(),
-    ]);
+
+    return AboutPageSectionsResult(
+      sections: List<AboutSectionContent>.unmodifiable([
+        ..._staticAboutPageSections,
+        ...stats.toAboutSections(),
+      ]),
+      hasProjectStatsError: false,
+    );
   } catch (_) {
-    return List<AboutSectionContent>.unmodifiable(_staticAboutPageSections);
+    return const AboutPageSectionsResult(
+      sections: _staticAboutPageSections,
+      hasProjectStatsError: true,
+    );
   }
 }
 

@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class AboutVersionCard extends StatelessWidget {
+class AboutVersionCard extends StatefulWidget {
   const AboutVersionCard({super.key});
+
+  @override
+  State<AboutVersionCard> createState() => _AboutVersionCardState();
+}
+
+class _AboutVersionCardState extends State<AboutVersionCard> {
+  late final Future<PackageInfo> _packageInfoFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _packageInfoFuture = PackageInfo.fromPlatform();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +42,7 @@ class AboutVersionCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: FutureBuilder<PackageInfo>(
-          future: PackageInfo.fromPlatform(),
+          future: _packageInfoFuture,
           builder: (context, snapshot) {
             final versionText = switch (snapshot.connectionState) {
               ConnectionState.done when snapshot.hasData =>
@@ -69,4 +82,3 @@ class AboutVersionCard extends StatelessWidget {
     );
   }
 }
-
