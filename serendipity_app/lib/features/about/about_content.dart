@@ -190,8 +190,8 @@ Future<AboutPageSectionsResult> loadAboutPageSections() async {
 
     return AboutPageSectionsResult(
       sections: List<AboutSectionContent>.unmodifiable([
-        ..._staticAboutPageSections,
-        ...stats.toAboutSections(),
+      ..._staticAboutPageSections,
+      ...stats.toAboutSections(),
       ]),
       hasProjectStatsError: false,
     );

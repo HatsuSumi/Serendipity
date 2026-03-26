@@ -50,9 +50,9 @@ class _AboutPageState extends ConsumerState<AboutPage> {
                 ]
               : [
                   if (hasStatsError) const AboutStatsErrorCard(),
-                  ...?sections?.map(
-                    (section) => AboutSectionCard(section: section),
-                  ),
+                    ...?sections?.map(
+                      (section) => AboutSectionCard(section: section),
+                    ),
                   const AboutStatementCard(),
                   const AboutFeedbackCard(),
                   const AboutSponsorCard(),
