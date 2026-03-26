@@ -428,7 +428,6 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
     final maxStoryLines = membershipInfo.maxStoryLines;
     if (maxStoryLines != null && currentCount >= maxStoryLines) {
       MessageHelper.showWarning(context, '免费版最多创建 $maxStoryLines 条故事线，请先升级会员');
-      NavigationHelper.pushWithTransition(context, ref, const MembershipPage());
       return;
     }
 

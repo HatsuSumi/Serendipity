@@ -94,7 +94,7 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
                   if (hasActiveMembership) {
                     return _buildActiveMembershipCard(context, membershipInfo);
                   }
-                  return _buildUpgradeCard(context, user.id);
+                  return _buildUpgradeCard(context);
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => _buildErrorCard(
@@ -133,6 +133,7 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
             _MembershipBenefitRow(title: '故事线', detail: '免费版最多 3 条，会员无限制'),
             _MembershipBenefitRow(title: '主题', detail: '解锁朦胧、深夜、温暖、秋日主题'),
             _MembershipBenefitRow(title: '同步', detail: '免费版单设备，会员多设备同步'),
+            _MembershipBenefitRow(title: '导出', detail: '故事线详情页支持导出故事线为图文卡片'),
             _MembershipBenefitRow(
               title: '提醒',
               detail: '所有“邂逅”记录都会生成周年纪念日提醒，支持本地提醒与当天首次打开 app 的弹窗提醒',
@@ -192,7 +193,7 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
     );
   }
 
-  Widget _buildUpgradeCard(BuildContext context, String userId) {
+  Widget _buildUpgradeCard(BuildContext context) {
     final displayAmount = _selectedAmount.round();
 
     return Card(
@@ -238,8 +239,6 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
                     : const Text('确认支付'),
               ),
             ),
-            const SizedBox(height: 8),
-            Text('当前账号：$userId', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ),

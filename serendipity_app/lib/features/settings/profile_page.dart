@@ -377,11 +377,6 @@ class ProfilePage extends ConsumerWidget {
               onTap: () async {
                 if (!canUseTheme) {
                   MessageHelper.showWarning(context, '${type.label} 为会员专属主题');
-                  NavigationHelper.pushWithTransition(
-                    context,
-                    ref,
-                    const MembershipPage(),
-                  );
                   return;
                 }
 
