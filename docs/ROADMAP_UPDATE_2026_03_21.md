@@ -57,11 +57,7 @@
 **规格文档中有完整设计，开发清单中规划不完整**
 
 - 升级会员页面完整实现
-- 支付流程（iOS/Android）
-  - iOS: Apple In-App Purchase
-  - Android: Google Play Billing
-  - Android: 支付宝
-  - Android: 微信支付
+- 支付流程
 - 支付成功后的感谢页面
 - 会员功能解锁逻辑
 
