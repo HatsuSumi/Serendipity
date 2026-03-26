@@ -234,6 +234,42 @@ class StatisticsService {
     );
   }
 
+  /// 计算标签词云。
+  ///
+  /// 调用者：
+  /// - `calculateAdvancedStatistics`：全局高级统计
+  /// - 故事线局部词云 Provider
+  static List<TagCloudItem> calculateTagCloud(List<EncounterRecord> records) {
+    if (records.isEmpty) {
+      return const [];
+    }
+
+    final Map<String, int> tagFrequency = {};
+    for (final record in records) {
+      for (final tagWithNote in record.tags) {
+        final tag = tagWithNote.tag;
+        tagFrequency[tag] = (tagFrequency[tag] ?? 0) + 1;
+      }
+    }
+
+    if (tagFrequency.isEmpty) {
+      return const [];
+    }
+
+    final maxFrequency = tagFrequency.values.reduce((a, b) => a > b ? a : b);
+
+    final items = tagFrequency.entries
+        .map((entry) => TagCloudItem(
+              tag: entry.key,
+              count: entry.value,
+              size: entry.value / maxFrequency,
+            ))
+        .toList()
+      ..sort((a, b) => b.count.compareTo(a.count));
+
+    return items;
+  }
+
   /// 计算高级统计数据（会员版）
   ///
   /// 包含：基础统计 + 标签词云 + 月度分布
@@ -243,7 +279,7 @@ class StatisticsService {
     final basic = calculateBasicStatistics(records);
 
     // 2. 计算标签词云
-    final tagCloud = _calculateTagCloud(records);
+    final tagCloud = calculateTagCloud(records);
 
     // 3. 计算月度分布（按时间范围缓存）
     final monthlyDistributionByRange = {
@@ -329,51 +365,6 @@ class StatisticsService {
           .toList();
     }
     return result;
-  }
-
-  /// 计算标签词云
-  /// 
-  /// 设计说明：
-  /// - 统计所有标签的出现频率
-  /// - 按频率从高到低排序
-  /// - 计算相对大小（0.0 - 1.0）
-  static List<TagCloudItem> _calculateTagCloud(List<EncounterRecord> records) {
-    if (records.isEmpty) {
-      return [];
-    }
-
-    // 统计标签频率
-    final Map<String, int> tagFrequency = {};
-    for (final record in records) {
-      for (final tagWithNote in record.tags) {
-        final tag = tagWithNote.tag;
-        tagFrequency[tag] = (tagFrequency[tag] ?? 0) + 1;
-      }
-    }
-
-    if (tagFrequency.isEmpty) {
-      return [];
-    }
-
-    // 找出最大频率
-    final maxFrequency = tagFrequency.values.reduce((a, b) => a > b ? a : b);
-
-    // 转换为 TagCloudItem 并计算相对大小
-    final items = tagFrequency.entries
-        .map((entry) {
-          final size = entry.value / maxFrequency; // 相对大小 0.0 - 1.0
-          return TagCloudItem(
-            tag: entry.key,
-            count: entry.value,
-            size: size,
-          );
-        })
-        .toList();
-
-    // 按频率从高到低排序
-    items.sort((a, b) => b.count.compareTo(a.count));
-
-    return items;
   }
 
   /// 计算情绪强度分布
@@ -466,195 +457,223 @@ class StatisticsService {
     List<EncounterRecord> records,
     List<TagCloudItem> tagCloud,
   ) {
-    // --- 天气 ---
     final weatherCounts = <Weather, int>{};
-    // --- 场所类型 ---
     final placeTypeCounts = <PlaceType, int>{};
-    // --- 省份 ---
     final provinceCounts = <String, int>{};
-    // --- 城市 ---
     final cityCounts = <String, int>{};
-    // --- 地点名称 ---
     final placeNameCounts = <String, int>{};
-    // --- 时间段 ---
     final hourCounts = <int, int>{};
 
     for (final record in records) {
-      // 天气（多选）
-      for (final w in record.weather) {
-        weatherCounts[w] = (weatherCounts[w] ?? 0) + 1;
+      for (final weather in record.weather) {
+        weatherCounts[weather] = (weatherCounts[weather] ?? 0) + 1;
       }
-      // 场所类型
-      final pt = record.location.placeType;
-      if (pt != null) {
-        placeTypeCounts[pt] = (placeTypeCounts[pt] ?? 0) + 1;
+
+      final placeType = record.location.placeType;
+      if (placeType != null) {
+        placeTypeCounts[placeType] = (placeTypeCounts[placeType] ?? 0) + 1;
       }
-      // 省份
-      final prov = record.location.province;
-      if (prov != null && prov.isNotEmpty) {
-        provinceCounts[prov] = (provinceCounts[prov] ?? 0) + 1;
+
+      final province = record.location.province;
+      if (province != null && province.isNotEmpty) {
+        provinceCounts[province] = (provinceCounts[province] ?? 0) + 1;
       }
-      // 城市
+
       final city = record.location.city;
       if (city != null && city.isNotEmpty) {
         cityCounts[city] = (cityCounts[city] ?? 0) + 1;
       }
-      // 地点名称
-      final pn = record.location.placeName;
-      if (pn != null && pn.isNotEmpty) {
-        placeNameCounts[pn] = (placeNameCounts[pn] ?? 0) + 1;
-      }
-      // 时间段
-      final h = record.timestamp.hour;
-      hourCounts[h] = (hourCounts[h] ?? 0) + 1;
-    }
 
-    // 转换辅助
-    List<FieldRankingItem> sortedItems<K>(
-      Map<K, int> counts,
-      String Function(K) labelOf,
-    ) {
-      final items = counts.entries
-          .map((e) => FieldRankingItem(label: labelOf(e.key), count: e.value))
-          .toList()
-        ..sort((a, b) => b.count.compareTo(a.count));
-      return items;
+      final placeName = record.location.placeName;
+      if (placeName != null && placeName.isNotEmpty) {
+        placeNameCounts[placeName] = (placeNameCounts[placeName] ?? 0) + 1;
+      }
+
+      final hour = record.timestamp.hour;
+      hourCounts[hour] = (hourCounts[hour] ?? 0) + 1;
     }
 
     return {
       FieldRankingDimension.weather: FieldRankingTable(
         dimension: FieldRankingDimension.weather,
-        items: sortedItems(
-          weatherCounts,
-          (w) => '${w.icon} ${w.label}',
+        items: _buildFieldRankingItems(
+          weatherCounts.entries.map(
+            (entry) => FieldRankingItem(
+              label: entry.key.label,
+              count: entry.value,
+            ),
+          ),
         ),
       ),
       FieldRankingDimension.placeType: FieldRankingTable(
         dimension: FieldRankingDimension.placeType,
-        items: sortedItems(
-          placeTypeCounts,
-          (pt) => '${pt.icon} ${pt.label}',
+        items: _buildFieldRankingItems(
+          placeTypeCounts.entries.map(
+            (entry) => FieldRankingItem(
+              label: entry.key.label,
+              count: entry.value,
+            ),
+          ),
         ),
       ),
       FieldRankingDimension.province: FieldRankingTable(
         dimension: FieldRankingDimension.province,
-        items: sortedItems(provinceCounts, (s) => s),
+        items: _buildFieldRankingItems(
+          provinceCounts.entries.map(
+            (entry) => FieldRankingItem(
+              label: entry.key,
+              count: entry.value,
+            ),
+          ),
+        ),
       ),
       FieldRankingDimension.city: FieldRankingTable(
         dimension: FieldRankingDimension.city,
-        items: sortedItems(cityCounts, (s) => s),
+        items: _buildFieldRankingItems(
+          cityCounts.entries.map(
+            (entry) => FieldRankingItem(
+              label: entry.key,
+              count: entry.value,
+            ),
+          ),
+        ),
       ),
       FieldRankingDimension.placeName: FieldRankingTable(
         dimension: FieldRankingDimension.placeName,
-        items: sortedItems(placeNameCounts, (s) => s),
+        items: _buildFieldRankingItems(
+          placeNameCounts.entries.map(
+            (entry) => FieldRankingItem(
+              label: entry.key,
+              count: entry.value,
+            ),
+          ),
+        ),
       ),
       FieldRankingDimension.hour: FieldRankingTable(
         dimension: FieldRankingDimension.hour,
-        items: (hourCounts.entries
-                .map((e) => FieldRankingItem(
-                      label: '${e.key.toString().padLeft(2, "0")}:00-'
-                          '${(e.key + 1).toString().padLeft(2, "0")}:00',
-                      count: e.value,
-                    ))
-                .toList()
-              ..sort((a, b) => b.count.compareTo(a.count))),
+        items: _buildFieldRankingItems(
+          hourCounts.entries.map(
+            (entry) => FieldRankingItem(
+              label: _formatHourRange(entry.key),
+              count: entry.value,
+            ),
+          ),
+        ),
       ),
       FieldRankingDimension.tag: FieldRankingTable(
         dimension: FieldRankingDimension.tag,
-        items: tagCloud
-            .map((t) => FieldRankingItem(label: t.tag, count: t.count))
-            .toList(),
+        items: _buildFieldRankingItems(
+          tagCloud.map(
+            (item) => FieldRankingItem(
+              label: item.tag,
+              count: item.count,
+            ),
+          ),
+        ),
       ),
     };
+  }
+
+  static List<FieldRankingItem> _buildFieldRankingItems(
+    Iterable<FieldRankingItem> items,
+  ) {
+    return items.toList()..sort((a, b) => b.count.compareTo(a.count));
   }
 
   /// 计算月度成功率趋势
   ///
   /// 设计说明：
-  /// - 成功 = 状态为 met 或 reunion
-  /// - 每月成功率 = 当月成功记录数 / 当月总记录数 * 100
-  /// - 当月无记录时成功率为 0.0
-  /// - 结果按时间正序排列
+  /// - 成功定义：状态为 met 或 reunion
+  /// - 成功率 = 成功记录数 / 当月总记录数 * 100
+  /// - 月份窗口与 monthlyDistribution 保持一致
+  /// - 空月份成功率为 0
   static List<MonthlySuccessRate> _calculateMonthlySuccessRates(
     List<EncounterRecord> records, {
     required StatisticsChartRange chartRange,
   }) {
     final months = _buildMonthlyWindow(records, chartRange);
-    if (months.isEmpty) {
-      return const <MonthlySuccessRate>[];
-    }
+    if (months.isEmpty) return const [];
 
-    final totalMap = <String, int>{};
-    final successMap = <String, int>{};
-    for (final (y, m) in months) {
-      totalMap['$y-$m'] = 0;
-      successMap['$y-$m'] = 0;
+    final totalCounts = <String, int>{};
+    final successCounts = <String, int>{};
+
+    for (final (year, month) in months) {
+      final key = '$year-$month';
+      totalCounts[key] = 0;
+      successCounts[key] = 0;
     }
 
     for (final record in records) {
-      final ts = record.timestamp;
-      final key = '${ts.year}-${ts.month}';
-      if (!totalMap.containsKey(key)) continue;
-      totalMap[key] = totalMap[key]! + 1;
-      if (record.status == EncounterStatus.met ||
-          record.status == EncounterStatus.reunion) {
-        successMap[key] = successMap[key]! + 1;
+      final timestamp = record.timestamp;
+      final key = '${timestamp.year}-${timestamp.month}';
+      if (!totalCounts.containsKey(key)) continue;
+
+      totalCounts[key] = (totalCounts[key] ?? 0) + 1;
+      final isSuccess = record.status == EncounterStatus.met ||
+          record.status == EncounterStatus.reunion;
+      if (isSuccess) {
+        successCounts[key] = (successCounts[key] ?? 0) + 1;
       }
     }
 
-    return months.map((ym) {
-      final key = '${ym.$1}-${ym.$2}';
-      final total = totalMap[key] ?? 0;
-      final success = successMap[key] ?? 0;
-      final rate = total == 0 ? 0.0 : success / total * 100;
+    return months.map((yearMonth) {
+      final key = '${yearMonth.$1}-${yearMonth.$2}';
+      final totalCount = totalCounts[key] ?? 0;
+      final successCount = successCounts[key] ?? 0;
+      final successRate = totalCount == 0
+          ? 0.0
+          : (successCount / totalCount) * 100;
+
       return MonthlySuccessRate(
-        year: ym.$1,
-        month: ym.$2,
-        successRate: double.parse(rate.toStringAsFixed(1)),
-        successCount: success,
-        totalCount: total,
+        year: yearMonth.$1,
+        month: yearMonth.$2,
+        successRate: successRate,
+        successCount: successCount,
+        totalCount: totalCount,
       );
     }).toList();
   }
 
-  /// 构建月度时间窗口
+  /// 构建月度窗口
   ///
-  /// 调用者：
-  /// - _calculateMonthlyDistribution()
-  /// - _calculateMonthlySuccessRates()
-  ///
-  /// 规则：
-  /// - last12Months：最近12个月（含当前月）
-  /// - all：从第一条记录所在月份到当前月份
+  /// 设计说明：
+  /// - last12Months：以当前月份为终点，向前取连续12个月
+  /// - all：以数据中最早月份到最晚月份为范围
+  /// - 返回按时间正序排列的 (year, month)
   static List<(int, int)> _buildMonthlyWindow(
     List<EncounterRecord> records,
     StatisticsChartRange chartRange,
   ) {
-    final now = DateTime.now();
+    if (records.isEmpty) return const [];
 
-    switch (chartRange) {
-      case StatisticsChartRange.last12Months:
-        return List.generate(12, (i) {
-          final dt = DateTime(now.year, now.month - 11 + i);
-          return (dt.year, dt.month);
-        });
-      case StatisticsChartRange.all:
-        if (records.isEmpty) {
-          return const <(int, int)>[];
-        }
-        final firstRecord = records.reduce(
-          (a, b) => a.timestamp.isBefore(b.timestamp) ? a : b,
-        );
-        final start = DateTime(firstRecord.timestamp.year, firstRecord.timestamp.month);
-        final monthCount = (now.year - start.year) * 12 + now.month - start.month + 1;
-        if (monthCount <= 0) {
-          throw StateError('月度时间窗口计算失败：monthCount 必须大于 0');
-        }
-        return List.generate(monthCount, (i) {
-          final dt = DateTime(start.year, start.month + i);
-          return (dt.year, dt.month);
-        });
+    DateTime start;
+    DateTime end;
+
+    if (chartRange == StatisticsChartRange.last12Months) {
+      final now = DateTime.now();
+      end = DateTime(now.year, now.month);
+      start = DateTime(end.year, end.month - 11);
+    } else {
+      final sorted = [...records]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final first = sorted.first.timestamp;
+      final last = sorted.last.timestamp;
+      start = DateTime(first.year, first.month);
+      end = DateTime(last.year, last.month);
     }
+
+    final result = <(int, int)>[];
+    var current = start;
+    while (!current.isAfter(end)) {
+      result.add((current.year, current.month));
+      current = DateTime(current.year, current.month + 1);
+    }
+    return result;
+  }
+
+  static String _formatHourRange(int hour) {
+    final endHour = (hour + 1) % 24;
+    final startText = hour.toString().padLeft(2, '0');
+    final endText = endHour.toString().padLeft(2, '0');
+    return '$startText:00-$endText:00';
   }
 }
-

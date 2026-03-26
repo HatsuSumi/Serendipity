@@ -18,6 +18,7 @@ import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import 'add_existing_records_dialog.dart';
+import 'story_line_tag_cloud_section.dart';
 
 /// 故事线详情页面
 class StoryLineDetailPage extends ConsumerWidget {
@@ -88,14 +89,23 @@ class StoryLineDetailPage extends ConsumerWidget {
               ? _buildEmptyState(context)
               : RefreshIndicator(
                   onRefresh: () async {
-                    ref.invalidate(storyLinesProvider);
+                    await Future.wait([
+                      ref.read(storyLinesProvider.notifier).refresh(),
+                      ref.read(recordsProvider.notifier).refresh(),
+                    ]);
                   },
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: recordsAsync.length,
+                    itemCount: recordsAsync.length + 1,
                     itemBuilder: (context, index) {
-                      final record = recordsAsync[index];
-                      final isLast = index == recordsAsync.length - 1;
+                      if (index == 0) {
+                        return StoryLineTagCloudSection(
+                          storyLineId: storyLineId,
+                        );
+                      }
+
+                      final record = recordsAsync[index - 1];
+                      final isLast = index == recordsAsync.length;
 
                       return Column(
                         children: [

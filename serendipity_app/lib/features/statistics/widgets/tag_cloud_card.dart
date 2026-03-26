@@ -4,36 +4,32 @@ import 'package:flutter/material.dart';
 
 import '../../../models/statistics.dart';
 
-// ---------------------------------------------------------------------------
-// 公共入口
-// ---------------------------------------------------------------------------
+const _maxVisibleTagCloudItems = 25;
 
-/// 标签词云卡片
+/// 通用标签词云面板。
 ///
-/// 核心算法：螺旋碰撞检测布局（Archimedean spiral placement）
+/// 职责：
+/// - 负责词云卡片的通用容器与空状态展示
+/// - 复用同一套布局与渲染算法
 ///
-/// 关键设计：
-/// 1. TextPainter 精确测量文字尺寸，消除近似估算误差
-/// 2. 按 size 降序排列，大词优先占据中心区域
-/// 3. 螺旋起点加随机偏移（基于 tag hashCode，保证确定性），避免完全对称
-/// 4. 螺旋参数 a=0.6 / dθ=0.15，步长更密，填充更均匀
-/// 5. 竖排概率 25%（基于 hashCode 确定性），比固定间隔更自然
-/// 6. 颜色按 size 在 primary→tertiary 间线性插值，大词更饱和
-class TagCloudCard extends StatelessWidget {
+/// 调用者：
+/// - `TagCloudCard`：全局统计页包装层
+/// - 故事线详情页的局部词云模块
+class TagCloudPanel extends StatelessWidget {
+  final String title;
+  final String emptyText;
   final List<TagCloudItem> tagCloud;
 
-  const TagCloudCard({
+  const TagCloudPanel({
     super.key,
+    required this.title,
+    required this.emptyText,
     required this.tagCloud,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
-    if (tagCloud.isEmpty) {
-      return _EmptyState(colorScheme: colorScheme);
-    }
 
     return Container(
       decoration: BoxDecoration(
@@ -45,7 +41,7 @@ class TagCloudCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '🏷️ 我最常错过的类型',
+            title,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -53,9 +49,15 @@ class TagCloudCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          if (tagCloud.isEmpty)
+            _EmptyState(
+              colorScheme: colorScheme,
+              emptyText: emptyText,
+            )
+          else
           LayoutBuilder(
             builder: (context, constraints) => _WordCloud(
-              items: tagCloud.take(25).toList(),
+              items: tagCloud.take(_maxVisibleTagCloudItems).toList(),
               colorScheme: colorScheme,
               canvasWidth: constraints.maxWidth,
             ),
@@ -66,9 +68,24 @@ class TagCloudCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 尺寸精确测量
-// ---------------------------------------------------------------------------
+/// 标签词云卡片（全局统计页包装层）
+class TagCloudCard extends StatelessWidget {
+  final List<TagCloudItem> tagCloud;
+
+  const TagCloudCard({
+    super.key,
+    required this.tagCloud,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TagCloudPanel(
+      title: '🏷️ 我最常错过的类型',
+      emptyText: '暂无标签数据',
+      tagCloud: tagCloud,
+    );
+  }
+}
 
 /// 用 TextPainter 精确测量词语渲染尺寸（含 padding）
 Size _measureWord(String text, double fontSize, bool vertical) {
@@ -84,17 +101,12 @@ Size _measureWord(String text, double fontSize, bool vertical) {
     textDirection: TextDirection.ltr,
   )..layout();
 
-  const pH = 3.0;
-  const pW = 7.0;
-  final w = tp.width + pW * 2;
-  final h = tp.height + pH * 2;
-  // 竖排时宽高互换
-  return vertical ? Size(h, w) : Size(w, h);
+  const paddingVertical = 3.0;
+  const paddingHorizontal = 7.0;
+  final width = tp.width + paddingHorizontal * 2;
+  final height = tp.height + paddingVertical * 2;
+  return vertical ? Size(height, width) : Size(width, height);
 }
-
-// ---------------------------------------------------------------------------
-// 布局引擎
-// ---------------------------------------------------------------------------
 
 class _PlacedWord {
   final TagCloudItem item;
@@ -111,7 +123,6 @@ class _PlacedWord {
     required this.vertical,
   });
 
-  /// AABB 碰撞检测（含 3px gap）
   bool overlaps(_PlacedWord other) {
     const gap = 3.0;
     return topLeft.dx < other.topLeft.dx + other.width + gap &&
@@ -126,43 +137,40 @@ List<_PlacedWord> _layout({
   required double canvasWidth,
   required double canvasHeight,
 }) {
-  // 大词优先放置
   final sorted = [...items]..sort((a, b) => b.size.compareTo(a.size));
 
   final placed = <_PlacedWord>[];
   final center = Offset(canvasWidth / 2, canvasHeight / 2);
 
   for (final item in sorted) {
-    // 竖排概率 25%，基于 hashCode 保证确定性（同数据同布局）
-    final rand = math.Random(item.tag.hashCode);
-    final vertical = rand.nextDouble() < 0.25;
+    final random = math.Random(item.tag.hashCode);
+    final vertical = random.nextDouble() < 0.25;
 
     final fontSize = 11.0 + item.size * 15.0;
     final size = _measureWord(item.tag, fontSize, vertical);
 
-    // 螺旋起点加确定性随机偏移，避免完全对称
     final startOffset = Offset(
-      rand.nextDouble() * 20 - 10,
-      rand.nextDouble() * 20 - 10,
+      random.nextDouble() * 20 - 10,
+      random.nextDouble() * 20 - 10,
     );
     final start = center + startOffset;
 
-    // 阿基米德螺旋：r = a * θ，椭圆拉伸 1.5x
     const a = 0.6;
-    const dTheta = 0.15;
-    const maxIter = 1200;
+    const deltaTheta = 0.15;
+    const maxIterations = 1200;
 
-    bool placed_ = false;
-    for (var iter = 0; iter < maxIter; iter++) {
-      final theta = dTheta * iter;
-      final r = a * theta;
-      final dx = r * math.cos(theta) * 1.5;
-      final dy = r * math.sin(theta);
+    var isPlaced = false;
+    for (var iteration = 0; iteration < maxIterations; iteration++) {
+      final theta = deltaTheta * iteration;
+      final radius = a * theta;
+      final dx = radius * math.cos(theta) * 1.5;
+      final dy = radius * math.sin(theta);
 
       final x = start.dx + dx - size.width / 2;
       final y = start.dy + dy - size.height / 2;
 
-      if (x < 0 || y < 0 ||
+      if (x < 0 ||
+          y < 0 ||
           x + size.width > canvasWidth ||
           y + size.height > canvasHeight) {
         continue;
@@ -176,22 +184,20 @@ List<_PlacedWord> _layout({
         vertical: vertical,
       );
 
-      if (!placed.any((p) => candidate.overlaps(p))) {
+      if (!placed.any((existing) => candidate.overlaps(existing))) {
         placed.add(candidate);
-        placed_ = true;
+        isPlaced = true;
         break;
       }
     }
 
-    if (!placed_) continue;
+    if (!isPlaced) {
+      continue;
+    }
   }
 
   return placed;
 }
-
-// ---------------------------------------------------------------------------
-// Widget 层
-// ---------------------------------------------------------------------------
 
 class _WordCloud extends StatelessWidget {
   final List<TagCloudItem> items;
@@ -214,25 +220,25 @@ class _WordCloud extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final h = _canvasHeight;
+    final canvasHeight = _canvasHeight;
     final placed = _layout(
       items: items,
       canvasWidth: canvasWidth,
-      canvasHeight: h,
+      canvasHeight: canvasHeight,
     );
 
     return SizedBox(
       width: canvasWidth,
-      height: h,
+      height: canvasHeight,
       child: Stack(
         clipBehavior: Clip.hardEdge,
         children: [
-          for (final pw in placed)
+          for (final word in placed)
             Positioned(
-              left: pw.topLeft.dx,
-              top: pw.topLeft.dy,
+              left: word.topLeft.dx,
+              top: word.topLeft.dy,
               child: _WordChip(
-                placed: pw,
+                placed: word,
                 colorScheme: colorScheme,
               ),
             ),
@@ -250,7 +256,6 @@ class _WordChip extends StatelessWidget {
 
   double get _fontSize => 11.0 + placed.item.size * 15.0;
 
-  /// 颜色按 size 在 primary → tertiary 间线性插值
   Color _resolveColor() {
     final color = Color.lerp(
       colorScheme.primary,
@@ -260,8 +265,7 @@ class _WordChip extends StatelessWidget {
     return color.withValues(alpha: 0.5 + placed.item.size * 0.5);
   }
 
-  /// 背景同色系，低透明度
-  Color _resolveBg() {
+  Color _resolveBackgroundColor() {
     final color = Color.lerp(
       colorScheme.primaryContainer,
       colorScheme.tertiaryContainer,
@@ -288,7 +292,7 @@ class _WordChip extends StatelessWidget {
         vertical: placed.vertical ? 7 : 3,
       ),
       decoration: BoxDecoration(
-        color: _resolveBg(),
+        color: _resolveBackgroundColor(),
         borderRadius: BorderRadius.circular(8),
       ),
       child: placed.vertical
@@ -298,27 +302,21 @@ class _WordChip extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
-
 class _EmptyState extends StatelessWidget {
   final ColorScheme colorScheme;
-  const _EmptyState({required this.colorScheme});
+  final String emptyText;
+
+  const _EmptyState({
+    required this.colorScheme,
+    required this.emptyText,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Center(
+    return Center(
         child: Text(
-          '暂无标签数据',
+        emptyText,
           style: TextStyle(color: colorScheme.onSurfaceVariant),
-        ),
       ),
     );
   }
