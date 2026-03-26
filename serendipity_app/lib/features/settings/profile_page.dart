@@ -7,6 +7,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/achievement_provider.dart';
 import '../../core/providers/check_in_provider.dart';
 import '../../core/providers/first_launch_provider.dart';
+import '../../core/providers/membership_provider.dart';
 import '../../core/providers/user_settings_provider.dart';
 import '../../core/providers/sync_status_provider.dart';
 import '../../core/providers/records_provider.dart' show syncCompletedProvider;
@@ -18,6 +19,7 @@ import '../../core/utils/phone_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../models/enums.dart';
+import '../../models/user.dart';
 import '../auth/widgets/auth_text_field.dart';
 import '../auth/login_page.dart';
 import '../auth/register_page.dart';
@@ -27,6 +29,7 @@ import '../about/about_page.dart';
 import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
 import '../community/my_posts_page.dart';
+import '../membership/membership_page.dart';
 import 'dialogs/manual_sync_dialog.dart';
 import 'dialogs/sync_info_dialog.dart';
 import 'dialogs/sync_history_dialog.dart';
@@ -36,7 +39,7 @@ import '../statistics/statistics_page.dart';
 class _ProfileEmojiLeading extends StatelessWidget {
   final String emoji;
 
-  const _ProfileEmojiLeading(this.emoji, {super.key});
+  const _ProfileEmojiLeading(this.emoji);
 
   @override
   Widget build(BuildContext context) {
@@ -57,29 +60,27 @@ class _ProfileEmojiLeading extends StatelessWidget {
 class _ProfileIconLeading extends StatelessWidget {
   final IconData icon;
 
-  const _ProfileIconLeading(this.icon, {super.key});
+  const _ProfileIconLeading(this.icon);
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 24,
       height: 24,
-      child: Center(
-        child: Icon(icon, size: 22),
-      ),
+      child: Center(child: Icon(icon, size: 22)),
     );
   }
 }
 
 /// 个人资料页面（我的页面）
-/// 
+///
 /// 显示用户信息、功能入口、设置选项等。
-/// 
+///
 /// 遵循原则：
 /// - 单一职责（SRP）：只负责展示个人资料界面和处理用户交互
 /// - 分层约束：UI层不包含业务逻辑，通过Provider调用
 /// - 用户体验优先：未登录时显示登录/注册入口，不阻碍功能使用
-/// 
+///
 /// 调用者：
 /// - MainNavigationPage：底部导航栏的"我的"标签
 class ProfilePage extends ConsumerWidget {
@@ -90,11 +91,10 @@ class ProfilePage extends ConsumerWidget {
     final currentTransition = ref.watch(pageTransitionProvider);
     final currentDialogAnimation = ref.watch(dialogAnimationProvider);
     final authState = ref.watch(authProvider);
+    final membershipInfo = ref.watch(membershipProvider).valueOrNull;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('我的'),
-      ),
+      appBar: AppBar(title: const Text('我的')),
       body: ListView(
         children: [
           // 用户信息卡片
@@ -102,30 +102,32 @@ class ProfilePage extends ConsumerWidget {
             data: (user) {
               if (user != null) {
                 // 已登录状态
-                return _buildLoggedInUserCard(context, user);
+                return _buildLoggedInUserCard(
+                  context,
+                  ref,
+                  user,
+                  membershipInfo,
+                );
               } else {
                 // 未登录状态
-                return _buildLoggedOutUserCard(context, ref);
+                return _buildLoggedOutUserCard(context, ref, membershipInfo);
               }
             },
             loading: () => const SizedBox.shrink(),
             error: (error, stackTrace) => const SizedBox.shrink(),
           ),
-          
+
           const Divider(),
-          
+
           // 功能入口
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               '功能',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          
+
           // 每日签到入口
           ListTile(
             leading: const _ProfileEmojiLeading('✨'),
@@ -133,13 +135,11 @@ class ProfilePage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CheckInPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const CheckInPage()),
               );
             },
           ),
-          
+
           // 成就入口
           ListTile(
             leading: const _ProfileEmojiLeading('🏆'),
@@ -153,7 +153,7 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-          
+
           // 我的发布入口
           ListTile(
             leading: const _ProfileEmojiLeading('🌍'),
@@ -167,7 +167,7 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-          
+
           // 我的收藏入口
           ListTile(
             leading: const _ProfileEmojiLeading('🔖'),
@@ -181,7 +181,7 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-          
+
           // 统计面板入口
           ListTile(
             leading: const _ProfileIconLeading(Icons.bar_chart_outlined),
@@ -195,13 +195,13 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-          
+
           // 数据同步区域
           Consumer(
             builder: (context, ref, child) {
               final authState = ref.watch(authProvider);
               final syncStatus = ref.watch(syncStatusProvider);
-              
+
               return Column(
                 children: [
                   // 手动同步
@@ -233,7 +233,7 @@ class ProfilePage extends ConsumerWidget {
                         ? null
                         : () => _handleManualSync(context, ref, authState),
                   ),
-                  
+
                   // 同步历史
                   ListTile(
                     leading: const _ProfileEmojiLeading('📋'),
@@ -246,32 +246,31 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-          
+
           const Divider(),
-          
+
           // 签到设置
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               '签到设置',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          
+
           // 签到提醒开关
           Consumer(
             builder: (context, ref, child) {
               final settings = ref.watch(userSettingsProvider);
-              
+
               return SwitchListTile(
                 title: const Text('签到提醒'),
                 subtitle: const Text('每天提醒你签到'),
                 value: settings.checkInReminderEnabled,
                 onChanged: (value) async {
-                  await ref.read(userSettingsProvider.notifier).updateCheckInReminderEnabled(value);
+                  await ref
+                      .read(userSettingsProvider.notifier)
+                      .updateCheckInReminderEnabled(value);
                   if (context.mounted) {
                     MessageHelper.showSuccess(
                       context,
@@ -282,12 +281,12 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-          
+
           // 签到提醒时间
           Consumer(
             builder: (context, ref, child) {
               final settings = ref.watch(userSettingsProvider);
-              
+
               return ListTile(
                 title: const Text('提醒时间'),
                 subtitle: Text(
@@ -296,53 +295,123 @@ class ProfilePage extends ConsumerWidget {
                 trailing: const Icon(Icons.access_time),
                 enabled: settings.checkInReminderEnabled,
                 onTap: settings.checkInReminderEnabled
-                    ? () => _showTimePickerDialog(context, ref, settings.checkInReminderTime)
+                    ? () => _showTimePickerDialog(
+                        context,
+                        ref,
+                        settings.checkInReminderTime,
+                      )
                     : null,
               );
             },
           ),
-          
+
           // 签到震动开关
           Consumer(
             builder: (context, ref, child) {
               final settings = ref.watch(userSettingsProvider);
-              
+
               return SwitchListTile(
                 title: const Text('签到震动'),
                 subtitle: const Text('签到时震动反馈'),
                 value: settings.checkInVibrationEnabled,
                 onChanged: (value) async {
-                  await ref.read(userSettingsProvider.notifier).updateCheckInVibrationEnabled(value);
+                  await ref
+                      .read(userSettingsProvider.notifier)
+                      .updateCheckInVibrationEnabled(value);
                 },
               );
             },
           ),
-          
+
           // 签到粒子特效开关
           Consumer(
             builder: (context, ref, child) {
               final settings = ref.watch(userSettingsProvider);
-              
+
               return SwitchListTile(
                 title: const Text('签到粒子特效'),
                 subtitle: const Text('签到时显示彩色粒子'),
                 value: settings.checkInConfettiEnabled,
                 onChanged: (value) async {
-                  await ref.read(userSettingsProvider.notifier).updateCheckInConfettiEnabled(value);
+                  await ref
+                      .read(userSettingsProvider.notifier)
+                      .updateCheckInConfettiEnabled(value);
                 },
               );
             },
           ),
-          
+          const Divider(),
+
+          // 主题设置
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              '主题设置',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ...ThemeOption.values.map((type) {
+            final settings = ref.watch(userSettingsProvider);
+            final isSelected = settings.theme == type;
+            final canUseTheme =
+                membershipInfo?.canUseTheme(type) ?? !type.isPremium;
+            return ListTile(
+              leading: Icon(
+                type.isPremium
+                    ? Icons.workspace_premium_outlined
+                    : Icons.palette_outlined,
+                color: canUseTheme
+                    ? null
+                    : Theme.of(context).colorScheme.outline,
+              ),
+              title: Text(type.label),
+              subtitle: type.isPremium
+                  ? Text(canUseTheme ? '会员主题' : '会员专属主题')
+                  : const Text('基础主题'),
+              trailing: isSelected
+                  ? const Icon(Icons.check, color: Colors.blue)
+                  : !canUseTheme
+                  ? const Icon(Icons.lock_outline)
+                  : null,
+              selected: isSelected,
+              onTap: () async {
+                if (!canUseTheme) {
+                  MessageHelper.showWarning(context, '${type.label} 为会员专属主题');
+                  NavigationHelper.pushWithTransition(
+                    context,
+                    ref,
+                    const MembershipPage(),
+                  );
+                  return;
+                }
+
+                try {
+                  await ref
+                      .read(userSettingsProvider.notifier)
+                      .updateTheme(type);
+                  if (context.mounted) {
+                    MessageHelper.showSuccess(context, '已切换到：${type.label}');
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    MessageHelper.showError(
+                      context,
+                      '切换主题失败：${AuthErrorHelper.extractErrorMessage(e)}',
+                    );
+                  }
+                }
+              },
+            );
+          }),
+
+          const Divider(),
+
           // 关于与说明
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               '关于与说明',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           ListTile(
@@ -358,34 +427,30 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-          
+
           const Divider(),
-          
+
           // 页面跳转动画设置
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               '页面跳转动画',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           ...PageTransitionType.values.map((type) {
             final isSelected = currentTransition == type;
             return ListTile(
-              leading: Text(
-                type.icon,
-                style: const TextStyle(fontSize: 24),
-              ),
+              leading: Text(type.icon, style: const TextStyle(fontSize: 24)),
               title: Text(type.label),
               trailing: isSelected
                   ? const Icon(Icons.check, color: Colors.blue)
                   : null,
               selected: isSelected,
               onTap: () async {
-                await ref.read(userSettingsProvider.notifier).updatePageTransition(type);
+                await ref
+                    .read(userSettingsProvider.notifier)
+                    .updatePageTransition(type);
                 if (context.mounted) {
                   MessageHelper.showSuccess(context, '已切换到：${type.label}');
                 }
@@ -396,10 +461,7 @@ class ProfilePage extends ConsumerWidget {
             padding: EdgeInsets.all(16),
             child: Text(
               '💡 提示：点击记录卡片、编辑按钮等跳转到新页面时生效\n（底部导航栏切换不触发动画）',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
           const Divider(),
@@ -407,26 +469,22 @@ class ProfilePage extends ConsumerWidget {
             padding: EdgeInsets.all(16),
             child: Text(
               '对话框动画',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           ...DialogAnimationType.values.map((type) {
             final isSelected = currentDialogAnimation == type;
             return ListTile(
-              leading: Text(
-                type.icon,
-                style: const TextStyle(fontSize: 24),
-              ),
+              leading: Text(type.icon, style: const TextStyle(fontSize: 24)),
               title: Text(type.label),
               trailing: isSelected
                   ? const Icon(Icons.check, color: Colors.blue)
                   : null,
               selected: isSelected,
               onTap: () async {
-                await ref.read(userSettingsProvider.notifier).updateDialogAnimation(type);
+                await ref
+                    .read(userSettingsProvider.notifier)
+                    .updateDialogAnimation(type);
                 if (context.mounted) {
                   MessageHelper.showSuccess(context, '已切换到：${type.label}');
                 }
@@ -437,15 +495,12 @@ class ProfilePage extends ConsumerWidget {
             padding: EdgeInsets.all(16),
             child: Text(
               '💡 提示：打开任意对话框查看效果',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
-          
+
           const Divider(),
-          
+
           // 账号管理
           authState.when(
             data: (user) {
@@ -514,18 +569,15 @@ class ProfilePage extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (error, stackTrace) => const SizedBox.shrink(),
           ),
-          
+
           const Divider(),
-          
+
           // 开发测试
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               '开发测试',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           ListTile(
@@ -541,7 +593,10 @@ class ProfilePage extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.notifications_off_outlined, color: Colors.blue),
+            leading: const Icon(
+              Icons.notifications_off_outlined,
+              color: Colors.blue,
+            ),
             title: const Text('重置发布警告对话框'),
             subtitle: const Text('重新显示"发布到社区"警告对话框'),
             onTap: () => _showResetPublishWarningDialog(context, ref),
@@ -582,21 +637,25 @@ class ProfilePage extends ConsumerWidget {
             subtitle: const Text('下次启动将显示欢迎页面'),
             onTap: () => _showResetFirstLaunchDialog(context, ref),
           ),
-          
+
           const SizedBox(height: 32),
         ],
       ),
     );
   }
-  
+
   /// 显示时间选择器对话框
-  /// 
+  ///
   /// 调用者：签到提醒时间 ListTile
-  /// 
+  ///
   /// 遵循原则：
   /// - 单一职责：只负责显示时间选择器
   /// - Fail Fast：参数校验
-  void _showTimePickerDialog(BuildContext context, WidgetRef ref, TimeOfDay currentTime) {
+  void _showTimePickerDialog(
+    BuildContext context,
+    WidgetRef ref,
+    TimeOfDay currentTime,
+  ) {
     showTimePicker(
       context: context,
       initialTime: currentTime,
@@ -608,7 +667,9 @@ class ProfilePage extends ConsumerWidget {
       },
     ).then((selectedTime) async {
       if (selectedTime != null && selectedTime != currentTime) {
-        await ref.read(userSettingsProvider.notifier).updateCheckInReminderTime(selectedTime);
+        await ref
+            .read(userSettingsProvider.notifier)
+            .updateCheckInReminderTime(selectedTime);
         if (context.mounted) {
           MessageHelper.showSuccess(
             context,
@@ -618,15 +679,25 @@ class ProfilePage extends ConsumerWidget {
       }
     });
   }
-  
+
   /// 构建已登录用户卡片
-  /// 
+  ///
   /// 调用者：build()
-  /// 
+  ///
   /// 遵循原则：
   /// - 单一职责：只负责展示已登录用户信息
   /// - 性能优化：使用 const 构造
-  Widget _buildLoggedInUserCard(BuildContext context, user) {
+  Widget _buildLoggedInUserCard(
+    BuildContext context,
+    WidgetRef ref,
+    User user,
+    MembershipInfo? membershipInfo,
+  ) {
+    final membershipLabel = membershipInfo?.isPremium == true ? '会员有效中' : '免费版';
+    final membershipColor = membershipInfo?.isPremium == true
+        ? Colors.amber.shade700
+        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -637,10 +708,12 @@ class ProfilePage extends ConsumerWidget {
               radius: 30,
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               child: Text(
-                user.displayName?.substring(0, 1).toUpperCase() ?? 
-                user.email?.substring(0, 1).toUpperCase() ?? 
-                user.phoneNumber?.substring(user.phoneNumber!.length - 4) ?? 
-                '?',
+                user.displayName?.substring(0, 1).toUpperCase() ??
+                    user.email?.substring(0, 1).toUpperCase() ??
+                    user.phoneNumber?.substring(
+                      user.phoneNumber!.length - 4,
+                    ) ??
+                    '?',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -654,7 +727,10 @@ class ProfilePage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    user.displayName ?? user.email ?? user.phoneNumber ?? '用户',
+                    user.displayName ??
+                        user.email ??
+                        user.phoneNumber ??
+                        '用户',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -662,12 +738,56 @@ class ProfilePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.authProvider == AuthProvider.email 
-                        ? '邮箱登录' 
+                    user.authProvider == AuthProvider.email
+                        ? '邮箱登录'
                         : '手机号登录',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      NavigationHelper.pushWithTransition(
+                        context,
+                        ref,
+                        const MembershipPage(),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.workspace_premium_outlined,
+                            size: 16,
+                            color: membershipColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            membershipLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: membershipColor,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 16,
+                            color: membershipColor,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -678,16 +798,20 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-  
+
   /// 构建未登录用户卡片
-  /// 
+  ///
   /// 调用者：build()
-  /// 
+  ///
   /// 遵循原则：
   /// - 单一职责：只负责展示未登录状态和登录/注册入口
   /// - 用户体验优先：清晰展示登录的好处，鼓励用户登录
   /// - 分层约束：UI层只负责展示和导航，不包含业务逻辑
-  Widget _buildLoggedOutUserCard(BuildContext context, WidgetRef ref) {
+  Widget _buildLoggedOutUserCard(
+    BuildContext context,
+    WidgetRef ref,
+    MembershipInfo? membershipInfo,
+  ) {
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -697,7 +821,9 @@ class ProfilePage extends ConsumerWidget {
             // 头像
             CircleAvatar(
               radius: 40,
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
               child: Icon(
                 Icons.person_outline,
                 size: 40,
@@ -705,28 +831,39 @@ class ProfilePage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // 未登录提示
             const Text(
               '未登录',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            
+
             // 登录好处说明
             Text(
-              '登录后可同步数据到云端',
+              '登录后可同步数据到云端，也可随时查看会员权益',
               style: TextStyle(
                 fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                NavigationHelper.pushWithTransition(
+                  context,
+                  ref,
+                  const MembershipPage(),
+                );
+              },
+              icon: const Icon(Icons.workspace_premium_outlined),
+              label: Text(
+                membershipInfo?.isPremium == true ? '查看会员' : '查看会员权益',
+              ),
+            ),
             const SizedBox(height: 24),
-            
+
             // 登录/注册按钮
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -747,37 +884,29 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-  
+
   /// 导航到登录页
-  /// 
+  ///
   /// 调用者：_buildLoggedOutUserCard()
-  /// 
+  ///
   /// 遵循原则：
   /// - 单一职责：只负责导航
   /// - 使用 NavigationHelper 保持导航一致性
   void _navigateToLogin(BuildContext context, WidgetRef ref) {
-    NavigationHelper.pushWithTransition(
-      context,
-      ref,
-      const LoginPage(),
-    );
+    NavigationHelper.pushWithTransition(context, ref, const LoginPage());
   }
-  
+
   /// 导航到注册页
-  /// 
+  ///
   /// 调用者：_buildLoggedOutUserCard()
-  /// 
+  ///
   /// 遵循原则：
   /// - 单一职责：只负责导航
   /// - 使用 NavigationHelper 保持导航一致性
   void _navigateToRegister(BuildContext context, WidgetRef ref) {
-    NavigationHelper.pushWithTransition(
-      context,
-      ref,
-      const RegisterPage(),
-    );
+    NavigationHelper.pushWithTransition(context, ref, const RegisterPage());
   }
-  
+
   /// 显示退出登录确认对话框
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     DialogHelper.show(
@@ -794,11 +923,11 @@ class ProfilePage extends ConsumerWidget {
             onPressed: () async {
               // 关闭对话框
               Navigator.of(context).pop();
-              
+
               try {
                 // 执行登出
                 await ref.read(authProvider.notifier).signOut();
-                
+
                 // 注意：不需要手动跳转，main.dart 的 authProvider 监听器会自动处理
               } catch (e) {
                 // 显示错误信息
@@ -807,16 +936,14 @@ class ProfilePage extends ConsumerWidget {
                 }
               }
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('退出'),
           ),
         ],
       ),
     );
   }
-  
+
   /// 显示修改密码对话框
   void _showUpdatePasswordDialog(BuildContext context, WidgetRef ref) {
     final currentPasswordController = TextEditingController();
@@ -825,7 +952,7 @@ class ProfilePage extends ConsumerWidget {
     bool currentPasswordVisible = false;
     bool newPasswordVisible = false;
     bool confirmPasswordVisible = false;
-    
+
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -843,7 +970,9 @@ class ProfilePage extends ConsumerWidget {
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        currentPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        currentPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -863,7 +992,9 @@ class ProfilePage extends ConsumerWidget {
                     helperText: '至少6位',
                     suffixIcon: IconButton(
                       icon: Icon(
-                        newPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        newPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -882,7 +1013,9 @@ class ProfilePage extends ConsumerWidget {
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        confirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        confirmPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -904,7 +1037,7 @@ class ProfilePage extends ConsumerWidget {
                   final currentPassword = currentPasswordController.text.trim();
                   final newPassword = newPasswordController.text.trim();
                   final confirmPassword = confirmPasswordController.text.trim();
-                  
+
                   // Fail Fast：验证输入
                   if (currentPassword.isEmpty) {
                     MessageHelper.showError(context, '请输入当前密码');
@@ -926,18 +1059,17 @@ class ProfilePage extends ConsumerWidget {
                     MessageHelper.showError(context, '新密码不能与当前密码相同');
                     return;
                   }
-                  
+
                   // 先执行操作，成功后再关闭对话框
                   final success = await AsyncActionHelper.execute(
                     context,
-                    action: () => ref.read(authProvider.notifier).updatePassword(
-                      currentPassword,
-                      newPassword,
-                    ),
+                    action: () => ref
+                        .read(authProvider.notifier)
+                        .updatePassword(currentPassword, newPassword),
                     successMessage: '密码修改成功',
                     errorMessagePrefix: '修改密码失败',
                   );
-                  
+
                   if (success && context.mounted) {
                     Navigator.of(context).pop();
                   }
@@ -950,13 +1082,13 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-  
+
   /// 显示更换邮箱对话框
   void _showUpdateEmailDialog(BuildContext context, WidgetRef ref) {
     final newEmailController = TextEditingController();
     final passwordController = TextEditingController();
     bool passwordVisible = false;
-    
+
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -986,7 +1118,9 @@ class ProfilePage extends ConsumerWidget {
                     helperText: '需要验证身份',
                     suffixIcon: IconButton(
                       icon: Icon(
-                        passwordVisible ? Icons.visibility : Icons.visibility_off,
+                        passwordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -1007,7 +1141,7 @@ class ProfilePage extends ConsumerWidget {
                 onPressed: () async {
                   final newEmail = newEmailController.text.trim();
                   final password = passwordController.text.trim();
-                  
+
                   // Fail Fast：验证输入
                   if (newEmail.isEmpty) {
                     MessageHelper.showError(context, '请输入新邮箱');
@@ -1017,18 +1151,17 @@ class ProfilePage extends ConsumerWidget {
                     MessageHelper.showError(context, '请输入当前密码');
                     return;
                   }
-                  
+
                   // 先执行操作，成功后再关闭对话框
                   final success = await AsyncActionHelper.execute(
                     context,
-                    action: () => ref.read(authProvider.notifier).updateEmail(
-                      newEmail,
-                      password,
-                    ),
+                    action: () => ref
+                        .read(authProvider.notifier)
+                        .updateEmail(newEmail, password),
                     successMessage: '邮箱更换成功',
                     errorMessagePrefix: '更换邮箱失败',
                   );
-                  
+
                   if (success && context.mounted) {
                     Navigator.of(context).pop();
                   }
@@ -1041,11 +1174,11 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-  
+
   /// 显示恢复密钥对话框
-  /// 
+  ///
   /// 调用者：恢复密钥 ListTile
-  /// 
+  ///
   /// 遵循原则：
   /// - 单一职责：只负责显示和管理恢复密钥
   /// - Fail Fast：参数验证
@@ -1054,7 +1187,7 @@ class ProfilePage extends ConsumerWidget {
     String? recoveryKey;
     bool isLoading = true;
     bool isInitialLoad = true;
-    
+
     // 先获取当前恢复密钥
     try {
       recoveryKey = await ref.read(authProvider.notifier).getRecoveryKey();
@@ -1064,12 +1197,15 @@ class ProfilePage extends ConsumerWidget {
       isLoading = false;
       isInitialLoad = false;
       if (context.mounted) {
-        MessageHelper.showError(context, '获取恢复密钥失败：${AuthErrorHelper.extractErrorMessage(e)}');
+        MessageHelper.showError(
+          context,
+          '获取恢复密钥失败：${AuthErrorHelper.extractErrorMessage(e)}',
+        );
       }
     }
-    
+
     if (!context.mounted) return;
-    
+
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1080,10 +1216,7 @@ class ProfilePage extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '恢复密钥用于在忘记密码时重置密码。',
-                  style: TextStyle(fontSize: 14),
-                ),
+                const Text('恢复密钥用于在忘记密码时重置密码。', style: TextStyle(fontSize: 14)),
                 const SizedBox(height: 8),
                 const Text(
                   '⚠️ 请妥善保管，丢失后无法找回！',
@@ -1095,17 +1228,19 @@ class ProfilePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 if (isLoading && isInitialLoad) ...[
-                  const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  const Center(child: CircularProgressIndicator()),
                 ] else if (recoveryKey != null) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.3),
                       ),
                     ),
                     child: SelectableText(
@@ -1124,7 +1259,9 @@ class ProfilePage extends ConsumerWidget {
                     children: [
                       TextButton.icon(
                         onPressed: () async {
-                          await Clipboard.setData(ClipboardData(text: recoveryKey!));
+                          await Clipboard.setData(
+                            ClipboardData(text: recoveryKey!),
+                          );
                           if (context.mounted) {
                             MessageHelper.showSuccess(context, '已复制到剪贴板');
                           }
@@ -1135,17 +1272,11 @@ class ProfilePage extends ConsumerWidget {
                     ],
                   ),
                 ] else ...[
-                  const Text(
-                    '尚未设置恢复密钥。',
-                    style: TextStyle(fontSize: 14),
-                  ),
+                  const Text('尚未设置恢复密钥。', style: TextStyle(fontSize: 14)),
                   const SizedBox(height: 8),
                   const Text(
                     '点击"生成恢复密钥"按钮生成新的恢复密钥。',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
               ],
@@ -1170,9 +1301,11 @@ class ProfilePage extends ConsumerWidget {
                     setState(() {
                       isLoading = true;
                     });
-                    
+
                     try {
-                      final key = await ref.read(authProvider.notifier).generateRecoveryKey();
+                      final key = await ref
+                          .read(authProvider.notifier)
+                          .generateRecoveryKey();
                       setState(() {
                         recoveryKey = key;
                         isLoading = false;
@@ -1185,7 +1318,10 @@ class ProfilePage extends ConsumerWidget {
                         isLoading = false;
                       });
                       if (context.mounted) {
-                        MessageHelper.showError(context, '生成失败：${AuthErrorHelper.extractErrorMessage(e)}');
+                        MessageHelper.showError(
+                          context,
+                          '生成失败：${AuthErrorHelper.extractErrorMessage(e)}',
+                        );
                       }
                     }
                   },
@@ -1197,14 +1333,14 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-  
+
   /// 显示更换手机号对话框
   void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref) {
     final phoneController = TextEditingController();
     final passwordController = TextEditingController();
     String countryCode = '+86';
     bool passwordVisible = false;
-    
+
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1237,7 +1373,9 @@ class ProfilePage extends ConsumerWidget {
                     helperText: '需要验证身份',
                     suffixIcon: IconButton(
                       icon: Icon(
-                        passwordVisible ? Icons.visibility : Icons.visibility_off,
+                        passwordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
@@ -1258,7 +1396,7 @@ class ProfilePage extends ConsumerWidget {
                 onPressed: () async {
                   final phone = phoneController.text.trim();
                   final password = passwordController.text.trim();
-                  
+
                   // Fail Fast：验证输入
                   if (phone.isEmpty) {
                     MessageHelper.showError(context, '请输入新手机号');
@@ -1268,20 +1406,22 @@ class ProfilePage extends ConsumerWidget {
                     MessageHelper.showError(context, '请输入当前密码');
                     return;
                   }
-                  
-                  final fullPhone = PhoneHelper.formatWithCountryCode(countryCode, phone);
-                  
+
+                  final fullPhone = PhoneHelper.formatWithCountryCode(
+                    countryCode,
+                    phone,
+                  );
+
                   // 先执行操作，成功后再关闭对话框
                   final success = await AsyncActionHelper.execute(
                     context,
-                    action: () => ref.read(authProvider.notifier).updatePhoneNumber(
-                      fullPhone,
-                      password,
-                    ),
+                    action: () => ref
+                        .read(authProvider.notifier)
+                        .updatePhoneNumber(fullPhone, password),
                     successMessage: '手机号更换成功',
                     errorMessagePrefix: '更换手机号失败',
                   );
-                  
+
                   if (success && context.mounted) {
                     Navigator.of(context).pop();
                   }
@@ -1310,19 +1450,19 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(dialogContext).pop();
-              
+
               await AsyncActionHelper.execute(
                 context,
                 action: () async {
-                  await ref.read(achievementsProvider.notifier).resetAllAchievements();
+                  await ref
+                      .read(achievementsProvider.notifier)
+                      .resetAllAchievements();
                 },
                 successMessage: '所有成就已重置',
                 errorMessagePrefix: '重置失败',
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.orange,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
             child: const Text('确定重置'),
           ),
         ],
@@ -1345,22 +1485,21 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              
+
               final success = await AsyncActionHelper.execute(
                 context,
-                action: () => ref.read(checkInProvider.notifier).resetAllCheckIns(),
+                action: () =>
+                    ref.read(checkInProvider.notifier).resetAllCheckIns(),
                 successMessage: '所有签到记录已重置',
                 errorMessagePrefix: '重置失败',
               );
-              
+
               if (success) {
                 // 刷新签到状态
                 ref.invalidate(checkInProvider);
               }
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('确定重置'),
           ),
         ],
@@ -1383,23 +1522,23 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              
+
               final success = await AsyncActionHelper.execute(
                 context,
                 action: () async {
-                  await ref.read(storageServiceProvider).clearAllSyncHistories();
+                  await ref
+                      .read(storageServiceProvider)
+                      .clearAllSyncHistories();
                 },
                 successMessage: '同步历史记录已清空',
                 errorMessagePrefix: '清空失败',
               );
-              
+
               if (success) {
                 ref.read(syncCompletedProvider.notifier).state++;
               }
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.orange,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
             child: const Text('确定清空'),
           ),
         ],
@@ -1422,14 +1561,14 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              
+
               final success = await AsyncActionHelper.execute(
                 context,
                 action: () => ref.read(firstLaunchProvider.notifier).reset(),
                 successMessage: '首次启动标记已重置',
                 errorMessagePrefix: '重置失败',
               );
-              
+
               if (success && context.mounted) {
                 // 跳转到欢迎页面
                 Navigator.of(context).pushAndRemoveUntil(
@@ -1438,9 +1577,7 @@ class ProfilePage extends ConsumerWidget {
                 );
               }
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.blue,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.blue),
             child: const Text('确定重置'),
           ),
         ],
@@ -1454,7 +1591,9 @@ class ProfilePage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('重置发布警告对话框'),
-        content: const Text('确定要重置"发布到社区"警告对话框的"不再提示"设置吗？\n\n重置后，下次发布时将重新显示警告对话框和倒计时。'),
+        content: const Text(
+          '确定要重置"发布到社区"警告对话框的"不再提示"设置吗？\n\n重置后，下次发布时将重新显示警告对话框和倒计时。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -1463,19 +1602,19 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              
+
               await AsyncActionHelper.execute(
                 context,
                 action: () async {
-                  await ref.read(userSettingsProvider.notifier).resetPublishWarning();
+                  await ref
+                      .read(userSettingsProvider.notifier)
+                      .resetPublishWarning();
                 },
                 successMessage: '发布警告对话框已重置',
                 errorMessagePrefix: '重置失败',
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.blue,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.blue),
             child: const Text('确定重置'),
           ),
         ],
@@ -1489,7 +1628,9 @@ class ProfilePage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('重置社区介绍对话框'),
-        content: const Text('确定要重置社区介绍对话框吗？\n\n重置后，下次进入树洞页面时将重新显示"欢迎来到树洞"介绍对话框。'),
+        content: const Text(
+          '确定要重置社区介绍对话框吗？\n\n重置后，下次进入树洞页面时将重新显示"欢迎来到树洞"介绍对话框。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -1498,19 +1639,19 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              
+
               await AsyncActionHelper.execute(
                 context,
                 action: () async {
-                  await ref.read(userSettingsProvider.notifier).markCommunityIntroSeen(false);
+                  await ref
+                      .read(userSettingsProvider.notifier)
+                      .markCommunityIntroSeen(false);
                 },
                 successMessage: '社区介绍对话框已重置',
                 errorMessagePrefix: '重置失败',
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.blue,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.blue),
             child: const Text('确定重置'),
           ),
         ],
@@ -1524,7 +1665,9 @@ class ProfilePage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('重置收藏页介绍对话框'),
-        content: const Text('确定要重置收藏页介绍对话框吗？\n\n重置后，下次进入收藏页面时将重新显示"关于收藏"介绍对话框。'),
+        content: const Text(
+          '确定要重置收藏页介绍对话框吗？\n\n重置后，下次进入收藏页面时将重新显示"关于收藏"介绍对话框。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -1537,26 +1680,26 @@ class ProfilePage extends ConsumerWidget {
               await AsyncActionHelper.execute(
                 context,
                 action: () async {
-                  await ref.read(userSettingsProvider.notifier).markFavoritesIntroSeen(false);
+                  await ref
+                      .read(userSettingsProvider.notifier)
+                      .markFavoritesIntroSeen(false);
                 },
                 successMessage: '收藏页介绍对话框已重置',
                 errorMessagePrefix: '重置失败',
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.blue,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.blue),
             child: const Text('确定重置'),
           ),
         ],
       ),
     );
   }
-  
+
   /// 构建同步状态副标题
-  /// 
+  ///
   /// 调用者：手动同步 ListTile
-  /// 
+  ///
   /// 遵循原则：
   /// - 单一职责（SRP）：只负责构建副标题文本
   /// - DRY：复用 DateTimeHelper.formatRelativeTime
@@ -1564,45 +1707,45 @@ class ProfilePage extends ConsumerWidget {
     if (syncStatus.status == SyncStatus.syncing) {
       return const Text('同步中...');
     }
-    
+
     if (syncStatus.status == SyncStatus.success) {
       return Text(
         '同步成功',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        style: TextStyle(color: Theme.of(context).colorScheme.primary),
       );
     }
-    
+
     if (syncStatus.status == SyncStatus.error) {
       return Text(
         '同步失败：${syncStatus.errorMessage}',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.error,
-        ),
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
     }
-    
+
     // 空闲状态，显示上次同步时间
     if (syncStatus.lastManualSyncTime != null) {
       return Text(
         '上次同步：${DateTimeHelper.formatRelativeTime(syncStatus.lastManualSyncTime!)}',
       );
     }
-    
+
     return const Text('同步本地数据到云端');
   }
-  
+
   /// 处理手动同步
-  /// 
+  ///
   /// 调用者：手动同步 ListTile
-  /// 
+  ///
   /// 遵循原则：
   /// - 单一职责（SRP）：只负责处理手动同步逻辑
   /// - Fail Fast：未登录立即提示
-  void _handleManualSync(BuildContext context, WidgetRef ref, AsyncValue authState) {
+  void _handleManualSync(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue authState,
+  ) {
     authState.when(
       data: (user) {
         if (user == null) {
@@ -1622,4 +1765,3 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 }
-

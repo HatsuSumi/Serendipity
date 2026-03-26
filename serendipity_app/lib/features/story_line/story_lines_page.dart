@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/membership_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
+import '../../features/membership/membership_page.dart';
 import 'story_line_detail_page.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/story_line.dart';
@@ -40,6 +42,8 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   Widget build(BuildContext context) {
     final storyLinesAsync = ref.watch(storyLinesProvider);
     final countAsync = ref.watch(storyLinesCountProvider);
+    final membershipInfo = ref.watch(membershipProvider).valueOrNull;
+    final maxStoryLines = membershipInfo?.maxStoryLines;
 
     return Scaffold(
       appBar: AppBar(
@@ -49,6 +53,18 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
           error: (_, e) => const Text('我的故事线'),
         ),
         actions: [
+          if (maxStoryLines != null)
+            IconButton(
+              tooltip: '升级会员',
+              onPressed: () {
+                NavigationHelper.pushWithTransition(
+                  context,
+                  ref,
+                  const MembershipPage(),
+                );
+              },
+              icon: const Icon(Icons.workspace_premium_outlined),
+            ),
           PopupMenuButton<StoryLineSortType>(
             icon: const Icon(Icons.sort),
             tooltip: '排序方式',
@@ -84,23 +100,33 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
           // 排序：置顶的在前面
           final sortedStoryLines = _sortStoryLines(storyLines);
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(storyLinesProvider.notifier).refresh();
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: sortedStoryLines.length,
-              itemBuilder: (context, index) {
-                final storyLine = sortedStoryLines[index];
-                return _buildStoryLineCard(context, ref, storyLine);
-              },
-            ),
+          return Column(
+            children: [
+              if (maxStoryLines != null)
+                _buildMembershipLimitBanner(
+                  context,
+                  storyLines.length,
+                  maxStoryLines,
+                ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await ref.read(storyLinesProvider.notifier).refresh();
+                  },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: sortedStoryLines.length,
+                    itemBuilder: (context, index) {
+                      final storyLine = sortedStoryLines[index];
+                      return _buildStoryLineCard(context, ref, storyLine);
+                    },
+                  ),
+                ),
+              ),
+            ],
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -111,16 +137,13 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                 color: Theme.of(context).colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text(
-                '加载失败',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
+              Text('加载失败', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 error.toString(),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -136,11 +159,11 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   }
 
   /// 根据排序方式排序故事线
-  /// 
+  ///
   /// 置顶故事线始终在最前面，然后按照选择的排序方式排序
   List<StoryLine> _sortStoryLines(List<StoryLine> storyLines) {
     final sorted = List<StoryLine>.from(storyLines);
-    
+
     // 先按照选择的排序方式排序
     switch (_currentSort) {
       case StoryLineSortType.createdDesc:
@@ -162,14 +185,14 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
         sorted.sort((a, b) => b.name.compareTo(a.name));
         break;
     }
-    
+
     // 置顶的排在最前面（稳定排序）
     sorted.sort((a, b) {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       return 0;
     });
-    
+
     return sorted;
   }
 
@@ -182,8 +205,45 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
     );
   }
 
+  Widget _buildMembershipLimitBanner(
+    BuildContext context,
+    int count,
+    int maxCount,
+  ) {
+    final remaining = maxCount - count;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline, color: colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              remaining > 0
+                  ? '免费版最多可创建 $maxCount 条故事线，当前还可创建 $remaining 条。'
+                  : '免费版最多可创建 $maxCount 条故事线，已达到上限。',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 故事线卡片
-  Widget _buildStoryLineCard(BuildContext context, WidgetRef ref, StoryLine storyLine) {
+  Widget _buildStoryLineCard(
+    BuildContext context,
+    WidgetRef ref,
+    StoryLine storyLine,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -213,7 +273,12 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
               ),
             // 主要内容
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 32, 16, 16), // 增加顶部 padding
+              padding: const EdgeInsets.fromLTRB(
+                16,
+                32,
+                16,
+                16,
+              ), // 增加顶部 padding
               child: Row(
                 children: [
                   // 图标
@@ -225,10 +290,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: const Center(
-                      child: Text(
-                        '📖',
-                        style: TextStyle(fontSize: 24),
-                      ),
+                      child: Text('📖', style: TextStyle(fontSize: 24)),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -240,17 +302,19 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                       children: [
                         Text(
                           storyLine.name,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${storyLine.recordIds.length} 条记录',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                         ),
                       ],
@@ -260,13 +324,18 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                   // 更多按钮
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
-                    onSelected: (value) => _handleMenuAction(context, ref, storyLine, value),
+                    onSelected: (value) =>
+                        _handleMenuAction(context, ref, storyLine, value),
                     itemBuilder: (context) => [
                       PopupMenuItem(
                         value: 'pin',
                         child: Row(
                           children: [
-                            Icon(storyLine.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                            Icon(
+                              storyLine.isPinned
+                                  ? Icons.push_pin
+                                  : Icons.push_pin_outlined,
+                            ),
                             const SizedBox(width: 8),
                             Text(storyLine.isPinned ? '取消置顶' : '置顶'),
                           ],
@@ -304,7 +373,12 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   }
 
   /// 处理菜单操作
-  void _handleMenuAction(BuildContext context, WidgetRef ref, StoryLine storyLine, String action) {
+  void _handleMenuAction(
+    BuildContext context,
+    WidgetRef ref,
+    StoryLine storyLine,
+    String action,
+  ) {
     switch (action) {
       case 'pin':
         _togglePinStoryLine(context, ref, storyLine);
@@ -319,7 +393,11 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   }
 
   /// 切换置顶状态
-  void _togglePinStoryLine(BuildContext context, WidgetRef ref, StoryLine storyLine) async {
+  void _togglePinStoryLine(
+    BuildContext context,
+    WidgetRef ref,
+    StoryLine storyLine,
+  ) async {
     try {
       await ref.read(storyLinesProvider.notifier).togglePin(storyLine.id);
       if (context.mounted) {
@@ -330,13 +408,30 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
       }
     } catch (e) {
       if (context.mounted) {
-        MessageHelper.showError(context, '操作失败：${AuthErrorHelper.extractErrorMessage(e)}');
+        MessageHelper.showError(
+          context,
+          '操作失败：${AuthErrorHelper.extractErrorMessage(e)}',
+        );
       }
     }
   }
 
   /// 显示创建故事线对话框
   void _showCreateStoryLineDialog(BuildContext context, WidgetRef ref) {
+    final membershipInfo = ref.read(membershipProvider).valueOrNull;
+    if (membershipInfo == null) {
+      MessageHelper.showWarning(context, '会员状态加载中，请稍后再试');
+      return;
+    }
+
+    final currentCount = ref.read(storyLinesProvider).valueOrNull?.length ?? 0;
+    final maxStoryLines = membershipInfo.maxStoryLines;
+    if (maxStoryLines != null && currentCount >= maxStoryLines) {
+      MessageHelper.showWarning(context, '免费版最多创建 $maxStoryLines 条故事线，请先升级会员');
+      NavigationHelper.pushWithTransition(context, ref, const MembershipPage());
+      return;
+    }
+
     final nameController = TextEditingController();
 
     DialogHelper.show(
@@ -351,7 +446,9 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -366,8 +463,8 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                     child: Text(
                       '将同一个人的多次记录关联到一个故事线，形成完整的时间线故事。',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],
@@ -414,14 +511,19 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
               );
 
               try {
-                await ref.read(storyLinesProvider.notifier).createStoryLine(newStoryLine);
+                await ref
+                    .read(storyLinesProvider.notifier)
+                    .createStoryLine(newStoryLine);
                 if (context.mounted) {
                   Navigator.of(context).pop();
                   MessageHelper.showSuccess(context, '故事线已创建');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  MessageHelper.showError(context, '创建失败：${AuthErrorHelper.extractErrorMessage(e)}');
+                  MessageHelper.showError(
+                    context,
+                    '创建失败：${AuthErrorHelper.extractErrorMessage(e)}',
+                  );
                 }
               }
             },
@@ -433,7 +535,11 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   }
 
   /// 显示重命名对话框
-  void _showRenameDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) async {
+  void _showRenameDialog(
+    BuildContext context,
+    WidgetRef ref,
+    StoryLine storyLine,
+  ) async {
     final newName = await DialogHelper.showRenameDialog(
       context: context,
       title: '重命名故事线',
@@ -449,20 +555,29 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
       );
 
       try {
-        await ref.read(storyLinesProvider.notifier).updateStoryLine(updatedStoryLine);
+        await ref
+            .read(storyLinesProvider.notifier)
+            .updateStoryLine(updatedStoryLine);
         if (context.mounted) {
           MessageHelper.showSuccess(context, '已重命名');
         }
       } catch (e) {
         if (context.mounted) {
-          MessageHelper.showError(context, '重命名失败：${AuthErrorHelper.extractErrorMessage(e)}');
+          MessageHelper.showError(
+            context,
+            '重命名失败：${AuthErrorHelper.extractErrorMessage(e)}',
+          );
         }
       }
     }
   }
 
   /// 显示删除确认对话框
-  void _showDeleteConfirmDialog(BuildContext context, WidgetRef ref, StoryLine storyLine) async {
+  void _showDeleteConfirmDialog(
+    BuildContext context,
+    WidgetRef ref,
+    StoryLine storyLine,
+  ) async {
     final confirmed = await DialogHelper.showDeleteConfirm(
       context: context,
       title: '删除故事线',
@@ -471,16 +586,20 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
 
     if (confirmed == true && context.mounted) {
       try {
-        await ref.read(storyLinesProvider.notifier).deleteStoryLine(storyLine.id);
+        await ref
+            .read(storyLinesProvider.notifier)
+            .deleteStoryLine(storyLine.id);
         if (context.mounted) {
           MessageHelper.showSuccess(context, '故事线已删除');
         }
       } catch (e) {
         if (context.mounted) {
-          MessageHelper.showError(context, '删除失败：${AuthErrorHelper.extractErrorMessage(e)}');
+          MessageHelper.showError(
+            context,
+            '删除失败：${AuthErrorHelper.extractErrorMessage(e)}',
+          );
         }
       }
     }
   }
 }
-

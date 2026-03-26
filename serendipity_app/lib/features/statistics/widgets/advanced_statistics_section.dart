@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/utils/navigation_helper.dart';
 import '../../../core/providers/statistics_provider.dart';
+import '../../membership/membership_page.dart';
 import '../../../models/statistics.dart';
 import 'emotion_intensity_card.dart';
 import 'field_ranking_card.dart';
@@ -26,12 +28,8 @@ class AdvancedStatisticsSection extends ConsumerWidget {
         }
         return _buildAdvancedStatistics(context, stats);
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(),
-      ),
-      error: (error, stack) => Center(
-        child: Text('加载失败: $error'),
-      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('加载失败: $error')),
     );
   }
 
@@ -66,10 +64,7 @@ class AdvancedStatisticsSection extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             '升级会员解锁：',
-            style: TextStyle(
-              fontSize: 12,
-              color: colorScheme.onSurface,
-            ),
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
           ),
           const SizedBox(height: 8),
           Column(
@@ -116,7 +111,11 @@ class AdvancedStatisticsSection extends ConsumerWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                // TODO: 导航到会员升级页面
+                NavigationHelper.pushWithTransition(
+                  context,
+                  ref,
+                  const MembershipPage(),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
@@ -130,29 +129,25 @@ class AdvancedStatisticsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildAdvancedStatistics(BuildContext context, AdvancedStatistics stats) {
+  Widget _buildAdvancedStatistics(
+    BuildContext context,
+    AdvancedStatistics stats,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           '💎 高级统计',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         TagCloudCard(tagCloud: stats.tagCloud),
         const SizedBox(height: 16),
-        EmotionIntensityCard(
-          distribution: stats.emotionIntensityDistribution,
-        ),
+        EmotionIntensityCard(distribution: stats.emotionIntensityDistribution),
         const SizedBox(height: 16),
         WeatherDistributionCard(distribution: stats.weatherDistribution),
         const SizedBox(height: 16),
-        PlaceTypeDistributionCard(
-          distribution: stats.placeTypeDistribution,
-        ),
+        PlaceTypeDistributionCard(distribution: stats.placeTypeDistribution),
         const SizedBox(height: 16),
         MonthlyChartCard(
           monthlyDistributionByRange: stats.monthlyDistributionByRange,

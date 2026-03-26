@@ -1,21 +1,38 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/membership.dart';
 import '../../models/enums.dart';
+import '../config/app_config.dart';
 import '../repositories/membership_repository.dart';
 import 'auth_provider.dart';
+
+const int freeStoryLineLimit = 3;
+const Duration membershipDuration = Duration(days: 30);
 
 /// 会员仓储 Provider
 final membershipRepositoryProvider = Provider<MembershipRepository>((ref) {
   return MembershipRepository(ref.read(storageServiceProvider));
 });
 
+MembershipInfo _buildFreeMembershipInfo() {
+  return const MembershipInfo(
+    tier: MembershipTier.free,
+    status: MembershipStatus.inactive,
+    isPremium: false,
+  );
+}
+
+bool _isMembershipActive(Membership membership, DateTime now) {
+  return membership.status == MembershipStatus.active &&
+      (membership.expiresAt == null || membership.expiresAt!.isAfter(now));
+}
+
 /// 会员状态管理
-/// 
+///
 /// 职责：
 /// - 管理当前用户的会员状态
 /// - 监听用户登录状态变化，自动加载会员信息
 /// - 支持会员升级和状态更新
-/// 
+///
 /// 设计原则：
 /// - 单一职责：只负责会员状态管理
 /// - 自动响应：监听 authProvider 变化，自动加载会员信息
@@ -26,82 +43,75 @@ class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
   @override
   Future<MembershipInfo> build() async {
     _repository = ref.read(membershipRepositoryProvider);
-    
-    // 监听用户登录状态变化
+
     final currentUser = await ref.read(authProvider.notifier).currentUser;
-    
     if (currentUser == null) {
-      // 未登录：返回免费版信息
-      return const MembershipInfo(
-        tier: MembershipTier.free,
-        status: MembershipStatus.inactive,
-        isPremium: false,
-      );
+      return _buildFreeMembershipInfo();
     }
-    
-    // 已登录：加载会员信息
+
     try {
       final membership = await _repository.getMembership(currentUser.id);
       if (membership == null) {
-        // 用户未开通会员
-        return const MembershipInfo(
-          tier: MembershipTier.free,
-          status: MembershipStatus.inactive,
-          isPremium: false,
-        );
+        return _buildFreeMembershipInfo();
       }
-      
-      // 检查会员是否过期
-      final isPremium = membership.status == MembershipStatus.active &&
-          (membership.expiresAt == null || membership.expiresAt!.isAfter(DateTime.now()));
-      
+
+      final now = DateTime.now();
+      final isPremium = _isMembershipActive(membership, now);
+      final effectiveStatus = isPremium
+          ? membership.status
+          : membership.expiresAt != null && membership.expiresAt!.isBefore(now)
+          ? MembershipStatus.expired
+          : membership.status;
+
       return MembershipInfo(
-        tier: membership.tier,
-        status: membership.status,
+        tier: isPremium ? membership.tier : MembershipTier.free,
+        status: effectiveStatus,
         isPremium: isPremium,
         membership: membership,
       );
-    } catch (e) {
-      // 加载失败，降级为免费版
-      return const MembershipInfo(
-        tier: MembershipTier.free,
-        status: MembershipStatus.inactive,
-        isPremium: false,
-      );
+    } catch (_) {
+      return _buildFreeMembershipInfo();
     }
   }
 
   /// 升级为会员
-  /// 
+  ///
   /// 参数：
   /// - amount：支付金额（单位：元）
-  /// 
-  /// 设计说明：
-  /// - 如果 amount = 0，直接升级为会员
-  /// - 如果 amount > 0，需要用户扫码支付后再升级
-  /// - 升级成功后自动刷新会员状态
   Future<void> upgradeToPremium(double amount) async {
+    if (amount < 0 || amount > 648) {
+      throw ArgumentError.value(
+        amount,
+        'amount',
+        'Amount must be between 0 and 648',
+      );
+    }
+
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser == null) {
       throw StateError('User not logged in');
     }
-    
-    // 创建会员记录
+
+    final existingMembership = await _repository.getMembership(currentUser.id);
+    if (existingMembership != null &&
+        _isMembershipActive(existingMembership, DateTime.now())) {
+      throw StateError('Membership is still active');
+    }
+
+    final now = DateTime.now();
     final membership = Membership(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: existingMembership?.id ?? now.millisecondsSinceEpoch.toString(),
       userId: currentUser.id,
       tier: MembershipTier.premium,
       status: MembershipStatus.active,
-      startedAt: DateTime.now(),
-      expiresAt: DateTime.now().add(const Duration(days: 30)), // 默认30天
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      startedAt: now,
+      expiresAt: now.add(membershipDuration),
+      createdAt: existingMembership?.createdAt ?? now,
+      updatedAt: now,
     );
-    
-    // 保存到本地
+
     await _repository.saveMembership(membership);
-    
-    // 刷新状态
+
     ref.invalidateSelf();
     await future;
   }
@@ -114,7 +124,7 @@ class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
 }
 
 /// 会员信息（简化版）
-/// 
+///
 /// 用于 UI 层快速判断用户是否为会员
 class MembershipInfo {
   final MembershipTier tier;
@@ -128,10 +138,25 @@ class MembershipInfo {
     required this.isPremium,
     this.membership,
   });
+
+  bool get canManageMultipleDevices => isPremium || AppConfig.isDeveloperMode;
+
+  bool get canUseAdvancedStatistics => isPremium || AppConfig.isDeveloperMode;
+
+  bool canUseTheme(ThemeOption theme) {
+    return !theme.isPremium || isPremium || AppConfig.isDeveloperMode;
+  }
+
+  int? get maxStoryLines {
+    if (isPremium || AppConfig.isDeveloperMode) {
+      return null;
+    }
+    return freeStoryLineLimit;
+  }
 }
 
 /// 会员状态 Provider
-final membershipProvider = AsyncNotifierProvider<MembershipNotifier, MembershipInfo>(() {
-  return MembershipNotifier();
-});
-
+final membershipProvider =
+    AsyncNotifierProvider<MembershipNotifier, MembershipInfo>(() {
+      return MembershipNotifier();
+    });
