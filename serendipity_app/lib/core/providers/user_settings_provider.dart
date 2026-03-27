@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user_settings.dart';
@@ -8,6 +9,7 @@ import '../services/notification_service.dart';
 import '../services/sync_service.dart';
 import 'auth_provider.dart';
 import 'membership_provider.dart';
+import 'message_provider.dart';
 import 'records_provider.dart' show syncCompletedProvider;
 import 'check_in_provider.dart' show checkInRepositoryProvider;
 
@@ -48,6 +50,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     _loadSettings();
     _listenToAuthChanges();
     _listenToSyncCompleted();
+    _listenToMembershipChanges();
   }
 
   /// 创建默认设置（访客模式）
@@ -78,6 +81,61 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       createdAt: now,
       updatedAt: now,
     );
+  }
+
+  /// 监听会员状态变化，会员失效时自动降级会员专属主题
+  ///
+  /// 调用者：构造函数
+  ///
+  /// 设计原则：
+  /// - 单一职责：UserSettingsNotifier 负责保证 theme 与会员状态的一致性
+  /// - 用户体验优先：会员过期/重置后自动降级，不让用户停留在无权限主题
+  void _listenToMembershipChanges() {
+    _ref.listen<AsyncValue<MembershipInfo>>(membershipProvider, (previous, next) {
+      final prevIsPremium = previous?.valueOrNull?.isPremium ?? false;
+      final nextIsPremium = next.valueOrNull?.isPremium ?? false;
+
+      if (kDebugMode) {
+        debugPrint('[UserSettings] membershipProvider changed: '
+            'prevIsPremium=$prevIsPremium, nextIsPremium=$nextIsPremium, '
+            'previous=${previous.runtimeType}, next=${next.runtimeType}');
+      }
+
+      // 只在 premium → 非 premium 时触发降级
+      if (prevIsPremium && !nextIsPremium) {
+        _downgradeThemeIfNeeded();
+      }
+    });
+  }
+
+  /// 如果当前主题是会员专属主题，降级到跟随系统
+  ///
+  /// 调用者：_listenToMembershipChanges()
+  Future<void> _downgradeThemeIfNeeded() async {
+    if (kDebugMode) {
+      debugPrint('[UserSettings] _downgradeThemeIfNeeded: current theme=${state.theme}, isPremium=${state.theme.isPremium}');
+    }
+
+    if (!state.theme.isPremium) return;
+
+    final now = DateTime.now();
+    final updated = state.copyWith(
+      theme: ThemeOption.system,
+      themeUpdatedAt: now,
+      updatedAt: now,
+    );
+
+    await _storageService.saveUserSettings(updated);
+    state = updated;
+
+    if (kDebugMode) {
+      debugPrint('[UserSettings] _downgradeThemeIfNeeded: state updated to theme=${state.theme}');
+    }
+
+    // 通知用户主题已自动降级
+    _ref.read(messageProvider.notifier).showInfo('会员过期，主题自动恢复到跟随系统');
+
+    await _uploadToCloud(updated);
   }
 
   /// 监听同步完成信号，同步完成后重新加载本地设置

@@ -33,7 +33,7 @@ class AppConfig {
   /// - false：正常会员权限验证
   /// 
   /// ⚠️ 注意：上线前必须设为 false
-  static const bool isDeveloperMode = true;
+  static const bool isDeveloperMode = false;
 
   /// 强制使用本地统计数据源
   ///

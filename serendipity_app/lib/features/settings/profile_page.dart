@@ -91,7 +91,8 @@ class ProfilePage extends ConsumerWidget {
     final currentTransition = ref.watch(pageTransitionProvider);
     final currentDialogAnimation = ref.watch(dialogAnimationProvider);
     final authState = ref.watch(authProvider);
-    final membershipInfo = ref.watch(membershipProvider).valueOrNull;
+    final membershipAsync = ref.watch(membershipProvider);
+    final membershipInfo = membershipAsync.valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('我的')),
@@ -351,50 +352,57 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
           ...ThemeOption.values.map((type) {
-            final settings = ref.watch(userSettingsProvider);
-            final isSelected = settings.theme == type;
-            final canUseTheme =
-                membershipInfo?.canUseTheme(type) ?? !type.isPremium;
-            return ListTile(
-              leading: Icon(
-                type.isPremium
-                    ? Icons.workspace_premium_outlined
-                    : Icons.palette_outlined,
-                color: canUseTheme
-                    ? null
-                    : Theme.of(context).colorScheme.outline,
-              ),
-              title: Text(type.label),
-              subtitle: type.isPremium
-                  ? Text(canUseTheme ? '会员主题' : '会员专属主题')
-                  : const Text('基础主题'),
-              trailing: isSelected
-                  ? const Icon(Icons.check, color: Colors.blue)
-                  : !canUseTheme
-                  ? const Icon(Icons.lock_outline)
-                  : null, 
-              selected: isSelected,
-              onTap: () async {
-                if (!canUseTheme) {
-                  MessageHelper.showWarning(context, '${type.label} 为会员专属主题');
-                  return;
-                }
+            return Consumer(
+              builder: (context, ref, _) {
+                final settings = ref.watch(userSettingsProvider);
+                final isSelected = settings.theme == type;
+                final canUseTheme = membershipAsync.when(
+                  data: (info) => info.canUseTheme(type),
+                  loading: () => !type.isPremium,
+                  error: (_, __) => !type.isPremium,
+                );
+                return ListTile(
+                  leading: Icon(
+                    type.isPremium
+                        ? Icons.workspace_premium_outlined
+                        : Icons.palette_outlined,
+                    color: canUseTheme
+                        ? null
+                        : Theme.of(context).colorScheme.outline,
+                  ),
+                  title: Text(type.label),
+                  subtitle: type.isPremium
+                      ? Text(canUseTheme ? '会员主题' : '会员专属主题')
+                      : const Text('基础主题'),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : !canUseTheme
+                      ? const Icon(Icons.lock_outline)
+                      : null,
+                  selected: isSelected,
+                  onTap: () async {
+                    if (!canUseTheme) {
+                      MessageHelper.showWarning(context, '${type.label} 为会员专属主题');
+                      return;
+                    }
 
-                try {
-                  await ref
-                      .read(userSettingsProvider.notifier)
-                      .updateTheme(type);
-                  if (context.mounted) {
-                    MessageHelper.showSuccess(context, '已切换到：${type.label}');
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    MessageHelper.showError(
-                      context,
-                      '切换主题失败：${AuthErrorHelper.extractErrorMessage(e)}',
-                    );
-                  }
-                }
+                    try {
+                      await ref
+                          .read(userSettingsProvider.notifier)
+                          .updateTheme(type);
+                      if (context.mounted) {
+                        MessageHelper.showSuccess(context, '已切换到：${type.label}');
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        MessageHelper.showError(
+                          context,
+                          '切换主题失败：${AuthErrorHelper.extractErrorMessage(e)}',
+                        );
+                      }
+                    }
+                  },
+                );
               },
             );
           }),
