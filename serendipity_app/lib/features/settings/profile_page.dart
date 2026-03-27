@@ -10,7 +10,8 @@ import '../../core/providers/first_launch_provider.dart';
 import '../../core/providers/membership_provider.dart';
 import '../../core/providers/user_settings_provider.dart';
 import '../../core/providers/sync_status_provider.dart';
-import '../../core/providers/records_provider.dart' show syncCompletedProvider;
+import '../../core/providers/records_provider.dart' show syncCompletedProvider, recordsProvider;
+import '../../core/providers/anniversary_reminder_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
@@ -30,6 +31,7 @@ import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
 import '../community/my_posts_page.dart';
 import '../membership/membership_page.dart';
+import '../home/anniversary_reminder_dialog.dart';
 import 'dialogs/manual_sync_dialog.dart';
 import 'dialogs/sync_info_dialog.dart';
 import 'dialogs/sync_history_dialog.dart';
@@ -694,6 +696,12 @@ class ProfilePage extends ConsumerWidget {
             title: const Text('重置会员状态'),
             subtitle: const Text('清除当前会员数据，恢复为免费版'),
             onTap: () => _showResetMembershipDialog(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.celebration_outlined, color: Colors.pink),
+            title: const Text('强制触发纪念日弹窗'),
+            subtitle: const Text('使用当前所有"邂逅"记录，绕过年份检查直接展示'),
+            onTap: () => _showForceAnniversaryDialog(context, ref),
           ),
 
           const SizedBox(height: 32),
@@ -1832,6 +1840,25 @@ class ProfilePage extends ConsumerWidget {
   /// 遵循原则：
   /// - 单一职责（SRP）：只负责处理手动同步逻辑
   /// - Fail Fast：未登录立即提示
+  /// 强制触发纪念日弹窗（开发测试用）
+  ///
+  /// 绕过年份检查，直接取当前所有"邂逅"记录展示弹窗。
+  /// 用于在没有一年前历史数据时验证弹窗 UI 和交互。
+  Future<void> _showForceAnniversaryDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final records = ref.read(recordsProvider).valueOrNull ?? [];
+    final metRecords = records
+        .where((r) => r.status == EncounterStatus.met)
+        .toList();
+    if (metRecords.isEmpty) {
+      MessageHelper.showWarning(context, '没有任何"邂逅"记录，请先创建一条邂逅记录');
+      return;
+    }
+    await AnniversaryReminderDialog.show(context, metRecords);
+  }
+
   void _handleManualSync(
     BuildContext context,
     WidgetRef ref,
