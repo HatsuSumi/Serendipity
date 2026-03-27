@@ -11,6 +11,7 @@ import 'story_lines_provider.dart';
 import 'check_in_provider.dart';
 import 'achievement_provider.dart';
 import 'community_provider.dart';
+import 'message_provider.dart';
 
 /// 存储服务 Provider
 final storageServiceProvider = Provider<IStorageService>((ref) {
@@ -58,6 +59,17 @@ class AuthNotifier extends StreamNotifier<User?> {
   @override
   Stream<User?> build() {
     _repository = ref.read(authRepositoryProvider);
+    
+    // 注入强制登出回调：Token 过期且刷新失败时（被其他设备踢下线），
+    // 通过 messageProvider 发送跨页面消息，主页面监听后显示提示。
+    // 只对 CustomServerAuthRepository 生效（TestAuthRepository 无 Token 机制）
+    final httpClient = ref.read(httpClientServiceProvider);
+    httpClient.onForceLogout = () {
+      ref.read(messageProvider.notifier).showError('你的账号已在其他设备登录，请重新登录');
+      // 清除本地认证状态，触发页面跳转到登录页
+      Future.microtask(() => state = const AsyncValue.data(null));
+    };
+    
     // 监听认证状态变化
     // 注意：TestAuthRepository 的 authStateChanges 会立即发送当前状态
     return _repository.authStateChanges;

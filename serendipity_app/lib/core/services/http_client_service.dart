@@ -27,6 +27,12 @@ class HttpClientService {
   Completer<void>? _refreshTokenCompleter;
   int _refreshWaiters = 0;
   
+  /// 强制登出回调
+  /// 
+  /// 调用时机：Token 过期且刷新失败时（即被其他设备踢下线）
+  /// 调用者：AuthNotifier.build() 注入，通过 messageProvider 向用户提示
+  void Function()? onForceLogout;
+  
   HttpClientService({
     required IStorageService storage,
     http.Client? client,
@@ -167,11 +173,15 @@ class HttpClientService {
   }
   
   /// 刷新 Token，失败则清除并抛出登录过期异常
+  /// 
+  /// 触发时机：401 响应且 refresh token 也已失效（如被其他设备踢下线）
+  /// 触发 onForceLogout 回调，通知上层（AuthNotifier）向用户展示提示
   Future<void> _refreshAndClearOnFailure() async {
     try {
       await refreshToken();
     } catch (e) {
       await clearTokens();
+      onForceLogout?.call();
       throw Exception('Token 已过期，请重新登录');
     }
   }
