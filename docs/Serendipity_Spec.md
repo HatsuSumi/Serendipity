@@ -19,7 +19,6 @@
     - 运行环境：Node.js 20 LTS
     - 框架：Express 4.x + TypeScript 5.x
     - 数据库：PostgreSQL 15 + Prisma ORM
-    - 缓存：Redis 7
     - 认证：JWT（Access Token + Refresh Token）
 - **目标用户**：18-35岁的都市青年
 - **核心定位**：情感记录类应用，专注于记录日常生活中错过的人
@@ -1075,7 +1074,7 @@ void checkConsecutiveDaysAchievement(User user) {
    - Flutter + Dart
    - Riverpod + Hive
    - Node.js + Express + TypeScript
-   - PostgreSQL + Redis
+   - PostgreSQL
    - 高德地图 API
 
 6. **项目说明**
@@ -1459,7 +1458,6 @@ void checkConsecutiveDaysAchievement(User user) {
 **自建服务器（已确定）**
 - Node.js 20 LTS + Express + TypeScript
 - PostgreSQL 15（数据库）
-- Redis 7（缓存）
 - JWT（用户认证）
 - Prisma（ORM）
 - 支持跨设备同步
@@ -2050,7 +2048,6 @@ enum AuthProvider {
 **技术方案**：自建服务器
 - Node.js 20 LTS + Express + TypeScript
 - PostgreSQL 15（数据库）
-- Redis 7（缓存）
 - JWT（认证）
 - Prisma（ORM）
 

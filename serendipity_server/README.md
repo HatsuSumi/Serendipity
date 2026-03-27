@@ -10,7 +10,6 @@ Serendipity（错过了么）后端服务器，基于 Node.js + Express + TypeSc
 - **Web 框架**: Express 4.x
 - **语言**: TypeScript 5.x
 - **数据库**: PostgreSQL 15
-- **缓存**: Redis 7
 - **ORM**: Prisma
 - **认证**: JWT
 
