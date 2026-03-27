@@ -6,6 +6,7 @@ import '../utils/anniversary_helper.dart';
 import '../utils/check_in_reminder_helper.dart';
 import '../repositories/check_in_repository.dart';
 import '../../models/encounter_record.dart';
+import '../../models/enums.dart';
 
 /// 本地通知服务
 /// 
@@ -213,7 +214,7 @@ class NotificationService {
     // 用 Map<String, EncounterRecord> 以 'MM-DD' 为 key 去重，保留最早的记录
     final Map<String, EncounterRecord> dateKeyToRecord = {};
     for (final record in records) {
-      if (record.status != EncounterStatus.encountered) continue;
+      if (record.status != EncounterStatus.met) continue;
       final ts = record.timestamp;
       // 不包括当年本身
       if (ts.year >= now.year) continue;

@@ -36,7 +36,7 @@ class AnniversaryHelper {
 
     return records.where((record) {
       // 只取"邂逅"状态的记录
-      if (record.status != EncounterStatus.encountered) return false;
+      if (record.status != EncounterStatus.met) return false;
 
       final ts = record.timestamp;
 
@@ -58,7 +58,7 @@ class AnniversaryHelper {
     EncounterRecord record, {
     DateTime? today,
   }) {
-    if (record.status != EncounterStatus.encountered) {
+    if (record.status != EncounterStatus.met) {
       throw ArgumentError.value(
         record.status,
         'record.status',
