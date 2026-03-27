@@ -164,11 +164,12 @@ const List<AboutSectionContent> _staticAboutPageSections = [
   AboutSectionContent(
     title: '技术栈',
     paragraphs: [
-      'Flutter 3.x + Dart 3.x',
+      'Flutter 3.x + Dart 3.x（SDK ^3.10.8）',
       'Riverpod 2.x（状态管理）',
-      'Hive（本地存储）',
-      'Node.js + Express + TypeScript',
-      'PostgreSQL',
+      'Hive 2.x（本地存储，TypeAdapter 模式）',
+      'Node.js 20 LTS + Express 5.x + TypeScript 5.x',
+      'PostgreSQL 15 + Prisma ORM',
+      'JWT（Access Token + Refresh Token 双 Token 机制）',
       '高德地图 API（逆地理编码）',
     ],
   ),

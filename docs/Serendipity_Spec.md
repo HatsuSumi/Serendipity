@@ -10,16 +10,24 @@
 - **项目类型**：移动应用（Android + iOS）
 - **技术栈**：
   - **前端（Flutter App）**
-    - 框架：Flutter 3.x + Dart 3.x
-    - 状态管理：Riverpod 2.x
-    - 本地存储：Hive（TypeAdapter 模式）
+    - 框架：Flutter 3.x + Dart 3.x（SDK `^3.10.8`）
+    - 状态管理：Riverpod 2.x（`flutter_riverpod: ^2.6.1`）
+    - 本地存储：Hive 2.x（TypeAdapter 模式，含代码生成）
     - GPS定位：Geolocator + 高德地图 Web API（仅用于逆地理编码）
+    - 本地通知：flutter_local_notifications
+    - 图表：fl_chart
+    - 粒子特效：confetti
+    - 导出截图：screenshot + image_gallery_saver
     - 架构模式：Feature-first + Repository Pattern + Provider Pattern
   - **后端（Node.js Server）**
     - 运行环境：Node.js 20 LTS
-    - 框架：Express 4.x + TypeScript 5.x
-    - 数据库：PostgreSQL 15 + Prisma ORM
-    - 认证：JWT（Access Token + Refresh Token）
+    - 框架：Express 5.x + TypeScript 5.x
+    - 数据库：PostgreSQL 15 + Prisma ORM（v7.x）
+    - 认证：JWT（Access Token + Refresh Token，双 Token 机制）
+    - 安全中间件：helmet、cors、express-rate-limit
+    - 日志：winston
+    - 测试：Jest + Supertest + jest-mock-extended
+    - 依赖注入：自实现 DI Container
 - **目标用户**：18-35岁的都市青年
 - **核心定位**：情感记录类应用，专注于记录日常生活中错过的人
 
@@ -1444,28 +1452,6 @@ void checkConsecutiveDaysAchievement(User user) {
 
 ---
 
-## 🏗️ 技术架构
-
-### 前端技术栈
-- **框架**：Flutter 3.x
-- **语言**：Dart 3.x
-- **状态管理**：Riverpod 2.x
-- **路由**：go_router
-- **本地存储**：Hive / SQLite
-- **动画**：Flutter 内置动画 + Rive
-
-### 后端方案
-**自建服务器（已确定）**
-- Node.js 20 LTS + Express + TypeScript
-- PostgreSQL 15（数据库）
-- JWT（用户认证）
-- Prisma（ORM）
-- 支持跨设备同步
-
-### 第三方服务
-- **词云生成**：暂不使用第三方插件，先用简单的标签频率列表展示（后期可优化为真正的词云可视化）
-
----
 
 ## 📊 数据模型
 
