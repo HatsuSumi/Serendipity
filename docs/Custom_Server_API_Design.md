@@ -1008,7 +1008,6 @@ Signature = HMAC-SHA256(timestamp + method + path + body, secret)
 
 - Base URL：`http://localhost:3000/api/v1`
 - 数据库：本地 PostgreSQL
-- Redis：本地 Redis
 
 ### 沙箱环境
 
