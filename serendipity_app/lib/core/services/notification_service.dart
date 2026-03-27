@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../utils/anniversary_helper.dart';
 import '../utils/check_in_reminder_helper.dart';
@@ -289,6 +290,85 @@ class NotificationService {
         await _plugin.cancel(n.id);
       }
     }
+  }
+
+  /// 发送签到提醒测试通知（开发测试用）
+  ///
+  /// 5 秒后触发一条签到提醒通知，用于验证通知权限和渠道配置。
+  /// 不受当前提醒时间设置影响。
+  ///
+  /// 调用者：ProfilePage 开发测试区
+  Future<void> sendTestCheckInNotification() async {
+    if (kIsWeb) return;
+    final granted = await requestPermission();
+    if (!granted) return;
+
+    final now = DateTime.now();
+    final scheduledDate = tz.TZDateTime.from(
+      now.add(const Duration(seconds: 5)),
+      tz.local,
+    );
+
+    final consecutiveDays = _checkInRepository.calculateConsecutiveDays();
+    final content = CheckInReminderHelper.generateContent(consecutiveDays);
+
+    await _plugin.zonedSchedule(
+      _checkInReminderId + 998,
+      CheckInReminderHelper.title,
+      '$content（测试通知）',
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  /// 发送纪念日测试通知（开发测试用）
+  ///
+  /// 5 秒后触发一条固定文案的通知，用于验证通知权限和渠道配置。
+  /// 不依赖任何记录数据。
+  ///
+  /// 调用者：ProfilePage 开发测试区
+  Future<void> sendTestAnniversaryNotification() async {
+    if (kIsWeb) return;
+    final granted = await requestPermission();
+    if (!granted) return;
+
+    final now = DateTime.now();
+    final scheduledDate = tz.TZDateTime.from(
+      now.add(const Duration(seconds: 5)),
+      tz.local,
+    );
+
+    await _plugin.zonedSchedule(
+      _anniversaryBaseId + 999,
+      AnniversaryHelper.notificationTitle,
+      '1年前的今天，你在某个地方邂逅了TA（测试通知）',
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _anniversaryChannelId,
+          _anniversaryChannelName,
+          channelDescription: _anniversaryChannelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
   }
 }
 

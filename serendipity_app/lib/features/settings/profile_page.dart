@@ -75,14 +75,14 @@ class _ProfileIconLeading extends StatelessWidget {
 }
 
 /// 个人资料页面（我的页面）
-///
+/// 
 /// 显示用户信息、功能入口、设置选项等。
-///
+/// 
 /// 遵循原则：
 /// - 单一职责（SRP）：只负责展示个人资料界面和处理用户交互
 /// - 分层约束：UI层不包含业务逻辑，通过Provider调用
 /// - 用户体验优先：未登录时显示登录/注册入口，不阻碍功能使用
-///
+/// 
 /// 调用者：
 /// - MainNavigationPage：底部导航栏的"我的"标签
 class ProfilePage extends ConsumerWidget {
@@ -119,9 +119,9 @@ class ProfilePage extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (error, stackTrace) => const SizedBox.shrink(),
           ),
-
+          
           const Divider(),
-
+          
           // 功能入口
           const Padding(
             padding: EdgeInsets.all(16),
@@ -130,7 +130,7 @@ class ProfilePage extends ConsumerWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-
+          
           // 每日签到入口
           ListTile(
             leading: const _ProfileEmojiLeading('✨'),
@@ -142,7 +142,7 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           // 成就入口
           ListTile(
             leading: const _ProfileEmojiLeading('🏆'),
@@ -156,7 +156,7 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           // 我的发布入口
           ListTile(
             leading: const _ProfileEmojiLeading('🌍'),
@@ -170,7 +170,7 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           // 我的收藏入口
           ListTile(
             leading: const _ProfileEmojiLeading('🔖'),
@@ -184,7 +184,7 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           // 统计面板入口
           ListTile(
             leading: const _ProfileIconLeading(Icons.bar_chart_outlined),
@@ -198,13 +198,13 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           // 数据同步区域
           Consumer(
             builder: (context, ref, child) {
               final authState = ref.watch(authProvider);
               final syncStatus = ref.watch(syncStatusProvider);
-
+              
               return Column(
                 children: [
                   // 手动同步
@@ -236,7 +236,7 @@ class ProfilePage extends ConsumerWidget {
                         ? null
                         : () => _handleManualSync(context, ref, authState),
                   ),
-
+                  
                   // 同步历史
                   ListTile(
                     leading: const _ProfileEmojiLeading('📋'),
@@ -249,9 +249,9 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           const Divider(),
-
+          
           // 签到设置
           const Padding(
             padding: EdgeInsets.all(16),
@@ -260,12 +260,12 @@ class ProfilePage extends ConsumerWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-
+          
           // 签到提醒开关
           Consumer(
             builder: (context, ref, child) {
               final settings = ref.watch(userSettingsProvider);
-
+              
               return SwitchListTile(
                 title: const Text('签到提醒'),
                 subtitle: const Text('每天提醒你签到'),
@@ -284,12 +284,12 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           // 签到提醒时间
           Consumer(
             builder: (context, ref, child) {
               final settings = ref.watch(userSettingsProvider);
-
+              
               return ListTile(
                 title: const Text('提醒时间'),
                 subtitle: Text(
@@ -307,12 +307,12 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           // 签到震动开关
           Consumer(
             builder: (context, ref, child) {
               final settings = ref.watch(userSettingsProvider);
-
+              
               return SwitchListTile(
                 title: const Text('签到震动'),
                 subtitle: const Text('签到时震动反馈'),
@@ -325,12 +325,12 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           // 签到粒子特效开关
           Consumer(
             builder: (context, ref, child) {
               final settings = ref.watch(userSettingsProvider);
-
+              
               return SwitchListTile(
                 title: const Text('签到粒子特效'),
                 subtitle: const Text('签到时显示彩色粒子'),
@@ -459,7 +459,7 @@ class ProfilePage extends ConsumerWidget {
           }),
 
           const Divider(),
-
+          
           // 关于与说明
           const Padding(
             padding: EdgeInsets.all(16),
@@ -481,9 +481,9 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
-
+          
           const Divider(),
-
+          
           // 页面跳转动画设置
           const Padding(
             padding: EdgeInsets.all(16),
@@ -552,9 +552,9 @@ class ProfilePage extends ConsumerWidget {
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
-
+          
           const Divider(),
-
+          
           // 账号管理
           authState.when(
             data: (user) {
@@ -623,9 +623,9 @@ class ProfilePage extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (error, stackTrace) => const SizedBox.shrink(),
           ),
-
+          
           const Divider(),
-
+          
           // 开发测试
           const Padding(
             padding: EdgeInsets.all(16),
@@ -703,17 +703,39 @@ class ProfilePage extends ConsumerWidget {
             subtitle: const Text('使用当前所有"邂逅"记录，绕过年份检查直接展示'),
             onTap: () => _showForceAnniversaryDialog(context, ref),
           ),
-
+          ListTile(
+            leading: const Icon(Icons.notifications_active_outlined, color: Colors.pink),
+            title: const Text('发送纪念日测试推送'),
+            subtitle: const Text('5 秒后触发一条纪念日通知，验证推送是否正常'),
+            onTap: () async {
+              await ref.read(notificationServiceProvider).sendTestAnniversaryNotification();
+              if (context.mounted) {
+                MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.alarm_outlined, color: Colors.teal),
+            title: const Text('发送签到提醒测试推送'),
+            subtitle: const Text('5 秒后触发一条签到提醒通知，验证推送是否正常'),
+            onTap: () async {
+              await ref.read(notificationServiceProvider).sendTestCheckInNotification();
+              if (context.mounted) {
+                MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+              }
+            },
+          ),
+          
           const SizedBox(height: 32),
         ],
       ),
     );
   }
-
+  
   /// 显示时间选择器对话框
-  ///
+  /// 
   /// 调用者：签到提醒时间 ListTile
-  ///
+  /// 
   /// 遵循原则：
   /// - 单一职责：只负责显示时间选择器
   /// - Fail Fast：参数校验
@@ -745,11 +767,11 @@ class ProfilePage extends ConsumerWidget {
       }
     });
   }
-
+  
   /// 构建已登录用户卡片
-  ///
+  /// 
   /// 调用者：build()
-  ///
+  /// 
   /// 遵循原则：
   /// - 单一职责：只负责展示已登录用户信息
   /// - 性能优化：使用 const 构造
@@ -774,12 +796,12 @@ class ProfilePage extends ConsumerWidget {
               radius: 30,
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               child: Text(
-                user.displayName?.substring(0, 1).toUpperCase() ??
-                    user.email?.substring(0, 1).toUpperCase() ??
+                user.displayName?.substring(0, 1).toUpperCase() ?? 
+                user.email?.substring(0, 1).toUpperCase() ?? 
                     user.phoneNumber?.substring(
                       user.phoneNumber!.length - 4,
                     ) ??
-                    '?',
+                '?',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -804,8 +826,8 @@ class ProfilePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.authProvider == AuthProvider.email
-                        ? '邮箱登录'
+                    user.authProvider == AuthProvider.email 
+                        ? '邮箱登录' 
                         : '手机号登录',
                     style: TextStyle(
                       fontSize: 14,
@@ -864,11 +886,11 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-
+  
   /// 构建未登录用户卡片
-  ///
+  /// 
   /// 调用者：build()
-  ///
+  /// 
   /// 遵循原则：
   /// - 单一职责：只负责展示未登录状态和登录/注册入口
   /// - 用户体验优先：清晰展示登录的好处，鼓励用户登录
@@ -897,14 +919,14 @@ class ProfilePage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-
+            
             // 未登录提示
             const Text(
               '未登录',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-
+            
             // 登录好处说明
             Text(
               '登录后可同步数据到云端，也可随时查看会员权益',
@@ -929,7 +951,7 @@ class ProfilePage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-
+            
             // 登录/注册按钮
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -950,29 +972,29 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-
+  
   /// 导航到登录页
-  ///
+  /// 
   /// 调用者：_buildLoggedOutUserCard()
-  ///
+  /// 
   /// 遵循原则：
   /// - 单一职责：只负责导航
   /// - 使用 NavigationHelper 保持导航一致性
   void _navigateToLogin(BuildContext context, WidgetRef ref) {
     NavigationHelper.pushWithTransition(context, ref, const LoginPage());
   }
-
+  
   /// 导航到注册页
-  ///
+  /// 
   /// 调用者：_buildLoggedOutUserCard()
-  ///
+  /// 
   /// 遵循原则：
   /// - 单一职责：只负责导航
   /// - 使用 NavigationHelper 保持导航一致性
   void _navigateToRegister(BuildContext context, WidgetRef ref) {
     NavigationHelper.pushWithTransition(context, ref, const RegisterPage());
   }
-
+  
   /// 显示退出登录确认对话框
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     DialogHelper.show(
@@ -989,11 +1011,11 @@ class ProfilePage extends ConsumerWidget {
             onPressed: () async {
               // 关闭对话框
               Navigator.of(context).pop();
-
+              
               try {
                 // 执行登出
                 await ref.read(authProvider.notifier).signOut();
-
+                
                 // 注意：不需要手动跳转，main.dart 的 authProvider 监听器会自动处理
               } catch (e) {
                 // 显示错误信息
@@ -1009,7 +1031,7 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-
+  
   /// 显示修改密码对话框
   void _showUpdatePasswordDialog(BuildContext context, WidgetRef ref) {
     final currentPasswordController = TextEditingController();
@@ -1018,7 +1040,7 @@ class ProfilePage extends ConsumerWidget {
     bool currentPasswordVisible = false;
     bool newPasswordVisible = false;
     bool confirmPasswordVisible = false;
-
+    
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1103,7 +1125,7 @@ class ProfilePage extends ConsumerWidget {
                   final currentPassword = currentPasswordController.text.trim();
                   final newPassword = newPasswordController.text.trim();
                   final confirmPassword = confirmPasswordController.text.trim();
-
+                  
                   // Fail Fast：验证输入
                   if (currentPassword.isEmpty) {
                     MessageHelper.showError(context, '请输入当前密码');
@@ -1125,7 +1147,7 @@ class ProfilePage extends ConsumerWidget {
                     MessageHelper.showError(context, '新密码不能与当前密码相同');
                     return;
                   }
-
+                  
                   // 先执行操作，成功后再关闭对话框
                   final success = await AsyncActionHelper.execute(
                     context,
@@ -1135,7 +1157,7 @@ class ProfilePage extends ConsumerWidget {
                     successMessage: '密码修改成功',
                     errorMessagePrefix: '修改密码失败',
                   );
-
+                  
                   if (success && context.mounted) {
                     Navigator.of(context).pop();
                   }
@@ -1148,13 +1170,13 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-
+  
   /// 显示更换邮箱对话框
   void _showUpdateEmailDialog(BuildContext context, WidgetRef ref) {
     final newEmailController = TextEditingController();
     final passwordController = TextEditingController();
     bool passwordVisible = false;
-
+    
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1207,7 +1229,7 @@ class ProfilePage extends ConsumerWidget {
                 onPressed: () async {
                   final newEmail = newEmailController.text.trim();
                   final password = passwordController.text.trim();
-
+                  
                   // Fail Fast：验证输入
                   if (newEmail.isEmpty) {
                     MessageHelper.showError(context, '请输入新邮箱');
@@ -1217,7 +1239,7 @@ class ProfilePage extends ConsumerWidget {
                     MessageHelper.showError(context, '请输入当前密码');
                     return;
                   }
-
+                  
                   // 先执行操作，成功后再关闭对话框
                   final success = await AsyncActionHelper.execute(
                     context,
@@ -1227,7 +1249,7 @@ class ProfilePage extends ConsumerWidget {
                     successMessage: '邮箱更换成功',
                     errorMessagePrefix: '更换邮箱失败',
                   );
-
+                  
                   if (success && context.mounted) {
                     Navigator.of(context).pop();
                   }
@@ -1240,11 +1262,11 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-
+  
   /// 显示恢复密钥对话框
-  ///
+  /// 
   /// 调用者：恢复密钥 ListTile
-  ///
+  /// 
   /// 遵循原则：
   /// - 单一职责：只负责显示和管理恢复密钥
   /// - Fail Fast：参数验证
@@ -1253,7 +1275,7 @@ class ProfilePage extends ConsumerWidget {
     String? recoveryKey;
     bool isLoading = true;
     bool isInitialLoad = true;
-
+    
     // 先获取当前恢复密钥
     try {
       recoveryKey = await ref.read(authProvider.notifier).getRecoveryKey();
@@ -1269,9 +1291,9 @@ class ProfilePage extends ConsumerWidget {
         );
       }
     }
-
+    
     if (!context.mounted) return;
-
+    
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1367,7 +1389,7 @@ class ProfilePage extends ConsumerWidget {
                     setState(() {
                       isLoading = true;
                     });
-
+                    
                     try {
                       final key = await ref
                           .read(authProvider.notifier)
@@ -1399,14 +1421,14 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-
+  
   /// 显示更换手机号对话框
   void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref) {
     final phoneController = TextEditingController();
     final passwordController = TextEditingController();
     String countryCode = '+86';
     bool passwordVisible = false;
-
+    
     DialogHelper.show(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1462,7 +1484,7 @@ class ProfilePage extends ConsumerWidget {
                 onPressed: () async {
                   final phone = phoneController.text.trim();
                   final password = passwordController.text.trim();
-
+                  
                   // Fail Fast：验证输入
                   if (phone.isEmpty) {
                     MessageHelper.showError(context, '请输入新手机号');
@@ -1472,12 +1494,12 @@ class ProfilePage extends ConsumerWidget {
                     MessageHelper.showError(context, '请输入当前密码');
                     return;
                   }
-
+                  
                   final fullPhone = PhoneHelper.formatWithCountryCode(
                     countryCode,
                     phone,
                   );
-
+                  
                   // 先执行操作，成功后再关闭对话框
                   final success = await AsyncActionHelper.execute(
                     context,
@@ -1487,7 +1509,7 @@ class ProfilePage extends ConsumerWidget {
                     successMessage: '手机号更换成功',
                     errorMessagePrefix: '更换手机号失败',
                   );
-
+                  
                   if (success && context.mounted) {
                     Navigator.of(context).pop();
                   }
@@ -1516,7 +1538,7 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(dialogContext).pop();
-
+              
               await AsyncActionHelper.execute(
                 context,
                 action: () async {
@@ -1551,7 +1573,7 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-
+              
               final success = await AsyncActionHelper.execute(
                 context,
                 action: () =>
@@ -1559,7 +1581,7 @@ class ProfilePage extends ConsumerWidget {
                 successMessage: '所有签到记录已重置',
                 errorMessagePrefix: '重置失败',
               );
-
+              
               if (success) {
                 // 刷新签到状态
                 ref.invalidate(checkInProvider);
@@ -1588,7 +1610,7 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-
+              
               final success = await AsyncActionHelper.execute(
                 context,
                 action: () async {
@@ -1599,7 +1621,7 @@ class ProfilePage extends ConsumerWidget {
                 successMessage: '同步历史记录已清空',
                 errorMessagePrefix: '清空失败',
               );
-
+              
               if (success) {
                 ref.read(syncCompletedProvider.notifier).state++;
               }
@@ -1627,14 +1649,14 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-
+              
               final success = await AsyncActionHelper.execute(
                 context,
                 action: () => ref.read(firstLaunchProvider.notifier).reset(),
                 successMessage: '首次启动标记已重置',
                 errorMessagePrefix: '重置失败',
               );
-
+              
               if (success && context.mounted) {
                 // 跳转到欢迎页面
                 Navigator.of(context).pushAndRemoveUntil(
@@ -1701,7 +1723,7 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-
+              
               await AsyncActionHelper.execute(
                 context,
                 action: () async {
@@ -1738,7 +1760,7 @@ class ProfilePage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-
+              
               await AsyncActionHelper.execute(
                 context,
                 action: () async {
@@ -1794,11 +1816,11 @@ class ProfilePage extends ConsumerWidget {
       ),
     );
   }
-
+  
   /// 构建同步状态副标题
-  ///
+  /// 
   /// 调用者：手动同步 ListTile
-  ///
+  /// 
   /// 遵循原则：
   /// - 单一职责（SRP）：只负责构建副标题文本
   /// - DRY：复用 DateTimeHelper.formatRelativeTime
@@ -1806,14 +1828,14 @@ class ProfilePage extends ConsumerWidget {
     if (syncStatus.status == SyncStatus.syncing) {
       return const Text('同步中...');
     }
-
+    
     if (syncStatus.status == SyncStatus.success) {
       return Text(
         '同步成功',
         style: TextStyle(color: Theme.of(context).colorScheme.primary),
       );
     }
-
+    
     if (syncStatus.status == SyncStatus.error) {
       return Text(
         '同步失败：${syncStatus.errorMessage}',
@@ -1822,21 +1844,21 @@ class ProfilePage extends ConsumerWidget {
         overflow: TextOverflow.ellipsis,
       );
     }
-
+    
     // 空闲状态，显示上次同步时间
     if (syncStatus.lastManualSyncTime != null) {
       return Text(
         '上次同步：${DateTimeHelper.formatRelativeTime(syncStatus.lastManualSyncTime!)}',
       );
     }
-
+    
     return const Text('同步本地数据到云端');
   }
-
+  
   /// 处理手动同步
-  ///
+  /// 
   /// 调用者：手动同步 ListTile
-  ///
+  /// 
   /// 遵循原则：
   /// - 单一职责（SRP）：只负责处理手动同步逻辑
   /// - Fail Fast：未登录立即提示
