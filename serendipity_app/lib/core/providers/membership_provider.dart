@@ -158,6 +158,8 @@ class MembershipInfo {
 
   bool get canUseAdvancedStatistics => isPremium || AppConfig.isDeveloperMode;
 
+  bool get canUseAnniversaryReminder => isPremium || AppConfig.isDeveloperMode;
+
   bool canUseTheme(ThemeOption theme) {
     return !theme.isPremium || isPremium || AppConfig.isDeveloperMode;
   }

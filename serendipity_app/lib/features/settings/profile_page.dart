@@ -341,6 +341,55 @@ class ProfilePage extends ConsumerWidget {
               );
             },
           ),
+
+          // 纪念日提醒开关（会员功能）
+          Consumer(
+            builder: (context, ref, child) {
+              final settings = ref.watch(userSettingsProvider);
+              final canUse = membershipAsync.when(
+                data: (info) => info.canUseAnniversaryReminder,
+                loading: () => false,
+                error: (_, __) => false,
+              );
+
+              return SwitchListTile(
+                title: Row(
+                  children: [
+                    const Text('纪念日提醒'),
+                    const SizedBox(width: 8),
+                    if (!canUse)
+                      Icon(
+                        Icons.lock_outline,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                  ],
+                ),
+                subtitle: Text(
+                  canUse
+                      ? '每次"邂逅"记录的周年纪念日当天提醒'
+                      : '会员专属功能，升级后可使用',
+                ),
+                value: canUse && settings.anniversaryReminder,
+                onChanged: (value) async {
+                  if (!canUse) {
+                    MessageHelper.showWarning(context, '纪念日提醒为会员专属功能');
+                    return;
+                  }
+                  await ref
+                      .read(userSettingsProvider.notifier)
+                      .updateAnniversaryReminder(value);
+                  if (context.mounted) {
+                    MessageHelper.showSuccess(
+                      context,
+                      value ? '纪念日提醒已开启' : '纪念日提醒已关闭',
+                    );
+                  }
+                },
+              );
+            },
+          ),
+
           const Divider(),
 
           // 主题设置

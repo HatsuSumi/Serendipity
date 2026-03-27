@@ -247,6 +247,27 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     await _uploadToCloud(updated);
   }
 
+  /// 更新纪念日提醒开关
+  ///
+  /// 调用者：
+  /// - ProfilePage（纪念日提醒开关）
+  ///
+  /// 注意：调用前必须由 UI 层完成会员权限校验，
+  /// 非会员不应能触发此方法。
+  Future<void> updateAnniversaryReminder(bool enabled) async {
+    final now = DateTime.now();
+    final updated = state.copyWith(
+      anniversaryReminder: enabled,
+      notificationsUpdatedAt: now,
+      updatedAt: now,
+    );
+
+    await _storageService.saveUserSettings(updated);
+    state = updated;
+
+    await _uploadToCloud(updated);
+  }
+
   /// 更新页面切换动画
   Future<void> updatePageTransition(PageTransitionType type) async {
     final now = DateTime.now();
