@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/anniversary_reminder_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/message_provider.dart';
 import '../../core/providers/achievement_provider.dart';
@@ -13,6 +14,7 @@ import '../community/community_page.dart';
 import '../settings/profile_page.dart';
 import '../record/create_record_page.dart';
 import '../achievement/achievements_page.dart';
+import 'anniversary_reminder_dialog.dart';
 
 class MainNavigationPage extends ConsumerStatefulWidget {
   const MainNavigationPage({super.key});
@@ -46,27 +48,41 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
   void initState() {
     super.initState();
     
-    // 在下一帧检查是否有待显示的消息
+    // 在下一帧检查是否有待显示的消息和纪念日提醒
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final message = ref.read(messageProvider);
-      if (message != null && mounted) {
-        // 显示消息
-        switch (message.type) {
-          case MessageType.success:
-            MessageHelper.showSuccess(context, message.message);
-            break;
-          case MessageType.error:
-            MessageHelper.showError(context, message.message);
-            break;
-          case MessageType.info:
-            MessageHelper.showSuccess(context, message.message);
-            break;
-        }
-        
-        // 清除消息
-        ref.read(messageProvider.notifier).clear();
-      }
+      _checkPendingMessage();
+      _checkAnniversaryReminder();
     });
+  }
+
+  /// 检查是否有待显示的全局消息
+  void _checkPendingMessage() {
+    final message = ref.read(messageProvider);
+    if (message != null && mounted) {
+      switch (message.type) {
+        case MessageType.success:
+          MessageHelper.showSuccess(context, message.message);
+          break;
+        case MessageType.error:
+          MessageHelper.showError(context, message.message);
+          break;
+        case MessageType.info:
+          MessageHelper.showSuccess(context, message.message);
+          break;
+      }
+      ref.read(messageProvider.notifier).clear();
+    }
+  }
+
+  /// 检查今天是否有纪念日需要弹窗提醒
+  ///
+  /// 读取 anniversaryReminderProvider，非空时展示弹窗并标记今天已弹。
+  Future<void> _checkAnniversaryReminder() async {
+    if (!mounted) return;
+    final records = await ref.read(anniversaryReminderProvider.future);
+    if (!mounted || records.isEmpty) return;
+    await AnniversaryReminderRecord.markShownToday();
+    await AnniversaryReminderDialog.show(context, records);
   }
 
   @override

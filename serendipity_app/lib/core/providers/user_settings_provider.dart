@@ -182,8 +182,35 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       if (settings.checkInReminderEnabled) {
         await _scheduleCheckInReminder(settings.checkInReminderTime);
       }
+
+      // 如果启用了纪念日提醒，重新调度本地通知
+      if (settings.anniversaryReminder) {
+        await _scheduleAnniversaryReminders();
+      } else {
+        await _notificationService.cancelAnniversaryReminders();
+      }
     }
     // 如果本地没有设置，保持当前 state（默认设置或之前的设置）
+  }
+
+  /// 调度纪念日提醒本地通知
+  ///
+  /// 从当前用户的全量记录中筛选邂逅记录，交给 NotificationService 调度。
+  /// 权限检查由 updateAnniversaryReminder 负责，此处不重复校验。
+  ///
+  /// 调用者：
+  /// - _loadSettings()：App 启动/同步完成后重新调度
+  /// - updateAnniversaryReminder()：用户开启纪念日提醒时调度
+  Future<void> _scheduleAnniversaryReminders() async {
+    try {
+      final granted = await _notificationService.requestPermission();
+      if (!granted) return;
+
+      final records = _storageService.getAllRecords();
+      await _notificationService.scheduleAnniversaryReminders(records);
+    } catch (e) {
+      // 调度失败静默处理，不影响用户体验
+    }
   }
 
   /// 上传设置到云端（如果用户已登录）
@@ -264,6 +291,12 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
+
+    if (enabled) {
+      await _scheduleAnniversaryReminders();
+    } else {
+      await _notificationService.cancelAnniversaryReminders();
+    }
 
     await _uploadToCloud(updated);
   }
