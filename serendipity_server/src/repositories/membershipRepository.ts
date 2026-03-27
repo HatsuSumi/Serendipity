@@ -38,6 +38,11 @@ export interface IMembershipRepository {
   create(data: CreateMembershipDto): Promise<Membership>;
   updateStatus(userId: string, status: string, expiresAt?: Date): Promise<Membership>;
   activateOrCreate(userId: string, monthlyAmount: number, expiresAt: Date): Promise<Membership>;
+  /**
+   * 判断用户当前是否为有效会员
+   * 调用者：AuthService.generateAuthResponse()（登录时决定设备策略）
+   */
+  isUserPremium(userId: string): Promise<boolean>;
 }
 
 export class MembershipRepository implements IMembershipRepository {
@@ -117,6 +122,27 @@ export class MembershipRepository implements IMembershipRepository {
         autoRenew: false,
       },
     });
+  }
+
+  /**
+   * 判断用户当前是否为有效会员
+   *
+   * 会员有效条件：status = 'active' 且 expiresAt 未到期（或无到期时间）
+   *
+   * 调用者：AuthService.generateAuthResponse()（登录时决定设备策略）
+   *
+   * @param userId - 用户 ID
+   * @returns true 表示当前为有效会员
+   */
+  async isUserPremium(userId: string): Promise<boolean> {
+    const membership = await this.prisma.membership.findUnique({
+      where: { userId },
+      select: { status: true, expiresAt: true },
+    });
+
+    if (!membership || membership.status !== 'active') return false;
+    if (!membership.expiresAt) return true;
+    return membership.expiresAt > new Date();
   }
 }
 

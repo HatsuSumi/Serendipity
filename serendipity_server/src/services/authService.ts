@@ -20,6 +20,7 @@ import {
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
 import { AUTH_CONFIG } from '../config/auth.config';
+import { IMembershipRepository } from '../repositories/membershipRepository';
 
 /**
  * 认证服务接口
@@ -52,7 +53,8 @@ export class AuthService implements IAuthService {
     private userRepository: IUserRepository,
     private refreshTokenRepository: IRefreshTokenRepository,
     private jwtService: JwtService,
-    private passwordHasher: IPasswordHasher
+    private passwordHasher: IPasswordHasher,
+    private membershipRepository: IMembershipRepository
   ) {}
 
   /**
@@ -566,6 +568,13 @@ export class AuthService implements IAuthService {
 
   /**
    * 生成认证响应（不含恢复密钥）
+   *
+   * 设备策略：
+   * - 免费版：保存新 Token 后立即删除旧 Token（单设备，新设备登录踢旧设备）
+   * - 会员版：直接保存新 Token，允许多设备同时在线
+   *
+   * 调用者：loginEmail()、loginPhonePassword()、loginPhone()、refreshToken()
+   *
    * @param user - 用户对象
    * @returns 认证响应（用户信息、Token）
    */
@@ -579,11 +588,16 @@ export class AuthService implements IAuthService {
     const accessToken = this.jwtService.generateToken(payload);
     const refreshToken = this.jwtService.generateRefreshToken(payload);
 
-    // 保存刷新令牌（允许多设备登录）
     const expiresAt = new Date(
       Date.now() + AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
     );
     await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt);
+
+    // 免费版：踢旧设备（保留刚创建的最新 Token，删除其余）
+    const isPremium = await this.membershipRepository.isUserPremium(user.id);
+    if (!isPremium) {
+      await this.refreshTokenRepository.deleteAllExceptNewest(user.id);
+    }
 
     return {
       user: {
@@ -603,7 +617,12 @@ export class AuthService implements IAuthService {
   }
 
   /**
-   * 生成认证响应（含恢复密钥）
+   * 生成认证响应（含恢复密钥，仅注册时使用）
+   *
+   * 注册场景：新用户首次注册，必然是第一台设备，无需踢旧设备。
+   *
+   * 调用者：registerEmail()、registerPhonePassword()、registerPhone()
+   *
    * @param user - 用户对象
    * @param recoveryKey - 恢复密钥
    * @returns 认证响应（用户信息、Token、恢复密钥）
@@ -621,7 +640,7 @@ export class AuthService implements IAuthService {
     const accessToken = this.jwtService.generateToken(payload);
     const refreshToken = this.jwtService.generateRefreshToken(payload);
 
-    // 保存刷新令牌（允许多设备登录）
+    // 注册场景：新用户无历史 Token，直接保存，不需要踢设备
     const expiresAt = new Date(
       Date.now() + AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
     );

@@ -1,6 +1,7 @@
 import { AuthService } from '../../../src/services/authService';
 import { IUserRepository } from '../../../src/repositories/userRepository';
 import { IRefreshTokenRepository } from '../../../src/repositories/refreshTokenRepository';
+import { IMembershipRepository } from '../../../src/repositories/membershipRepository';
 import { IPasswordHasher } from '../../../src/services/passwordHasher';
 import { JwtService } from '../../../src/services/jwtService';
 import { createMockUser } from '../../helpers/factories';
@@ -11,6 +12,7 @@ describe('AuthService', () => {
   let authService: AuthService;
   let mockUserRepository: jest.Mocked<IUserRepository>;
   let mockRefreshTokenRepository: jest.Mocked<IRefreshTokenRepository>;
+  let mockMembershipRepository: jest.Mocked<IMembershipRepository>;
   let mockJwtService: jest.Mocked<JwtService>;
   let mockPasswordHasher: jest.Mocked<IPasswordHasher>;
 
@@ -38,6 +40,16 @@ describe('AuthService', () => {
       deleteByToken: jest.fn(),
       deleteByUserId: jest.fn(),
       deleteExpired: jest.fn(),
+      deleteAllExceptNewest: jest.fn().mockResolvedValue(0),
+    };
+
+    mockMembershipRepository = {
+      findByUserId: jest.fn(),
+      create: jest.fn(),
+      updateStatus: jest.fn(),
+      activateOrCreate: jest.fn(),
+      // 默认免费版（isUserPremium = false），各测试可按需覆盖
+      isUserPremium: jest.fn().mockResolvedValue(false),
     };
 
     mockPasswordHasher = {
@@ -55,7 +67,8 @@ describe('AuthService', () => {
       mockUserRepository,
       mockRefreshTokenRepository,
       mockJwtService,
-      mockPasswordHasher
+      mockPasswordHasher,
+      mockMembershipRepository
     );
   });
 
