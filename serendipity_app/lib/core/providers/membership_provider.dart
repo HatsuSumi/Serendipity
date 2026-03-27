@@ -121,6 +121,21 @@ class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
     ref.invalidateSelf();
     await future;
   }
+
+  /// 重置会员状态（开发测试用）
+  ///
+  /// 删除当前用户的会员记录，恢复为免费版
+  Future<void> resetMembership() async {
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser == null) {
+      throw StateError('User not logged in');
+    }
+
+    await _repository.deleteMembership(currentUser.id);
+
+    ref.invalidateSelf();
+    await future;
+  }
 }
 
 /// 会员信息（简化版）

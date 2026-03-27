@@ -37,7 +37,7 @@ class StorageService implements IStorageService {
   Box<SyncHistory>? _syncHistoriesBox;
   Box<EncounterRecord>? _favoritedRecordSnapshotsBox;
   Box<String>? _favoritedPostSnapshotsBox;
-  Box<Membership>? _membershipsBox;
+  Box<String>? _membershipsBox;
   
   // Box getters with initialization check
   Box<EncounterRecord> get _recordsBoxOrThrow {
@@ -96,7 +96,7 @@ class StorageService implements IStorageService {
     return _favoritedPostSnapshotsBox!;
   }
   
-  Box<Membership> get _membershipsBoxOrThrow {
+  Box<String> get _membershipsBoxOrThrow {
     if (_membershipsBox == null) {
       throw StateError('StorageService not initialized. Call init() first.');
     }
@@ -114,7 +114,7 @@ class StorageService implements IStorageService {
     _syncHistoriesBox = await Hive.openBox<SyncHistory>(_syncHistoriesBoxName);
     _favoritedRecordSnapshotsBox = await Hive.openBox<EncounterRecord>(_favoritedRecordSnapshotsBoxName);
     _favoritedPostSnapshotsBox = await Hive.openBox<String>(_favoritedPostSnapshotsBoxName);
-    _membershipsBox = await Hive.openBox<Membership>(_membershipsBoxName);
+    _membershipsBox = await Hive.openBox<String>(_membershipsBoxName);
   }
   
   /// 关闭所有 Box
@@ -680,7 +680,9 @@ class StorageService implements IStorageService {
     if (userId.isEmpty) {
       throw ArgumentError('userId cannot be empty');
     }
-    return _membershipsBoxOrThrow.get(userId);
+    final json = _membershipsBoxOrThrow.get(userId);
+    if (json == null) return null;
+    return Membership.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
   
   /// 保存会员信息
@@ -689,7 +691,7 @@ class StorageService implements IStorageService {
     if (membership.userId.isEmpty) {
       throw ArgumentError('membership.userId cannot be empty');
     }
-    await _membershipsBoxOrThrow.put(membership.userId, membership);
+    await _membershipsBoxOrThrow.put(membership.userId, jsonEncode(membership.toJson()));
   }
   
   /// 删除会员信息

@@ -372,7 +372,7 @@ class ProfilePage extends ConsumerWidget {
                   ? const Icon(Icons.check, color: Colors.blue)
                   : !canUseTheme
                   ? const Icon(Icons.lock_outline)
-                  : null,
+                  : null, 
               selected: isSelected,
               onTap: () async {
                 if (!canUseTheme) {
@@ -631,6 +631,12 @@ class ProfilePage extends ConsumerWidget {
             title: const Text('重置首次启动标记'),
             subtitle: const Text('下次启动将显示欢迎页面'),
             onTap: () => _showResetFirstLaunchDialog(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.workspace_premium_outlined, color: Colors.purple),
+            title: const Text('重置会员状态'),
+            subtitle: const Text('清除当前会员数据，恢复为免费版'),
+            onTap: () => _showResetMembershipDialog(context, ref),
           ),
 
           const SizedBox(height: 32),
@@ -1573,6 +1579,39 @@ class ProfilePage extends ConsumerWidget {
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.blue),
+            child: const Text('确定重置'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 显示重置会员状态确认对话框
+  ///
+  /// 调用者：开发测试 - 重置会员状态 ListTile
+  void _showResetMembershipDialog(BuildContext context, WidgetRef ref) {
+    DialogHelper.show(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('重置会员状态'),
+        content: const Text('确定要重置会员状态吗？\n\n这将清除当前会员数据，恢复为免费版，此操作不可恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+
+              await AsyncActionHelper.execute(
+                context,
+                action: () => ref.read(membershipProvider.notifier).resetMembership(),
+                successMessage: '会员状态已重置',
+                errorMessagePrefix: '重置失败',
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.purple),
             child: const Text('确定重置'),
           ),
         ],

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 /// 
 /// 使用场景：
 /// - 对话框按钮倒计时（PublishWarningDialog、CommunityIntroDialog）
+/// - 支付页面按钮倒计时（PaymentPage）
 /// 
 /// 使用方法：
 /// ```dart
@@ -48,18 +49,19 @@ mixin CountdownMixin<T extends StatefulWidget> on State<T> {
 
   /// 启动倒计时
   /// 
+  /// [initialSeconds] 倒计时初始秒数（默认 5）
   /// [skipCountdown] 是否跳过倒计时（直接完成）
   /// [onFinished] 倒计时完成时的回调（可选）
   /// 
   /// 调用者：
   /// - initState()
   void startCountdown({
+    int initialSeconds = 5,
     bool skipCountdown = false,
     VoidCallback? onFinished,
   }) {
     if (skipCountdown) {
       _countdownFinished = true;
-      // 在下一帧触发重建，确保 UI 更新
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {});
@@ -69,23 +71,18 @@ mixin CountdownMixin<T extends StatefulWidget> on State<T> {
       return;
     }
 
+    _countdown = initialSeconds;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      // Fail Fast: 如果 Widget 已 dispose，立即取消 Timer
       if (!mounted) {
         timer.cancel();
         return;
       }
-
       setState(() {
         _countdown--;
         if (_countdown <= 0) {
           _countdownFinished = true;
           timer.cancel();
-          
-          // 倒计时完成回调
-          if (mounted) {
-            onFinished?.call();
-          }
+          if (mounted) onFinished?.call();
         }
       });
     });

@@ -6,6 +6,8 @@ import '../../core/providers/membership_provider.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/utils/navigation_helper.dart';
+import 'payment_page.dart';
 
 class MembershipPage extends ConsumerStatefulWidget {
   const MembershipPage({super.key});
@@ -207,7 +209,7 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text('选择本期支持金额，当前金额：¥$displayAmount'),
+            Text('选择本期支持金额，当前金额：¥$displayAmount/月'),
             const SizedBox(height: 12),
             Slider(
               min: 0,
@@ -252,32 +254,37 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
   }
 
   Future<void> _submitUpgrade() async {
-    setState(() {
-      _isSubmitting = true;
-    });
+    final amount = _selectedAmount.roundToDouble();
 
-    try {
-      await ref
-          .read(membershipProvider.notifier)
-          .upgradeToPremium(_selectedAmount.roundToDouble());
-      if (!mounted) {
-        return;
+    // 金额 = 0：直接解锁，无需支付页面
+    if (amount == 0) {
+      setState(() => _isSubmitting = true);
+      try {
+        await ref.read(membershipProvider.notifier).upgradeToPremium(0);
+        if (!mounted) return;
+        MessageHelper.showSuccess(context, '会员已开通，有效期 30 天');
+      } catch (e) {
+        if (!mounted) return;
+        MessageHelper.showError(
+          context,
+          '开通失败：${AuthErrorHelper.extractErrorMessage(e)}',
+        );
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
+      return;
+    }
+
+    // 金额 > 0：跳转支付页面
+    final paid = await NavigationHelper.pushWithTransition<bool>(
+      context,
+      ref,
+      PaymentPage(amount: amount),
+    );
+
+    // 支付页面已负责解锁和感谢动画，返回 true 时直接弹出提示
+    if (paid == true && mounted) {
       MessageHelper.showSuccess(context, '会员已开通，有效期 30 天');
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      MessageHelper.showError(
-        context,
-        '开通失败：${AuthErrorHelper.extractErrorMessage(e)}',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
     }
   }
 }
