@@ -23,6 +23,7 @@ import '../story_line/link_to_story_line_dialog.dart';
 import '../story_line/story_line_detail_page.dart';
 import '../community/dialogs/publish_warning_dialog.dart';
 import 'create_record_page.dart';
+import 'widgets/record_export_card.dart';
 
 /// 记录详情页面
 class RecordDetailPage extends ConsumerStatefulWidget {
@@ -158,6 +159,16 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             icon: const Icon(Icons.more_vert),
             onSelected: (value) => _handleMenuAction(context, value),
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    Icon(Icons.image_outlined),
+                    SizedBox(width: 8),
+                    Text('导出为图片'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'storyline',
                 child: Row(
@@ -650,9 +661,25 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     );
   }
 
+  /// 导出记录为图片并保存到相册
+  ///
+  /// 调用者：_handleMenuAction()
+  void _exportRecord(BuildContext context) async {
+    final success = await RecordExportCard.export(context, _currentRecord);
+    if (!context.mounted) return;
+    if (success) {
+      MessageHelper.showSuccess(context, '已保存到相册');
+    } else {
+      MessageHelper.showError(context, '导出失败，请重试');
+    }
+  }
+
   /// 处理菜单操作
   void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
+      case 'export':
+        _exportRecord(context);
+        break;
       case 'storyline':
         _showLinkToStoryLineDialog(context);
         break;

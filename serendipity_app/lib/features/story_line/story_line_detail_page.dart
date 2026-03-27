@@ -4,11 +4,13 @@ import '../../models/story_line.dart';
 import '../../models/encounter_record.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
+import '../../core/providers/membership_provider.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/message_helper.dart';
 import '../../core/utils/smart_navigator.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/record_helper.dart';
@@ -19,6 +21,7 @@ import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import 'add_existing_records_dialog.dart';
 import 'story_line_tag_cloud_section.dart';
+import 'story_line_export_card.dart';
 
 /// 故事线详情页面
 class StoryLineDetailPage extends ConsumerWidget {
@@ -58,6 +61,16 @@ class StoryLineDetailPage extends ConsumerWidget {
                         Icon(Icons.playlist_add),
                         SizedBox(width: 8),
                         Text('添加现有记录'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'export',
+                    child: Row(
+                      children: [
+                        Icon(Icons.image_outlined),
+                        SizedBox(width: 8),
+                        Text('导出为图文卡片'),
                       ],
                     ),
                   ),
@@ -335,6 +348,9 @@ class StoryLineDetailPage extends ConsumerWidget {
       case 'add_existing':
         _showAddExistingRecordsDialog(context, storyLine);
         break;
+      case 'export':
+        _exportStoryLine(context, ref, storyLine);
+        break;
       case 'rename':
         _showRenameDialog(context, ref, storyLine);
         break;
@@ -427,6 +443,38 @@ class StoryLineDetailPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// 导出故事线为图文卡片并保存到相册（会员功能）
+  ///
+  /// 调用者：_handleMenuAction()
+  void _exportStoryLine(
+    BuildContext context,
+    WidgetRef ref,
+    StoryLine storyLine,
+  ) async {
+    final membershipInfo = ref.read(membershipProvider).valueOrNull;
+    if (membershipInfo == null || !membershipInfo.canExportStoryLineCard) {
+      MessageHelper.showWarning(context, '导出故事线图文卡片是会员专属功能');
+      return;
+    }
+
+    final records = List<EncounterRecord>.from(
+      ref.read(storyLineRecordsProvider(storyLine.id)),
+    )..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    if (records.isEmpty) {
+      MessageHelper.showWarning(context, '故事线暂无记录，无法导出');
+      return;
+    }
+
+    final success = await StoryLineExportCard.export(context, storyLine, records);
+    if (!context.mounted) return;
+    if (success) {
+      MessageHelper.showSuccess(context, '已保存到相册');
+    } else {
+      MessageHelper.showError(context, '导出失败，请重试');
+    }
   }
 
   /// 显示添加现有记录对话框

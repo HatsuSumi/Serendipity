@@ -160,6 +160,8 @@ class MembershipInfo {
 
   bool get canUseAnniversaryReminder => isPremium || AppConfig.isDeveloperMode;
 
+  bool get canExportStoryLineCard => isPremium || AppConfig.isDeveloperMode;
+
   bool canUseTheme(ThemeOption theme) {
     return !theme.isPremium || isPremium || AppConfig.isDeveloperMode;
   }

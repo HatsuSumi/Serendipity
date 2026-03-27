@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/membership_provider.dart';
+import '../../core/providers/records_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/dialog_helper.dart';
@@ -10,6 +11,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../features/membership/membership_page.dart';
 import 'story_line_detail_page.dart';
+import 'story_line_export_card.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/story_line.dart';
 
@@ -352,6 +354,16 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                         ),
                       ),
                       const PopupMenuItem(
+                        value: 'export',
+                        child: Row(
+                          children: [
+                            Icon(Icons.image_outlined),
+                            SizedBox(width: 8),
+                            Text('导出为图文卡片'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
@@ -386,9 +398,46 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
       case 'rename':
         _showRenameDialog(context, ref, storyLine);
         break;
+      case 'export':
+        _exportStoryLine(context, ref, storyLine);
+        break;
       case 'delete':
         _showDeleteConfirmDialog(context, ref, storyLine);
         break;
+    }
+  }
+
+  /// 导出故事线为图文卡片并保存到相册（会员功能）
+  ///
+  /// 调用者：_handleMenuAction()
+  void _exportStoryLine(
+    BuildContext context,
+    WidgetRef ref,
+    StoryLine storyLine,
+  ) async {
+    final membershipInfo = ref.read(membershipProvider).valueOrNull;
+    if (membershipInfo == null || !membershipInfo.canExportStoryLineCard) {
+      MessageHelper.showWarning(context, '导出故事线图文卡片是会员专属功能');
+      return;
+    }
+
+    final allRecords = ref.read(recordsProvider).valueOrNull ?? [];
+    final records = allRecords
+        .where((r) => storyLine.recordIds.contains(r.id))
+        .toList()
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    if (records.isEmpty) {
+      MessageHelper.showWarning(context, '故事线暂无记录，无法导出');
+      return;
+    }
+
+    final success = await StoryLineExportCard.export(context, storyLine, records);
+    if (!context.mounted) return;
+    if (success) {
+      MessageHelper.showSuccess(context, '已保存到相册');
+    } else {
+      MessageHelper.showError(context, '导出失败，请重试');
     }
   }
 

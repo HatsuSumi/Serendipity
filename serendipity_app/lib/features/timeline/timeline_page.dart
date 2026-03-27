@@ -23,6 +23,7 @@ import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
+import '../record/widgets/record_export_card.dart';
 import '../story_line/link_to_story_line_dialog.dart';
 import '../community/dialogs/publish_warning_dialog.dart';
 import '../check_in/widgets/check_in_card.dart';
@@ -367,6 +368,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                         ),
                       ),
                       const PopupMenuItem(
+                        value: 'export',
+                        child: Row(
+                          children: [
+                            Icon(Icons.image_outlined),
+                            SizedBox(width: 8),
+                            Text('导出为图片'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
                         value: 'publish',
                         child: Row(
                           children: [
@@ -634,12 +645,28 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       case 'link':
         _showLinkToStoryLineDialog(context, ref, record);
         break;
+      case 'export':
+        _exportRecord(context, record);
+        break;
       case 'publish':
         _showPublishToCommunityDialog(context, ref, record);
         break;
       case 'delete':
         _showDeleteConfirmDialog(context, ref, record);
         break;
+    }
+  }
+
+  /// 导出记录为图片并保存到相册
+  ///
+  /// 调用者：_handleMenuAction()
+  void _exportRecord(BuildContext context, EncounterRecord record) async {
+    final success = await RecordExportCard.export(context, record);
+    if (!context.mounted) return;
+    if (success) {
+      MessageHelper.showSuccess(context, '已保存到相册');
+    } else {
+      MessageHelper.showError(context, '导出失败，请重试');
     }
   }
 

@@ -45,6 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>需要访问相册以保存导出的记录图片</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>需要获取您的位置信息来自动记录错过的地点</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
