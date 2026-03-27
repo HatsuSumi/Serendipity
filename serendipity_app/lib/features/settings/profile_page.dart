@@ -624,108 +624,109 @@ class ProfilePage extends ConsumerWidget {
             error: (error, stackTrace) => const SizedBox.shrink(),
           ),
           
-          const Divider(),
-          
-          // 开发测试
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '开发测试',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // 开发测试区域（仅在开发者模式下显示）
+          if (AppConfig.isDeveloperMode) ...[
+            const Divider(),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                '开发测试',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.location_on),
-            title: const Text('GPS 定位测试'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              NavigationHelper.pushWithTransition(
-                context,
-                ref,
-                const LocationTestPage(),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.notifications_off_outlined,
-              color: Colors.blue,
+            ListTile(
+              leading: const Icon(Icons.location_on),
+              title: const Text('GPS 定位测试'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                NavigationHelper.pushWithTransition(
+                  context,
+                  ref,
+                  const LocationTestPage(),
+                );
+              },
             ),
-            title: const Text('重置发布警告对话框'),
-            subtitle: const Text('重新显示"发布到社区"警告对话框'),
-            onTap: () => _showResetPublishWarningDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.info_outline, color: Colors.blue),
-            title: const Text('重置社区介绍对话框'),
-            subtitle: const Text('重新显示"欢迎来到树洞"介绍对话框'),
-            onTap: () => _showResetCommunityIntroDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.bookmark_outline, color: Colors.blue),
-            title: const Text('重置收藏页介绍对话框'),
-            subtitle: const Text('重新显示"关于收藏"介绍对话框'),
-            onTap: () => _showResetFavoritesIntroDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.refresh, color: Colors.orange),
-            title: const Text('重置所有成就'),
-            subtitle: const Text('清空所有已解锁的成就和进度'),
-            onTap: () => _showResetAchievementsDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('重置所有签到记录'),
-            subtitle: const Text('清空所有签到数据'),
-            onTap: () => _showResetCheckInsDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.history, color: Colors.orange),
-            title: const Text('清空同步历史记录'),
-            subtitle: const Text('清空所有同步历史数据'),
-            onTap: () => _showClearSyncHistoryDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.restart_alt, color: Colors.blue),
-            title: const Text('重置首次启动标记'),
-            subtitle: const Text('下次启动将显示欢迎页面'),
-            onTap: () => _showResetFirstLaunchDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.workspace_premium_outlined, color: Colors.purple),
-            title: const Text('重置会员状态'),
-            subtitle: const Text('清除当前会员数据，恢复为免费版'),
-            onTap: () => _showResetMembershipDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.celebration_outlined, color: Colors.pink),
-            title: const Text('强制触发纪念日弹窗'),
-            subtitle: const Text('使用当前所有"邂逅"记录，绕过年份检查直接展示'),
-            onTap: () => _showForceAnniversaryDialog(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.notifications_active_outlined, color: Colors.pink),
-            title: const Text('发送纪念日测试推送'),
-            subtitle: const Text('5 秒后触发一条纪念日通知，验证推送是否正常'),
-            onTap: () async {
-              await ref.read(notificationServiceProvider).sendTestAnniversaryNotification();
-              if (context.mounted) {
-                MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.alarm_outlined, color: Colors.teal),
-            title: const Text('发送签到提醒测试推送'),
-            subtitle: const Text('5 秒后触发一条签到提醒通知，验证推送是否正常'),
-            onTap: () async {
-              await ref.read(notificationServiceProvider).sendTestCheckInNotification();
-              if (context.mounted) {
-                MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
-              }
-            },
-          ),
-          
+            ListTile(
+              leading: const Icon(
+                Icons.notifications_off_outlined,
+                color: Colors.blue,
+              ),
+              title: const Text('重置发布警告对话框'),
+              subtitle: const Text('重新显示"发布到社区"警告对话框'),
+              onTap: () => _showResetPublishWarningDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline, color: Colors.blue),
+              title: const Text('重置社区介绍对话框'),
+              subtitle: const Text('重新显示"欢迎来到树洞"介绍对话框'),
+              onTap: () => _showResetCommunityIntroDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.bookmark_outline, color: Colors.blue),
+              title: const Text('重置收藏页介绍对话框'),
+              subtitle: const Text('重新显示"关于收藏"介绍对话框'),
+              onTap: () => _showResetFavoritesIntroDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.refresh, color: Colors.orange),
+              title: const Text('重置所有成就'),
+              subtitle: const Text('清空所有已解锁的成就和进度'),
+              onTap: () => _showResetAchievementsDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_forever, color: Colors.red),
+              title: const Text('重置所有签到记录'),
+              subtitle: const Text('清空所有签到数据'),
+              onTap: () => _showResetCheckInsDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.history, color: Colors.orange),
+              title: const Text('清空同步历史记录'),
+              subtitle: const Text('清空所有同步历史数据'),
+              onTap: () => _showClearSyncHistoryDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.restart_alt, color: Colors.blue),
+              title: const Text('重置首次启动标记'),
+              subtitle: const Text('下次启动将显示欢迎页面'),
+              onTap: () => _showResetFirstLaunchDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.workspace_premium_outlined, color: Colors.purple),
+              title: const Text('重置会员状态'),
+              subtitle: const Text('清除当前会员数据，恢复为免费版'),
+              onTap: () => _showResetMembershipDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.celebration_outlined, color: Colors.pink),
+              title: const Text('强制触发纪念日弹窗'),
+              subtitle: const Text('使用当前所有"邂逅"记录，绕过年份检查直接展示'),
+              onTap: () => _showForceAnniversaryDialog(context, ref),
+            ),
+            ListTile(
+              leading: const Icon(Icons.notifications_active_outlined, color: Colors.pink),
+              title: const Text('发送纪念日测试推送'),
+              subtitle: const Text('5 秒后触发一条纪念日通知，验证推送是否正常'),
+              onTap: () async {
+                await ref.read(notificationServiceProvider).sendTestAnniversaryNotification();
+                if (context.mounted) {
+                  MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.alarm_outlined, color: Colors.teal),
+              title: const Text('发送签到提醒测试推送'),
+              subtitle: const Text('5 秒后触发一条签到提醒通知，验证推送是否正常'),
+              onTap: () async {
+                await ref.read(notificationServiceProvider).sendTestCheckInNotification();
+                if (context.mounted) {
+                  MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+                }
+              },
+            ),
+          ],
+
           const SizedBox(height: 32),
         ],
       ),
