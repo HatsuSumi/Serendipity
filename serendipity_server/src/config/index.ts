@@ -30,13 +30,6 @@ export const config = Object.freeze({
     url: getRequiredEnv('DATABASE_URL'),
   }),
 
-  // Redis 配置
-  redis: Object.freeze({
-    host: getOptionalEnv('REDIS_HOST', 'localhost'),
-    port: parseInt(getOptionalEnv('REDIS_PORT', '6379'), 10),
-    db: parseInt(getOptionalEnv('REDIS_DB', '0'), 10),
-  }),
-
   // JWT 配置
   jwt: Object.freeze({
     // 生产环境必须配置 JWT_SECRET

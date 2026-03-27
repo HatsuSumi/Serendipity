@@ -24,7 +24,7 @@ Serendipity（错过了么）后端服务器，基于 Node.js + Express + TypeSc
 ### 2. 启动数据库
 
 ```bash
-# 启动 PostgreSQL + Redis
+# 启动 PostgreSQL
 docker-compose up -d
 
 # 查看运行状态
@@ -73,8 +73,6 @@ npm run dev
 | NODE_ENV | 运行环境 | development |
 | PORT | 服务器端口 | 3000 |
 | DATABASE_URL | PostgreSQL 连接字符串 | postgresql://serendipity:serendipity_dev_password@localhost:5432/serendipity_db |
-| REDIS_HOST | Redis 主机 | localhost |
-| REDIS_PORT | Redis 端口 | 6379 |
 | JWT_SECRET | JWT 密钥 | （需要修改） |
 | JWT_EXPIRES_IN | Access Token 有效期 | 7d |
 | JWT_REFRESH_TOKEN_EXPIRES_IN | Refresh Token 有效期 | 30d |
@@ -96,13 +94,9 @@ docker-compose restart
 
 # 查看日志
 docker-compose logs -f postgres
-docker-compose logs -f redis
 
 # 进入 PostgreSQL
 docker exec -it serendipity_postgres psql -U serendipity -d serendipity_db
-
-# 进入 Redis
-docker exec -it serendipity_redis redis-cli
 ```
 
 ## 项目结构

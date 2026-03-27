@@ -26,11 +26,6 @@ export interface IConfig {
   database: {
     url: string;
   };
-  redis: {
-    host: string;
-    port: number;
-    db: number;
-  };
   jwt: {
     secret: string;
     expiresIn: string;

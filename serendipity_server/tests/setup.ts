@@ -7,8 +7,6 @@ process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
 process.env.JWT_EXPIRES_IN = '7d';
 process.env.JWT_REFRESH_TOKEN_EXPIRES_IN = '30d';
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
-process.env.REDIS_HOST = 'localhost';
-process.env.REDIS_PORT = '6379';
 process.env.PORT = '3000';
 process.env.CORS_ORIGIN = 'http://localhost:3000';
 

@@ -168,7 +168,7 @@ const List<AboutSectionContent> _staticAboutPageSections = [
       'Riverpod 2.x（状态管理）',
       'Hive（本地存储）',
       'Node.js + Express + TypeScript',
-      'PostgreSQL + Redis',
+      'PostgreSQL',
       '高德地图 API（逆地理编码）',
     ],
   ),
