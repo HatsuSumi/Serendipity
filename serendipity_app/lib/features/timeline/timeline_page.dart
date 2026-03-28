@@ -17,6 +17,8 @@ import '../../core/utils/check_in_animation_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/theme/status_color_extension.dart';
+import '../../core/providers/theme_provider.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/common_filter_widgets.dart';
 import '../../models/encounter_record.dart';
@@ -72,6 +74,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   @override
   Widget build(BuildContext context) {
+    // 监听主题变化，确保主题切换时页面强制 rebuild，获取最新 ThemeData
+    ref.watch(themeOptionProvider);
     final filterCriteria = ref.watch(recordsFilterProvider);
     final countAsync = ref.watch(recordsCountProvider);
 
@@ -183,7 +187,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           const SizedBox(height: 16),
           Text(
             errorMessage,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
             textAlign: TextAlign.center,
@@ -273,6 +277,13 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   Widget _buildRecordCard(BuildContext context, EncounterRecord record, WidgetRef ref, RecordsFilterCriteria filterCriteria) {
     // 使用主题自适应的状态颜色
     final statusColor = record.status.getColor(context, ref);
+    // 直接从 themeOption 获取正确的 ThemeData，避免 Flutter Web 上
+    // Navigator 内部页面 context 拿到旧 ThemeData 的问题
+    final themeOption = ref.watch(themeOptionProvider);
+    final systemBrightness = MediaQuery.of(context).platformBrightness;
+    final currentTheme = AppTheme.getTheme(themeOption, systemBrightness);
+    final colorScheme = currentTheme.colorScheme;
+    final textTheme = currentTheme.textTheme;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -299,7 +310,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                 child: Icon(
                   Icons.push_pin,
                   size: 18,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: colorScheme.primary,
                 ),
               ),
             // 主要内容
@@ -328,8 +339,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       ),
                       Text(
                         '创建：${DateTimeHelper.formatRelativeTime(record.createdAt)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                       ),
                       // 更多菜单
@@ -410,13 +421,13 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   Icon(
                     Icons.location_on,
                     size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       _isMasked ? _maskText(RecordHelper.getLocationText(record.location)) : RecordHelper.getLocationText(record.location),
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: textTheme.bodyMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -435,8 +446,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                       _isMasked ? _maskText(record.location.placeName!) : record.location.placeName!,
                       keywords: _isMasked ? null : filterCriteria.placeNameKeywords,
                       highlightColor: statusColor.withValues(alpha: 0.3),
-                      textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      textStyle: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -454,8 +465,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                           _isMasked ? _maskText(record.description!) : record.description!,
                           keywords: _isMasked ? null : filterCriteria.descriptionKeywords,
                           highlightColor: statusColor.withValues(alpha: 0.3),
-                          textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          textStyle: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
                               ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -574,24 +585,24 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                           children: [
                             Text(
                               '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              style: textTheme.bodySmall?.copyWith(
                                     fontSize: 11,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                             ),
                             if (record.createdAt != record.updatedAt) ...[
                               Text(
                                 ' | ',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: textTheme.bodySmall?.copyWith(
                                       fontSize: 11,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
                               Text(
                                 '更新：${DateTimeHelper.formatRelativeTime(record.updatedAt)}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: textTheme.bodySmall?.copyWith(
                                       fontSize: 11,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
                             ],
@@ -611,7 +622,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                                   ? Icons.bookmark
                                   : Icons.bookmark_border,
                               size: 20,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: colorScheme.primary,
                             ),
                             tooltip: isFavorited ? '取消收藏' : '收藏',
                             visualDensity: VisualDensity.compact,
@@ -881,14 +892,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               Icon(
                 Icons.auto_stories,
                 size: 12,
-                color: Theme.of(context).colorScheme.primary,
+                color: colorScheme.primary,
               ),
               const SizedBox(width: 4),
               Text(
                 _isMasked ? _maskText(storyLine.name) : storyLine.name,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                style: textTheme.bodySmall?.copyWith(
                       fontSize: 11,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: colorScheme.primary,
                       fontWeight: FontWeight.w500,
                     ),
                 maxLines: 1,
@@ -924,7 +935,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          style: textTheme.labelSmall?.copyWith(
                 color: statusColor,
                 fontWeight: FontWeight.bold,
               ),
@@ -934,8 +945,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           displayContent,
           keywords: displayKeywords,
           highlightColor: statusColor.withValues(alpha: 0.3),
-          textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          textStyle: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
