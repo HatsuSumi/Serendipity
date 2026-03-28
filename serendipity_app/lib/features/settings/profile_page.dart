@@ -105,16 +105,16 @@ class ProfilePage extends ConsumerWidget {
             leading: const _ProfileEmojiLeading('✨'),
             title: const Text('每日签到'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CheckInPage()),
+            onTap: () => NavigationHelper.pushWithTransition(
+              context, ref, const CheckInPage(),
             ),
           ),
           ListTile(
             leading: const _ProfileEmojiLeading('🏆'),
             title: const Text('我的成就'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AchievementsPage()),
+            onTap: () => NavigationHelper.pushWithTransition(
+              context, ref, const AchievementsPage(),
             ),
           ),
           ListTile(
