@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/statistics_provider.dart';
+import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import '../../../models/statistics.dart';
 
 class FieldRankingCard extends ConsumerWidget {
@@ -14,7 +15,8 @@ class FieldRankingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = ref.watch(appColorSchemeProvider);
+    ref.watch(appTextThemeProvider);
     final selected = ref.watch(fieldRankingDimensionProvider);
     final table = fieldRankings[selected];
     final items = table?.items ?? [];

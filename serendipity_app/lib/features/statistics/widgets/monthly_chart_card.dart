@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/statistics_provider.dart';
+import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import '../../../models/enums.dart';
 import '../../../models/statistics.dart';
 
@@ -41,7 +42,8 @@ class MonthlyChartCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = ref.watch(appColorSchemeProvider);
+    ref.watch(appTextThemeProvider);
     final selectedStatus = ref.watch(monthlyStatusFilterProvider);
     final chartRange = ref.watch(monthlyChartRangeProvider);
     final monthlyDistribution =
