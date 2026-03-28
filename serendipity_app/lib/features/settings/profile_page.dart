@@ -25,6 +25,7 @@ import 'pages/notification_settings_page.dart';
 import 'pages/theme_settings_page.dart';
 import 'pages/account_settings_page.dart';
 import 'pages/dev_tools_page.dart';
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 
 class _ProfileEmojiLeading extends StatelessWidget {
   final String emoji;
@@ -73,6 +74,9 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 从 Provider 直接取颜色，无竞态条件
+    ref.watch(appColorSchemeProvider);
+    ref.watch(appTextThemeProvider);
     final authState = ref.watch(authProvider);
     final membershipAsync = ref.watch(membershipProvider);
     final membershipInfo = membershipAsync.valueOrNull;
