@@ -194,8 +194,7 @@ export const initializeContainer = (): Container => {
     userRepository,
     refreshTokenRepository,
     jwtService,
-    passwordHasher,
-    membershipRepository
+    passwordHasher
   );
   const recordService = new RecordService(recordRepository);
   const storyLineService = new StoryLineService(storyLineRepository);

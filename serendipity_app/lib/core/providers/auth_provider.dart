@@ -573,6 +573,46 @@ class AuthNotifier extends StreamNotifier<User?> {
     return await _repository.getRecoveryKey();
   }
   
+  /// 注销账号
+  ///
+  /// 调用者：AccountSettingsPage（账号管理）
+  ///
+  /// 注销流程：
+  /// 1. 调用 AuthRepository 注销（服务端删除用户数据）
+  /// 2. 清空本地所有数据
+  /// 3. 刷新所有数据 Provider
+  /// 4. 更新认证状态为 null
+  ///
+  /// Fail Fast：
+  /// - 密码为空立即抛异常
+  /// - 密码错误立即抛异常
+  /// - 用户未登录立即抛异常
+  Future<void> deleteAccount(String password) async {
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+
+    state = const AsyncValue.loading();
+
+    try {
+      // 先获取当前用户 ID，再注销（注销后 _currentUser 会被清空）
+      final currentUser = await _repository.currentUser;
+      await _repository.deleteAccount(password);
+
+      if (currentUser != null) {
+        final storageService = ref.read(storageServiceProvider);
+        await storageService.deleteUserData(currentUser.id);
+      }
+
+      _invalidateDataProviders();
+
+      state = const AsyncValue.data(null);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      rethrow;
+    }
+  }
+
   /// 修改密码
   /// 
   /// 调用者：SettingsPage（账号管理）

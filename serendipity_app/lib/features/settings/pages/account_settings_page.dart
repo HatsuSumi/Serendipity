@@ -74,6 +74,93 @@ class AccountSettingsPage extends ConsumerWidget {
                 ),
                 onTap: () => _showLogoutDialog(context, ref),
               ),
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text(
+                  '注销账号',
+                  style: TextStyle(color: Colors.red),
+                ),
+                subtitle: const Text('删除账号及所有数据，不可恢复'),
+                onTap: () => _showDeleteAccountDialog(context, ref),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ── 注销账号 ──────────────────────────────────────────────────
+
+  void _showDeleteAccountDialog(BuildContext context, WidgetRef ref) {
+    final passwordController = TextEditingController();
+    bool passwordVisible = false;
+
+    DialogHelper.show(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('注销账号'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '注销后账号及所有数据将被永久删除，无法恢复。',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '⚠️ 此操作不可撤销！',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: !passwordVisible,
+                  decoration: InputDecoration(
+                    labelText: '请输入密码确认',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off),
+                      onPressed: () =>
+                          setState(() => passwordVisible = !passwordVisible),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final password = passwordController.text.trim();
+                  if (password.isEmpty) {
+                    MessageHelper.showError(context, '请输入密码');
+                    return;
+                  }
+                  Navigator.of(context).pop();
+                  await AsyncActionHelper.execute(
+                    context,
+                    action: () =>
+                        ref.read(authProvider.notifier).deleteAccount(password),
+                    successMessage: '账号已注销',
+                    errorMessagePrefix: '注销失败',
+                  );
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('确认注销'),
+              ),
             ],
           );
         },

@@ -69,6 +69,11 @@ export interface ChangePhoneDto {
   password: string;
 }
 
+// 注销账号请求
+export interface DeleteAccountDto {
+  password: string;
+}
+
 // 认证响应
 export interface AuthResponseDto {
   user: {

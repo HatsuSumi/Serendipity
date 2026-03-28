@@ -44,6 +44,9 @@ export interface IUserRepository {
   bindPhone(id: string, phoneNumber: string): Promise<User>;
   updatePassword(id: string, passwordHash: string): Promise<User>;
   updateRecoveryKey(id: string, recoveryKeyHash: string): Promise<User>;
+
+  // 删除方法
+  deleteById(id: string): Promise<void>;
 }
 
 /**
@@ -222,6 +225,16 @@ export class UserRepository implements IUserRepository {
         email,
         recoveryKey: recoveryKeyHash,
       },
+    });
+  }
+
+  /**
+   * 删除用户
+   * @param id - 用户 ID
+   */
+  async deleteById(id: string): Promise<void> {
+    await this.prisma.user.delete({
+      where: { id },
     });
   }
 }

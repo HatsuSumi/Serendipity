@@ -20,7 +20,6 @@ import {
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
 import { AUTH_CONFIG } from '../config/auth.config';
-import { IMembershipRepository } from '../repositories/membershipRepository';
 
 /**
  * 认证服务接口
@@ -42,6 +41,7 @@ export interface IAuthService {
   logout(userId: string): Promise<void>;
   generateRecoveryKey(userId: string): Promise<GenerateRecoveryKeyResponseDto>;
   getRecoveryKey(userId: string): Promise<string | null>;
+  deleteAccount(userId: string, password: string): Promise<void>;
 }
 
 /**
@@ -53,8 +53,7 @@ export class AuthService implements IAuthService {
     private userRepository: IUserRepository,
     private refreshTokenRepository: IRefreshTokenRepository,
     private jwtService: JwtService,
-    private passwordHasher: IPasswordHasher,
-    private membershipRepository: IMembershipRepository
+    private passwordHasher: IPasswordHasher
   ) {}
 
   /**
@@ -512,6 +511,43 @@ export class AuthService implements IAuthService {
     }
 
     await this.refreshTokenRepository.deleteByUserId(userId);
+  }
+
+  /**
+   * 注销账号
+   *
+   * 调用者：authController.deleteAccount()
+   *
+   * 注销流程：
+   * 1. 验证密码
+   * 2. 删除所有 Refresh Token
+   * 3. 删除用户记录（级联删除由数据库外键约束处理）
+   *
+   * @param userId - 用户 ID
+   * @param password - 当前密码（身份验证）
+   * @throws {AppError} 用户不存在或密码错误
+   */
+  async deleteAccount(userId: string, password: string): Promise<void> {
+    if (!userId) {
+      throw new AppError('用户ID不能为空', ErrorCode.INVALID_CREDENTIALS);
+    }
+    if (!password) {
+      throw new AppError('密码不能为空', ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
+    }
+
+    const isPasswordValid = await this.passwordHasher.compare(password, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new AppError('密码错误', ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // 先删除所有 Refresh Token，再删除用户（避免外键约束冲突）
+    await this.refreshTokenRepository.deleteByUserId(userId);
+    await this.userRepository.deleteById(userId);
   }
 
   /**

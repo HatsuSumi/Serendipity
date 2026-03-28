@@ -12,6 +12,7 @@ import {
   ChangePasswordDto,
   ChangeEmailDto,
   ChangePhoneDto,
+  DeleteAccountDto,
 } from '../types/auth.dto';
 import { sendSuccess } from '../utils/response';
 
@@ -229,6 +230,21 @@ export class AuthController {
         phoneNumber: data.newPhoneNumber,
         updatedAt: new Date(),
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  deleteAccount = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const data: DeleteAccountDto = req.body;
+      await this.authService.deleteAccount(userId, data.password);
+      sendSuccess(res, { message: 'Account deleted successfully' });
     } catch (error) {
       next(error);
     }

@@ -275,5 +275,20 @@ abstract class IAuthRepository {
     String newPhoneNumber,
     String password,
   );
+
+  /// 注销账号
+  ///
+  /// 参数：
+  /// - [password]：当前密码（用于身份验证）
+  ///
+  /// 调用者：
+  /// - AuthProvider.deleteAccount()
+  /// - AccountSettingsPage 通过 AuthProvider 调用
+  ///
+  /// Fail Fast：
+  /// - password 为空：抛出 ArgumentError
+  /// - 密码错误：抛出具体的认证异常（由实现类定义）
+  /// - 用户未登录：抛出 StateError
+  Future<void> deleteAccount(String password);
 }
 

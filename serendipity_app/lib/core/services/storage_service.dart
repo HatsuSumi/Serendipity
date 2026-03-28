@@ -638,6 +638,53 @@ class StorageService implements IStorageService {
     await _settingsBoxOrThrow.delete('user_settings');
   }
 
+  /// 删除指定用户的所有本地数据（注销账号时调用）
+  ///
+  /// 调用者：AuthNotifier.deleteAccount()
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  @override
+  Future<void> deleteUserData(String userId) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+
+    // 删除记录
+    final userRecords = getRecordsByUser(userId);
+    for (final record in userRecords) {
+      await deleteRecord(record.id);
+    }
+
+    // 删除故事线
+    final userStoryLines = getStoryLinesByUser(userId);
+    for (final storyLine in userStoryLines) {
+      await deleteStoryLine(storyLine.id);
+    }
+
+    // 删除签到记录
+    final userCheckIns = getCheckInsByUser(userId);
+    for (final checkIn in userCheckIns) {
+      await deleteCheckIn(checkIn.id);
+    }
+
+    // 删除会员信息
+    await deleteMembership(userId);
+
+    // 删除同步历史
+    final userSyncHistories = getSyncHistoriesByUser(userId);
+    for (final history in userSyncHistories) {
+      await deleteSyncHistory(history.id);
+    }
+
+    // 删除 lastSyncTime
+    final syncTimeKey = '$_lastSyncTimeKeyPrefix$userId';
+    await _settingsBoxOrThrow.delete(syncTimeKey);
+
+    // 清除认证数据（Token 等）
+    await clearAuthData();
+  }
+
   // ==================== 收藏快照 ====================
 
   @override

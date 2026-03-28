@@ -473,6 +473,27 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
   }
   
+  @override
+  Future<void> deleteAccount(String password) async {
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+
+    try {
+      await _httpClient.delete(
+        ServerConfig.authDeleteAccount,
+        body: {'password': password},
+      );
+      _currentUser = null;
+      await _httpClient.clearTokens();
+    } on HttpException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
   /// 将服务器返回的用户数据转换为应用的 User 模型
   /// 
   /// Fail Fast：必需字段缺失时抛出异常

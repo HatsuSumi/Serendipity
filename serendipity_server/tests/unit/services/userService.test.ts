@@ -29,6 +29,7 @@ describe('UserService', () => {
       updatePassword: jest.fn(),
       updateRecoveryKey: jest.fn(),
       findByEmailAndRecoveryKey: jest.fn(),
+      deleteById: jest.fn(),
     };
 
     mockUserSettingsRepository = {

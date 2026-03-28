@@ -265,5 +265,18 @@ abstract class IStorageService {
   /// 
   /// 调用者：AuthNotifier.signOut()
   Future<void> clearAuthData();
+
+  /// 删除指定用户的所有本地数据（注销账号时调用）
+  ///
+  /// 删除内容：
+  /// - 该用户的所有记录、故事线、签到记录、成就
+  /// - 该用户的会员信息、同步历史、lastSyncTime
+  /// - Token 等认证信息
+  ///
+  /// 调用者：AuthNotifier.deleteAccount()
+  ///
+  /// Fail Fast：
+  /// - userId 为空：抛出 ArgumentError
+  Future<void> deleteUserData(String userId);
 }
 

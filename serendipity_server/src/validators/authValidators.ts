@@ -102,3 +102,10 @@ export const changePhoneValidation = [
     .notEmpty()
     .withMessage('密码不能为空'),
 ];
+
+// 注销账号验证规则
+export const deleteAccountValidation = [
+  body('password')
+    .notEmpty()
+    .withMessage('密码不能为空'),
+];

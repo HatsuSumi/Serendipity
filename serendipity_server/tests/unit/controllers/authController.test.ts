@@ -25,6 +25,7 @@ describe('AuthController', () => {
       logout: jest.fn(),
       generateRecoveryKey: jest.fn(),
       getRecoveryKey: jest.fn(),
+      deleteAccount: jest.fn(),
     };
 
     mockVerificationService = {

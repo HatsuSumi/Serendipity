@@ -161,13 +161,18 @@ class HttpClientService {
   /// DELETE 请求
   Future<Map<String, dynamic>> delete(
     String endpoint, {
+    Map<String, dynamic>? body,
     bool skipAuth = false,
   }) async {
     final uri = _buildUri(endpoint);
     return _executeWithRetry(
       skipAuth: skipAuth,
       request: (headers) => _client
-          .delete(uri, headers: headers)
+          .delete(
+            uri,
+            headers: headers,
+            body: body != null ? jsonEncode(body) : null,
+          )
           .timeout(Duration(seconds: ServerConfig.requestTimeout)),
     );
   }

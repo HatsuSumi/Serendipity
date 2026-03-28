@@ -13,6 +13,7 @@ import {
   changePasswordValidation,
   changeEmailValidation,
   changePhoneValidation,
+  deleteAccountValidation,
 } from '../validators/authValidators';
 
 export const createAuthRoutes = (authController: AuthController): Router => {
@@ -121,6 +122,14 @@ export const createAuthRoutes = (authController: AuthController): Router => {
     '/recovery-key',
     authMiddleware,
     authController.getRecoveryKey
+  );
+
+  router.delete(
+    '/account',
+    authMiddleware,
+    deleteAccountValidation,
+    validateRequest,
+    authController.deleteAccount
   );
 
   return router;
