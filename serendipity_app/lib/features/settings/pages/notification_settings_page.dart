@@ -4,13 +4,13 @@ import '../../../core/providers/membership_provider.dart';
 import '../../../core/providers/user_settings_provider.dart';
 import '../../../core/utils/message_helper.dart';
 
-/// 签到设置子页面
+/// 提醒设置子页面
 ///
-/// 包含：签到提醒开关、提醒时间、震动反馈、粒子特效、纪念日提醒（会员）
+/// 包含：签到提醒（开关、时间、震动、粒子特效）、纪念日提醒（会员）
 ///
 /// 调用者：ProfilePage
-class CheckInSettingsPage extends ConsumerWidget {
-  const CheckInSettingsPage({super.key});
+class NotificationSettingsPage extends ConsumerWidget {
+  const NotificationSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,10 +24,18 @@ class CheckInSettingsPage extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('签到设置')),
+      appBar: AppBar(title: const Text('提醒设置')),
       body: ListView(
         children: [
-          // 签到提醒开关
+          // ── 签到提醒 ──────────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              '签到提醒',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+
           SwitchListTile(
             title: const Text('签到提醒'),
             subtitle: const Text('每天提醒你签到'),
@@ -45,7 +53,6 @@ class CheckInSettingsPage extends ConsumerWidget {
             },
           ),
 
-          // 签到提醒时间
           ListTile(
             title: const Text('提醒时间'),
             subtitle: Text(
@@ -62,9 +69,6 @@ class CheckInSettingsPage extends ConsumerWidget {
                 : null,
           ),
 
-          const Divider(),
-
-          // 签到震动开关
           SwitchListTile(
             title: const Text('签到震动'),
             subtitle: const Text('签到时震动反馈'),
@@ -76,7 +80,6 @@ class CheckInSettingsPage extends ConsumerWidget {
             },
           ),
 
-          // 签到粒子特效开关
           SwitchListTile(
             title: const Text('签到粒子特效'),
             subtitle: const Text('签到时显示彩色粒子'),
@@ -90,7 +93,15 @@ class CheckInSettingsPage extends ConsumerWidget {
 
           const Divider(),
 
-          // 纪念日提醒（会员功能）
+          // ── 纪念日提醒 ────────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              '纪念日提醒',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+
           SwitchListTile(
             title: Row(
               children: [
@@ -126,6 +137,8 @@ class CheckInSettingsPage extends ConsumerWidget {
               }
             },
           ),
+
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -160,3 +173,4 @@ class CheckInSettingsPage extends ConsumerWidget {
     });
   }
 }
+

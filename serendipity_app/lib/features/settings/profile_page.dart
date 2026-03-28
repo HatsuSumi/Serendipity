@@ -21,7 +21,7 @@ import 'dialogs/manual_sync_dialog.dart';
 import 'dialogs/sync_info_dialog.dart';
 import 'dialogs/sync_history_dialog.dart';
 import 'favorites_page.dart';
-import 'pages/check_in_settings_page.dart';
+import 'pages/notification_settings_page.dart';
 import 'pages/theme_settings_page.dart';
 import 'pages/account_settings_page.dart';
 import 'pages/dev_tools_page.dart';
@@ -201,12 +201,12 @@ class ProfilePage extends ConsumerWidget {
           ),
 
           ListTile(
-            leading: const _ProfileEmojiLeading('✅'),
-            title: const Text('签到设置'),
-            subtitle: const Text('提醒、震动、特效、纪念日'),
+            leading: const _ProfileEmojiLeading('🔔'),
+            title: const Text('提醒设置'),
+            subtitle: const Text('签到提醒、纪念日提醒'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => NavigationHelper.pushWithTransition(
-              context, ref, const CheckInSettingsPage(),
+              context, ref, const NotificationSettingsPage(),
             ),
           ),
           ListTile(
