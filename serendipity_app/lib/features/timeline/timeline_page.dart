@@ -187,7 +187,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           const SizedBox(height: 16),
           Text(
             errorMessage,
-            style: textTheme.bodyMedium?.copyWith(
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
             textAlign: TextAlign.center,
@@ -892,14 +892,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               Icon(
                 Icons.auto_stories,
                 size: 12,
-                color: colorScheme.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 4),
               Text(
                 _isMasked ? _maskText(storyLine.name) : storyLine.name,
-                style: textTheme.bodySmall?.copyWith(
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 11,
-                      color: colorScheme.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
                     ),
                 maxLines: 1,
@@ -935,7 +935,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       children: [
         Text(
           label,
-          style: textTheme.labelSmall?.copyWith(
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: statusColor,
                 fontWeight: FontWeight.bold,
               ),
@@ -945,8 +945,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           displayContent,
           keywords: displayKeywords,
           highlightColor: statusColor.withValues(alpha: 0.3),
-          textStyle: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+          textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
