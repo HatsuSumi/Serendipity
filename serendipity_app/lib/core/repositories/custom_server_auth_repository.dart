@@ -494,6 +494,11 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
   }
 
+  @override
+  void invalidateUserCache() {
+    _currentUser = null;
+  }
+
   /// 将服务器返回的用户数据转换为应用的 User 模型
   /// 
   /// Fail Fast：必需字段缺失时抛出异常

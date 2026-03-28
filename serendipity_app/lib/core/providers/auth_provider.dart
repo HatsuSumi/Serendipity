@@ -605,6 +605,8 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.data(null);
   }
 
+  /// 直接更新当前用户 state
+  ///
   /// 修改密码
   /// 
   /// 调用者：SettingsPage（账号管理）

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/server_config.dart';
 import '../services/i_storage_service.dart';
@@ -163,6 +164,44 @@ class HttpClientService {
     );
   }
   
+  /// Multipart POST 请求（文件上传）
+  Future<Map<String, dynamic>> postMultipart(
+    String endpoint, {
+    required String fieldName,
+    required File file,
+    required String mimeType,
+  }) async {
+    final uri = _buildUri(endpoint);
+    final headers = await _buildHeaders(skipAuth: false);
+    // multipart 请求不设置 Content-Type，由 http 库自动设置 boundary
+    headers.remove('Content-Type');
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(headers)
+      ..files.add(await http.MultipartFile.fromPath(
+        fieldName,
+        file.path,
+        contentType: _parseMediaType(mimeType),
+      ));
+
+    final streamedResponse = await request
+        .send()
+        .timeout(Duration(seconds: ServerConfig.requestTimeout));
+    final response = await http.Response.fromStream(streamedResponse);
+    return _handleResponse(response);
+  }
+
+  /// 解析 MIME 类型字符串为 MediaType
+  /// 
+  /// 调用者：postMultipart
+  http.MediaType? _parseMediaType(String mimeType) {
+    final parts = mimeType.split('/');
+    if (parts.length == 2) {
+      return http.MediaType(parts[0], parts[1]);
+    }
+    return null;
+  }
+
   /// DELETE 请求
   Future<Map<String, dynamic>> delete(
     String endpoint, {

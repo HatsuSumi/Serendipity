@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/membership_provider.dart';
 import '../../core/providers/sync_status_provider.dart';
+import '../../core/providers/user_provider.dart';
+import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
@@ -323,22 +327,61 @@ class ProfilePage extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor:
-                  Theme.of(context).colorScheme.primaryContainer,
-              child: Text(
-                user.displayName?.substring(0, 1).toUpperCase() ??
-                    user.email?.substring(0, 1).toUpperCase() ??
-                    user.phoneNumber?.substring(
-                          user.phoneNumber!.length - 4,
-                        ) ??
-                    '?',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
+            // 头像（可点击上传）
+            GestureDetector(
+              onTap: AppConfig.serverType == ServerType.customServer
+                  ? () => _handleAvatarTap(context, ref)
+                  : null,
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.primaryContainer,
+                    backgroundImage: user.avatarUrl != null
+                        ? NetworkImage(user.avatarUrl!)
+                        : null,
+                    child: user.avatarUrl == null
+                        ? Text(
+                            user.displayName
+                                    ?.substring(0, 1)
+                                    .toUpperCase() ??
+                                user.email
+                                    ?.substring(0, 1)
+                                    .toUpperCase() ??
+                                user.phoneNumber?.substring(
+                                      user.phoneNumber!.length - 4,
+                                    ) ??
+                                '?',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
+                            ),
+                          )
+                        : null,
+                  ),
+                  if (AppConfig.serverType == ServerType.customServer)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.camera_alt,
+                          size: 11,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: 16),
@@ -346,14 +389,38 @@ class ProfilePage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    user.displayName ??
-                        user.email ??
-                        user.phoneNumber ??
-                        '用户',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  // 昵称行（可点击编辑）
+                  GestureDetector(
+                    onTap: AppConfig.serverType == ServerType.customServer
+                        ? () => _handleEditDisplayName(context, ref, user)
+                        : null,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            user.displayName ??
+                                user.email ??
+                                user.phoneNumber ??
+                                '用户',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (AppConfig.serverType == ServerType.customServer) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.5),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -411,6 +478,73 @@ class ProfilePage extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// 处理头像点击：弹出选择来源，选图后上传
+  Future<void> _handleAvatarTap(BuildContext context, WidgetRef ref) async {
+    final userActions = ref.read(userActionsProvider.notifier);
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('拍照'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('从相册选择'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    if (!context.mounted) return;
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+    if (!context.mounted) return;
+
+    await AsyncActionHelper.execute(
+      context,
+      action: () => userActions.uploadAvatar(File(picked.path)),
+      successMessage: '头像已更新',
+      errorMessagePrefix: '头像上传失败',
+    );
+  }
+
+  /// 处理昵称编辑：弹出输入框，确认后更新
+  Future<void> _handleEditDisplayName(
+    BuildContext context,
+    WidgetRef ref,
+    User user,
+  ) async {
+    final userActions = ref.read(userActionsProvider.notifier);
+    String newName = user.displayName ?? '';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _EditDisplayNameDialog(initialName: newName, onChanged: (v) => newName = v),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    await AsyncActionHelper.execute(
+      context,
+      action: () => userActions.updateDisplayName(newName),
+      successMessage: '昵称已更新',
+      errorMessagePrefix: '昵称更新失败',
     );
   }
 
@@ -528,6 +662,70 @@ class ProfilePage extends ConsumerWidget {
       },
       loading: () => MessageHelper.showError(context, '正在加载用户信息...'),
       error: (_, e) => MessageHelper.showError(context, '获取用户信息失败'),
+    );
+  }
+}
+
+/// 修改昵称 Dialog
+///
+/// 使用 StatefulWidget 管理 TextEditingController 生命周期，
+/// 避免外部 controller 在 dialog 关闭后被 dispose 引发断言。
+///
+/// 调用者：ProfilePage._handleEditDisplayName
+class _EditDisplayNameDialog extends StatefulWidget {
+  final String initialName;
+  final void Function(String) onChanged;
+
+  const _EditDisplayNameDialog({
+    required this.initialName,
+    required this.onChanged,
+  });
+
+  @override
+  State<_EditDisplayNameDialog> createState() => _EditDisplayNameDialogState();
+}
+
+class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+    _controller.addListener(() => widget.onChanged(_controller.text));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('修改昵称'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: 100,
+        decoration: const InputDecoration(
+          hintText: '请输入昵称',
+          border: OutlineInputBorder(),
+        ),
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => Navigator.pop(context, true),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('确认'),
+        ),
+      ],
     );
   }
 }

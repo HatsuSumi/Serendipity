@@ -290,5 +290,13 @@ abstract class IAuthRepository {
   /// - 密码错误：抛出具体的认证异常（由实现类定义）
   /// - 用户未登录：抛出 StateError
   Future<void> deleteAccount(String password);
+
+  /// 使 repository 内的用户缓存失效
+  ///
+  /// 调用者：AuthNotifier.refreshCurrentUser()
+  ///
+  /// 设计说明：
+  /// - 下次调用 currentUser 时强制从服务器重新拉取
+  void invalidateUserCache();
 }
 

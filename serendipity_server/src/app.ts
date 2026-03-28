@@ -1,3 +1,4 @@
+import path from 'path';
 import express, { Application } from 'express';
 import { createDefaultMiddlewares } from './config/middlewares';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
@@ -19,6 +20,9 @@ export const createApp = (container: Container): Application => {
   // 应用中间件
   const middlewareManager = createDefaultMiddlewares();
   middlewareManager.applyAll(app);
+
+  // 静态文件托管（头像等上传文件）
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   // 注册路由
   app.use('/api/v1', createMainRoutes(container));

@@ -720,6 +720,12 @@ class TestAuthRepository implements IAuthRepository {
   }
 
   @override
+  void invalidateUserCache() {
+    // TestAuthRepository 使用内存缓存，_currentUser 即真实状态，无需清除
+    // 昵称/头像编辑仅在 customServer 模式下启用，此方法不会被调用
+  }
+
+  @override
   Future<void> deleteAccount(String password) async {
     if (password.isEmpty) {
       throw ArgumentError('密码不能为空');

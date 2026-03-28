@@ -8,6 +8,7 @@ import { Router } from 'express';
 import { UserController } from '../controllers/userController';
 import { authMiddleware } from '../middlewares/auth';
 import { validateRequest } from '../utils/validation';
+import { uploadAvatarMiddleware } from '../middlewares/upload';
 import {
   updateUserValidation,
   updateUserSettingsValidation,
@@ -31,6 +32,9 @@ export const createUserRoutes = (userController: UserController): Router => {
     validateRequest,
     userController.updateUser
   );
+
+  // POST /api/v1/users/avatar - 上传头像
+  router.post('/avatar', uploadAvatarMiddleware, userController.uploadAvatar);
 
   // GET /api/v1/users/settings - 获取用户设置
   router.get('/settings', userController.getUserSettings);

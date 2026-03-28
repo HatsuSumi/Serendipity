@@ -35,6 +35,28 @@ export class UserController {
   };
 
   /**
+   * 上传头像
+   * POST /api/v1/users/avatar
+   */
+  uploadAvatar = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      if (!req.file) {
+        throw new Error('No file uploaded');
+      }
+      const userId = req.user!.userId;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const result = await this.userService.uploadAvatar(userId, req.file, baseUrl);
+      sendSuccess(res, result, 'Avatar uploaded successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
    * 获取用户设置
    * GET /api/v1/users/settings
    */

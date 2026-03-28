@@ -63,6 +63,7 @@ class ServerConfig {
   
   // 用户相关
   static const String usersMe = '/users/me';
+  static const String usersAvatar = '/users/avatar';
   static const String usersSettings = '/users/settings';
   
   // 记录相关

@@ -8,6 +8,7 @@ export interface UserProfileDto {
   phoneNumber?: string;
   displayName?: string;
   avatarUrl?: string;
+  authProvider?: string;
   createdAt: Date;
 }
 

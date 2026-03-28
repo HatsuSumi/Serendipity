@@ -21,6 +21,7 @@ import { ErrorCode } from '../types/errors';
  */
 export interface IUserService {
   updateUser(userId: string, data: UpdateUserDto): Promise<UserProfileDto>;
+  uploadAvatar(userId: string, file: Express.Multer.File, baseUrl: string): Promise<UserProfileDto>;
   getUserSettings(userId: string): Promise<UserSettingsDto>;
   updateUserSettings(userId: string, data: UpdateUserSettingsDto): Promise<UserSettingsDto>;
 }
@@ -49,6 +50,24 @@ export class UserService implements IUserService {
 
     const updatedUser = await this.userRepository.updateUser(userId, data);
 
+    return this.mapUserToDto(updatedUser);
+  }
+
+  /**
+   * 上传头像并更新用户 avatarUrl
+   * @param userId - 用户 ID
+   * @param file - multer 上传的文件
+   * @param baseUrl - 服务器基础 URL（用于拼接静态资源地址）
+   * @returns 更新后的用户信息
+   */
+  async uploadAvatar(userId: string, file: Express.Multer.File, baseUrl: string): Promise<UserProfileDto> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+    }
+
+    const avatarUrl = `${baseUrl}/uploads/avatars/${file.filename}`;
+    const updatedUser = await this.userRepository.updateAvatarUrl(userId, avatarUrl);
     return this.mapUserToDto(updatedUser);
   }
 
@@ -104,6 +123,7 @@ export class UserService implements IUserService {
       phoneNumber: user.phoneNumber || undefined,
       displayName: user.displayName || undefined,
       avatarUrl: user.avatarUrl || undefined,
+      authProvider: user.authProvider || 'email',
       createdAt: user.createdAt,
     };
   }

@@ -75,6 +75,9 @@ dependencies:
   screenshot: ^3.0.0
   path_provider: ^2.1.5
   image_gallery_saver: ^2.0.3
+  
+  # 图片选择（头像上传）
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
