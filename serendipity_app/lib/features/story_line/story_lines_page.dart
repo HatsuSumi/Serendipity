@@ -139,15 +139,15 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
               Icon(
                 Icons.error_outline,
                 size: 64,
-                color: colorScheme.error,
+                color: Theme.of(context).colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text('加载失败', style: textTheme.titleLarge),
+              Text('加载失败', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 error.toString(),
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
