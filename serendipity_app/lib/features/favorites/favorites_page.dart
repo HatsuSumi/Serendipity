@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/favorites_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/auth_error_helper.dart';
-import 'dialogs/favorites_intro_dialog.dart';
+import 'favorites_intro_dialog.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/dialog_helper.dart';
@@ -25,7 +25,7 @@ import '../community/widgets/community_post_card.dart';
 /// - 支持下拉刷新
 /// - 支持取消收藏
 ///
-/// 调用者：SettingsPage
+/// 调用者：ProfilePage
 ///
 /// 设计原则：
 /// - 单一职责（SRP）：只负责展示收藏列表
@@ -55,24 +55,14 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     super.dispose();
   }
 
-  /// 首次进入时显示收藏页介绍对话框
-  ///
-  /// 调用者：initState()
-  ///
-  /// 是否显示的判断完全委托给 [FavoritesIntroDialog.show]，
-  /// 此处不做二次检查，遵循单一职责原则。
   void _showIntroDialogIfNeeded() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await FavoritesIntroDialog.show(context, ref);
-      // await 后再次检查，防止对话框关闭时页面已销毁
       if (!mounted) return;
     });
   }
 
-  /// 下拉刷新
-  ///
-  /// 调用者：RefreshIndicator
   Future<void> _onRefresh() async {
     await ref.read(favoritesProvider.notifier).refresh();
   }
@@ -98,7 +88,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
           ],
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _buildError(error),
+        error: (error, e) => _buildError(error),
       ),
     );
   }
@@ -108,7 +98,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
       data: (favoritesState) {
         final recordCount = _getFavoritedRecordCount(favoritesState);
         final postCount = _getFavoritedPostCount(favoritesState);
-
         return [
           Tab(icon: const Icon(Icons.notes), text: '收藏的记录（共$recordCount条）'),
           Tab(
@@ -121,7 +110,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         Tab(icon: Icon(Icons.notes), text: '收藏的记录'),
         Tab(icon: Icon(Icons.people_outline), text: '收藏的帖子'),
       ],
-      error: (error, _) => const [
+      error: (e, st) => const [
         Tab(icon: Icon(Icons.notes), text: '收藏的记录'),
         Tab(icon: Icon(Icons.people_outline), text: '收藏的帖子'),
       ],
@@ -143,7 +132,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   // ==================== 收藏的记录 Tab ====================
 
-  /// 构建收藏的记录 Tab
   Widget _buildFavoritedRecordsTab(FavoritesState favoritesState) {
     final allRecords = ref.watch(recordsProvider).value ?? [];
     final favoritedIds = favoritesState.favoritedRecordIds;
@@ -180,22 +168,14 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
           if (index < records.length) {
             return _buildRecordCard(records[index], isDeleted: false);
           } else {
-            return _buildRecordCard(deletedRecords[index - records.length], isDeleted: true);
+            return _buildRecordCard(
+                deletedRecords[index - records.length], isDeleted: true);
           }
         },
       ),
     );
   }
 
-  /// 构建记录卡片（统一处理正常记录和已删除记录）
-  ///
-  /// [isDeleted] 为 true 时：
-  /// - 不可点击（无 InkWell 包裹）
-  /// - 状态颜色半透明，视觉区分
-  /// - 底部显示「该记录已被删除」错误标注
-  /// - 书签图标半透明
-  ///
-  /// 调用者：_buildFavoritedRecordsTab()
   Widget _buildRecordCard(EncounterRecord record, {required bool isDeleted}) {
     final statusColor = record.status.getColor(context, ref);
     final theme = Theme.of(context);
@@ -207,7 +187,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 状态 + 创建时间 + 菜单（仅正常记录）
           Row(
             children: [
               Text(record.status.icon, style: const TextStyle(fontSize: 24)),
@@ -248,7 +227,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
             ],
           ),
           const SizedBox(height: 12),
-          // 地点
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -259,7 +237,9 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                 child: Text(
                   RecordHelper.getLocationText(record.location),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isDeleted ? theme.colorScheme.onSurfaceVariant : null,
+                    color: isDeleted
+                        ? theme.colorScheme.onSurfaceVariant
+                        : null,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -267,8 +247,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
               ),
             ],
           ),
-          // 描述
-          if (record.description != null && record.description!.isNotEmpty) ...[  
+          if (record.description != null &&
+              record.description!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               record.description!,
@@ -279,31 +259,32 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          // 标签
-          if (record.tags.isNotEmpty) ...[  
+          if (record.tags.isNotEmpty) ...[
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: record.tags.take(3).map((tag) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: isDeleted ? 0.08 : 0.1),
+                    color: statusColor
+                        .withValues(alpha: isDeleted ? 0.08 : 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     tag.tag,
                     style: TextStyle(
                       fontSize: 12,
-                      color: statusColor.withValues(alpha: isDeleted ? 0.7 : 1.0),
+                      color: statusColor
+                          .withValues(alpha: isDeleted ? 0.7 : 1.0),
                     ),
                   ),
                 );
               }).toList(),
             ),
           ],
-          // 底部行
           const SizedBox(height: 12),
           Row(
             children: [
@@ -317,9 +298,13 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    if (!isDeleted && record.createdAt != record.updatedAt) ...[  
-                      Text(' | ', style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                    if (!isDeleted &&
+                        record.createdAt != record.updatedAt) ...[
+                      Text(' | ',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                              color:
+                                  theme.colorScheme.onSurfaceVariant)),
                       Text(
                         '更新：${DateTimeHelper.formatRelativeTime(record.updatedAt)}',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -331,7 +316,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                   ],
                 ),
               ),
-              if (isDeleted) ...[  
+              if (isDeleted) ...[
                 Text(
                   '该记录已被删除',
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -341,7 +326,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                   ),
                 ),
                 const SizedBox(width: 8),
-              ] else if (record.storyLineId != null) ...[  
+              ] else if (record.storyLineId != null) ...[
                 _buildStoryLineInfo(record.storyLineId!),
                 const SizedBox(width: 4),
               ],
@@ -377,20 +362,17 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
           ? content
           : InkWell(
               onTap: () => NavigationHelper.pushWithTransition(
-                context, ref, RecordDetailPage(record: record)),
+                  context, ref, RecordDetailPage(record: record)),
               borderRadius: BorderRadius.circular(16),
               child: content,
             ),
     );
   }
 
-  /// 故事线信息（右下角）
-  ///
-  /// 使用 firstWhereOrNull 替代 try/catch，符合 Dart 惯用法。
-  /// 故事线不存在（已删除或 ID 不匹配）时静默返回空。
   Widget _buildStoryLineInfo(String storyLineId) {
     final storyLines = ref.watch(storyLinesProvider).valueOrNull ?? [];
-    final storyLine = storyLines.where((sl) => sl.id == storyLineId).firstOrNull;
+    final storyLine =
+        storyLines.where((sl) => sl.id == storyLineId).firstOrNull;
     if (storyLine == null) return const SizedBox.shrink();
 
     final primary = Theme.of(context).colorScheme.primary;
@@ -413,7 +395,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     );
   }
 
-  /// 处理记录卡片菜单操作
   void _handleRecordMenuAction(EncounterRecord record, String action) {
     switch (action) {
       case 'edit':
@@ -429,10 +410,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     }
   }
 
-  /// 取消收藏记录
-  ///
-  /// [isDeleted] 为 true 时提示语不同。
-  /// 调用者：_buildRecordCard()
   Future<void> _unfavoriteRecord({
     required String recordId,
     required bool isDeleted,
@@ -467,7 +444,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   // ==================== 收藏的社区帖子 Tab ====================
 
-  /// 构建收藏的社区帖子 Tab
   Widget _buildFavoritedPostsTab(FavoritesState favoritesState) {
     final posts = favoritesState.favoritedPosts;
     final deletedPosts = favoritesState.deletedFavoritedPosts;
@@ -512,9 +488,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     );
   }
 
-  /// 构建已删除帖子的卡片（保留完整信息，右下角标注「该帖子已被删除」）
-  ///
-  /// 调用者：_buildFavoritedPostsTab()
   Widget _buildDeletedPostCard(CommunityPost post) {
     return CommunityPostCard(
       post: post,
@@ -524,9 +497,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     );
   }
 
-  /// 取消收藏已删除的帖子
-  ///
-  /// 调用者：_buildDeletedPostCard()
   Future<void> _unfavoriteDeletedPost(String postId) async {
     final confirmed = await DialogHelper.showDeleteConfirm(
       context: context,
@@ -548,9 +518,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     }
   }
 
-  /// 取消收藏社区帖子
-  ///
-  /// 调用者：_buildFavoritedPostsTab() 的 CommunityPostCard.onFavorite
   Future<void> _unfavoritePost(String postId) async {
     final confirmed = await DialogHelper.showDeleteConfirm(
       context: context,
@@ -574,9 +541,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   // ==================== 错误状态 ====================
 
-  /// 构建错误状态
-  ///
-  /// 调用者：build()
   Widget _buildError(Object error) {
     return Center(
       child: Column(

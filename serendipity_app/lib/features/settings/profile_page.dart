@@ -20,7 +20,7 @@ import '../statistics/statistics_page.dart';
 import 'dialogs/manual_sync_dialog.dart';
 import 'dialogs/sync_info_dialog.dart';
 import 'dialogs/sync_history_dialog.dart';
-import 'favorites_page.dart';
+import '../favorites/favorites_page.dart';
 import 'pages/notification_settings_page.dart';
 import 'pages/theme_settings_page.dart';
 import 'pages/account_settings_page.dart';
