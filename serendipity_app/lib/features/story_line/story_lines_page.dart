@@ -10,7 +10,7 @@ import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../features/membership/membership_page.dart';
-import '../../core/providers/theme_provider.dart';
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import 'story_line_detail_page.dart';
 import 'story_line_export_card.dart';
 import 'package:uuid/uuid.dart';
@@ -41,10 +41,15 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   // 当前排序方式（默认更新时间降序）
   StoryLineSortType _currentSort = StoryLineSortType.updatedDesc;
 
+  // 主题颜色缓存（每次 build 从 Provider 更新，子方法直接使用）
+  late ColorScheme _colorScheme;
+  late TextTheme _textTheme;
+
   @override
   Widget build(BuildContext context) {
-    // 监听主题变化，确保主题切换时页面强制 rebuild
-    ref.watch(themeOptionProvider);
+    // 从 Provider 直接取颜色，无竞态条件，子方法通过实例变量访问
+    _colorScheme = ref.watch(appColorSchemeProvider);
+    _textTheme = ref.watch(appTextThemeProvider);
     final storyLinesAsync = ref.watch(storyLinesProvider);
     final countAsync = ref.watch(storyLinesCountProvider);
     final membershipInfo = ref.watch(membershipProvider).valueOrNull;
@@ -139,15 +144,15 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
               Icon(
                 Icons.error_outline,
                 size: 64,
-                color: Theme.of(context).colorScheme.error,
+                color: _colorScheme.error,
               ),
               const SizedBox(height: 16),
-              Text('加载失败', style: Theme.of(context).textTheme.titleLarge),
+              Text('加载失败', style: _textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 error.toString(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                style: _textTheme.bodyMedium?.copyWith(
+                  color: _colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -216,7 +221,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
     int maxCount,
   ) {
     final remaining = maxCount - count;
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = _colorScheme;
 
     return Container(
       width: double.infinity,
@@ -235,7 +240,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
               remaining > 0
                   ? '免费版最多可创建 $maxCount 条故事线，当前还可创建 $remaining 条。'
                   : '免费版最多可创建 $maxCount 条故事线，已达到上限。',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: _textTheme.bodyMedium,
             ),
           ),
         ],
@@ -273,7 +278,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                 child: Icon(
                   Icons.push_pin,
                   size: 18,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _colorScheme.primary,
                 ),
               ),
             // 主要内容
@@ -291,7 +296,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
+                      color: _colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: const Center(
@@ -307,7 +312,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                       children: [
                         Text(
                           storyLine.name,
-                          style: Theme.of(context).textTheme.titleMedium
+                          style: _textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -315,9 +320,9 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                         const SizedBox(height: 4),
                         Text(
                           '${storyLine.recordIds.length} 条记录',
-                          style: Theme.of(context).textTheme.bodySmall
+                          style: _textTheme.bodySmall
                               ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: _colorScheme.onSurfaceVariant,
                               ),
                         ),
                       ],

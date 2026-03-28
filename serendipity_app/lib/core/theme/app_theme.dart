@@ -24,6 +24,29 @@ class AppTheme {
     }
   }
 
+  /// 根据主题选项推导应用内实际 Brightness
+  ///
+  /// system 主题无法在 Provider 层读取 MediaQuery，默认返回 light。
+  /// 调用者若需要精确处理 system 主题，应自行读取 platformBrightness。
+  static Brightness getBrightness(ThemeOption option) {
+    return switch (option) {
+      ThemeOption.dark || ThemeOption.midnight => Brightness.dark,
+      _ => Brightness.light,
+    };
+  }
+
+  /// 根据主题选项直接获取 ColorScheme（不依赖 MediaQuery）
+  ///
+  /// system 主题下返回浅色 ColorScheme。
+  static ColorScheme getColorScheme(ThemeOption option) {
+    return getTheme(option, getBrightness(option)).colorScheme;
+  }
+
+  /// 根据主题选项直接获取 TextTheme（不依赖 MediaQuery）
+  static TextTheme getTextTheme(ThemeOption option) {
+    return getTheme(option, getBrightness(option)).textTheme;
+  }
+
   /// 浅色主题（粉色系，浪漫温柔）
   static final ThemeData _lightTheme = ThemeData(
       useMaterial3: true,

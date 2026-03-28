@@ -17,7 +17,7 @@ import '../../core/utils/check_in_animation_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/theme/status_color_extension.dart';
-import '../../core/providers/theme_provider.dart';
+import '../../core/providers/theme_provider.dart' show themeOptionProvider, appColorSchemeProvider, appTextThemeProvider;
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/common_filter_widgets.dart';
 import '../../models/encounter_record.dart';
@@ -58,6 +58,10 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   
   // 粒子效果控制器
   ConfettiController? _confettiController;
+
+  // 主题颜色缓存（每次 build 从 Provider 更新，子方法直接使用）
+  late ColorScheme _colorScheme;
+  late TextTheme _textTheme;
   
   @override
   void initState() {
@@ -73,8 +77,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 监听主题变化，确保主题切换时页面强制 rebuild，获取最新 ThemeData
-    ref.watch(themeOptionProvider);
+    // 从 Provider 直接取颜色，无竞态条件，子方法通过实例变量访问
+    _colorScheme = ref.watch(appColorSchemeProvider);
+    _textTheme = ref.watch(appTextThemeProvider);
     final filterCriteria = ref.watch(recordsFilterProvider);
     final countAsync = ref.watch(recordsCountProvider);
 
@@ -276,8 +281,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   Widget _buildRecordCard(BuildContext context, EncounterRecord record, WidgetRef ref, RecordsFilterCriteria filterCriteria) {
     // 使用主题自适应的状态颜色
     final statusColor = record.status.getColor(context, ref);
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = _colorScheme;
+    final textTheme = _textTheme;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -886,14 +891,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
               Icon(
                 Icons.auto_stories,
                 size: 12,
-                color: Theme.of(context).colorScheme.primary,
+                color: _colorScheme.primary,
               ),
               const SizedBox(width: 4),
               Text(
                 _isMasked ? _maskText(storyLine.name) : storyLine.name,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                style: _textTheme.bodySmall?.copyWith(
                       fontSize: 11,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: _colorScheme.primary,
                       fontWeight: FontWeight.w500,
                     ),
                 maxLines: 1,
@@ -929,7 +934,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          style: _textTheme.labelSmall?.copyWith(
                 color: statusColor,
                 fontWeight: FontWeight.bold,
               ),
@@ -939,8 +944,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           displayContent,
           keywords: displayKeywords,
           highlightColor: statusColor.withValues(alpha: 0.3),
-          textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          textStyle: _textTheme.bodySmall?.copyWith(
+                color: _colorScheme.onSurfaceVariant,
               ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
