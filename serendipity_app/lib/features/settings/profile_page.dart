@@ -64,10 +64,10 @@ class _ProfileIconLeading extends StatelessWidget {
 
 /// 个人资料页面（我的页面）
 ///
-/// 仅作为入口聚合页，所有设置均跳转对应子页面�?
+/// 仅作为入口聚合页，所有设置均跳转对应子页面。
 ///
 /// 调用者：
-/// - MainNavigationPage：底部导航栏的「我的」标�?
+/// - MainNavigationPage：底部导航栏的「我的」标签
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
@@ -102,7 +102,7 @@ class ProfilePage extends ConsumerWidget {
           ),
 
           ListTile(
-            leading: const _ProfileEmojiLeading('�?),
+            leading: const _ProfileEmojiLeading('✨'),
             title: const Text('每日签到'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
@@ -144,7 +144,7 @@ class ProfilePage extends ConsumerWidget {
 
           // 数据同步
           Consumer(
-            builder: (context, ref, _) {
+            builder: (context, ref, child) {
               final auth = ref.watch(authProvider);
               final syncStatus = ref.watch(syncStatusProvider);
               return Column(
@@ -170,8 +170,7 @@ class ProfilePage extends ConsumerWidget {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.chevron_right),
                     onTap: syncStatus.status == SyncStatus.syncing
@@ -202,7 +201,7 @@ class ProfilePage extends ConsumerWidget {
           ),
 
           ListTile(
-            leading: const _ProfileEmojiLeading('�?),
+            leading: const _ProfileEmojiLeading('✅'),
             title: const Text('签到设置'),
             subtitle: const Text('提醒、震动、特效、纪念日'),
             trailing: const Icon(Icons.chevron_right),
@@ -226,7 +225,7 @@ class ProfilePage extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
-              '关于与说�?,
+              '关于与说明',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
@@ -240,7 +239,7 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
 
-          // ── 账号管理（已登录�?─────────────────────────────────
+          // ── 账号管理（已登录） ─────────────────────────────────
           authState.when(
             data: (user) {
               if (user == null) return const SizedBox.shrink();
@@ -259,7 +258,7 @@ class ProfilePage extends ConsumerWidget {
                   ListTile(
                     leading: const Icon(Icons.manage_accounts_outlined),
                     title: const Text('账号管理'),
-                    subtitle: const Text('密码、邮箱、手机号、退出登�?),
+                    subtitle: const Text('密码、邮箱、手机号、退出登录'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => NavigationHelper.pushWithTransition(
                       context, ref, const AccountSettingsPage(),
@@ -273,20 +272,19 @@ class ProfilePage extends ConsumerWidget {
           ),
 
           // ── 开发测试（仅开发者模式） ───────────────────────────
-          if (AppConfig.isDeveloperMode) ...[  
+          if (AppConfig.isDeveloperMode) ...[
             const Divider(),
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                '开发测�?,
-                style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                '开发测试',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             ListTile(
               leading: const Icon(Icons.bug_report_outlined,
                   color: Colors.orange),
-              title: const Text('开发者工�?),
+              title: const Text('开发者工具'),
               subtitle: const Text('重置、测试推送、定位等'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => NavigationHelper.pushWithTransition(
@@ -310,13 +308,10 @@ class ProfilePage extends ConsumerWidget {
     MembershipInfo? membershipInfo,
   ) {
     final membershipLabel =
-        membershipInfo?.isPremium == true ? '会员有效�? : '免费�?;
+        membershipInfo?.isPremium == true ? '会员有效中' : '免费版';
     final membershipColor = membershipInfo?.isPremium == true
         ? Colors.amber.shade700
-        : Theme.of(context)
-            .colorScheme
-            .onSurface
-            .withValues(alpha: 0.6);
+        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -338,9 +333,7 @@ class ProfilePage extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onPrimaryContainer,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
@@ -363,7 +356,7 @@ class ProfilePage extends ConsumerWidget {
                   Text(
                     user.authProvider == AuthProvider.email
                         ? '邮箱登录'
-                        : '手机号登�?,
+                        : '手机号登录',
                     style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(context)
@@ -440,9 +433,8 @@ class ProfilePage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              '未登�?,
-              style:
-                  TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              '未登录',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -493,30 +485,28 @@ class ProfilePage extends ConsumerWidget {
   Widget? _buildSyncSubtitle(
       BuildContext context, SyncStatusInfo syncStatus) {
     if (syncStatus.status == SyncStatus.syncing) {
-      return const Text('同步�?..');
+      return const Text('同步中...');
     }
     if (syncStatus.status == SyncStatus.success) {
       return Text(
         '同步成功',
-        style:
-            TextStyle(color: Theme.of(context).colorScheme.primary),
+        style: TextStyle(color: Theme.of(context).colorScheme.primary),
       );
     }
     if (syncStatus.status == SyncStatus.error) {
       return Text(
-        '同步失败�?{syncStatus.errorMessage}',
-        style:
-            TextStyle(color: Theme.of(context).colorScheme.error),
+        '同步失败：${syncStatus.errorMessage}',
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
     }
     if (syncStatus.lastManualSyncTime != null) {
       return Text(
-        '上次同步�?{DateTimeHelper.formatRelativeTime(syncStatus.lastManualSyncTime!)}',
+        '上次同步：${DateTimeHelper.formatRelativeTime(syncStatus.lastManualSyncTime!)}',
       );
     }
-    return const Text('同步本地数据到云�?);
+    return const Text('同步本地数据到云端');
   }
 
   void _handleManualSync(
@@ -532,10 +522,8 @@ class ProfilePage extends ConsumerWidget {
           ManualSyncDialog.show(context, ref);
         }
       },
-      loading: () =>
-          MessageHelper.showError(context, '正在加载用户信息...'),
-      error: (_, e) =>
-          MessageHelper.showError(context, '获取用户信息失败'),
+      loading: () => MessageHelper.showError(context, '正在加载用户信息...'),
+      error: (_, e) => MessageHelper.showError(context, '获取用户信息失败'),
     );
   }
 }

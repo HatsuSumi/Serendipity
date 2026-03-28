@@ -9,11 +9,11 @@ import '../../../core/utils/auth_error_helper.dart';
 import '../../../core/utils/phone_helper.dart';
 import '../../auth/widgets/auth_text_field.dart';
 
-/// 账号管理子页�?
+/// 账号管理子页面
 ///
-/// 包含：修改密码、更换邮箱、更换手机号、恢复密钥、退出登�?
+/// 包含：修改密码、更换邮箱、更换手机号、恢复密钥、退出登录
 ///
-/// 调用者：ProfilePage（仅已登录用户可访问�?
+/// 调用者：ProfilePage（仅已登录用户可访问）
 class AccountSettingsPage extends ConsumerWidget {
   const AccountSettingsPage({super.key});
 
@@ -49,7 +49,7 @@ class AccountSettingsPage extends ConsumerWidget {
               if (user.phoneNumber != null)
                 ListTile(
                   leading: const Icon(Icons.phone_outlined),
-                  title: const Text('更换手机�?),
+                  title: const Text('更换手机号'),
                   subtitle: Text(user.phoneNumber!),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showUpdatePhoneDialog(context, ref),
@@ -66,7 +66,7 @@ class AccountSettingsPage extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
                 title: const Text(
-                  '退出登�?,
+                  '退出登录',
                   style: TextStyle(color: Colors.red),
                 ),
                 onTap: () => _showLogoutDialog(context, ref),
@@ -78,14 +78,14 @@ class AccountSettingsPage extends ConsumerWidget {
     );
   }
 
-  // ── 退出登�?──────────────────────────────────────────────────
+  // ── 退出登录 ──────────────────────────────────────────────────
 
   void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     DialogHelper.show(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('退出登�?),
-        content: const Text('确定要退出登录吗�?),
+        title: const Text('退出登录'),
+        content: const Text('确定要退出登录吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -103,7 +103,7 @@ class AccountSettingsPage extends ConsumerWidget {
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('退�?),
+            child: const Text('退出'),
           ),
         ],
       ),
@@ -149,9 +149,9 @@ class AccountSettingsPage extends ConsumerWidget {
                   controller: newPasswordController,
                   obscureText: !newPasswordVisible,
                   decoration: InputDecoration(
-                    labelText: '新密�?,
+                    labelText: '新密码',
                     border: const OutlineInputBorder(),
-                    helperText: '至少6�?,
+                    helperText: '至少6位',
                     suffixIcon: IconButton(
                       icon: Icon(newPasswordVisible
                           ? Icons.visibility
@@ -166,7 +166,7 @@ class AccountSettingsPage extends ConsumerWidget {
                   controller: confirmPasswordController,
                   obscureText: !confirmPasswordVisible,
                   decoration: InputDecoration(
-                    labelText: '确认新密�?,
+                    labelText: '确认新密码',
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(confirmPasswordVisible
@@ -193,7 +193,7 @@ class AccountSettingsPage extends ConsumerWidget {
                       confirmPasswordController.text.trim();
 
                   if (currentPassword.isEmpty) {
-                    MessageHelper.showError(context, '请输入当前密�?);
+                    MessageHelper.showError(context, '请输入当前密码');
                     return;
                   }
                   if (newPassword.isEmpty) {
@@ -201,11 +201,11 @@ class AccountSettingsPage extends ConsumerWidget {
                     return;
                   }
                   if (newPassword.length < 6) {
-                    MessageHelper.showError(context, '新密码至少需�?�?);
+                    MessageHelper.showError(context, '新密码至少需要6位');
                     return;
                   }
                   if (newPassword != confirmPassword) {
-                    MessageHelper.showError(context, '两次输入的新密码不一�?);
+                    MessageHelper.showError(context, '两次输入的新密码不一致');
                     return;
                   }
                   if (currentPassword == newPassword) {
@@ -255,7 +255,7 @@ class AccountSettingsPage extends ConsumerWidget {
                   controller: newEmailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: '新邮�?,
+                    labelText: '新邮箱',
                     hintText: '请输入新邮箱',
                     border: OutlineInputBorder(),
                   ),
@@ -266,9 +266,9 @@ class AccountSettingsPage extends ConsumerWidget {
                   obscureText: !passwordVisible,
                   decoration: InputDecoration(
                     labelText: '当前密码',
-                    hintText: '请输入当前密�?,
+                    hintText: '请输入当前密码',
                     border: const OutlineInputBorder(),
-                    helperText: '需要验证身�?,
+                    helperText: '需要验证身份',
                     suffixIcon: IconButton(
                       icon: Icon(passwordVisible
                           ? Icons.visibility
@@ -295,7 +295,7 @@ class AccountSettingsPage extends ConsumerWidget {
                     return;
                   }
                   if (password.isEmpty) {
-                    MessageHelper.showError(context, '请输入当前密�?);
+                    MessageHelper.showError(context, '请输入当前密码');
                     return;
                   }
 
@@ -321,7 +321,7 @@ class AccountSettingsPage extends ConsumerWidget {
     );
   }
 
-  // ── 更换手机�?────────────────────────────────────────────────
+  // ── 更换手机号 ────────────────────────────────────────────────
 
   void _showUpdatePhoneDialog(BuildContext context, WidgetRef ref) {
     final phoneController = TextEditingController();
@@ -334,7 +334,7 @@ class AccountSettingsPage extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text('更换手机�?),
+            title: const Text('更换手机号'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -342,7 +342,7 @@ class AccountSettingsPage extends ConsumerWidget {
                   type: AuthTextFieldType.phone,
                   controller: phoneController,
                   label: '新手机号',
-                  hint: '请输入新手机�?,
+                  hint: '请输入新手机号',
                   countryCode: countryCode,
                   onCountryCodeChanged: (code) {
                     setState(() => countryCode = code);
@@ -354,9 +354,9 @@ class AccountSettingsPage extends ConsumerWidget {
                   obscureText: !passwordVisible,
                   decoration: InputDecoration(
                     labelText: '当前密码',
-                    hintText: '请输入当前密�?,
+                    hintText: '请输入当前密码',
                     border: const OutlineInputBorder(),
-                    helperText: '需要验证身�?,
+                    helperText: '需要验证身份',
                     suffixIcon: IconButton(
                       icon: Icon(passwordVisible
                           ? Icons.visibility
@@ -379,11 +379,11 @@ class AccountSettingsPage extends ConsumerWidget {
                   final password = passwordController.text.trim();
 
                   if (phone.isEmpty) {
-                    MessageHelper.showError(context, '请输入新手机�?);
+                    MessageHelper.showError(context, '请输入新手机号');
                     return;
                   }
                   if (password.isEmpty) {
-                    MessageHelper.showError(context, '请输入当前密�?);
+                    MessageHelper.showError(context, '请输入当前密码');
                     return;
                   }
 
@@ -395,8 +395,8 @@ class AccountSettingsPage extends ConsumerWidget {
                     action: () => ref
                         .read(authProvider.notifier)
                         .updatePhoneNumber(fullPhone, password),
-                    successMessage: '手机号更换成�?,
-                    errorMessagePrefix: '更换手机号失�?,
+                    successMessage: '手机号更换成功',
+                    errorMessagePrefix: '更换手机号失败',
                   );
 
                   if (success && context.mounted) {
@@ -429,7 +429,7 @@ class AccountSettingsPage extends ConsumerWidget {
       if (context.mounted) {
         MessageHelper.showError(
           context,
-          '获取恢复密钥失败�?{AuthErrorHelper.extractErrorMessage(e)}',
+          '获取恢复密钥失败：${AuthErrorHelper.extractErrorMessage(e)}',
         );
       }
     }
@@ -446,7 +446,7 @@ class AccountSettingsPage extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('恢复密钥用于在忘记密码时重置密码�?,
+                const Text('恢复密钥用于在忘记密码时重置密码。',
                     style: TextStyle(fontSize: 14)),
                 const SizedBox(height: 8),
                 const Text(
@@ -458,9 +458,9 @@ class AccountSettingsPage extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                if (isLoading && isInitialLoad) ...[  
+                if (isLoading && isInitialLoad) ...[
                   const Center(child: CircularProgressIndicator()),
-                ] else if (recoveryKey != null) ...[  
+                ] else if (recoveryKey != null) ...[
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -494,7 +494,7 @@ class AccountSettingsPage extends ConsumerWidget {
                           await Clipboard.setData(
                               ClipboardData(text: recoveryKey!));
                           if (context.mounted) {
-                            MessageHelper.showSuccess(context, '已复制到剪贴�?);
+                            MessageHelper.showSuccess(context, '已复制到剪贴板');
                           }
                         },
                         icon: const Icon(Icons.copy, size: 18),
@@ -502,11 +502,12 @@ class AccountSettingsPage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                ] else ...[  
-                  const Text('尚未设置恢复密钥�?, style: TextStyle(fontSize: 14)),
+                ] else ...[
+                  const Text('尚未设置恢复密钥。',
+                      style: TextStyle(fontSize: 14)),
                   const SizedBox(height: 8),
                   const Text(
-                    '点击"生成恢复密钥"按钮生成新的恢复密钥�?,
+                    '点击"生成恢复密钥"按钮生成新的恢复密钥。',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
@@ -539,20 +540,19 @@ class AccountSettingsPage extends ConsumerWidget {
                         isLoading = false;
                       });
                       if (context.mounted) {
-                        MessageHelper.showSuccess(context, '恢复密钥已生�?);
+                        MessageHelper.showSuccess(context, '恢复密钥已生成');
                       }
                     } catch (e) {
                       setState(() => isLoading = false);
                       if (context.mounted) {
                         MessageHelper.showError(
                           context,
-                          '生成失败�?{AuthErrorHelper.extractErrorMessage(e)}',
+                          '生成失败：${AuthErrorHelper.extractErrorMessage(e)}',
                         );
                       }
                     }
                   },
-                  child:
-                      Text(recoveryKey == null ? '生成恢复密钥' : '重新生成'),
+                  child: Text(recoveryKey == null ? '生成恢复密钥' : '重新生成'),
                 ),
             ],
           );
