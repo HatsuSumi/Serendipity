@@ -7,6 +7,7 @@ import '../../../core/providers/user_settings_provider.dart';
 import '../../../core/utils/message_helper.dart';
 import '../../../core/utils/auth_error_helper.dart';
 import '../../../models/enums.dart';
+import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 
 /// 外观设置子页面
 ///
@@ -18,6 +19,8 @@ class ThemeSettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appColorSchemeProvider);
+    ref.watch(appTextThemeProvider);
     final currentTransition = ref.watch(pageTransitionProvider);
     final currentDialogAnimation = ref.watch(dialogAnimationProvider);
     final membershipAsync = ref.watch(membershipProvider);

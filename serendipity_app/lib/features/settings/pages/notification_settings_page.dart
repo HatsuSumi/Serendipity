@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/membership_provider.dart';
 import '../../../core/providers/user_settings_provider.dart';
 import '../../../core/utils/message_helper.dart';
+import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 
 /// 提醒设置子页面
 ///
@@ -14,6 +15,8 @@ class NotificationSettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appColorSchemeProvider);
+    ref.watch(appTextThemeProvider);
     final settings = ref.watch(userSettingsProvider);
     final membershipAsync = ref.watch(membershipProvider);
 

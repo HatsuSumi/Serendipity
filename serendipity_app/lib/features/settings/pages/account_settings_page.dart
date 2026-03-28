@@ -8,6 +8,7 @@ import '../../../core/utils/async_action_helper.dart';
 import '../../../core/utils/auth_error_helper.dart';
 import '../../../core/utils/phone_helper.dart';
 import '../../auth/widgets/auth_text_field.dart';
+import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 
 /// 账号管理子页面
 ///
@@ -19,6 +20,8 @@ class AccountSettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appColorSchemeProvider);
+    ref.watch(appTextThemeProvider);
     final authAsync = ref.watch(authProvider);
 
     return Scaffold(
