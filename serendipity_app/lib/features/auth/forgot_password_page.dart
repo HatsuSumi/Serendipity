@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import 'widgets/auth_text_field.dart';
 import 'widgets/auth_button.dart';
 
@@ -25,8 +26,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   final _recoveryKeyController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
   bool _isLoading = false;
+  late ColorScheme _colorScheme;
+  late TextTheme _textTheme;
   
   @override
   void dispose() {
@@ -39,6 +41,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
+    _colorScheme = ref.watch(appColorSchemeProvider);
+    _textTheme = ref.watch(appTextThemeProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('忘记密码'),

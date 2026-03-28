@@ -8,6 +8,7 @@ import '../../core/mixins/countdown_mixin.dart';
 import '../../core/providers/membership_provider.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/message_helper.dart';
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 
 /// 支付页面
 ///
@@ -42,6 +43,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage>
   _PayMethod _selectedMethod = _PayMethod.wechat;
   bool _isConfirming = false;
   bool _showThanks = false;
+  late ColorScheme _colorScheme;
+  late TextTheme _textTheme;
 
   // 感谢动画控制器
   late final AnimationController _thanksController;
@@ -75,6 +78,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage>
 
   @override
   Widget build(BuildContext context) {
+    _colorScheme = ref.watch(appColorSchemeProvider);
+    _textTheme = ref.watch(appTextThemeProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('确认支付'),
