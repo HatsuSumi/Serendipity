@@ -7,6 +7,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/location_provider.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/date_time_helper.dart';
@@ -48,6 +49,10 @@ class CreateRecordPage extends ConsumerStatefulWidget {
 }
 
 class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
+  // 主题颜色缓存（每次 build 从 Provider 更新，子方法直接使用）
+  late ColorScheme _colorScheme;
+  late TextTheme _textTheme;
+
   // 表单控制器
   final _formKey = GlobalKey<FormState>();
   final _placeNameController = TextEditingController();
@@ -490,7 +495,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                color: _colorScheme.primary,
               ),
             ),
           ),
@@ -505,7 +510,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             '在 ${_formatReminderDate(record.timestamp)} ${record.status.label}时，你写下了：',
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: _colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 16),
@@ -515,10 +520,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              color: _colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                color: _colorScheme.primary.withValues(alpha: 0.3),
                 width: 2,
               ),
             ),
@@ -527,7 +532,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontStyle: FontStyle.italic,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: _colorScheme.onSurface,
                 height: 1.5,
               ),
             ),
@@ -540,7 +545,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.primary,
+              color: _colorScheme.primary,
             ),
           ),
         ],
@@ -852,6 +857,9 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 从 Provider 直接取颜色，无竞态条件
+    _colorScheme = ref.watch(appColorSchemeProvider);
+    _textTheme = ref.watch(appTextThemeProvider);
     return PopScope(
       canPop: false,  // 禁止直接返回
       onPopInvokedWithResult: (didPop, result) async {
@@ -1019,7 +1027,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border.all(
-                color: Theme.of(context).colorScheme.outline,
+                color: _colorScheme.outline,
               ),
               borderRadius: BorderRadius.circular(8),
             ),
@@ -1080,7 +1088,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                   '只使用下面输入的地点名称（用于UI显示）',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: _colorScheme.onSurfaceVariant,
                   ),
                 ),
                 contentPadding: EdgeInsets.zero,
@@ -1091,7 +1099,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               icon: Icon(
                 Icons.help_outline,
                 size: 20,
-                color: Theme.of(context).colorScheme.primary,
+                color: _colorScheme.primary,
               ),
               onPressed: () => _showIgnoreGPSHelpDialog(context),
               tooltip: '为什么要忽略GPS？',
@@ -1113,7 +1121,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -1121,7 +1129,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               '可以写地址，也可以取个名字',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                color: _colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -1158,7 +1166,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           '场所类型（可选）',
           style: TextStyle(
             fontSize: 14,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: _colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -1261,10 +1269,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: _colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              color: _colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -1278,7 +1286,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: _colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1286,7 +1294,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                       '当时创建记录时勾选了"忽略GPS"',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: _colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1308,10 +1316,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: _colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+            color: _colorScheme.outline.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -1321,7 +1329,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Theme.of(context).colorScheme.primary,
+                color: _colorScheme.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -1344,10 +1352,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+          color: _colorScheme.primaryContainer.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            color: _colorScheme.primary.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -1361,7 +1369,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: _colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1391,17 +1399,17 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+          color: _colorScheme.errorContainer.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+            color: _colorScheme.error.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
           children: [
             Icon(
               Icons.warning_amber_rounded,
-              color: Theme.of(context).colorScheme.error,
+              color: _colorScheme.error,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -1414,7 +1422,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.error,
+                      color: _colorScheme.error,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1543,7 +1551,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               icon: Icon(
                 Icons.help_outline,
                 size: 20,
-                color: Theme.of(context).colorScheme.primary,
+                color: _colorScheme.primary,
               ),
               onPressed: () => _showRecordGuideDialog(context),
               tooltip: '如何记录？',
@@ -1596,7 +1604,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _colorScheme.primary,
                 ),
               ),
             ),
@@ -1612,7 +1620,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1639,7 +1647,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  color: _colorScheme.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -1650,7 +1658,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -1700,7 +1708,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                             '提示：路上快速看一眼时间，比看具体地点更快更安全。',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: _colorScheme.onSurfaceVariant,
                               height: 1.5,
                             ),
                           ),
@@ -1712,7 +1720,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               ),
               const SizedBox(height: 16),
               Divider(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                color: _colorScheme.outline.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
@@ -1720,7 +1728,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1745,7 +1753,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               ),
               const SizedBox(height: 16),
               Divider(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                color: _colorScheme.outline.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
@@ -1761,7 +1769,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 'amap_flutter_map 和 amap_flutter_base 包使用了 Dart 2.x 时代的 hashValues() 方法，该方法在 Dart 3.x 中已被移除。所有版本的高德地图 Flutter 插件都未更新以支持 Dart 3.x，导致无法编译。暂时无法提供地图选点功能。',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: _colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
               ),
@@ -1774,7 +1782,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 '编辑模式下"事后补救"重新定位',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: _colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
               ),
@@ -1810,7 +1818,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             subtitle,
             style: TextStyle(
               fontSize: 13,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: _colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -1832,7 +1840,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _colorScheme.primary,
                 ),
               ),
             ),
@@ -1848,7 +1856,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1895,7 +1903,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 '一直不说话，就一直选择"再遇"。',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: _colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
               ),
@@ -1903,7 +1911,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  color: _colorScheme.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -1918,7 +1926,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                     ),
                     const SizedBox(height: 12),
                     Divider(
-                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                      color: _colorScheme.outline.withValues(alpha: 0.3),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -1926,7 +1934,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -1944,7 +1952,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               ),
               const SizedBox(height: 16),
               Divider(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                color: _colorScheme.outline.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Container(
@@ -2007,7 +2015,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             subtitle,
             style: TextStyle(
               fontSize: 13,
-              color: Theme.of(context).colorScheme.primary,
+              color: _colorScheme.primary,
             ),
           ),
         ),
@@ -2034,7 +2042,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               '（可选）',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -2091,7 +2099,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               '（可选）',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -2131,7 +2139,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               '（可选）',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -2181,7 +2189,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               '（可选）',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -2237,7 +2245,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               '（可选）',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -2303,7 +2311,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                         storyLineName,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: _colorScheme.primary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -2314,7 +2322,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                   '将多个相关记录串联成完整故事',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: _colorScheme.onSurfaceVariant,
                   ),
                 ),
           trailing: Row(
@@ -2372,7 +2380,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           '匿名分享到社区，其他用户可以看到',
           style: TextStyle(
             fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: _colorScheme.onSurfaceVariant,
           ),
         ),
         contentPadding: EdgeInsets.zero,
@@ -2410,7 +2418,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
               '匿名分享到社区，其他用户可以看到',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: _colorScheme.onSurfaceVariant,
               ),
             ),
             contentPadding: EdgeInsets.zero,
@@ -2425,10 +2433,10 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: _colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                color: _colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -2436,7 +2444,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                 Icon(
                   Icons.cloud_done,
                   size: 20,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: _colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -2448,7 +2456,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: _colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -2456,7 +2464,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
                         '内容无变化，无法再次发布',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: _colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -2480,7 +2488,7 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
             '内容已修改，勾选后将替换旧帖',
             style: TextStyle(
               fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: _colorScheme.onSurfaceVariant,
             ),
           ),
           contentPadding: EdgeInsets.zero,
