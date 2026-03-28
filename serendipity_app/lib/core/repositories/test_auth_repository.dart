@@ -718,5 +718,35 @@ class TestAuthRepository implements IAuthRepository {
   void dispose() {
     _authStateController.close();
   }
+
+  @override
+  Future<void> deleteAccount(String password) async {
+    if (password.isEmpty) {
+      throw ArgumentError('密码不能为空');
+    }
+    if (_currentUser == null) {
+      throw StateError('用户未登录');
+    }
+
+    // 模拟网络延迟
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // 验证密码
+    final savedPassword = _getPassword(_currentUser!.id);
+    if (savedPassword == null || savedPassword != password) {
+      throw Exception('密码错误');
+    }
+
+    final userId = _currentUser!.id;
+
+    // 删除用户数据
+    await _testUsersBox.delete(userId);
+    await _passwordsBox.delete(userId);
+    await _passwordsBox.delete('recovery_key_$userId');
+    await _clearCurrentUserId();
+
+    _currentUser = null;
+    _authStateController.add(null);
+  }
 }
 

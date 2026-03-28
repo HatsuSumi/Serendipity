@@ -592,25 +592,17 @@ class AuthNotifier extends StreamNotifier<User?> {
       throw ArgumentError('密码不能为空');
     }
 
-    state = const AsyncValue.loading();
+    // 先获取当前用户 ID，再注销（注销后 _currentUser 会被清空）
+    final currentUser = await _repository.currentUser;
+    await _repository.deleteAccount(password);
 
-    try {
-      // 先获取当前用户 ID，再注销（注销后 _currentUser 会被清空）
-      final currentUser = await _repository.currentUser;
-      await _repository.deleteAccount(password);
-
-      if (currentUser != null) {
-        final storageService = ref.read(storageServiceProvider);
-        await storageService.deleteUserData(currentUser.id);
-      }
-
-      _invalidateDataProviders();
-
-      state = const AsyncValue.data(null);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      rethrow;
+    if (currentUser != null) {
+      final storageService = ref.read(storageServiceProvider);
+      await storageService.deleteUserData(currentUser.id);
     }
+
+    _invalidateDataProviders();
+    state = const AsyncValue.data(null);
   }
 
   /// 修改密码

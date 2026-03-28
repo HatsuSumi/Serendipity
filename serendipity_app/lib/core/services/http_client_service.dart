@@ -32,6 +32,9 @@ class HttpClientService {
   /// 调用时机：Token 过期且刷新失败时（即被其他设备踢下线）
   /// 调用者：AuthNotifier.build() 注入，通过 messageProvider 向用户提示
   void Function()? onForceLogout;
+
+  /// 是否正在主动登出/注销（避免清除 Token 后触发 onForceLogout）
+  bool _isSigningOut = false;
   
   HttpClientService({
     required IStorageService storage,
@@ -64,9 +67,11 @@ class HttpClientService {
   
   /// 清除 Token
   Future<void> clearTokens() async {
+    _isSigningOut = true;
     await _storage.remove(_accessTokenKey);
     await _storage.remove(_refreshTokenKey);
     await _storage.remove(_tokenExpiryKey);
+    _isSigningOut = false;
   }
   
   /// 检查 Token 是否即将过期
@@ -186,7 +191,9 @@ class HttpClientService {
       await refreshToken();
     } catch (e) {
       await clearTokens();
-      onForceLogout?.call();
+      if (!_isSigningOut) {
+        onForceLogout?.call();
+      }
       throw Exception('Token 已过期，请重新登录');
     }
   }
@@ -205,8 +212,9 @@ class HttpClientService {
     final headers = await _buildHeaders(skipAuth: skipAuth);
     final response = await request(headers);
     
-    // 401 时自动刷新 token 并重试一次
-    if (response.statusCode == 401 && !skipAuth) {
+    // 401 时判断是否是 Token 过期导致，才触发刷新重试
+    // INVALID_CREDENTIALS 等业务性 401 不应触发 Token 刷新
+    if (response.statusCode == 401 && !skipAuth && _isTokenError(response)) {
       await _refreshAndClearOnFailure();
       final retryHeaders = await _buildHeaders(skipAuth: false);
       final retryResponse = await request(retryHeaders);
@@ -214,6 +222,25 @@ class HttpClientService {
     }
     
     return _handleResponse(response);
+  }
+
+  /// 判断 401 响应是否属于 Token 错误（需要刷新 Token）
+  /// 
+  /// 只有 UNAUTHORIZED、INVALID_TOKEN、TOKEN_EXPIRED 才触发刷新，
+  /// INVALID_CREDENTIALS 等业务性错误直接返回给调用者。
+  bool _isTokenError(http.Response response) {
+    try {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final error = body['error'];
+      if (error is Map<String, dynamic>) {
+        final code = error['code'] as String?;
+        return code == 'UNAUTHORIZED' ||
+            code == 'INVALID_TOKEN' ||
+            code == 'TOKEN_EXPIRED';
+      }
+    } catch (_) {}
+    // 解析失败时保守处理，视为 Token 错误
+    return true;
   }
   
   // ==================== 私有辅助方法 ====================

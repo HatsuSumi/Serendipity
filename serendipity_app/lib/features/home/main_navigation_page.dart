@@ -4,6 +4,7 @@ import '../../core/providers/anniversary_reminder_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/message_provider.dart';
 import '../../core/providers/achievement_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/achievement_unlocked_dialog.dart';
@@ -14,6 +15,7 @@ import '../community/community_page.dart';
 import '../settings/profile_page.dart';
 import '../record/create_record_page.dart';
 import '../achievement/achievements_page.dart';
+import '../auth/login_page.dart';
 import 'anniversary_reminder_dialog.dart';
 
 class MainNavigationPage extends ConsumerStatefulWidget {
@@ -88,6 +90,19 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 监听认证状态：用户从已登录变为未登录（登出/注销）时跳到欢迎页
+    // previous != null 确保只响应「主动登出/注销」，不响应初始未登录状态
+    ref.listen<AsyncValue<Object?>>(authProvider, (previous, next) {
+      final wasLoggedIn = previous?.valueOrNull != null;
+      final isLoggedOut = next.valueOrNull == null && !next.isLoading;
+      if (wasLoggedIn && isLoggedOut && mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+      }
+    });
+
     // 监听全局消息（用于页面已加载后的消息）
     ref.listen<AppMessage?>(messageProvider, (previous, next) {
       if (next != null) {
