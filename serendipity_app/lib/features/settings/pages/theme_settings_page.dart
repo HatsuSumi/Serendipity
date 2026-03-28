@@ -120,14 +120,6 @@ class ThemeSettingsPage extends ConsumerWidget {
               },
             );
           }),
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '💡 提示：点击记录卡片、编辑按钮等跳转到新页面时生效\n（底部导航栏切换不触发动画）',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ),
-
           const Divider(),
 
           // ── 对话框动画 ────────────────────────────────────────
@@ -157,14 +149,6 @@ class ThemeSettingsPage extends ConsumerWidget {
               },
             );
           }),
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '💡 提示：打开任意对话框查看效果',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ),
-
           const SizedBox(height: 32),
         ],
       ),
