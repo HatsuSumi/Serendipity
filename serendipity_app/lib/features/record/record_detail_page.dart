@@ -18,6 +18,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import '../../core/utils/page_transition_builder.dart';
 import '../story_line/link_to_story_line_dialog.dart';
 import '../story_line/story_line_detail_page.dart';
@@ -39,6 +40,9 @@ class RecordDetailPage extends ConsumerStatefulWidget {
 }
 
 class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
+  // 主题颜色缓存（每次 build 从 Provider 更新，子方法直接使用）
+  late ColorScheme _colorScheme;
+  late TextTheme _textTheme;
   /// 获取当前记录（从 Provider 实时获取）
   EncounterRecord get _currentRecord {
     final recordsAsync = ref.watch(recordsProvider);
@@ -141,6 +145,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 从 Provider 直接取颜色，无竞态条件
+    _colorScheme = ref.watch(appColorSchemeProvider);
+    _textTheme = ref.watch(appTextThemeProvider);
     // 使用主题自适应的状态颜色
     final statusColor = _currentRecord.status.getColor(context, ref);
 
@@ -264,8 +271,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           // 时间
           Text(
             DateTimeHelper.formatDateTime(_currentRecord.timestamp),
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            style: _textTheme.bodyLarge?.copyWith(
+                  color: _colorScheme.onSurfaceVariant,
                 ),
           ),
         ],
@@ -290,7 +297,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               title: '对话契机',
               child: Text(
                 _currentRecord.conversationStarter!,
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: _textTheme.bodyLarge,
               ),
             ),
           
@@ -310,7 +317,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               title: '描述',
               child: Text(
                 _currentRecord.description!,
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: _textTheme.bodyLarge,
               ),
             ),
           
@@ -343,7 +350,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   const SizedBox(width: 12),
                   Text(
                     _currentRecord.emotion!.label,
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: _textTheme.bodyLarge,
                   ),
                 ],
               ),
@@ -357,7 +364,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               title: '背景音乐',
               child: Text(
                 _currentRecord.backgroundMusic!,
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: _textTheme.bodyLarge,
               ),
             ),
           
@@ -387,7 +394,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               title: '如果再遇',
               child: Text(
                 _currentRecord.ifReencounter!,
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: _textTheme.bodyLarge,
               ),
             ),
           
@@ -408,14 +415,14 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                       Expanded(
                         child: Text(
                           _getStoryLineName(),
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
+                          style: _textTheme.bodyLarge?.copyWith(
+                                color: _colorScheme.primary,
                               ),
                         ),
                       ),
                       Icon(
                         Icons.chevron_right,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _colorScheme.primary,
                       ),
                     ],
                   ),
@@ -449,14 +456,14 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                 Icon(
                   icon,
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  style: _textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _colorScheme.primary,
                       ),
                 ),
               ],
@@ -475,8 +482,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     if (RecordHelper.isLocationEmpty(_currentRecord.location)) {
       return Text(
         '未知地点',
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+        style: _textTheme.bodyLarge?.copyWith(
+              color: _colorScheme.onSurfaceVariant,
             ),
       );
     }
@@ -496,7 +503,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               const SizedBox(width: 8),
               Text(
                 _currentRecord.location.placeType!.label,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                style: _textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
               ),
@@ -510,7 +517,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             _currentRecord.location.placeName!.isNotEmpty) ...[
           Text(
             _currentRecord.location.placeName!,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            style: _textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
           ),
@@ -522,8 +529,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             _currentRecord.location.address!.isNotEmpty) ...[
           Text(
             _currentRecord.location.address!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            style: _textTheme.bodyMedium?.copyWith(
+                  color: _colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 8),
@@ -533,8 +540,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         if (RecordHelper.hasCoordinates(_currentRecord.location))
           Text(
             '纬度: ${_currentRecord.location.latitude!.toStringAsFixed(6)}, 经度: ${_currentRecord.location.longitude!.toStringAsFixed(6)}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            style: _textTheme.bodySmall?.copyWith(
+                  color: _colorScheme.onSurfaceVariant,
                   fontFamily: 'monospace',
                 ),
           ),
@@ -559,7 +566,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
+                  color: _colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
@@ -567,7 +574,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    color: _colorScheme.onPrimaryContainer,
                   ),
                 ),
               ),
@@ -579,8 +586,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   padding: const EdgeInsets.only(left: 12),
                   child: Text(
                     tagWithNote.note!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    style: _textTheme.bodyMedium?.copyWith(
+                          color: _colorScheme.onSurfaceVariant,
                         ),
                   ),
                 ),
@@ -596,7 +603,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   Widget _buildMetadataCard(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(top: 12),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      color: _colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -604,9 +611,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           children: [
             Text(
               '记录信息',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              style: _textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: _colorScheme.onSurfaceVariant,
                   ),
             ),
             const SizedBox(height: 12),
@@ -642,16 +649,16 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
             width: 80,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+              style: _textTheme.bodySmall?.copyWith(
+                    color: _colorScheme.onSurfaceVariant,
                   ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+              style: _textTheme.bodySmall?.copyWith(
+                    color: _colorScheme.onSurfaceVariant,
                     fontFamily: 'monospace',
                   ),
             ),
