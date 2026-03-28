@@ -10,6 +10,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/theme/status_color_extension.dart';
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import '../../models/community_post.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
@@ -42,6 +43,10 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // 主题颜色缓存（每次 build 从 Provider 更新，子方法直接使用）
+  late ColorScheme _colorScheme;
+  late TextTheme _textTheme;
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +74,9 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   @override
   Widget build(BuildContext context) {
+    // 从 Provider 直接取颜色，无竞态条件
+    _colorScheme = ref.watch(appColorSchemeProvider);
+    _textTheme = ref.watch(appTextThemeProvider);
     final favoritesAsync = ref.watch(favoritesProvider);
 
     return Scaffold(
@@ -178,7 +186,6 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   Widget _buildRecordCard(EncounterRecord record, {required bool isDeleted}) {
     final statusColor = record.status.getColor(context, ref);
-    final theme = Theme.of(context);
     final borderAlpha = isDeleted ? 0.2 : 0.3;
     final labelAlpha = isDeleted ? 0.6 : 1.0;
 
@@ -203,8 +210,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
               ),
               Text(
                 '创建：${DateTimeHelper.formatRelativeTime(record.createdAt)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                style: _textTheme.bodySmall?.copyWith(
+                  color: _colorScheme.onSurfaceVariant,
                 ),
               ),
               if (!isDeleted)
@@ -231,14 +238,14 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(Icons.location_on, size: 16,
-                  color: theme.colorScheme.onSurfaceVariant),
+                  color: _colorScheme.onSurfaceVariant),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   RecordHelper.getLocationText(record.location),
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: _textTheme.bodyMedium?.copyWith(
                     color: isDeleted
-                        ? theme.colorScheme.onSurfaceVariant
+                        ? _colorScheme.onSurfaceVariant
                         : null,
                   ),
                   maxLines: 2,
@@ -252,8 +259,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
             const SizedBox(height: 8),
             Text(
               record.description!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: _textTheme.bodySmall?.copyWith(
+                color: _colorScheme.onSurfaceVariant,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -293,23 +300,23 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                   children: [
                     Text(
                       '发生：${DateTimeHelper.formatRelativeTime(record.timestamp)}',
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: _textTheme.bodySmall?.copyWith(
                         fontSize: 11,
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: _colorScheme.onSurfaceVariant,
                       ),
                     ),
                     if (!isDeleted &&
                         record.createdAt != record.updatedAt) ...[
                       Text(' | ',
-                          style: theme.textTheme.bodySmall?.copyWith(
+                          style: _textTheme.bodySmall?.copyWith(
                               fontSize: 11,
                               color:
-                                  theme.colorScheme.onSurfaceVariant)),
+                                  _colorScheme.onSurfaceVariant)),
                       Text(
                         '更新：${DateTimeHelper.formatRelativeTime(record.updatedAt)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        style: _textTheme.bodySmall?.copyWith(
                           fontSize: 11,
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: _colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -319,9 +326,9 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
               if (isDeleted) ...[
                 Text(
                   '该记录已被删除',
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: _textTheme.bodySmall?.copyWith(
                     fontSize: 11,
-                    color: theme.colorScheme.error,
+                    color: _colorScheme.error,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -338,7 +345,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
                 child: Icon(
                   Icons.bookmark,
                   size: 16,
-                  color: theme.colorScheme.primary
+                  color: _colorScheme.primary
                       .withValues(alpha: isDeleted ? 0.5 : 1.0),
                 ),
               ),
@@ -375,7 +382,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         storyLines.where((sl) => sl.id == storyLineId).firstOrNull;
     if (storyLine == null) return const SizedBox.shrink();
 
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = _colorScheme.primary;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -383,7 +390,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         const SizedBox(width: 4),
         Text(
           storyLine.name,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          style: _textTheme.bodySmall?.copyWith(
             fontSize: 11,
             color: primary,
             fontWeight: FontWeight.w500,
