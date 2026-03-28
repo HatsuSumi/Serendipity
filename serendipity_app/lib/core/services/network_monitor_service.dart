@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
 import '../providers/auth_provider.dart';
+import '../providers/membership_provider.dart';
 import '../config/server_config.dart';
 import 'sync_service.dart';
 import 'sync_orchestrator.dart';
@@ -187,10 +188,26 @@ class NetworkMonitorService {
   /// 认证完成时的处理（登录/注册成功）
   /// 
   /// 调用者：startMonitoring() 的 ref.listen(authCompletedProvider)
+  /// 
+  /// 同步策略：
+  /// - 注册：skipDownload: true（新用户无云端数据）
+  /// - 登录（免费版）：skipDownload: true（数据不迁移到新设备）
+  /// - 登录（会员版）：skipDownload: false（数据跟随账号，双向同步）
   void _onAuthCompleted(WidgetRef ref, AuthCompletedEvent event) {
-    _triggerSync(ref, event.user, 
-      event.isRegister ? SyncSource.register : SyncSource.login,
-      skipDownload: event.isRegister,
+    if (event.isRegister) {
+      // 注册：只上传，不下载
+      _triggerSync(ref, event.user, SyncSource.register, skipDownload: true);
+      return;
+    }
+
+    // 登录：根据会员状态决定是否下载
+    final membershipAsync = ref.read(membershipProvider);
+    final isPremium = membershipAsync.whenOrNull(data: (info) => info.isPremium) ?? false;
+    _triggerSync(
+      ref,
+      event.user,
+      SyncSource.login,
+      skipDownload: !isPremium, // 免费版不下载，会员版双向同步
     );
   }
   

@@ -82,7 +82,7 @@ class AnniversaryHelper {
         record.location.address ??
         record.location.placeType?.label ??
         '某个地方';
-    return '${years}年前的今天，你在${place}邂逅了TA';
+    return '$years年前的今天，你在$place邂逅了TA';
   }
 
   /// 纪念日通知标题

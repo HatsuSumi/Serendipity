@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/utils/anniversary_helper.dart';
 import '../../core/utils/date_time_helper.dart';
-import '../../core/utils/navigation_helper.dart';
 import '../../models/encounter_record.dart';
 import '../record/record_detail_page.dart';
 
@@ -70,7 +69,7 @@ class AnniversaryReminderDialog extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: records.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final record = records[index];
                   final years = AnniversaryHelper.getAnniversaryYears(record);

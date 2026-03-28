@@ -593,11 +593,9 @@ export class AuthService implements IAuthService {
     );
     await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt);
 
-    // 免费版：踢旧设备（保留刚创建的最新 Token，删除其余）
-    const isPremium = await this.membershipRepository.isUserPremium(user.id);
-    if (!isPremium) {
-      await this.refreshTokenRepository.deleteAllExceptNewest(user.id);
-    }
+    // 所有版本：踢旧设备（保留刚创建的最新 Token，删除其余）
+    // 免费版和会员版都只允许单设备在线，区别在于数据是否迁移（由客户端同步策略决定）
+    await this.refreshTokenRepository.deleteAllExceptNewest(user.id);
 
     return {
       user: {

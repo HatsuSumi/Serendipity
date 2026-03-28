@@ -10,7 +10,6 @@ import 'widgets/auth_button.dart';
 import 'widgets/agreement_notice.dart';
 import 'widgets/recovery_key_dialog.dart';
 import 'login_page.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 
 /// 注册页
 /// 
@@ -35,8 +34,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   bool _isLoading = false;
   bool _isEmailRegister = true;
   String _countryCode = '+86';
-  late ColorScheme _colorScheme;
-  late TextTheme _textTheme;
   
   @override
   void dispose() {
@@ -49,10 +46,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-  @override
-  Widget build(BuildContext context) {
-    _colorScheme = ref.watch(appColorSchemeProvider);
-    _textTheme = ref.watch(appTextThemeProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('注册'),

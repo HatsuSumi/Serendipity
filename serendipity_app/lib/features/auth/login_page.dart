@@ -10,7 +10,6 @@ import 'widgets/auth_button.dart';
 import 'widgets/agreement_notice.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 
 /// 登录页
 /// 
@@ -34,8 +33,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _isLoading = false;
   bool _isEmailLogin = true;
   String _countryCode = '+86';
-  late ColorScheme _colorScheme;
-  late TextTheme _textTheme;
+
   
   @override
   void dispose() {
@@ -47,8 +45,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    _colorScheme = ref.watch(appColorSchemeProvider);
-    _textTheme = ref.watch(appTextThemeProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('登录'),

@@ -7,7 +7,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/location_provider.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider;
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/date_time_helper.dart';
@@ -51,7 +51,6 @@ class CreateRecordPage extends ConsumerStatefulWidget {
 class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   // 主题颜色缓存（每次 build 从 Provider 更新，子方法直接使用）
   late ColorScheme _colorScheme;
-  late TextTheme _textTheme;
 
   // 表单控制器
   final _formKey = GlobalKey<FormState>();
@@ -859,7 +858,6 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   Widget build(BuildContext context) {
     // 从 Provider 直接取颜色，无竞态条件
     _colorScheme = ref.watch(appColorSchemeProvider);
-    _textTheme = ref.watch(appTextThemeProvider);
     return PopScope(
       canPop: false,  // 禁止直接返回
       onPopInvokedWithResult: (didPop, result) async {

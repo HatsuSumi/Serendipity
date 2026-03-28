@@ -8,7 +8,7 @@ import '../../core/utils/date_time_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import 'payment_page.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider;
 
 class MembershipPage extends ConsumerStatefulWidget {
   const MembershipPage({super.key});
@@ -20,16 +20,11 @@ class MembershipPage extends ConsumerStatefulWidget {
 class _MembershipPageState extends ConsumerState<MembershipPage> {
   double _selectedAmount = 1;
   bool _isSubmitting = false;
-  late ColorScheme _colorScheme;
-  late TextTheme _textTheme;
-
   @override
   Widget build(BuildContext context) {
-    _colorScheme = ref.watch(appColorSchemeProvider);
-    _textTheme = ref.watch(appTextThemeProvider);
+    final colorScheme = ref.watch(appColorSchemeProvider);
     final authState = ref.watch(authProvider);
     final membershipAsync = ref.watch(membershipProvider);
-    final colorScheme = _colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('会员中心')),

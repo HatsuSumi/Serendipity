@@ -6,7 +6,6 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/membership_provider.dart';
 import '../../core/theme/status_color_extension.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import '../../core/providers/page_transition_provider.dart';
 import '../../core/utils/page_transition_builder.dart';
 import '../../core/utils/dialog_helper.dart';
@@ -35,9 +34,6 @@ class StoryLineDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 从 Provider 直接取颜色，无竞态条件
-    final colorScheme = ref.watch(appColorSchemeProvider);
-    final textTheme = ref.watch(appTextThemeProvider);
     // 使用 ref.watch() 自动响应数据变化
     final storyLinesAsync = ref.watch(storyLinesProvider);
     final recordsAsync = ref.watch(storyLineRecordsProvider(storyLineId));

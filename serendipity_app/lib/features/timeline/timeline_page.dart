@@ -17,7 +17,7 @@ import '../../core/utils/check_in_animation_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/theme/status_color_extension.dart';
-import '../../core/providers/theme_provider.dart' show themeOptionProvider, appColorSchemeProvider, appTextThemeProvider;
+import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/common_filter_widgets.dart';
 import '../../models/encounter_record.dart';

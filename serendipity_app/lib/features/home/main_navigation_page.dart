@@ -82,6 +82,7 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
     final records = await ref.read(anniversaryReminderProvider.future);
     if (!mounted || records.isEmpty) return;
     await AnniversaryReminderRecord.markShownToday();
+    if (!mounted) return;
     await AnniversaryReminderDialog.show(context, records);
   }
 
