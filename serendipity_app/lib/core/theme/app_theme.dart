@@ -90,6 +90,7 @@ class AppTheme {
         surface: const Color(0xFFF0F4F7), // 浅灰蓝背景
         primary: const Color(0xFF7B9EB0),
         surfaceContainerHighest: const Color(0xFFE8EEF2), // 半透明效果的基础
+        onSurfaceVariant: const Color(0xFF556070), // 显式中性灰蓝，避免 fromSeed 偏色
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
@@ -119,6 +120,7 @@ class AppTheme {
       ).copyWith(
         surface: const Color(0xFF0D1117),
         primary: const Color(0xFF5C6BC0),
+        onSurfaceVariant: const Color(0xFF9EAABF), // 显式中性蓝灰，深色背景下足够对比度
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
@@ -148,6 +150,7 @@ class AppTheme {
         surface: const Color(0xFFFFF9E6), // 浅米黄背景
         primary: const Color(0xFFD4A574),
         secondary: const Color(0xFFE8B86D),
+        onSurfaceVariant: const Color(0xFF6B5E4E), // 显式中性暖棕，避免偏橙
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
@@ -177,6 +180,7 @@ class AppTheme {
         surface: const Color(0xFFFBE9E7),
         primary: const Color(0xFF8D6E63),
         secondary: const Color(0xFFD84315),
+        onSurfaceVariant: const Color(0xFF5D4037), // 显式中性深棕，避免偏红
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: true,

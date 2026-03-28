@@ -18,8 +18,8 @@ extension StatusColorExtension on EncounterStatus {
     // 获取当前主题选项
     final themeOption = ref.watch(themeOptionProvider);
     
-    // 获取系统亮度
-    final brightness = MediaQuery.of(context).platformBrightness;
+    // 获取 App 当前实际渲染亮度（跟随 ThemeMode，而非系统亮度）
+    final brightness = Theme.of(context).brightness;
     
     // 返回对应的颜色
     return StatusColors.getColor(this, themeOption, brightness);
