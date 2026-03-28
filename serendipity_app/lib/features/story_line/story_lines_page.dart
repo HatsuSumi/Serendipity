@@ -11,7 +11,6 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../features/membership/membership_page.dart';
 import '../../core/providers/theme_provider.dart';
-import '../../core/theme/app_theme.dart';
 import 'story_line_detail_page.dart';
 import 'story_line_export_card.dart';
 import 'package:uuid/uuid.dart';
@@ -45,10 +44,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   @override
   Widget build(BuildContext context) {
     // 监听主题变化，确保主题切换时页面强制 rebuild
-    final themeOption = ref.watch(themeOptionProvider);
-    final systemBrightness = MediaQuery.of(context).platformBrightness;
-    final colorScheme = AppTheme.getTheme(themeOption, systemBrightness).colorScheme;
-    final textTheme = AppTheme.getTheme(themeOption, systemBrightness).textTheme;
+    ref.watch(themeOptionProvider);
     final storyLinesAsync = ref.watch(storyLinesProvider);
     final countAsync = ref.watch(storyLinesCountProvider);
     final membershipInfo = ref.watch(membershipProvider).valueOrNull;
@@ -220,29 +216,26 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
     int maxCount,
   ) {
     final remaining = maxCount - count;
-    final themeOption = ref.watch(themeOptionProvider);
-    final systemBrightness = MediaQuery.of(context).platformBrightness;
-    final cs = AppTheme.getTheme(themeOption, systemBrightness).colorScheme;
-    final tt = AppTheme.getTheme(themeOption, systemBrightness).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: cs.primaryContainer.withValues(alpha: 0.55),
+        color: colorScheme.primaryContainer.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(Icons.lock_outline, color: cs.primary),
+          Icon(Icons.lock_outline, color: colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               remaining > 0
                   ? '免费版最多可创建 $maxCount 条故事线，当前还可创建 $remaining 条。'
                   : '免费版最多可创建 $maxCount 条故事线，已达到上限。',
-              style: tt.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
         ],
@@ -256,10 +249,6 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
     WidgetRef ref,
     StoryLine storyLine,
   ) {
-    final themeOption = ref.watch(themeOptionProvider);
-    final systemBrightness = MediaQuery.of(context).platformBrightness;
-    final cs = AppTheme.getTheme(themeOption, systemBrightness).colorScheme;
-    final tt = AppTheme.getTheme(themeOption, systemBrightness).textTheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -284,7 +273,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                 child: Icon(
                   Icons.push_pin,
                   size: 18,
-                  color: cs.primary,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             // 主要内容
@@ -302,7 +291,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: cs.primaryContainer,
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: const Center(
@@ -318,7 +307,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                       children: [
                         Text(
                           storyLine.name,
-                          style: tt.titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -326,9 +315,9 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                         const SizedBox(height: 4),
                         Text(
                           '${storyLine.recordIds.length} 条记录',
-                          style: tt.bodySmall
+                          style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
-                                color: cs.onSurfaceVariant,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                         ),
                       ],

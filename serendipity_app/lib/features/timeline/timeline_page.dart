@@ -18,7 +18,6 @@ import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/theme/status_color_extension.dart';
 import '../../core/providers/theme_provider.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/common_filter_widgets.dart';
 import '../../models/encounter_record.dart';
@@ -277,13 +276,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   Widget _buildRecordCard(BuildContext context, EncounterRecord record, WidgetRef ref, RecordsFilterCriteria filterCriteria) {
     // 使用主题自适应的状态颜色
     final statusColor = record.status.getColor(context, ref);
-    // 直接从 themeOption 获取正确的 ThemeData，避免 Flutter Web 上
-    // Navigator 内部页面 context 拿到旧 ThemeData 的问题
-    final themeOption = ref.watch(themeOptionProvider);
-    final systemBrightness = MediaQuery.of(context).platformBrightness;
-    final currentTheme = AppTheme.getTheme(themeOption, systemBrightness);
-    final colorScheme = currentTheme.colorScheme;
-    final textTheme = currentTheme.textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
