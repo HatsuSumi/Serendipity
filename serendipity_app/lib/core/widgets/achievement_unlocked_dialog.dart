@@ -71,11 +71,16 @@ class _AchievementUnlockedDialogState
       duration: const Duration(seconds: 3),
     );
     // 延迟启动粒子效果，等待对话框动画完成
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        _confettiController.play();
-      }
-    });
+    // 刀子美学：仅「第一次失联」成就不启动粒子效果
+    final isOnlyLost = widget.achievementIds.length == 1 &&
+        widget.achievementIds.first == 'first_lost';
+    if (!isOnlyLost) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _confettiController.play();
+        }
+      });
+    }
   }
 
   @override
@@ -142,21 +147,37 @@ class _AchievementUnlockedDialogState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // 刀子美学：第一次解锁「失联」成就时用专属文案，别离成就不单独处理
+    final isOnlyLost = achievements.length == 1 && achievements.first.id == 'first_lost';
+
+    final String titleText;
+    final IconData titleIcon;
+    final Color titleColor;
+    if (isOnlyLost) {
+      titleText = '你知道最难受的不是分手';
+      titleIcon = Icons.cloud_off_outlined;
+      titleColor = colorScheme.onSurfaceVariant;
+    } else {
+      titleText = '成就解锁！';
+      titleIcon = Icons.celebration;
+      titleColor = colorScheme.primary;
+    }
+
     return AlertDialog(
       title: Row(
         children: [
           Icon(
-            Icons.celebration,
+            titleIcon,
             size: 24,
-            color: colorScheme.primary,
+            color: titleColor,
           ),
           const SizedBox(width: 8),
           Text(
-            '成就解锁！',
+            titleText,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: colorScheme.primary,
+              color: titleColor,
             ),
           ),
         ],
@@ -164,9 +185,24 @@ class _AchievementUnlockedDialogState
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: achievements.map((achievement) {
-            return _buildAchievementItem(context, achievement);
-          }).toList(),
+          children: [
+            ...achievements.map((achievement) {
+              return _buildAchievementItem(context, achievement);
+            }),
+            if (isOnlyLost) ...[  
+              const SizedBox(height: 16),
+              Text(
+                '你知道最难受的不是分手，\n是没有分手，\n只是突然就没有了。\n\n这个成就，你懂的。',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.8,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
       actions: [

@@ -281,12 +281,45 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           // 无记录时显示空状态占位
           if (records.isEmpty) {
             final isFiltering = filterCriteria.isActive;
+            // 刀子美学：单独筛选「失联」或「别离」时显示专属文案
+            final onlyStatuses = filterCriteria.statuses;
+            final isOnlyLost = isFiltering &&
+                onlyStatuses != null &&
+                onlyStatuses.length == 1 &&
+                onlyStatuses.first == EncounterStatus.lost;
+            final isOnlyFarewell = isFiltering &&
+                onlyStatuses != null &&
+                onlyStatuses.length == 1 &&
+                onlyStatuses.first == EncounterStatus.farewell;
+
+            String emptyTitle;
+            String emptyDescription;
+            if (isOnlyLost) {
+              emptyTitle = '还没有人\n就这样从你的生活里消失。';
+              emptyDescription = '这是运气，\n也是遗憾的另一种形式。';
+            } else if (isOnlyFarewell) {
+              emptyTitle = '还没有主动结束过什么。';
+              emptyDescription = '不知道这是因为你\n足够勇敢，还是足够逃避。';
+            } else if (isFiltering) {
+              emptyTitle = '没有符合条件的记录';
+              emptyDescription = '试试调整筛选条件';
+            } else {
+              emptyTitle = '还没有记录';
+              emptyDescription = '点击下方按钮开始记录';
+            }
+
             return Padding(
               padding: const EdgeInsets.only(top: 32),
               child: EmptyStateWidget(
-                icon: isFiltering ? Icons.search_off : Icons.auto_awesome,
-                title: isFiltering ? '没有符合条件的记录' : '还没有记录',
-                description: isFiltering ? '试试调整筛选条件' : '点击下方按钮开始记录',
+                icon: isOnlyLost
+                    ? Icons.cloud_off_outlined
+                    : isOnlyFarewell
+                        ? Icons.waving_hand_outlined
+                        : isFiltering
+                            ? Icons.search_off
+                            : Icons.auto_awesome,
+                title: emptyTitle,
+                description: emptyDescription,
               ),
             );
           }

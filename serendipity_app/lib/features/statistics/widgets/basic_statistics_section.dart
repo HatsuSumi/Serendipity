@@ -703,6 +703,20 @@ class _SuccessRateCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          // 刀子美学：成功率为 0% 且有记录时显示专属文案
+          if (successRate == 0 && stats.totalRecords > 0) ...[  
+            Text(
+              '每一次，都没有开口。\n\n你比任何人都清楚\n那一刻你在想什么。\n\n下一次，\n还是同样的答案吗？',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.8,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           _buildInfoRow('最常见的地点', mostCommonPlace, expandValue: true),
           const SizedBox(height: 12),
           _buildInfoRow('最常见的场所', placeTypeStr),

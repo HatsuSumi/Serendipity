@@ -285,9 +285,31 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
       );
     }
     
-    // 显示成功消息
+    // 刀子美学：断签恢复时显示专属文案
     if (mounted && context.mounted) {
-      MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+      final checkInState = ref.read(checkInProvider).value;
+      final consecutiveDays = checkInState?.consecutiveDays ?? 0;
+      final totalDays = checkInState?.totalDays ?? 0;
+      // consecutiveDays == 1 且 totalDays > 1：断签后首次恢复
+      if (consecutiveDays == 1 && totalDays > 1) {
+        // 计算断签天数：找最近一次非今天的签到日期
+        final recentCheckIns = checkInState?.recentCheckIns ?? [];
+        int gapDays = 0;
+        if (recentCheckIns.length >= 2) {
+          // recentCheckIns 已按日期倒序，第0条是今天，第1条是上次签到
+          final today = DateTime.now();
+          final todayDate = DateTime(today.year, today.month, today.day);
+          final lastDate = recentCheckIns[1].date;
+          gapDays = todayDate.difference(lastDate).inDays - 1;
+        }
+        final gapText = gapDays > 0 ? '你消失了 $gapDays 天。\n\n' : '';
+        MessageHelper.showInfo(
+          context,
+          '${gapText}那段时间，\n是发生了什么，\n还是什么都没发生？',
+        );
+      } else {
+        MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+      }
     }
   }
 

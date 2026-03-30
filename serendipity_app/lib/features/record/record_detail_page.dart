@@ -227,6 +227,16 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
     );
   }
 
+  /// 故事线中「再遇」记录数（用于刀子美学文案）
+  ///
+  /// 只在当前记录状态为「再遇」且有故事线时计算。
+  int _getReencounterCountInStoryLine() {
+    final storyLineId = _currentRecord.storyLineId;
+    if (storyLineId == null) return 0;
+    final records = ref.watch(storyLineRecordsProvider(storyLineId));
+    return records.where((r) => r.status == EncounterStatus.reencounter).length;
+  }
+
   /// 状态卡片
   Widget _buildStatusCard(BuildContext context, Color statusColor) {
     return Container(
@@ -275,6 +285,27 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                   color: _colorScheme.onSurfaceVariant,
                 ),
           ),
+
+          // 刀子美学：同一故事线「再遇」≥5条时显示专属文案
+          if (_currentRecord.status == EncounterStatus.reencounter &&
+              _currentRecord.storyLineId != null)
+            Builder(builder: (context) {
+              final count = _getReencounterCountInStoryLine();
+              if (count < 5) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: Text(
+                  '第 $count 次看到 TA，\n还是没有说话。\n\n你在等什么，\n你自己知道。',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.8,
+                    color: _colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              );
+            }),
         ],
       ),
     );

@@ -154,9 +154,9 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
         onRefresh: _onRefresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 100),
-            EmptyStateWidget(
+          children: [
+            const SizedBox(height: 100),
+            const EmptyStateWidget(
               icon: Icons.bookmark_border,
               title: '还没有收藏的记录',
               description: '在记录列表长按记录卡片可以收藏',
@@ -465,8 +465,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
             SizedBox(height: 100),
             EmptyStateWidget(
               icon: Icons.bookmark_border,
-              title: '还没有收藏的帖子',
-              description: '在树洞浏览时点击收藏按钮',
+              title: '你还没有收藏过任何人的故事。',
+              description: '也许是因为\n没有哪个故事\n让你觉得——\n\n这说的是我。',
             ),
           ],
         ),

@@ -109,12 +109,17 @@ class StoryLineDetailPage extends ConsumerWidget {
                   },
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: recordsAsync.length + 1,
+                    itemCount: recordsAsync.length + 2,
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         return StoryLineTagCloudSection(
                           storyLineId: storyLineId,
                         );
+                      }
+
+                      // 末尾刀子美学文案
+                      if (index == recordsAsync.length + 1) {
+                        return _buildEndingEpitaph(context, recordsAsync);
                       }
 
                       final record = recordsAsync[index - 1];
@@ -156,6 +161,39 @@ class StoryLineDetailPage extends ConsumerWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 故事线末尾刀子美学文案
+  ///
+  /// 当最后一条记录状态为「失联」或「别离」时显示对应文案，
+  /// 其他状态不显示（返回空 widget）。
+  Widget _buildEndingEpitaph(BuildContext context, List<EncounterRecord> records) {
+    if (records.isEmpty) return const SizedBox.shrink();
+    final lastStatus = records.last.status;
+    String? text;
+    if (lastStatus == EncounterStatus.lost) {
+      text = 'TA 没有说再见。\n只是有一天，就再也没出现了。\n\n这种结局没有仪式感，\n所以才更难放下。';
+    } else if (lastStatus == EncounterStatus.farewell) {
+      text = '你们好好说了再见。\n\n这已经是很多人\n求而不得的奢侈了。';
+    }
+    if (text == null) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 8),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.8,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+            fontStyle: FontStyle.italic,
           ),
         ),
       ),
@@ -515,7 +553,7 @@ class StoryLineDetailPage extends ConsumerWidget {
     final confirmed = await DialogHelper.showDeleteConfirm(
       context: context,
       title: '删除故事线',
-      content: '确定要删除"${storyLine.name}"吗？\n\n记录不会被删除，只是取消关联。',
+      content: '删掉这条故事线，\n你还是会记得 TA。\n\n只是以后，\n不会再打开这里了。\n\n（记录不会被删除，只是取消关联）',
     );
 
     if (confirmed == true && context.mounted) {
