@@ -4,6 +4,7 @@ import 'package:confetti/confetti.dart';
 import '../../../core/providers/check_in_provider.dart';
 import '../../../core/providers/user_settings_provider.dart';
 import '../../../core/utils/message_helper.dart';
+import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/check_in_badge_helper.dart';
 import '../../../core/utils/navigation_helper.dart';
 import '../../../core/utils/check_in_animation_helper.dart';
@@ -296,16 +297,31 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
         final recentCheckIns = checkInState?.recentCheckIns ?? [];
         int gapDays = 0;
         if (recentCheckIns.length >= 2) {
-          // recentCheckIns 已按日期倒序，第0条是今天，第1条是上次签到
           final today = DateTime.now();
           final todayDate = DateTime(today.year, today.month, today.day);
           final lastDate = recentCheckIns[1].date;
           gapDays = todayDate.difference(lastDate).inDays - 1;
         }
         final gapText = gapDays > 0 ? '你消失了 $gapDays 天。\n\n' : '';
-        MessageHelper.showInfo(
-          context,
-          '${gapText}那段时间，\n是发生了什么，\n还是什么都没发生？',
+        DialogHelper.show<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: Text(
+              '${gapText}那段时间，\n是发生了什么，\n还是什么都没发生？',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.8,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('没什么'),
+              ),
+            ],
+          ),
         );
       } else {
         MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');

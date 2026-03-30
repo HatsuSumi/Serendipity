@@ -703,8 +703,8 @@ class _SuccessRateCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // 刀子美学：成功率为 0% 且有记录时显示专属文案
-          if (successRate == 0 && stats.totalRecords > 0) ...[  
+          // 刀子美学：成功率为 0% 且记录数 ≥ 5 时显示专属文案
+          if (successRate == 0 && stats.totalRecords >= 5) ...[  
             Text(
               '每一次，都没有开口。\n\n你比任何人都清楚\n那一刻你在想什么。\n\n下一次，\n还是同样的答案吗？',
               textAlign: TextAlign.center,
@@ -796,7 +796,7 @@ void _showSuccessRateDialog(BuildContext context) {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('知道了'),
+          child: const Text('我知道了'),
         ),
       ],
     ),
