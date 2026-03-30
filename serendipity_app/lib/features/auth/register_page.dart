@@ -92,6 +92,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               if (!_isEmailRegister) {
                 setState(() {
                   _isEmailRegister = true;
+                  _passwordController.clear();
+                  _confirmPasswordController.clear();
                 });
               }
             },
@@ -127,6 +129,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               if (_isEmailRegister) {
                 setState(() {
                   _isEmailRegister = false;
+                  _passwordController.clear();
+                  _confirmPasswordController.clear();
                 });
               }
             },
