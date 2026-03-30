@@ -309,6 +309,17 @@ class InMemoryStorageService implements IStorageService {
     _memberships.remove(userId);
   }
 
+  @override
+  Future<void> deleteUserData(String userId) async {
+    if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
+    _records.removeWhere((_, r) => r.ownerId == userId);
+    _storyLines.removeWhere((_, s) => s.ownerId == userId);
+    _checkIns.removeWhere((_, c) => c.userId == userId);
+    _achievements.clear();
+    _memberships.remove(userId);
+    _userSettings = null;
+  }
+
   void validateDataConsistency() {}
 }
 

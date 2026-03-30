@@ -299,15 +299,16 @@ class CustomServerAuthRepository implements IAuthRepository {
   
   @override
   Future<void> signOut() async {
+    _httpClient.beginSignOut();
     try {
       // 调用服务器登出接口
       await _httpClient.post(ServerConfig.authLogout);
     } catch (e) {
       // 即使服务器登出失败，也清除本地 Token
     } finally {
-      // 清除本地缓存
       _currentUser = null;
       await _httpClient.clearTokens();
+      _httpClient.endSignOut();
     }
   }
   
@@ -482,6 +483,7 @@ class CustomServerAuthRepository implements IAuthRepository {
       throw StateError('用户未登录');
     }
 
+    _httpClient.beginSignOut();   
     try {
       await _httpClient.delete(
         ServerConfig.authDeleteAccount,
@@ -491,8 +493,10 @@ class CustomServerAuthRepository implements IAuthRepository {
       await _httpClient.clearTokens();
     } on HttpException catch (e) {
       throw Exception(e.message);
+      } finally {
+      _httpClient.endSignOut();
     }
-  }
+  } 
 
   @override
   void invalidateUserCache() {

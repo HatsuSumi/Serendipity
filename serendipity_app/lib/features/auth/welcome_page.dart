@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/utils/navigation_helper.dart';
 import 'widgets/auth_button.dart';
 import 'login_page.dart';
@@ -171,7 +172,7 @@ class WelcomePage extends ConsumerWidget {
           child: AuthButton.primary(
             text: '先离线使用',
             prefixIcon: Icons.explore,
-            onPressed: () => _navigateToMainPage(context, ref),
+            onPressed: () async => _navigateToMainPage(context, ref),
           ),
         ),
         
@@ -229,7 +230,14 @@ class WelcomePage extends ConsumerWidget {
   /// - 单一职责：只负责导航
   /// - 架构一致性：使用 NavigationHelper 统一导航逻辑
   /// - 用户体验优先：显示友好的欢迎消息
-  void _navigateToMainPage(BuildContext context, WidgetRef ref) {
+  /// 
+  /// 注意：若当前已登录，先执行登出，保证以匿名状态进入主页
+  Future<void> _navigateToMainPage(BuildContext context, WidgetRef ref) async {
+    final user = ref.read(authProvider).valueOrNull;
+    if (user != null) {
+      await ref.read(authProvider.notifier).signOut();
+    }
+    if (!context.mounted) return;
     NavigationHelper.navigateToMainPageWithMessage(
       context,
       ref,

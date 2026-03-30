@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/membership_provider.dart';
@@ -481,45 +482,43 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  /// 处理头像点击：弹出选择来源，选图后上传
+  /// 处理头像点击：弹出选择来源，选图 → 裁剪 → 上传
   Future<void> _handleAvatarTap(BuildContext context, WidgetRef ref) async {
     final userActions = ref.read(userActionsProvider.notifier);
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('拍照'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('从相册选择'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (source == null) return;
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
     if (!context.mounted) return;
 
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 85,
+    final colorScheme = Theme.of(context).colorScheme;
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: picked.path,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: '裁剪头像',
+          toolbarColor: colorScheme.surface,
+          toolbarWidgetColor: colorScheme.onSurface,
+          statusBarLight: colorScheme.brightness == Brightness.light,
+          activeControlsWidgetColor: colorScheme.primary,
+          cropStyle: CropStyle.circle,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+          initAspectRatio: CropAspectRatioPreset.square,
+        ),
+        IOSUiSettings(
+          title: '裁剪头像',
+          cropStyle: CropStyle.circle,
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
     );
-    if (picked == null) return;
+    if (croppedFile == null) return;
     if (!context.mounted) return;
 
     await AsyncActionHelper.execute(
       context,
-      action: () => userActions.uploadAvatar(File(picked.path)),
+      action: () => userActions.uploadAvatar(File(croppedFile.path)),
       successMessage: '头像已更新',
       errorMessagePrefix: '头像上传失败',
     );
@@ -701,6 +700,16 @@ class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
     super.dispose();
   }
 
+  void _submit(BuildContext context) {
+    if (_controller.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('昵称不能为空')),
+      );
+      return;
+    }
+    Navigator.pop(context, true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -714,7 +723,7 @@ class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
           border: OutlineInputBorder(),
         ),
         textInputAction: TextInputAction.done,
-        onSubmitted: (_) => Navigator.pop(context, true),
+        onSubmitted: (_) => _submit(context),
       ),
       actions: [
         TextButton(
@@ -722,7 +731,7 @@ class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
           child: const Text('取消'),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, true),
+          onPressed: () => _submit(context),
           child: const Text('确认'),
         ),
       ],

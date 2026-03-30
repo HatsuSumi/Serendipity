@@ -584,6 +584,16 @@ class StorageService implements IStorageService {
       final boundCheckIn = checkIn.copyWith(userId: () => userId);
       await saveCheckIn(boundCheckIn);
     }
+
+    // 绑定用户设置（将 guest 设置迁移到新用户）
+    final offlineSettings = getUserSettings();
+    if (offlineSettings != null && offlineSettings.userId == 'guest') {
+      final boundSettings = offlineSettings.copyWith(
+        id: 'settings_$userId',
+        userId: userId,
+      );
+      await saveUserSettings(boundSettings);
+    }
   }
   
   /// 删除所有离线数据

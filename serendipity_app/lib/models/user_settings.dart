@@ -165,6 +165,21 @@ class UserSettings {
     final updatedAt = dto['updatedAt'] != null
         ? DateTime.parse(dto['updatedAt'] as String)
         : now;
+    // 分组时间戳：服务端有则用服务端的，服务端没有（旧版本兼容）则用 epoch
+    // epoch 保证本地任何真实改动的时间戳都比它新，LWW 不会用旧服务端值覆盖本地
+    final epoch = DateTime.fromMillisecondsSinceEpoch(0);
+    final themeUpdatedAt = dto['themeUpdatedAt'] != null
+        ? DateTime.parse(dto['themeUpdatedAt'] as String)
+        : epoch;
+    final notificationsUpdatedAt = dto['notificationsUpdatedAt'] != null
+        ? DateTime.parse(dto['notificationsUpdatedAt'] as String)
+        : epoch;
+    final checkInUpdatedAt = dto['checkInUpdatedAt'] != null
+        ? DateTime.parse(dto['checkInUpdatedAt'] as String)
+        : epoch;
+    final communityUpdatedAt = dto['communityUpdatedAt'] != null
+        ? DateTime.parse(dto['communityUpdatedAt'] as String)
+        : epoch;
     
     return UserSettings(
       id: 'settings_$userId',
@@ -181,20 +196,20 @@ class UserSettings {
         (e) => e.value == dto['dialogAnimation'] as String,
         orElse: () => DialogAnimationType.random,
       ),
-      themeUpdatedAt: updatedAt,
+      themeUpdatedAt: themeUpdatedAt,
       achievementNotification: notifications['achievementUnlocked'] as bool,
       anniversaryReminder: notifications['anniversaryReminder'] as bool? ?? true,
       checkInReminderEnabled: notifications['checkInReminder'] as bool,
       checkInReminderTime: TimeOfDay(hour: reminderHour, minute: reminderMinute),
-      notificationsUpdatedAt: updatedAt,
+      notificationsUpdatedAt: notificationsUpdatedAt,
       checkInVibrationEnabled: checkIn['vibrationEnabled'] as bool,
       checkInConfettiEnabled: checkIn['confettiEnabled'] as bool,
-      checkInUpdatedAt: updatedAt,
+      checkInUpdatedAt: checkInUpdatedAt,
       hidePublishWarning: dto['hidePublishWarning'] as bool? ?? false,
       hasSeenPublishWarning: dto['hasSeenPublishWarning'] as bool? ?? false,
       hasSeenCommunityIntro: dto['hasSeenCommunityIntro'] as bool? ?? false,
       hasSeenFavoritesIntro: dto['hasSeenFavoritesIntro'] as bool? ?? false,
-      communityUpdatedAt: updatedAt,
+      communityUpdatedAt: communityUpdatedAt,
       createdAt: now,
       updatedAt: updatedAt,
     );
@@ -253,6 +268,10 @@ class UserSettings {
       'hasSeenFavoritesIntro': hasSeenFavoritesIntro,
       'hasSeenPublishWarning': hasSeenPublishWarning,
       'hidePublishWarning': hidePublishWarning,
+      'themeUpdatedAt': themeUpdatedAt.toIso8601String(),
+      'notificationsUpdatedAt': notificationsUpdatedAt.toIso8601String(),
+      'checkInUpdatedAt': checkInUpdatedAt.toIso8601String(),
+      'communityUpdatedAt': communityUpdatedAt.toIso8601String(),
     };
   }
 

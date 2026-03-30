@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/server_config.dart';
 import '../services/i_storage_service.dart';
@@ -68,10 +69,22 @@ class HttpClientService {
   
   /// 清除 Token
   Future<void> clearTokens() async {
-    _isSigningOut = true;
     await _storage.remove(_accessTokenKey);
     await _storage.remove(_refreshTokenKey);
     await _storage.remove(_tokenExpiryKey);
+  }
+
+  /// 标记主动登出开始，抑制强制登出回调
+  ///
+  /// 调用者：CustomServerAuthRepository.signOut() / deleteAccount()
+  ///
+  /// 必须与 [endSignOut] 配对使用（建议用 try/finally）
+  void beginSignOut() {
+    _isSigningOut = true;
+  }
+
+  /// 标记主动登出结束，恢复强制登出回调
+  void endSignOut() {
     _isSigningOut = false;
   }
   

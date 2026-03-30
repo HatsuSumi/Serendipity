@@ -50,7 +50,11 @@ export interface UserSettingsDto {
   hasSeenFavoritesIntro: boolean;
   hasSeenPublishWarning: boolean;
   hidePublishWarning: boolean;
-  updatedAt: string; // ISO 8601
+  themeUpdatedAt: string;         // ISO 8601
+  notificationsUpdatedAt: string; // ISO 8601
+  checkInUpdatedAt: string;       // ISO 8601
+  communityUpdatedAt: string;     // ISO 8601
+  updatedAt: string;              // ISO 8601
 }
 
 export interface UpdateUserSettingsDto {
@@ -71,5 +75,9 @@ export interface UpdateUserSettingsDto {
   hasSeenFavoritesIntro?: boolean;
   hasSeenPublishWarning?: boolean;
   hidePublishWarning?: boolean;
+  themeUpdatedAt?: string;         // ISO 8601
+  notificationsUpdatedAt?: string; // ISO 8601
+  checkInUpdatedAt?: string;       // ISO 8601
+  communityUpdatedAt?: string;     // ISO 8601
 }
 

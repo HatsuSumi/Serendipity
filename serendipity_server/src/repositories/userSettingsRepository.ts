@@ -13,7 +13,12 @@ export interface IUserSettingsRepository {
   findByUserId(userId: string): Promise<UserSettings | null>;
   create(userId: string): Promise<UserSettings>;
   update(userId: string, data: Partial<UserSettings>): Promise<UserSettings>;
-  upsert(userId: string, data: Partial<UserSettings>): Promise<UserSettings>;
+  upsert(userId: string, data: Partial<UserSettings> & {
+    themeUpdatedAt?: Date;
+    notificationsUpdatedAt?: Date;
+    checkInUpdatedAt?: Date;
+    communityUpdatedAt?: Date;
+  }): Promise<UserSettings>;
 }
 
 export class UserSettingsRepository implements IUserSettingsRepository {
@@ -90,7 +95,13 @@ export class UserSettingsRepository implements IUserSettingsRepository {
    * @param data - 更新数据
    * @returns 用户设置对象
    */
-  async upsert(userId: string, data: Partial<UserSettings>): Promise<UserSettings> {
+  async upsert(userId: string, data: Partial<UserSettings> & {
+    themeUpdatedAt?: Date;
+    notificationsUpdatedAt?: Date;
+    checkInUpdatedAt?: Date;
+    communityUpdatedAt?: Date;
+  }): Promise<UserSettings> {
+    const now = new Date();
     return this.prisma.userSettings.upsert({
       where: { userId },
       update: {
@@ -103,7 +114,11 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         hasSeenPublishWarning: data.hasSeenPublishWarning,
         hasSeenFavoritesIntro: data.hasSeenFavoritesIntro,
         hidePublishWarning: data.hidePublishWarning,
-        updatedAt: new Date(),
+        themeUpdatedAt: data.themeUpdatedAt,
+        notificationsUpdatedAt: data.notificationsUpdatedAt,
+        checkInUpdatedAt: data.checkInUpdatedAt,
+        communityUpdatedAt: data.communityUpdatedAt,
+        updatedAt: now,
       },
       create: {
         userId,
@@ -114,6 +129,7 @@ export class UserSettingsRepository implements IUserSettingsRepository {
           checkInReminder: true,
           checkInReminderTime: '20:00',
           achievementUnlocked: true,
+          anniversaryReminder: true,
         }) as Prisma.InputJsonValue,
         checkIn: (data.checkIn || {
           vibrationEnabled: true,
@@ -123,6 +139,10 @@ export class UserSettingsRepository implements IUserSettingsRepository {
         hasSeenPublishWarning: data.hasSeenPublishWarning ?? false,
         hasSeenFavoritesIntro: data.hasSeenFavoritesIntro ?? false,
         hidePublishWarning: data.hidePublishWarning ?? false,
+        themeUpdatedAt: data.themeUpdatedAt ?? now,
+        notificationsUpdatedAt: data.notificationsUpdatedAt ?? now,
+        checkInUpdatedAt: data.checkInUpdatedAt ?? now,
+        communityUpdatedAt: data.communityUpdatedAt ?? now,
       },
     });
   }

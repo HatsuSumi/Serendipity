@@ -4,6 +4,8 @@
  * 职责：用户信息和设置的业务逻辑
  */
 
+import path from 'path';
+import fs from 'fs';
 import { User, UserSettings } from '@prisma/client';
 import { IUserRepository } from '../repositories/userRepository';
 import { IUserSettingsRepository } from '../repositories/userSettingsRepository';
@@ -66,6 +68,17 @@ export class UserService implements IUserService {
       throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
     }
 
+    // 删除旧头像文件（仅删除本服务器托管的文件，忽略外部 URL）
+    if (user.avatarUrl) {
+      const oldFilename = path.basename(user.avatarUrl);
+      const oldFilePath = path.join(process.cwd(), 'uploads', 'avatars', oldFilename);
+      // 确认路径在 avatars 目录内，防止路径穿越
+      const avatarsDir = path.join(process.cwd(), 'uploads', 'avatars');
+      if (oldFilePath.startsWith(avatarsDir) && fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    }
+
     const avatarUrl = `${baseUrl}/uploads/avatars/${file.filename}`;
     const updatedUser = await this.userRepository.updateAvatarUrl(userId, avatarUrl);
     return this.mapUserToDto(updatedUser);
@@ -83,10 +96,10 @@ export class UserService implements IUserService {
       throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
     }
 
-    let settings = await this.userSettingsRepository.findByUserId(userId);
+    const settings = await this.userSettingsRepository.findByUserId(userId);
 
     if (!settings) {
-      settings = await this.userSettingsRepository.create(userId);
+      throw new AppError('User settings not found', ErrorCode.NOT_FOUND);
     }
 
     return this.mapSettingsToDto(settings);
@@ -108,7 +121,13 @@ export class UserService implements IUserService {
       throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
     }
 
-    const updatedSettings = await this.userSettingsRepository.upsert(userId, data);
+    const updatedSettings = await this.userSettingsRepository.upsert(userId, {
+      ...data,
+      themeUpdatedAt: data.themeUpdatedAt ? new Date(data.themeUpdatedAt) : undefined,
+      notificationsUpdatedAt: data.notificationsUpdatedAt ? new Date(data.notificationsUpdatedAt) : undefined,
+      checkInUpdatedAt: data.checkInUpdatedAt ? new Date(data.checkInUpdatedAt) : undefined,
+      communityUpdatedAt: data.communityUpdatedAt ? new Date(data.communityUpdatedAt) : undefined,
+    });
 
     return this.mapSettingsToDto(updatedSettings);
   }
@@ -150,6 +169,10 @@ export class UserService implements IUserService {
       hasSeenPublishWarning: settings.hasSeenPublishWarning,
       hasSeenFavoritesIntro: settings.hasSeenFavoritesIntro,
       hidePublishWarning: settings.hidePublishWarning,
+      themeUpdatedAt: settings.themeUpdatedAt.toISOString(),
+      notificationsUpdatedAt: settings.notificationsUpdatedAt.toISOString(),
+      checkInUpdatedAt: settings.checkInUpdatedAt.toISOString(),
+      communityUpdatedAt: settings.communityUpdatedAt.toISOString(),
       updatedAt: settings.updatedAt.toISOString(),
     };
   }
