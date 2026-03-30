@@ -28,6 +28,9 @@ final storyLineRepositoryProvider = Provider<StoryLineRepository>((ref) {
   return StoryLineRepository(ref.read(storageServiceProvider));
 });
 
+/// 每页加载条数
+const int _kPageSize = 20;
+
 /// 记录列表状态管理
 /// 
 /// 职责：
@@ -39,8 +42,20 @@ final storyLineRepositoryProvider = Provider<StoryLineRepository>((ref) {
 /// - 单一职责（SRP）：只负责记录列表管理
 /// - 依赖倒置（DIP）：依赖 recordsFilterProvider，不依赖具体的筛选UI
 /// - 自动响应：监听 recordsFilterProvider 变化，自动过滤
+/// 
+/// 分页策略：
+/// - 无筛选时：分页加载，每页 [_kPageSize] 条，滚动到底触发 loadMore()
+/// - 筛选激活时：全量加载后过滤，保证筛选语义正确（从所有数据中筛选）
 class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   late RecordRepository _repository;
+
+  /// 当前已加载条数（无筛选模式下使用）
+  int _loadedCount = _kPageSize;
+
+  /// 是否还有更多数据可加载
+  bool _hasMore = true;
+
+  bool get hasMore => _hasMore;
 
   @override
   Future<List<EncounterRecord>> build() async {
@@ -52,24 +67,47 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     // 监听筛选条件变化，自动重新过滤
     final filterCriteria = ref.watch(recordsFilterProvider);
     
+    // 筛选条件变化时重置分页状态
+    _loadedCount = _kPageSize;
+    _hasMore = true;
+
     // 获取当前登录用户
     final currentUser = await ref.read(authProvider.notifier).currentUser;
-    
-    // 根据用户加载数据
-    List<EncounterRecord> records;
-    if (currentUser != null) {
-      records = _repository.getRecordsByUser(currentUser.id);
-    } else {
-      // 未登录：加载离线数据
-      records = _repository.getRecordsByUser(null);
-    }
-    
-    // 应用筛选条件
+    final userId = currentUser?.id;
+
+    // 全量数据（Hive 全量读取，无法在存储层分页）
+    final allRecords = _repository.getRecordsByUser(userId);
+
+    // 筛选激活：全量过滤，不分页
     if (filterCriteria.isActive) {
-      records = _applyFilterCriteria(records, filterCriteria);
+      _hasMore = false;
+      return _applyFilterCriteria(allRecords, filterCriteria);
     }
-    
-    return records;
+
+    // 无筛选：只返回第一页
+    _hasMore = allRecords.length > _loadedCount;
+    return allRecords.take(_loadedCount).toList();
+  }
+
+  /// 加载更多记录（仅无筛选模式下有效）
+  ///
+  /// 调用者：TimelinePage 滚动到底部时
+  Future<void> loadMore() async {
+    final filterCriteria = ref.read(recordsFilterProvider);
+    // 筛选激活时不分页
+    if (filterCriteria.isActive || !_hasMore) return;
+    // 正在加载中时不重复触发
+    if (state.isLoading) return;
+
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    final userId = currentUser?.id;
+    final allRecords = _repository.getRecordsByUser(userId);
+
+    _loadedCount += _kPageSize;
+    _hasMore = allRecords.length > _loadedCount;
+
+    // 用新数据替换 state，不触发 loading
+    state = AsyncData(allRecords.take(_loadedCount).toList());
   }
   
   /// 获取同步服务（延迟初始化）

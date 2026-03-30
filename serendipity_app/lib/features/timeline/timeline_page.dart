@@ -59,6 +59,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   // 粒子效果控制器
   ConfettiController? _confettiController;
 
+  // 滚动控制器（用于分页加载）
+  final ScrollController _scrollController = ScrollController();
+
   // 主题颜色缓存（每次 build 从 Provider 更新，子方法直接使用）
   late ColorScheme _colorScheme;
   late TextTheme _textTheme;
@@ -67,12 +70,27 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   void initState() {
     super.initState();
     _confettiController = CheckInAnimationHelper.createConfettiController();
+    _scrollController.addListener(_onScroll);
   }
   
   @override
   void dispose() {
     _confettiController?.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 滚动监听：接近底部时触发加载更多
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    // 距离底部 200px 时触发
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      final notifier = ref.read(recordsProvider.notifier);
+      if (notifier.hasMore) {
+        notifier.loadMore();
+      }
+    }
   }
 
   @override
@@ -236,14 +254,22 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   /// 记录列表（签到卡片始终显示在顶部，记录为空时显示空状态占位）
   Widget _buildRecordList(BuildContext context, List<EncounterRecord> records, WidgetRef ref, RecordsFilterCriteria filterCriteria) {
+    final notifier = ref.read(recordsProvider.notifier);
+    // 无筛选时才显示底部加载指示器
+    final showLoadMore = !filterCriteria.isActive && notifier.hasMore;
+    // index 0 = 签到卡片，末尾可能有加载指示器
+    final itemCount = records.isEmpty
+        ? 2
+        : records.length + 1 + (showLoadMore ? 1 : 0);
+
     return RefreshIndicator(
       onRefresh: () async {
         await ref.read(recordsProvider.notifier).refresh();
       },
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.only(bottom: 16),
-        // index 0 = 签到卡片，index 1 = 空状态或第一条记录
-        itemCount: records.isEmpty ? 2 : records.length + 1,
+        itemCount: itemCount,
         itemBuilder: (context, index) {
           // 第一项：签到卡片
           if (index == 0) {
@@ -254,7 +280,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
           // 无记录时显示空状态占位
           if (records.isEmpty) {
-            // 区分是筛选结果为空还是真的没有记录
             final isFiltering = filterCriteria.isActive;
             return Padding(
               padding: const EdgeInsets.only(top: 32),
@@ -266,7 +291,15 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
             );
           }
 
-          // 其他项显示记录卡片
+          // 末尾加载指示器
+          if (showLoadMore && index == records.length + 1) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          // 记录卡片
           final record = records[index - 1];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
