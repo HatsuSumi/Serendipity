@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/providers/statistics_provider.dart';
-import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+
 import '../../../core/utils/dialog_helper.dart';
 import '../../../models/statistics.dart';
 
@@ -13,8 +13,6 @@ class BasicStatisticsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(appColorSchemeProvider);
-    ref.watch(appTextThemeProvider);
     final overviewAsync = ref.watch(statisticsOverviewProvider);
 
     return overviewAsync.when(

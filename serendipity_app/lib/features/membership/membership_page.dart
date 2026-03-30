@@ -8,7 +8,7 @@ import '../../core/utils/date_time_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import 'payment_page.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider;
+
 
 class MembershipPage extends ConsumerStatefulWidget {
   const MembershipPage({super.key});
@@ -22,7 +22,7 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
   bool _isSubmitting = false;
   @override
   Widget build(BuildContext context) {
-    final colorScheme = ref.watch(appColorSchemeProvider);
+    final colorScheme = Theme.of(context).colorScheme;
     final authState = ref.watch(authProvider);
     final membershipAsync = ref.watch(membershipProvider);
 

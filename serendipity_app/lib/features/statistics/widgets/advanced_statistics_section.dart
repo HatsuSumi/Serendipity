@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/navigation_helper.dart';
 import '../../../core/providers/statistics_provider.dart';
 import '../../membership/membership_page.dart';
-import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+
 import '../../../models/statistics.dart';
 import 'emotion_intensity_card.dart';
 import 'field_ranking_card.dart';
@@ -20,8 +20,6 @@ class AdvancedStatisticsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(appColorSchemeProvider);
-    ref.watch(appTextThemeProvider);
     final advancedStatsAsync = ref.watch(advancedStatisticsProvider);
 
     return advancedStatsAsync.when(

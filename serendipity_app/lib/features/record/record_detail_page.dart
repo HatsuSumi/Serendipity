@@ -18,7 +18,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+
 import '../../core/utils/page_transition_builder.dart';
 import '../story_line/link_to_story_line_dialog.dart';
 import '../story_line/story_line_detail_page.dart';
@@ -145,9 +145,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 从 Provider 直接取颜色，无竞态条件
-    _colorScheme = ref.watch(appColorSchemeProvider);
-    _textTheme = ref.watch(appTextThemeProvider);
+    _colorScheme = Theme.of(context).colorScheme;
+    _textTheme = Theme.of(context).textTheme;
     // 使用主题自适应的状态颜色
     final statusColor = _currentRecord.status.getColor(context, ref);
 

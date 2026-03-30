@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/statistics_provider.dart';
-import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+
 import '../../../models/statistics.dart';
 
 class SuccessRateTrendCard extends ConsumerWidget {
@@ -30,8 +30,7 @@ class SuccessRateTrendCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = ref.watch(appColorSchemeProvider);
-    ref.watch(appTextThemeProvider);
+    final colorScheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final currentYear = now.year;
     final chartRange = ref.watch(successRateChartRangeProvider);

@@ -6,7 +6,7 @@ import '../../../models/encounter_record.dart';
 import '../../../core/utils/record_helper.dart';
 import '../../../core/utils/date_time_helper.dart';
 import '../../../core/theme/status_color_extension.dart';
-import '../../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+
 
 /// 记录预览卡片
 /// 
@@ -26,8 +26,6 @@ class RecordPreviewCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(appColorSchemeProvider);
-    ref.watch(appTextThemeProvider);
     final statusColor = record.status.getColor(context, ref);
 
     return Card(

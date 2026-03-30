@@ -17,7 +17,7 @@ import '../../core/utils/check_in_animation_helper.dart';
 import '../../core/utils/async_action_helper.dart';
 import '../../core/utils/auth_error_helper.dart';
 import '../../core/theme/status_color_extension.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/common_filter_widgets.dart';
 import '../../models/encounter_record.dart';
@@ -95,9 +95,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 从 Provider 直接取颜色，无竞态条件，子方法通过实例变量访问
-    _colorScheme = ref.watch(appColorSchemeProvider);
-    _textTheme = ref.watch(appTextThemeProvider);
+    _colorScheme = Theme.of(context).colorScheme;
+    _textTheme = Theme.of(context).textTheme;
     final filterCriteria = ref.watch(recordsFilterProvider);
     final countAsync = ref.watch(recordsCountProvider);
 

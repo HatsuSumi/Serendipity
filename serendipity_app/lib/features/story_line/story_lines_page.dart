@@ -10,7 +10,7 @@ import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../features/membership/membership_page.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+
 import 'story_line_detail_page.dart';
 import 'story_line_export_card.dart';
 import 'package:uuid/uuid.dart';
@@ -47,9 +47,8 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 从 Provider 直接取颜色，无竞态条件，子方法通过实例变量访问
-    _colorScheme = ref.watch(appColorSchemeProvider);
-    _textTheme = ref.watch(appTextThemeProvider);
+    _colorScheme = Theme.of(context).colorScheme;
+    _textTheme = Theme.of(context).textTheme;
     final storyLinesAsync = ref.watch(storyLinesProvider);
     final countAsync = ref.watch(storyLinesCountProvider);
     final membershipInfo = ref.watch(membershipProvider).valueOrNull;

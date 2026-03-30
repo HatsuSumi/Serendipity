@@ -10,7 +10,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/widgets/empty_state_widget.dart';
 import '../../core/theme/status_color_extension.dart';
-import '../../core/providers/theme_provider.dart' show appColorSchemeProvider, appTextThemeProvider;
+
 import '../../models/community_post.dart';
 import '../../core/utils/record_helper.dart';
 import '../../core/utils/date_time_helper.dart';
@@ -74,9 +74,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
 
   @override
   Widget build(BuildContext context) {
-    // 从 Provider 直接取颜色，无竞态条件
-    _colorScheme = ref.watch(appColorSchemeProvider);
-    _textTheme = ref.watch(appTextThemeProvider);
+    _colorScheme = Theme.of(context).colorScheme;
+    _textTheme = Theme.of(context).textTheme;
     final favoritesAsync = ref.watch(favoritesProvider);
 
     return Scaffold(
