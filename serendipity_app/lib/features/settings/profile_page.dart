@@ -8,6 +8,7 @@ import '../../core/providers/membership_provider.dart';
 import '../../core/providers/sync_status_provider.dart';
 import '../../core/providers/user_provider.dart';
 import '../../core/utils/async_action_helper.dart';
+import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/date_time_helper.dart';
@@ -529,7 +530,7 @@ class ProfilePage extends ConsumerWidget {
   ) async {
     final userActions = ref.read(userActionsProvider.notifier);
     String newName = user.displayName ?? '';
-    final confirmed = await showDialog<bool>(
+    final confirmed = await DialogHelper.show<bool>(
       context: context,
       builder: (ctx) => _EditDisplayNameDialog(initialName: newName, onChanged: (v) => newName = v),
     );
@@ -699,9 +700,7 @@ class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
 
   void _submit(BuildContext context) {
     if (_controller.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('昵称不能为空')),
-      );
+      MessageHelper.showWarning(context, '昵称不能为空');
       return;
     }
     Navigator.pop(context, true);
