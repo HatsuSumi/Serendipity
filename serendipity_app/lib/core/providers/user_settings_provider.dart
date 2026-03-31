@@ -11,7 +11,6 @@ import 'auth_provider.dart';
 import 'membership_provider.dart';
 import 'message_provider.dart';
 import 'records_provider.dart' show syncCompletedProvider;
-import 'check_in_provider.dart' show checkInRepositoryProvider;
 
 /// NotificationService Provider
 final notificationServiceProvider = Provider<NotificationService>((ref) {
