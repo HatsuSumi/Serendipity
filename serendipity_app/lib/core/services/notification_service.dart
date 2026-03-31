@@ -143,9 +143,10 @@ class NotificationService {
   /// 每天在指定时间发送提醒（只在未签到时发送）
   /// 
   /// [time] 提醒时间，不能为 null
+  /// [userId] 当前用户 ID，null 表示离线数据
   /// 
   /// 抛出 [ArgumentError] 如果 time 为 null
-  Future<void> scheduleCheckInReminder(TimeOfDay time) async {
+  Future<void> scheduleCheckInReminder(TimeOfDay time, {String? userId}) async {
     _ensureInitialized();
 
     // Fail Fast：参数校验
@@ -173,7 +174,7 @@ class NotificationService {
     final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
 
     // 生成通知内容
-    final consecutiveDays = _checkInRepository.calculateConsecutiveDays();
+    final consecutiveDays = _checkInRepository.calculateConsecutiveDays(userId: userId);
     final content = CheckInReminderHelper.generateContent(consecutiveDays);
 
     // Android 通知详情
@@ -331,9 +332,10 @@ class NotificationService {
   ///
   /// 5 秒后触发一条签到提醒通知，用于验证通知权限和渠道配置。
   /// 不受当前提醒时间设置影响。
+  /// [userId] 当前用户 ID，null 表示离线数据
   ///
   /// 调用者：ProfilePage 开发测试区
-  Future<TestNotificationResult> sendTestCheckInNotification() async {
+  Future<TestNotificationResult> sendTestCheckInNotification({String? userId}) async {
     if (kIsWeb) {
       return TestNotificationResult.unsupportedPlatform;
     }
@@ -349,7 +351,7 @@ class NotificationService {
       tz.local,
     );
 
-    final consecutiveDays = _checkInRepository.calculateConsecutiveDays();
+    final consecutiveDays = _checkInRepository.calculateConsecutiveDays(userId: userId);
     final content = CheckInReminderHelper.generateContent(consecutiveDays);
 
     try {

@@ -307,7 +307,7 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
           context: context,
           builder: (ctx) => AlertDialog(
             content: Text(
-              '${gapText}那段时间，\n是发生了什么，\n还是什么都没发生？',
+              '$gapText那段时间，\n是发生了什么，\n还是什么都没发生？',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 15,

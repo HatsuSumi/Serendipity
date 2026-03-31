@@ -540,8 +540,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
         return;
       }
 
+      final user = _ref.read(authProvider).value;
+      final userId = user?.id;
+
       // 调度通知
-      await _notificationService.scheduleCheckInReminder(time);
+      await _notificationService.scheduleCheckInReminder(time, userId: userId);
     } catch (e) {
       // 调度失败，静默失败（不影响用户体验）
       // 生产环境应记录错误日志

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/achievement_provider.dart';
-import '../../../core/providers/auth_provider.dart' show storageServiceProvider;
+import '../../../core/providers/auth_provider.dart'
+    show authProvider, storageServiceProvider;
 import '../../../core/providers/check_in_provider.dart';
 import '../../../core/providers/first_launch_provider.dart';
 import '../../../core/providers/membership_provider.dart';
@@ -135,9 +136,10 @@ class DevToolsPage extends ConsumerWidget {
             title: const Text('发送签到提醒测试推送'),
             subtitle: const Text('5 秒后触发一条签到提醒通知，验证推送是否正常'),
             onTap: () async {
+              final userId = ref.read(authProvider).value?.id;
               final result = await ref
                   .read(notificationServiceProvider)
-                  .sendTestCheckInNotification();
+                  .sendTestCheckInNotification(userId: userId);
               if (!context.mounted) return;
 
               switch (result) {
