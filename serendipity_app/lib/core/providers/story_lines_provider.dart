@@ -92,20 +92,19 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   /// 集成云端同步：
   /// - 如果用户已登录，保存到本地后自动上传到云端
   /// - 如果用户未登录，只保存到本地（离线模式）
-  /// - 云端同步失败时：UI 仍刷新展示本地数据，再向上抛出异常供 UI 显示提示
+  /// - 云端同步失败时：本地数据已保存，UI 刷新展示，不抛异常
   Future<void> createStoryLine(StoryLine storyLine) async {
     // 1. 保存到本地
     await _repository.saveStoryLine(storyLine);
     
     // 2. 如果用户已登录，上传到云端
-    // 先保存异常，确保后续步骤（成就检测、刷新）不被中断
-    Exception? syncException;
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
         await _syncService.uploadStoryLine(currentUser, storyLine);
       } catch (e) {
-        syncException = e is Exception ? e : Exception(e.toString());
+        // 云端同步失败，但本地已保存，继续执行
+        // 不抛异常，避免对话框关闭时序不确定
       }
     }
     
@@ -123,11 +122,8 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
       // 成就检测失败不影响故事线创建
     }
     
-    // 4. 无论云端是否成功，UI 都刷新
+    // 4. 刷新 UI（最后一步，之后不会有异常）
     await refresh();
-    
-    // 5. 云端失败时再向上抛出，让 UI 层显示提示
-    if (syncException != null) throw syncException;
   }
 
   /// 更新故事线
@@ -135,28 +131,24 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   /// 集成云端同步：
   /// - 如果用户已登录，更新本地后自动上传到云端（使用 PUT API 增量更新）
   /// - 如果用户未登录，只更新本地（离线模式）
-  /// - 云端同步失败时：UI 仍刷新展示本地数据，再向上抛出异常供 UI 显示提示
+  /// - 云端同步失败时：本地数据已更新，UI 刷新展示，不抛异常
   Future<void> updateStoryLine(StoryLine storyLine) async {
     // 1. 更新本地
     await _repository.updateStoryLine(storyLine);
     
     // 2. 如果用户已登录，使用 PUT API 更新云端（增量更新）
-    // 先保存异常，确保后续 refresh 不被中断
-    Exception? syncException;
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
         await _syncService.updateStoryLine(currentUser, storyLine);
       } catch (e) {
-        syncException = e is Exception ? e : Exception(e.toString());
+        // 云端同步失败，但本地已更新，继续执行
+        // 不抛异常，避免对话框关闭时序不确定
       }
     }
     
-    // 3. 无论云端是否成功，UI 都刷新
+    // 3. 刷新 UI（最后一步，之后不会有异常）
     await refresh();
-    
-    // 4. 云端失败时再向上抛出，让 UI 层显示提示
-    if (syncException != null) throw syncException;
   }
 
   /// 删除故事线（自动取消所有记录关联）
@@ -164,31 +156,27 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   /// 集成云端同步：
   /// - 如果用户已登录，删除本地后自动删除云端数据
   /// - 如果用户未登录，只删除本地（离线模式）
-  /// - 云端同步失败时：UI 仍刷新展示本地数据，再向上抛出异常供 UI 显示提示
+  /// - 云端同步失败时：本地数据已删除，UI 刷新展示，不抛异常
   Future<void> deleteStoryLine(String id) async {
     // 1. 删除本地
     await _repository.deleteStoryLine(id);
     
     // 2. 如果用户已登录，删除云端
-    // 先保存异常，确保后续 refresh 不被中断
-    Exception? syncException;
     final currentUser = await ref.read(authProvider.notifier).currentUser;
     if (currentUser != null) {
       try {
         await _syncService.deleteStoryLine(currentUser, id);
       } catch (e) {
-        syncException = e is Exception ? e : Exception(e.toString());
+        // 云端同步失败，但本地已删除，继续执行
+        // 不抛异常，避免对话框关闭时序不确定
       }
     }
     
-    // 3. 无论云端是否成功，UI 都刷新
+    // 3. 刷新故事线列表
     await refresh();
     
     // 4. 刷新记录列表（重要！确保记录的 storyLineId 更新为 null）
     ref.invalidate(recordsProvider);
-    
-    // 5. 云端失败时再向上抛出，让 UI 层显示提示
-    if (syncException != null) throw syncException;
   }
 
   /// 将记录关联到故事线
