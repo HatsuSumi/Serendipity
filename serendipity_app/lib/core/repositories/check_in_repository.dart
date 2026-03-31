@@ -38,6 +38,13 @@ class CheckInRepository {
 
   CheckInRepository(this._storageService);
 
+  /// 保存服务端返回的签到记录到本地缓存
+  /// 
+  /// 调用者：CheckInProvider.checkIn()
+  Future<void> saveRemoteCheckIn(CheckInRecord checkIn) async {
+    await _storageService.saveCheckIn(checkIn);
+  }
+
   /// 签到（创建今天的签到记录）
   /// 
   /// 参数：

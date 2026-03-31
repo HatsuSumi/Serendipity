@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
+import '../../models/remote_check_in_status.dart';
+import '../../models/user.dart';
 import '../repositories/check_in_repository.dart';
 import '../services/sync_service.dart';
 import 'auth_provider.dart';
@@ -19,6 +21,9 @@ class CheckInState {
   final int totalDays;
   final int currentMonthDays;
   final List<CheckInRecord> recentCheckIns;
+  final bool isRemoteAuthoritative;
+  final List<DateTime> checkedInDatesInCurrentMonth;
+  final DateTime currentCalendarMonth;
 
   CheckInState({
     required this.hasCheckedInToday,
@@ -26,6 +31,9 @@ class CheckInState {
     required this.totalDays,
     required this.currentMonthDays,
     required this.recentCheckIns,
+    required this.isRemoteAuthoritative,
+    required this.checkedInDatesInCurrentMonth,
+    required this.currentCalendarMonth,
   });
 
   CheckInState copyWith({
@@ -34,6 +42,9 @@ class CheckInState {
     int? totalDays,
     int? currentMonthDays,
     List<CheckInRecord>? recentCheckIns,
+    bool? isRemoteAuthoritative,
+    List<DateTime>? checkedInDatesInCurrentMonth,
+    DateTime? currentCalendarMonth,
   }) {
     return CheckInState(
       hasCheckedInToday: hasCheckedInToday ?? this.hasCheckedInToday,
@@ -41,6 +52,10 @@ class CheckInState {
       totalDays: totalDays ?? this.totalDays,
       currentMonthDays: currentMonthDays ?? this.currentMonthDays,
       recentCheckIns: recentCheckIns ?? this.recentCheckIns,
+      isRemoteAuthoritative: isRemoteAuthoritative ?? this.isRemoteAuthoritative,
+      checkedInDatesInCurrentMonth:
+          checkedInDatesInCurrentMonth ?? this.checkedInDatesInCurrentMonth,
+      currentCalendarMonth: currentCalendarMonth ?? this.currentCalendarMonth,
     );
   }
 }
@@ -52,15 +67,34 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
   @override
   Future<CheckInState> build() async {
     _repository = ref.read(checkInRepositoryProvider);
-    
+
     // 监听自动同步完成信号，与 recordsProvider 保持一致
-    // 同步完成后自动重建，以新 userId 加载数据
     ref.watch(syncCompletedProvider);
-    
-    // 获取当前登录用户
+
     final currentUser = await ref.read(authProvider.notifier).currentUser;
+    return _loadState(currentUser, DateTime.now());
+  }
+
+  Future<CheckInState> _loadState(User? currentUser, DateTime month) async {
     final userId = currentUser?.id;
-    
+    final targetMonth = DateTime(month.year, month.month);
+
+    if (currentUser != null) {
+      final remoteStatus = await _loadRemoteStatus(currentUser, targetMonth);
+      if (remoteStatus != null) {
+        return CheckInState(
+          hasCheckedInToday: remoteStatus.hasCheckedInToday,
+          consecutiveDays: remoteStatus.consecutiveDays,
+          totalDays: remoteStatus.totalDays,
+          currentMonthDays: remoteStatus.currentMonthDays,
+          recentCheckIns: remoteStatus.recentCheckIns,
+          isRemoteAuthoritative: true,
+          checkedInDatesInCurrentMonth: remoteStatus.checkedInDatesInMonth,
+          currentCalendarMonth: targetMonth,
+        );
+      }
+    }
+
     return CheckInState(
       hasCheckedInToday: _repository.hasCheckedInToday(userId: userId),
       consecutiveDays: _repository.calculateConsecutiveDays(userId: userId),
@@ -70,90 +104,94 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
           .getCheckInsSortedByDate(userId: userId)
           .take(7)
           .toList(),
+      isRemoteAuthoritative: false,
+      checkedInDatesInCurrentMonth: _repository.getCheckInDatesInMonth(
+        targetMonth.year,
+        targetMonth.month,
+        userId: userId,
+      ),
+      currentCalendarMonth: targetMonth,
     );
   }
 
+  Future<RemoteCheckInStatus?> _loadRemoteStatus(
+    User currentUser,
+    DateTime targetMonth,
+  ) async {
+    try {
+      final syncService = ref.read(syncServiceProvider);
+      final status = await syncService.getCheckInStatus(
+        currentUser,
+        targetMonth.year,
+        targetMonth.month,
+      );
+
+      for (final checkIn in status.recentCheckIns) {
+        await _repository.saveRemoteCheckIn(checkIn);
+      }
+
+      return status;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 刷新签到状态
-  /// 
-  /// 调用者：
-  /// - checkIn() 签到后
-  /// - resetAllCheckIns() 重置后
-  /// - 用户切换时（通过 syncCompletedProvider 信号自动触发）
-  Future<void> refresh() async {
+  Future<void> refresh({DateTime? month}) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final currentUser = await ref.read(authProvider.notifier).currentUser;
-      final userId = currentUser?.id;
-      
-      return CheckInState(
-        hasCheckedInToday: _repository.hasCheckedInToday(userId: userId),
-        consecutiveDays: _repository.calculateConsecutiveDays(userId: userId),
-        totalDays: _repository.getTotalCheckInDays(userId: userId),
-        currentMonthDays: _repository.getCurrentMonthCheckInDays(userId: userId),
-        recentCheckIns: _repository
-            .getCheckInsSortedByDate(userId: userId)
-            .take(7)
-            .toList(),
-      );
+      return _loadState(currentUser, month ?? DateTime.now());
     });
   }
 
-  /// 签到
-  /// 
-  /// 调用者：UI 层（CheckInButton、CheckInCard 等）
+  /// 签到（登录用户走服务端权威，未登录用户走本地）
   Future<void> checkIn() async {
-    // 获取当前用户
     final authState = ref.read(authProvider);
     final currentUser = authState.value;
-
-    // 检查是否已签到
     final currentState = state.value;
     if (currentState?.hasCheckedInToday ?? false) {
       throw StateError('Already checked in today');
     }
-    
-    // 签到（传入 userId，未登录时为 null）
-    final checkIn = await _repository.checkIn(userId: currentUser?.id);
-    
-    // 检测成就
+
+    late final CheckInRecord checkIn;
+    if (currentUser == null) {
+      checkIn = await _repository.checkIn();
+    } else {
+      final syncService = ref.read(syncServiceProvider);
+      checkIn = await syncService.createTodayCheckIn(currentUser);
+      await _repository.saveRemoteCheckIn(checkIn);
+    }
+
     try {
       final detector = ref.read(achievementDetectorProvider);
-      // 如果用户已登录，检测成就
       if (currentUser != null) {
-        final unlockedAchievements = await detector.checkCheckInAchievements(currentUser.id);
+        final unlockedAchievements =
+            await detector.checkCheckInAchievements(currentUser.id);
         if (unlockedAchievements.isNotEmpty) {
-          // 通知UI层显示成就解锁通知
           ref
               .read(newlyUnlockedAchievementsProvider.notifier)
               .add(unlockedAchievements);
-          // 刷新成就列表
           ref.invalidate(achievementsProvider);
-          
-          // 上传成就解锁记录到云端
           await _uploadAchievementUnlocks(unlockedAchievements);
         }
       }
     } catch (e) {
       // 成就检测失败不影响签到
     }
-    
-    // 如果用户已登录，上传到云端
-    if (currentUser != null) {
-      try {
-        final syncService = ref.read(syncServiceProvider);
-        await syncService.uploadCheckIn(currentUser, checkIn);
-      } catch (e) {
-        // 云端同步失败不影响本地签到
-        // 用户可以稍后手动触发全量同步
-      }
-    }
-    
-    // 刷新签到状态
+
     await refresh();
   }
 
   /// 获取指定月份的签到日期
   List<DateTime> getCheckInDatesInMonth(int year, int month) {
+    final current = state.value;
+    if (current != null &&
+        current.currentCalendarMonth.year == year &&
+        current.currentCalendarMonth.month == month) {
+      return current.checkedInDatesInCurrentMonth;
+    }
+
     final userId = ref.read(authProvider).value?.id;
     return _repository.getCheckInDatesInMonth(year, month, userId: userId);
   }
@@ -164,23 +202,15 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     await _repository.resetAllCheckIns(userId: userId);
     await refresh();
   }
-  
-  /// 上传成就解锁记录到云端
-  /// 
-  /// 调用者：checkIn()
-  /// 
-  /// 设计原则：
-  /// - 单一职责：只负责上传成就解锁记录
-  /// - Fail Fast：用户未登录时直接返回，不抛异常
-  /// - 容错处理：上传失败不影响成就解锁（已保存到本地）
+
   Future<void> _uploadAchievementUnlocks(List<String> achievementIds) async {
     final authState = ref.read(authProvider);
     final currentUser = authState.value;
     if (currentUser == null) return;
-    
+
     final achievementRepo = ref.read(achievementRepositoryProvider);
     final syncService = ref.read(syncServiceProvider);
-    
+
     for (final achievementId in achievementIds) {
       try {
         final achievement = await achievementRepo.getAchievement(achievementId);
@@ -189,13 +219,13 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
             achievement.unlockedAt == null) {
           continue;
         }
-        
+
         final unlock = AchievementUnlock(
           userId: currentUser.id,
           achievementId: achievementId,
           unlockedAt: achievement.unlockedAt!,
         );
-        
+
         await syncService.uploadAchievementUnlock(unlock);
       } catch (e) {
         // 单个成就上传失败不影响其他成就

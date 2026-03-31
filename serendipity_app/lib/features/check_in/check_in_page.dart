@@ -31,6 +31,9 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
     super.initState();
     _currentMonth = DateTime.now();
     _confettiController = CheckInAnimationHelper.createConfettiController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(checkInProvider.notifier).refresh(month: _currentMonth);
+    });
   }
   
   @override
@@ -315,13 +318,17 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.chevron_left),
-                    onPressed: () {
+                    onPressed: () async {
+                      final previousMonth = DateTime(
+                        _currentMonth.year,
+                        _currentMonth.month - 1,
+                      );
                       setState(() {
-                        _currentMonth = DateTime(
-                          _currentMonth.year,
-                          _currentMonth.month - 1,
-                        );
+                        _currentMonth = previousMonth;
                       });
+                      await ref
+                          .read(checkInProvider.notifier)
+                          .refresh(month: previousMonth);
                     },
                   ),
                   Text(
@@ -333,7 +340,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.chevron_right),
-                    onPressed: () {
+                    onPressed: () async {
                       final now = DateTime.now();
                       final nextMonth = DateTime(
                         _currentMonth.year,
@@ -344,6 +351,9 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
                         setState(() {
                           _currentMonth = nextMonth;
                         });
+                        await ref
+                            .read(checkInProvider.notifier)
+                            .refresh(month: nextMonth);
                       }
                     },
                   ),

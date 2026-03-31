@@ -689,42 +689,42 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   // ==================== 签到相关操作 ====================
   
   @override
-  Future<void> uploadCheckIn(String userId, CheckInRecord checkIn) async {
+  Future<CheckInRecord> createTodayCheckIn(String userId) async {
     // Fail Fast：参数验证
     if (userId.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
     
     try {
-      await _httpClient.post(
-        ServerConfig.checkIns,
-        body: checkIn.toJson(),
-      );
+      final response = await _httpClient.post(ServerConfig.checkIns);
+      final data = response['data'] as Map<String, dynamic>;
+      return CheckInRecord.fromJson(data);
     } on HttpException catch (e) {
-      throw Exception('上传签到记录失败：${e.message}');
+      throw Exception('创建签到记录失败：${e.message}');
     }
   }
-  
+
   @override
-  Future<void> uploadCheckIns(String userId, List<CheckInRecord> checkIns) async {
-    // Fail Fast：参数验证
+  Future<Map<String, dynamic>> getCheckInStatus(
+    String userId,
+    int year,
+    int month,
+  ) async {
     if (userId.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
-    
-    if (checkIns.isEmpty) {
-      return; // 允许空列表
-    }
-    
+
     try {
-      await _httpClient.post(
-        ServerConfig.checkInsBatch,
-        body: {
-          'checkIns': checkIns.map((c) => c.toJson()).toList(),
+      final response = await _httpClient.get(
+        ServerConfig.checkInStatus,
+        queryParams: {
+          'year': year.toString(),
+          'month': month.toString(),
         },
       );
+      return response['data'] as Map<String, dynamic>;
     } on HttpException catch (e) {
-      throw Exception('批量上传签到记录失败：${e.message}');
+      throw Exception('获取签到状态失败：${e.message}');
     }
   }
   

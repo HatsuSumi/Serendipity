@@ -405,37 +405,30 @@ abstract class IRemoteDataRepository {
   
   // ==================== 签到相关操作 ====================
   
-  /// 上传单条签到记录到云端
+  /// 创建今天的签到记录
   /// 
   /// 参数：
   /// - [userId]：用户 ID
-  /// - [checkIn]：要上传的签到记录
+  /// 
+  /// 返回：服务端创建的签到记录
   /// 
   /// 调用者：
-  /// - SyncService.uploadCheckIn()
-  /// - CheckInProvider.checkIn() 通过 SyncService 调用
+  /// - SyncService.createTodayCheckIn()
   /// 
   /// Fail Fast：
   /// - userId 为空：抛出 ArgumentError
-  /// - checkIn 为 null：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
-  Future<void> uploadCheckIn(String userId, CheckInRecord checkIn);
-  
-  /// 批量上传签到记录到云端
-  /// 
+  Future<CheckInRecord> createTodayCheckIn(String userId);
+
+  /// 获取登录用户指定月份的签到状态
+  ///
   /// 参数：
   /// - [userId]：用户 ID
-  /// - [checkIns]：要上传的签到记录列表
-  /// 
-  /// 调用者：
-  /// - SyncService.syncAllCheckIns()
-  /// - 用户首次登录时，将本地数据批量上传
-  /// 
-  /// Fail Fast：
-  /// - userId 为空：抛出 ArgumentError
-  /// - checkIns 为空列表：直接返回，不抛异常（允许空列表）
-  /// - 网络错误：抛出具体的网络异常（由实现类定义）
-  Future<void> uploadCheckIns(String userId, List<CheckInRecord> checkIns);
+  /// - [year]：目标年份
+  /// - [month]：目标月份（1-12）
+  ///
+  /// 返回：服务端聚合后的签到状态 DTO
+  Future<Map<String, dynamic>> getCheckInStatus(String userId, int year, int month);
   
   /// 下载用户所有签到记录
   /// 
@@ -446,7 +439,7 @@ abstract class IRemoteDataRepository {
   /// 
   /// 调用者：
   /// - SyncService.downloadData()
-  /// - 用户登录后，下载云端数据到本地
+  /// - SyncService.refreshCheckIns()
   /// 
   /// Fail Fast：
   /// - userId 为空：抛出 ArgumentError

@@ -1,141 +1,100 @@
+import { randomUUID } from 'crypto';
 import { CheckIn } from '@prisma/client';
 import { ICheckInRepository } from '../repositories/checkInRepository';
-import { CreateCheckInDto } from '../types/checkIn.dto';
+import { AppError } from '../middlewares/errorHandler';
+import { ErrorCode } from '../types/errors';
+
+export interface CheckInStatus {
+  hasCheckedInToday: boolean;
+  consecutiveDays: number;
+  totalDays: number;
+  currentMonthDays: number;
+  recentCheckIns: CheckIn[];
+  checkedInDatesInMonth: Date[];
+}
 
 /**
  * 签到服务接口
- * 
+ *
  * 定义签到业务逻辑的抽象接口，遵循依赖倒置原则（DIP）
- * 
+ *
  * 调用者：
  * - CheckInController：控制器层
  */
 export interface ICheckInService {
-  /**
-   * 创建签到记录
-   * 
-   * 业务规则：
-   * - 如果该日期已存在签到记录，根据 updatedAt 决定是否覆盖
-   * - updatedAt 更新的记录会覆盖旧记录（用于同步冲突解决）
-   * 
-   * Fail Fast：
-   * - userId 为空：抛出 Error
-   * - data 无效：抛出 Error
-   * 
-   * 调用者：CheckInController.createCheckIn()
-   */
-  createCheckIn(userId: string, data: CreateCheckInDto): Promise<CheckIn>;
-
-  /**
-   * 批量创建签到记录
-   * 
-   * 调用者：CheckInController.batchCreateCheckIns()
-   */
-  batchCreateCheckIns(userId: string, checkIns: CreateCheckInDto[]): Promise<void>;
-
-  /**
-   * 获取用户所有签到记录（支持增量同步）
-   * 
-   * Fail Fast：
-   * - userId 为空：抛出 Error
-   * 
-   * 调用者：CheckInController.getCheckIns()
-   */
+  createTodayCheckIn(userId: string): Promise<CheckIn>;
+  getCheckInStatus(userId: string, year: number, month: number): Promise<CheckInStatus>;
   getCheckIns(userId: string, lastSyncTime?: string): Promise<CheckIn[]>;
-
-  /**
-   * 删除签到记录
-   * 
-   * Fail Fast：
-   * - checkInId 为空：抛出 Error
-   * - userId 为空：抛出 Error
-   * 
-   * 调用者：CheckInController.deleteCheckIn()
-   */
   deleteCheckIn(checkInId: string, userId: string): Promise<void>;
 }
 
 /**
  * 签到服务实现
- * 
- * 负责签到业务逻辑，遵循单一职责原则（SRP）
- * 
- * 调用者：
- * - CheckInController：通过依赖注入
  */
 export class CheckInService implements ICheckInService {
   constructor(private checkInRepository: ICheckInRepository) {
-    // Fail Fast：依赖检查
     if (!checkInRepository) {
       throw new Error('CheckInRepository is required');
     }
   }
 
-  async createCheckIn(userId: string, data: CreateCheckInDto): Promise<CheckIn> {
-    // Fail Fast：参数验证
+  async createTodayCheckIn(userId: string): Promise<CheckIn> {
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
     }
-    if (!data || !data.id || !data.date || !data.checkedAt) {
-      throw new Error('Invalid check-in data');
-    }
 
-    // 检查是否已经签到
-    const date = new Date(data.date);
-    const existing = await this.checkInRepository.findByUserAndDate(userId, date);
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const existing = await this.checkInRepository.findByUserAndDate(userId, today);
 
     if (existing) {
-      // 如果已存在，根据 updatedAt 决定是否覆盖
-      const existingUpdatedAt = new Date(existing.updatedAt);
-      const newUpdatedAt = new Date(data.updatedAt);
-
-      if (newUpdatedAt > existingUpdatedAt) {
-        // 新数据更新，覆盖旧记录
-        await this.checkInRepository.deleteById(existing.id, userId);
-        return await this.checkInRepository.create(userId, data);
-      } else {
-        // 旧数据，返回现有记录
-        return existing;
-      }
+      throw new AppError('Already checked in today', ErrorCode.CONFLICT);
     }
 
-    // 创建新记录
-    return await this.checkInRepository.create(userId, data);
+    return this.checkInRepository.create(userId, {
+      id: randomUUID(),
+      date: today,
+      checkedAt: now,
+    });
   }
 
-  async batchCreateCheckIns(userId: string, checkIns: CreateCheckInDto[]): Promise<void> {
-    // Fail Fast：参数验证
+  async getCheckInStatus(userId: string, year: number, month: number): Promise<CheckInStatus> {
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
     }
-    if (!Array.isArray(checkIns)) {
-      throw new Error('checkIns must be an array');
+    if (!Number.isInteger(year) || year < 2000 || year > 3000) {
+      throw new Error('Invalid year');
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      throw new Error('Invalid month');
     }
 
-    // 空数组直接返回（允许空列表）
-    if (checkIns.length === 0) {
-      return;
-    }
+    const allCheckIns = await this.checkInRepository.findByUserId(userId);
+    const today = this.toUtcDateOnly(new Date());
+    const monthDates = allCheckIns
+      .map((checkIn) => this.toUtcDateOnly(checkIn.date))
+      .filter((date) => date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month);
 
-    // 逐个创建（利用 createCheckIn 的冲突解决逻辑）
-    for (const checkIn of checkIns) {
-      await this.createCheckIn(userId, checkIn);
-    }
+    return {
+      hasCheckedInToday: allCheckIns.some((checkIn) => this.isSameUtcDate(checkIn.date, today)),
+      consecutiveDays: this.calculateConsecutiveDays(allCheckIns, today),
+      totalDays: allCheckIns.length,
+      currentMonthDays: monthDates.length,
+      recentCheckIns: allCheckIns.slice(0, 7),
+      checkedInDatesInMonth: monthDates,
+    };
   }
 
   async getCheckIns(userId: string, lastSyncTime?: string): Promise<CheckIn[]> {
-    // Fail Fast：参数验证
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
     }
 
     const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;
-
-    return await this.checkInRepository.findByUserId(userId, lastSyncDate);
+    return this.checkInRepository.findByUserId(userId, lastSyncDate);
   }
 
   async deleteCheckIn(checkInId: string, userId: string): Promise<void> {
-    // Fail Fast：参数验证
     if (!checkInId || checkInId.trim() === '') {
       throw new Error('checkInId is required');
     }
@@ -145,5 +104,46 @@ export class CheckInService implements ICheckInService {
 
     await this.checkInRepository.deleteById(checkInId, userId);
   }
-}
 
+  private calculateConsecutiveDays(checkIns: CheckIn[], today: Date): number {
+    if (checkIns.length === 0) {
+      return 0;
+    }
+
+    const dateSet = new Set(checkIns.map((checkIn) => this.toDateKey(checkIn.date)));
+    const todayKey = this.toDateKey(today);
+    if (!dateSet.has(todayKey)) {
+      return 0;
+    }
+
+    let consecutiveDays = 1;
+    let currentDate = today;
+    while (true) {
+      currentDate = new Date(Date.UTC(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth(),
+        currentDate.getUTCDate() - 1,
+      ));
+
+      if (!dateSet.has(this.toDateKey(currentDate))) {
+        break;
+      }
+
+      consecutiveDays++;
+    }
+
+    return consecutiveDays;
+  }
+
+  private isSameUtcDate(left: Date, right: Date): boolean {
+    return this.toDateKey(left) === this.toDateKey(right);
+  }
+
+  private toDateKey(date: Date): string {
+    return this.toUtcDateOnly(date).toISOString().slice(0, 10);
+  }
+
+  private toUtcDateOnly(date: Date): Date {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  }
+}

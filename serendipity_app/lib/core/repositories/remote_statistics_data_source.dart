@@ -1,4 +1,5 @@
 import '../../models/statistics.dart';
+import '../config/server_config.dart';
 import '../services/http_client_service.dart';
 import 'i_statistics_data_source.dart';
 
@@ -34,7 +35,7 @@ final class RemoteStatisticsDataSource implements IStatisticsDataSource {
   /// 响应格式见 docs/Statistics_Refactoring_Plan.md
   @override
   Future<StatisticsOverview> getOverview({required String? userId}) async {
-    final response = await _httpClient.get('/statistics/overview');
+    final response = await _httpClient.get(ServerConfig.statisticsOverview);
     final data = response['data'] as Map<String, dynamic>;
     return _mapOverviewDto(data);
   }

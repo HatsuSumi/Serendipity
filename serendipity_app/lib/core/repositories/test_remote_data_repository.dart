@@ -168,13 +168,26 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
   
   @override
-  Future<void> uploadCheckIn(String userId, CheckInRecord checkIn) async {
-    // 测试模式：不执行任何操作
+  Future<CheckInRecord> createTodayCheckIn(String userId) async {
+    // 测试模式：直接返回服务端创建结果
+    return CheckInRecord.create(userId: userId);
   }
-  
+
   @override
-  Future<void> uploadCheckIns(String userId, List<CheckInRecord> checkIns) async {
-    // 测试模式：不执行任何操作
+  Future<Map<String, dynamic>> getCheckInStatus(
+    String userId,
+    int year,
+    int month,
+  ) async {
+    final recentCheckIn = CheckInRecord.create(userId: userId);
+    return {
+      'hasCheckedInToday': true,
+      'consecutiveDays': 1,
+      'totalDays': 1,
+      'currentMonthDays': 1,
+      'recentCheckIns': [recentCheckIn.toJson()],
+      'checkedInDatesInMonth': [DateTime(year, month, 1).toIso8601String()],
+    };
   }
   
   @override

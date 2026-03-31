@@ -4,22 +4,22 @@ import { authMiddleware } from '../middlewares/auth';
 
 /**
  * 签到路由
- * 
+ *
  * 所有路由都需要用户认证（authMiddleware）
- * 
+ *
  * 调用者：
  * - src/routes/index.ts：主路由注册
  */
 export function createCheckInRoutes(checkInController: CheckInController): Router {
   const router = Router();
 
-  // 上传单条签到记录
+  // 创建今日签到
   // POST /api/check-ins
-  router.post('/', authMiddleware, checkInController.createCheckIn);
+  router.post('/', authMiddleware, checkInController.createTodayCheckIn);
 
-  // 批量上传签到记录
-  // POST /api/check-ins/batch
-  router.post('/batch', authMiddleware, checkInController.batchCreateCheckIns);
+  // 获取登录用户签到状态
+  // GET /api/check-ins/status?year=2026&month=3
+  router.get('/status', authMiddleware, checkInController.getCheckInStatus);
 
   // 获取用户所有签到记录
   // GET /api/check-ins
@@ -31,4 +31,3 @@ export function createCheckInRoutes(checkInController: CheckInController): Route
 
   return router;
 }
-

@@ -3,6 +3,7 @@ import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
+import '../../models/remote_check_in_status.dart';
 import '../../models/user.dart';
 import '../../models/user_settings.dart';
 import '../../models/sync_history.dart';
@@ -196,22 +197,53 @@ class SyncService {
     await _remoteRepository.updateStoryLine(user.id, storyLine);
   }
   
-  /// 上传单条签到记录到云端
+  /// 创建今天的签到记录（服务端权威）
   /// 
   /// 调用者：
   /// - CheckInProvider.checkIn()
   /// 
   /// Fail Fast：
-  /// - user 为 null：抛出 ArgumentError
-  /// - checkIn 为 null：抛出 ArgumentError
+  /// - user.id 为空：抛出 ArgumentError
   /// - 网络错误：向上抛出异常
-  Future<void> uploadCheckIn(User user, CheckInRecord checkIn) async {
-    // Fail Fast：参数验证
+  Future<CheckInRecord> createTodayCheckIn(User user) async {
     if (user.id.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
     
-    await _remoteRepository.uploadCheckIn(user.id, checkIn);
+    return await _remoteRepository.createTodayCheckIn(user.id);
+  }
+
+  /// 获取登录用户指定月份的签到状态（服务端权威）
+  Future<RemoteCheckInStatus> getCheckInStatus(
+    User user,
+    int year,
+    int month,
+  ) async {
+    if (user.id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+
+    final json = await _remoteRepository.getCheckInStatus(user.id, year, month);
+    return RemoteCheckInStatus.fromJson(json);
+  }
+
+  /// 刷新当前用户的签到缓存（服务端优先，本地兜底）
+  ///
+  /// 调用者：
+  /// - CheckInProvider.build()
+  /// - CheckInProvider.refresh()
+  ///
+  /// 设计说明：
+  /// - 登录用户优先从服务端读取签到记录
+  /// - 本地仅作为缓存与离线副本
+  /// - 全量覆盖当前用户的签到缓存，确保多设备一致性
+  Future<void> refreshCheckIns(User user) async {
+    if (user.id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+
+    final remoteCheckIns = await _remoteRepository.downloadCheckIns(user.id);
+    await _mergeCheckIns(remoteCheckIns, user.id, true);
   }
   
   /// 删除云端记录
@@ -511,15 +543,7 @@ class SyncService {
       uploadedStoryLines = changedStoryLines.length;
     }
 
-    // 上传签到记录（只上传当前用户的）
-    final userCheckIns = _storageService.getCheckInsByUser(user.id);
-    final changedCheckIns = lastSyncTime == null
-        ? userCheckIns
-        : userCheckIns.where((c) => c.updatedAt.isAfter(lastSyncTime)).toList();
-    if (changedCheckIns.isNotEmpty) {
-      await _remoteRepository.uploadCheckIns(user.id, changedCheckIns);
-      uploadedCheckIns = changedCheckIns.length;
-    }
+    // 上传签到记录不再参与同步：登录用户签到以服务端主写为准
     
     return {
       'records': uploadedRecords,

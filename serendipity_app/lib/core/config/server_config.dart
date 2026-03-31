@@ -84,10 +84,11 @@ class ServerConfig {
   
   // 签到相关
   static const String checkIns = '/check-ins';
-  static const String checkInsBatch = '/check-ins/batch';
+  static const String checkInStatus = '/check-ins/status';
   static String checkInById(String id) => '/check-ins/$id';
   
-  // 成就相关
+  // 统计相关
+  static const String statisticsOverview = '/statistics/overview';
   static const String achievementUnlocks = '/achievement-unlocks';
   
   // 收藏相关
