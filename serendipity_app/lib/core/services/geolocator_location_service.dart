@@ -1,6 +1,7 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'i_location_service.dart';
 import '../../models/location_result.dart';
 import '../config/amap_config.dart';
@@ -17,8 +18,47 @@ import '../config/amap_config.dart';
 /// - 依赖倒置：实现 ILocationService 接口
 /// - Fail Fast：所有异常都被捕获并转换为 LocationResult.failure
 class GeolocatorLocationService implements ILocationService {
-  /// 定位超时时间（秒）
-  static const int _timeoutSeconds = 10;
+  /// GPS 高精度定位超时时间（秒）
+  static const int _gpsTimeoutSeconds = 20;
+
+  /// 网络低精度定位超时时间（秒）
+  static const int _networkTimeoutSeconds = 5;
+
+  /// 构建高精度定位配置
+  ///
+  /// 调用者：getCurrentLocation()
+  ///
+  /// 设计说明：
+  /// - Android 显式使用 LocationManager，避免部分真机上 fused provider 长时间无回调
+  /// - 其他平台保持默认实现，避免无必要的平台分支扩散
+  LocationSettings _buildHighAccuracySettings() {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        forceLocationManager: true,
+      );
+    }
+
+    return const LocationSettings(
+      accuracy: LocationAccuracy.high,
+    );
+  }
+
+  /// 构建低精度定位配置
+  ///
+  /// 调用者：getCurrentLocation()
+  LocationSettings _buildLowAccuracySettings() {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: LocationAccuracy.low,
+        forceLocationManager: true,
+      );
+    }
+
+    return const LocationSettings(
+      accuracy: LocationAccuracy.low,
+    );
+  }
   
   @override
   Future<bool> requestPermission() async {
@@ -81,17 +121,38 @@ class GeolocatorLocationService implements ILocationService {
         );
       }
       
-      // 获取当前位置（带超时）
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      ).timeout(
-        const Duration(seconds: _timeoutSeconds),
-        onTimeout: () {
+      // 降级策略：先尝试 GPS 高精度定位，失败则降级到上次已知位置或网络定位
+      Position? position;
+      
+      try {
+        // 第一步：尝试 GPS 高精度定位（20秒超时）
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: _buildHighAccuracySettings(),
+        ).timeout(
+          const Duration(seconds: _gpsTimeoutSeconds),
+          onTimeout: () {
+            throw Exception('GPS定位超时');
+          },
+        );
+      } catch (e) {
+        // GPS 定位失败，尝试获取上次已知位置（快速降级）
+        try {
+          position = await Geolocator.getLastKnownPosition();
+          
+          // 没有上次已知位置，再尝试网络低精度定位
+          position ??= await Geolocator.getCurrentPosition(
+            locationSettings: _buildLowAccuracySettings(),
+          ).timeout(
+            const Duration(seconds: _networkTimeoutSeconds),
+            onTimeout: () {
+              throw Exception('网络定位超时');
+            },
+          );
+        } catch (e) {
+          // 所有降级方案都失败，抛出异常
           throw Exception('定位超时，请检查网络或GPS信号');
-        },
-      );
+        }
+      }
       
       // 使用高德地图 API 进行逆地理编码（获取地址）
       String? address;
