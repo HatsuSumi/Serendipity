@@ -119,6 +119,46 @@ class CheckInRepository {
     return consecutiveDays;
   }
 
+  /// 计算用于提醒文案的连续签到天数
+  /// 
+  /// 与 calculateConsecutiveDays() 的区别：
+  /// - 若今天已签到：返回包含今天在内的连续天数
+  /// - 若今天未签到但昨天已签到：返回截至昨天的连续天数
+  /// - 若今天和昨天都未签到：返回 0
+  /// 
+  /// 该方法用于“提醒去签到”的场景，避免用户今天尚未签到时
+  /// 被误判为“重新开始签到”。
+  int calculateReminderStreakDays({String? userId}) {
+    final checkIns = _storageService.getCheckInsByUser(userId);
+    if (checkIns.isEmpty) return 0;
+
+    final checkInDatesSet = checkIns.map((c) => c.date).toSet();
+    final today = _getTodayDate();
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    DateTime? streakEndDate;
+    if (checkInDatesSet.contains(today)) {
+      streakEndDate = today;
+    } else if (checkInDatesSet.contains(yesterday)) {
+      streakEndDate = yesterday;
+    } else {
+      return 0;
+    }
+
+    int streakDays = 1;
+    DateTime currentDate = streakEndDate;
+    while (true) {
+      final previousDate = currentDate.subtract(const Duration(days: 1));
+      if (!checkInDatesSet.contains(previousDate)) {
+        break;
+      }
+      streakDays++;
+      currentDate = previousDate;
+    }
+
+    return streakDays;
+  }
+
   /// 获取累计签到天数
   /// 
   /// 参数：

@@ -174,8 +174,8 @@ class NotificationService {
     final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
 
     // 生成通知内容
-    final consecutiveDays = _checkInRepository.calculateConsecutiveDays(userId: userId);
-    final content = CheckInReminderHelper.generateContent(consecutiveDays);
+    final streakDays = _checkInRepository.calculateReminderStreakDays(userId: userId);
+    final content = CheckInReminderHelper.generateContent(streakDays);
 
     // Android 通知详情
     const androidDetails = AndroidNotificationDetails(
@@ -351,8 +351,8 @@ class NotificationService {
       tz.local,
     );
 
-    final consecutiveDays = _checkInRepository.calculateConsecutiveDays(userId: userId);
-    final content = CheckInReminderHelper.generateContent(consecutiveDays);
+    final streakDays = _checkInRepository.calculateReminderStreakDays(userId: userId);
+    final content = CheckInReminderHelper.generateContent(streakDays);
 
     try {
       await _plugin.zonedSchedule(

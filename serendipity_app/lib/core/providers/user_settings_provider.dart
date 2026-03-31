@@ -540,7 +540,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
         return;
       }
 
-      final user = _ref.read(authProvider).value;
+      final user = await _ref.read(authProvider.notifier).currentUser;
       final userId = user?.id;
 
       // 调度通知
