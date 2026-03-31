@@ -9,6 +9,7 @@ import 'core/repositories/check_in_repository.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
+import 'core/providers/user_settings_provider.dart' show notificationServiceProvider;
 import 'core/theme/app_theme.dart';
 import 'core/utils/smart_navigator.dart';
 import 'features/home/main_navigation_page.dart';
@@ -72,9 +73,10 @@ void main() async {
   await storageService.init();
   
   // 初始化通知服务
+  final checkInRepository = CheckInRepository(storageService);
+  final notificationService = NotificationService(checkInRepository);
+
   try {
-    final checkInRepository = CheckInRepository(storageService);
-    final notificationService = NotificationService(checkInRepository);
     await notificationService.initialize();
   } catch (e) {
     // 通知服务初始化失败不影响应用启动
@@ -98,6 +100,8 @@ void main() async {
       overrides: [
         // 提供 StorageService 实例给所有 Provider
         storageServiceProvider.overrideWithValue(storageService),
+        // 提供已初始化的 NotificationService 单实例给所有 Provider
+        notificationServiceProvider.overrideWithValue(notificationService),
       ],
       child: const MyApp(),
     ),

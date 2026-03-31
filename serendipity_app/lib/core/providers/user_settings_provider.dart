@@ -15,8 +15,9 @@ import 'check_in_provider.dart' show checkInRepositoryProvider;
 
 /// NotificationService Provider
 final notificationServiceProvider = Provider<NotificationService>((ref) {
-  final checkInRepository = ref.read(checkInRepositoryProvider);
-  return NotificationService(checkInRepository);
+  throw UnimplementedError(
+    'notificationServiceProvider must be overridden in ProviderScope',
+  );
 });
 
 /// 用户设置状态管理

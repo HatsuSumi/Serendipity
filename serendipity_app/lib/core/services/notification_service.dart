@@ -9,6 +9,18 @@ import '../repositories/check_in_repository.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 
+/// 测试通知调度结果
+///
+/// 调用者：
+/// - DevToolsPage：根据结果展示准确反馈
+///
+enum TestNotificationResult {
+  scheduled,
+  permissionDenied,
+  unsupportedPlatform,
+  schedulingFailed,
+}
+
 /// 本地通知服务
 /// 
 /// 负责本地通知的初始化、调度和取消
@@ -24,6 +36,7 @@ import '../../models/enums.dart';
 class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin;
   final CheckInRepository _checkInRepository;
+  bool _isInitialized = false;
 
   /// 签到提醒通知ID（固定值，用于更新/取消通知）
   static const int _checkInReminderId = 0;
@@ -51,6 +64,10 @@ class NotificationService {
   /// 
   /// 抛出 [StateError] 如果初始化失败
   Future<void> initialize() async {
+    if (_isInitialized) {
+      return;
+    }
+
     // 初始化时区数据
     tz.initializeTimeZones();
     
@@ -75,6 +92,15 @@ class NotificationService {
     if (initialized != true) {
       throw StateError('Failed to initialize notification service');
     }
+
+    _isInitialized = true;
+  }
+
+  /// Fail Fast：确保通知服务已初始化
+  void _ensureInitialized() {
+    if (!_isInitialized) {
+      throw StateError('NotificationService must be initialized before use');
+    }
   }
 
   /// 请求通知权限
@@ -83,6 +109,8 @@ class NotificationService {
   /// 
   /// 返回 true 如果用户授予权限，否则返回 false
   Future<bool> requestPermission() async {
+    _ensureInitialized();
+
     // Android 13+ 请求权限
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -118,6 +146,8 @@ class NotificationService {
   /// 
   /// 抛出 [ArgumentError] 如果 time 为 null
   Future<void> scheduleCheckInReminder(TimeOfDay time) async {
+    _ensureInitialized();
+
     // Fail Fast：参数校验
     ArgumentError.checkNotNull(time, 'time');
 
@@ -170,7 +200,7 @@ class NotificationService {
       content,
       tzScheduledDate,
       notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // 每天重复
@@ -179,6 +209,7 @@ class NotificationService {
 
   /// 取消签到提醒通知
   Future<void> cancelCheckInReminder() async {
+    _ensureInitialized();
     await _plugin.cancel(_checkInReminderId);
   }
 
@@ -186,6 +217,7 @@ class NotificationService {
   /// 
   /// 返回 true 如果有待处理的签到提醒通知
   Future<bool> hasScheduledCheckInReminder() async {
+    _ensureInitialized();
     final pendingNotifications = await _plugin.pendingNotificationRequests();
     return pendingNotifications.any((n) => n.id == _checkInReminderId);
   }
@@ -206,6 +238,8 @@ class NotificationService {
     int notifyHour = 0,
     int notifyMinute = 0,
   }) async {
+    _ensureInitialized();
+
     // 先取消所有旧的纪念日通知，保证幂等
     await cancelAnniversaryReminders();
 
@@ -267,7 +301,7 @@ class NotificationService {
         body,
         tzScheduledDate,
         notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         // 不设置 matchDateTimeComponents：一次性通知，不每年自动重复
@@ -284,6 +318,7 @@ class NotificationService {
   /// - scheduleAnniversaryReminders()：重新调度前先清空
   /// - UserSettingsNotifier：用户关闭纪念日提醒时调用
   Future<void> cancelAnniversaryReminders() async {
+    _ensureInitialized();
     final pending = await _plugin.pendingNotificationRequests();
     for (final n in pending) {
       if (n.id >= _anniversaryBaseId) {
@@ -298,10 +333,15 @@ class NotificationService {
   /// 不受当前提醒时间设置影响。
   ///
   /// 调用者：ProfilePage 开发测试区
-  Future<void> sendTestCheckInNotification() async {
-    if (kIsWeb) return;
+  Future<TestNotificationResult> sendTestCheckInNotification() async {
+    if (kIsWeb) {
+      return TestNotificationResult.unsupportedPlatform;
+    }
+
     final granted = await requestPermission();
-    if (!granted) return;
+    if (!granted) {
+      return TestNotificationResult.permissionDenied;
+    }
 
     final now = DateTime.now();
     final scheduledDate = tz.TZDateTime.from(
@@ -312,25 +352,30 @@ class NotificationService {
     final consecutiveDays = _checkInRepository.calculateConsecutiveDays();
     final content = CheckInReminderHelper.generateContent(consecutiveDays);
 
-    await _plugin.zonedSchedule(
-      _checkInReminderId + 998,
-      CheckInReminderHelper.title,
-      '$content（测试通知）',
-      scheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
+    try {
+      await _plugin.zonedSchedule(
+        _checkInReminderId + 998,
+        CheckInReminderHelper.title,
+        '$content（测试通知）',
+        scheduledDate,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: _channelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      return TestNotificationResult.scheduled;
+    } catch (e) {
+      return TestNotificationResult.schedulingFailed;
+    }
   }
 
   /// 发送纪念日测试通知（开发测试用）
@@ -339,10 +384,15 @@ class NotificationService {
   /// 不依赖任何记录数据。
   ///
   /// 调用者：ProfilePage 开发测试区
-  Future<void> sendTestAnniversaryNotification() async {
-    if (kIsWeb) return;
+  Future<TestNotificationResult> sendTestAnniversaryNotification() async {
+    if (kIsWeb) {
+      return TestNotificationResult.unsupportedPlatform;
+    }
+
     final granted = await requestPermission();
-    if (!granted) return;
+    if (!granted) {
+      return TestNotificationResult.permissionDenied;
+    }
 
     final now = DateTime.now();
     final scheduledDate = tz.TZDateTime.from(
@@ -350,25 +400,30 @@ class NotificationService {
       tz.local,
     );
 
-    await _plugin.zonedSchedule(
-      _anniversaryBaseId + 999,
-      AnniversaryHelper.notificationTitle,
-      '1年前的今天，你在某个地方邂逅了TA（测试通知）',
-      scheduledDate,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _anniversaryChannelId,
-          _anniversaryChannelName,
-          channelDescription: _anniversaryChannelDescription,
-          importance: Importance.high,
-          priority: Priority.high,
+    try {
+      await _plugin.zonedSchedule(
+        _anniversaryBaseId + 999,
+        AnniversaryHelper.notificationTitle,
+        '1年前的今天，你在某个地方邂逅了TA（测试通知）',
+        scheduledDate,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _anniversaryChannelId,
+            _anniversaryChannelName,
+            channelDescription: _anniversaryChannelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      return TestNotificationResult.scheduled;
+    } catch (e) {
+      return TestNotificationResult.schedulingFailed;
+    }
   }
 }
 

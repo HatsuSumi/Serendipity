@@ -13,6 +13,7 @@ import '../../../core/utils/message_helper.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/async_action_helper.dart';
 import '../../../core/utils/navigation_helper.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../models/enums.dart';
 import '../../home/anniversary_reminder_dialog.dart';
 import '../../test/location_test_page.dart';
@@ -107,11 +108,24 @@ class DevToolsPage extends ConsumerWidget {
             title: const Text('发送纪念日测试推送'),
             subtitle: const Text('5 秒后触发一条纪念日通知，验证推送是否正常'),
             onTap: () async {
-              await ref
+              final result = await ref
                   .read(notificationServiceProvider)
                   .sendTestAnniversaryNotification();
-              if (context.mounted) {
-                MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+              if (!context.mounted) return;
+
+              switch (result) {
+                case TestNotificationResult.scheduled:
+                  MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+                  break;
+                case TestNotificationResult.permissionDenied:
+                  MessageHelper.showError(context, '通知权限未授予，无法发送测试推送');
+                  break;
+                case TestNotificationResult.unsupportedPlatform:
+                  MessageHelper.showWarning(context, '当前平台不支持本地测试推送');
+                  break;
+                case TestNotificationResult.schedulingFailed:
+                  MessageHelper.showError(context, '测试推送调度失败，请检查系统通知权限');
+                  break;
               }
             },
           ),
@@ -121,11 +135,24 @@ class DevToolsPage extends ConsumerWidget {
             title: const Text('发送签到提醒测试推送'),
             subtitle: const Text('5 秒后触发一条签到提醒通知，验证推送是否正常'),
             onTap: () async {
-              await ref
+              final result = await ref
                   .read(notificationServiceProvider)
                   .sendTestCheckInNotification();
-              if (context.mounted) {
-                MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+              if (!context.mounted) return;
+
+              switch (result) {
+                case TestNotificationResult.scheduled:
+                  MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+                  break;
+                case TestNotificationResult.permissionDenied:
+                  MessageHelper.showError(context, '通知权限未授予，无法发送测试推送');
+                  break;
+                case TestNotificationResult.unsupportedPlatform:
+                  MessageHelper.showWarning(context, '当前平台不支持本地测试推送');
+                  break;
+                case TestNotificationResult.schedulingFailed:
+                  MessageHelper.showError(context, '测试推送调度失败，请检查系统通知权限');
+                  break;
               }
             },
           ),
