@@ -9,6 +9,7 @@ import { createCheckInRoutes } from './checkIn.routes';
 import { createAchievementUnlockRoutes } from './achievementUnlock.routes';
 import { createFavoriteRoutes } from './favorite.routes';
 import { createStatisticsRoutes } from './statistics.routes';
+import { createPushTokenRoutes } from './pushToken.routes';
 import Container from '../config/container';
 import { TYPES } from '../config/types';
 import { AuthController } from '../controllers/authController';
@@ -20,6 +21,7 @@ import { CheckInController } from '../controllers/checkInController';
 import { AchievementUnlockController } from '../controllers/achievementUnlockController';
 import { FavoriteController } from '../controllers/favoriteController';
 import { StatisticsController } from '../controllers/statisticsController';
+import { PushTokenController } from '../controllers/pushTokenController';
 
 /**
  * 创建主路由
@@ -46,6 +48,7 @@ export const createMainRoutes = (container: Container): Router => {
   const achievementUnlockController = container.get<AchievementUnlockController>(TYPES.AchievementUnlockController);
   const favoriteController = container.get<FavoriteController>(TYPES.FavoriteController);
   const statisticsController = container.get<StatisticsController>(TYPES.StatisticsController);
+  const pushTokenController = container.get<PushTokenController>(TYPES.PushTokenController);
 
   // 注册子路由
   router.use('/auth', createAuthRoutes(authController));
@@ -57,6 +60,7 @@ export const createMainRoutes = (container: Container): Router => {
   router.use('/achievement-unlocks', createAchievementUnlockRoutes(achievementUnlockController));
   router.use('/favorites', createFavoriteRoutes(favoriteController));
   router.use('/statistics', createStatisticsRoutes(statisticsController));
+  router.use('/push-tokens', createPushTokenRoutes(pushTokenController));
 
   return router;
 };

@@ -23,8 +23,10 @@ model User {
   communityPosts    CommunityPost[]
   favorites         Favorite[]
   membership        Membership?
+  pushTokens        PushToken[]
   records           Record[]
   refreshTokens     RefreshToken[]
+  reminderDispatches CheckInReminderDispatch[]
   storyLines        StoryLine[]
   settings          UserSettings?
 
@@ -227,4 +229,45 @@ model AchievementUnlock {
   @@index([userId])
   @@index([achievementId])
   @@map("achievement_unlocks")
+}
+
+model PushToken {
+  id                  String   @id @default(uuid())
+  userId              String   @map("user_id")
+  token               String   @unique
+  platform            String   @db.VarChar(20)
+  timezone            String   @db.VarChar(64)
+  isActive            Boolean  @default(true) @map("is_active")
+  lastUsedAt          DateTime @default(now()) @map("last_used_at")
+  invalidatedAt       DateTime? @map("invalidated_at")
+  invalidReason       String?  @map("invalid_reason") @db.VarChar(255)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminderDispatches  CheckInReminderDispatch[]
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([timezone, isActive])
+  @@map("push_tokens")
+}
+
+model CheckInReminderDispatch {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  pushTokenId       String    @map("push_token_id")
+  reminderDate      DateTime  @db.Date @map("reminder_date")
+  status            String    @db.VarChar(20)
+  provider          String    @db.VarChar(20)
+  failureReason     String?   @map("failure_reason") @db.VarChar(255)
+  sentAt            DateTime? @map("sent_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  pushToken         PushToken @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pushTokenId, reminderDate])
+  @@index([userId, reminderDate])
+  @@index([status, reminderDate])
+  @@map("check_in_reminder_dispatches")
 }

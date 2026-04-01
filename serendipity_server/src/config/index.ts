@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// 验证必需的环境变量
 function getRequiredEnv(key: string): string {
   const value = process.env[key];
   if (!value) {
@@ -11,28 +10,35 @@ function getRequiredEnv(key: string): string {
   return value;
 }
 
-// 获取可选的环境变量
 function getOptionalEnv(key: string, defaultValue: string): string {
   return process.env[key] || defaultValue;
 }
 
-// 生产环境必须配置的变量
+function getOptionalIntEnv(key: string, defaultValue: number): number {
+  const raw = process.env[key];
+  if (!raw) {
+    return defaultValue;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`Invalid integer environment variable: ${key}`);
+  }
+
+  return parsed;
+}
+
 const isProduction = process.env.NODE_ENV === 'production';
 
-// 配置对象（不可变）
 export const config = Object.freeze({
-  // 服务器配置
   port: parseInt(getOptionalEnv('PORT', '3000'), 10),
   nodeEnv: getOptionalEnv('NODE_ENV', 'development'),
 
-  // 数据库配置（必需）
   database: Object.freeze({
     url: getRequiredEnv('DATABASE_URL'),
   }),
 
-  // JWT 配置
   jwt: Object.freeze({
-    // 生产环境必须配置 JWT_SECRET
     secret: isProduction
       ? getRequiredEnv('JWT_SECRET')
       : getOptionalEnv('JWT_SECRET', 'dev_jwt_secret_not_for_production'),
@@ -40,17 +46,12 @@ export const config = Object.freeze({
     refreshTokenExpiresIn: getOptionalEnv('REFRESH_TOKEN_EXPIRES_IN', '30d'),
   }),
 
-  // CORS 配置
   cors: Object.freeze({
     origin: getOptionalEnv('CORS_ORIGIN', '*'),
   }),
 
-  // 支付配置
   payment: Object.freeze({
-    // 是否启用 Mock 支付（开发/测试环境使用）
     enableMockMode: getOptionalEnv('PAYMENT_MOCK_MODE', 'true') === 'true',
-    
-    // YunGouOS 配置（真实支付时使用）
     yungouos: Object.freeze({
       mchId: getOptionalEnv('YUNGOUOS_MCH_ID', ''),
       payKey: getOptionalEnv('YUNGOUOS_PAY_KEY', ''),
@@ -58,5 +59,22 @@ export const config = Object.freeze({
       notifyUrl: getOptionalEnv('YUNGOUOS_NOTIFY_URL', ''),
     }),
   }),
-});
 
+  checkInReminder: Object.freeze({
+    enabled: getOptionalEnv('CHECKIN_REMINDER_ENABLED', 'true') === 'true',
+    scanIntervalMs: getOptionalIntEnv('CHECKIN_REMINDER_SCAN_INTERVAL_MS', 60000),
+    notificationTitle: getOptionalEnv('CHECKIN_REMINDER_NOTIFICATION_TITLE', '今晚别忘了签到'),
+    notificationBody: getOptionalEnv('CHECKIN_REMINDER_NOTIFICATION_BODY', '打开 Serendipity 完成今日签到。'),
+    fcm: Object.freeze({
+      serverKey: getOptionalEnv('FCM_SERVER_KEY', ''),
+      endpoint: getOptionalEnv('FCM_ENDPOINT', 'https://fcm.googleapis.com/fcm/send'),
+    }),
+    apns: Object.freeze({
+      keyId: getOptionalEnv('APNS_KEY_ID', ''),
+      teamId: getOptionalEnv('APNS_TEAM_ID', ''),
+      privateKey: getOptionalEnv('APNS_PRIVATE_KEY', ''),
+      bundleId: getOptionalEnv('APNS_BUNDLE_ID', ''),
+      production: getOptionalEnv('APNS_PRODUCTION', 'false') === 'true',
+    }),
+  }),
+});

@@ -27,6 +27,7 @@ export const TYPES = {
   CheckInRepository:             Symbol.for('checkInRepository'),
   AchievementUnlockRepository:   Symbol.for('achievementUnlockRepository'),
   FavoriteRepository:            Symbol.for('favoriteRepository'),
+  PushTokenRepository:           Symbol.for('pushTokenRepository'),
 
   // Domain Services
   AuthService:                   Symbol.for('authService'),
@@ -35,6 +36,8 @@ export const TYPES = {
   CommunityPostService:          Symbol.for('communityPostService'),
   UserService:                   Symbol.for('userService'),
   CheckInService:                Symbol.for('checkInService'),
+  PushTokenService:              Symbol.for('pushTokenService'),
+  ReminderPushSender:            Symbol.for('reminderPushSender'),
   AchievementUnlockService:      Symbol.for('achievementUnlockService'),
   FavoriteService:               Symbol.for('favoriteService'),
 
@@ -52,6 +55,7 @@ export const TYPES = {
   CommunityPostController:       Symbol.for('communityPostController'),
   UserController:                Symbol.for('userController'),
   CheckInController:             Symbol.for('checkInController'),
+  PushTokenController:           Symbol.for('pushTokenController'),
   AchievementUnlockController:   Symbol.for('achievementUnlockController'),
   FavoriteController:            Symbol.for('favoriteController'),
 } as const;
