@@ -103,7 +103,7 @@ class SyncInfoDialog extends StatelessWidget {
             ),
             _buildInfoText(
               context,
-              '7. 签到后，自动上传签到记录',
+              '7. 签到后，未登录时保存在本地；已登录时直接提交到服务器并刷新本地状态',
             ),
             _buildInfoText(
               context,
