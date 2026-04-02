@@ -37,6 +37,7 @@ import { CommunityPostService } from '../services/communityPostService';
 import { UserService } from '../services/userService';
 import { CheckInService } from '../services/checkInService';
 import { PushTokenService } from '../services/pushTokenService';
+import { UserTimezoneResolver } from '../services/userTimezoneResolver';
 import { AchievementUnlockService } from '../services/achievementUnlockService';
 import { ReminderPushSender } from '../services/reminderPushSenderImpl';
 import { config } from '../config';
@@ -168,6 +169,7 @@ export const initializeContainer = (): Container => {
   const userSettingsRepository = new UserSettingsRepository(prisma);
   const checkInRepository = new CheckInRepository(prisma);
   const pushTokenRepository = new PushTokenRepository(prisma);
+  const userTimezoneResolver = new UserTimezoneResolver(pushTokenRepository);
   const achievementUnlockRepository = new AchievementUnlockRepository(prisma);
   const favoriteRepository = new FavoriteRepository(prisma);
   const statisticsRepository = new StatisticsRepository(prisma);
@@ -197,7 +199,7 @@ export const initializeContainer = (): Container => {
   const storyLineService = new StoryLineService(storyLineRepository);
   const communityPostService = new CommunityPostService(communityPostRepository);
   const userService = new UserService(userRepository, userSettingsRepository);
-  const checkInService = new CheckInService(checkInRepository);
+  const checkInService = new CheckInService(checkInRepository, userTimezoneResolver);
   const reminderPushSender = new ReminderPushSender();
   const pushTokenService = new PushTokenService(
     pushTokenRepository,

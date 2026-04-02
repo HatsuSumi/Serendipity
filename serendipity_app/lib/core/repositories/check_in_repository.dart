@@ -1,4 +1,5 @@
 import '../../models/check_in_record.dart';
+import '../../models/remote_check_in_status.dart';
 import '../services/i_storage_service.dart';
 
 class CheckInDateRange {
@@ -43,6 +44,26 @@ class CheckInRepository {
   /// 调用者：CheckInProvider.checkIn()
   Future<void> saveRemoteCheckIn(CheckInRecord checkIn) async {
     await _storageService.saveCheckIn(checkIn);
+  }
+
+  Future<void> saveRemoteStatusCache({
+    required String userId,
+    required DateTime month,
+    required RemoteCheckInStatus status,
+  }) async {
+    await _storageService.set(_remoteStatusCacheKey(userId, month), status.toJson());
+  }
+
+  RemoteCheckInStatus? getRemoteStatusCache({
+    required String userId,
+    required DateTime month,
+  }) {
+    final cached = _storageService.get<Map>(_remoteStatusCacheKey(userId, month));
+    if (cached == null) {
+      return null;
+    }
+
+    return RemoteCheckInStatus.fromJson(Map<String, dynamic>.from(cached));
   }
 
   /// 签到（创建今天的签到记录）
@@ -288,6 +309,12 @@ class CheckInRepository {
   DateTime _getTodayDate() {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
+  }
+
+  String _remoteStatusCacheKey(String userId, DateTime month) {
+    final normalizedMonth = DateTime(month.year, month.month);
+    final monthKey = '${normalizedMonth.year.toString().padLeft(4, '0')}-${normalizedMonth.month.toString().padLeft(2, '0')}';
+    return 'remote_check_in_status_${userId}_$monthKey';
   }
 
   /// 重置所有签到记录（开发者功能）

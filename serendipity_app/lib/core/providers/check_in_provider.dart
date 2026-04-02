@@ -82,16 +82,15 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     if (currentUser != null) {
       final remoteStatus = await _loadRemoteStatus(currentUser, targetMonth);
       if (remoteStatus != null) {
-        return CheckInState(
-          hasCheckedInToday: remoteStatus.hasCheckedInToday,
-          consecutiveDays: remoteStatus.consecutiveDays,
-          totalDays: remoteStatus.totalDays,
-          currentMonthDays: remoteStatus.currentMonthDays,
-          recentCheckIns: remoteStatus.recentCheckIns,
-          isRemoteAuthoritative: true,
-          checkedInDatesInCurrentMonth: remoteStatus.checkedInDatesInMonth,
-          currentCalendarMonth: targetMonth,
-        );
+        return _buildStateFromRemoteStatus(remoteStatus, targetMonth);
+      }
+
+      final cachedRemoteStatus = _repository.getRemoteStatusCache(
+        userId: currentUser.id,
+        month: targetMonth,
+      );
+      if (cachedRemoteStatus != null) {
+        return _buildStateFromRemoteStatus(cachedRemoteStatus, targetMonth);
       }
     }
 
@@ -129,11 +128,32 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
       for (final checkIn in status.recentCheckIns) {
         await _repository.saveRemoteCheckIn(checkIn);
       }
+      await _repository.saveRemoteStatusCache(
+        userId: currentUser.id,
+        month: targetMonth,
+        status: status,
+      );
 
       return status;
     } catch (_) {
       return null;
     }
+  }
+
+  CheckInState _buildStateFromRemoteStatus(
+    RemoteCheckInStatus remoteStatus,
+    DateTime targetMonth,
+  ) {
+    return CheckInState(
+      hasCheckedInToday: remoteStatus.hasCheckedInToday,
+      consecutiveDays: remoteStatus.consecutiveDays,
+      totalDays: remoteStatus.totalDays,
+      currentMonthDays: remoteStatus.currentMonthDays,
+      recentCheckIns: remoteStatus.recentCheckIns,
+      isRemoteAuthoritative: true,
+      checkedInDatesInCurrentMonth: remoteStatus.checkedInDatesInMonth,
+      currentCalendarMonth: targetMonth,
+    );
   }
 
   /// 刷新签到状态

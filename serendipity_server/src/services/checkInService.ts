@@ -3,6 +3,7 @@ import { CheckIn } from '@prisma/client';
 import { ICheckInRepository } from '../repositories/checkInRepository';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
+import { IUserTimezoneResolver } from './userTimezoneResolver';
 
 export interface CheckInStatus {
   hasCheckedInToday: boolean;
@@ -32,9 +33,15 @@ export interface ICheckInService {
  * 签到服务实现
  */
 export class CheckInService implements ICheckInService {
-  constructor(private checkInRepository: ICheckInRepository) {
+  constructor(
+    private checkInRepository: ICheckInRepository,
+    private userTimezoneResolver: IUserTimezoneResolver,
+  ) {
     if (!checkInRepository) {
       throw new Error('CheckInRepository is required');
+    }
+    if (!userTimezoneResolver) {
+      throw new Error('UserTimezoneResolver is required');
     }
   }
 
@@ -44,7 +51,8 @@ export class CheckInService implements ICheckInService {
     }
 
     const now = new Date();
-    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const timezone = await this.getUserTimezone(userId);
+    const today = this.getDateOnlyForTimezone(now, timezone);
     const existing = await this.checkInRepository.findByUserAndDate(userId, today);
 
     if (existing) {
@@ -69,14 +77,15 @@ export class CheckInService implements ICheckInService {
       throw new Error('Invalid month');
     }
 
+    const timezone = await this.getUserTimezone(userId);
     const allCheckIns = await this.checkInRepository.findByUserId(userId);
-    const today = this.toUtcDateOnly(new Date());
+    const today = this.getDateOnlyForTimezone(new Date(), timezone);
     const monthDates = allCheckIns
-      .map((checkIn) => this.toUtcDateOnly(checkIn.date))
+      .map((checkIn) => this.normalizeStoredDate(checkIn.date))
       .filter((date) => date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month);
 
     return {
-      hasCheckedInToday: allCheckIns.some((checkIn) => this.isSameUtcDate(checkIn.date, today)),
+      hasCheckedInToday: allCheckIns.some((checkIn) => this.isSameDateOnly(checkIn.date, today)),
       consecutiveDays: this.calculateConsecutiveDays(allCheckIns, today),
       totalDays: allCheckIns.length,
       currentMonthDays: monthDates.length,
@@ -135,15 +144,42 @@ export class CheckInService implements ICheckInService {
     return consecutiveDays;
   }
 
-  private isSameUtcDate(left: Date, right: Date): boolean {
+  private async getUserTimezone(userId: string): Promise<string | undefined> {
+    return this.userTimezoneResolver.resolveTimezone(userId);
+  }
+
+  private getDateOnlyForTimezone(date: Date, timezone?: string): Date {
+    if (!timezone) {
+      return this.normalizeStoredDate(date);
+    }
+
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const parts = formatter.formatToParts(date);
+    const year = Number(parts.find((part) => part.type === 'year')?.value);
+    const month = Number(parts.find((part) => part.type === 'month')?.value);
+    const day = Number(parts.find((part) => part.type === 'day')?.value);
+
+    if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+      throw new Error(`Invalid timezone date for ${timezone}`);
+    }
+
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  private isSameDateOnly(left: Date, right: Date): boolean {
     return this.toDateKey(left) === this.toDateKey(right);
   }
 
   private toDateKey(date: Date): string {
-    return this.toUtcDateOnly(date).toISOString().slice(0, 10);
+    return this.normalizeStoredDate(date).toISOString().slice(0, 10);
   }
 
-  private toUtcDateOnly(date: Date): Date {
+  private normalizeStoredDate(date: Date): Date {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   }
 }

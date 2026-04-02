@@ -35,6 +35,7 @@ export interface IPushTokenRepository {
   deactivateByToken(userId: string, token: string): Promise<void>;
   markInvalid(token: string, reason: string): Promise<void>;
   findActiveByUserId(userId: string): Promise<PushToken[]>;
+  findLatestActiveTimezoneByUserId(userId: string): Promise<string | undefined>;
   findReminderCandidates(timezones?: string[]): Promise<ReminderCandidate[]>;
   hasReminderDispatch(pushTokenId: string, reminderDate: Date): Promise<boolean>;
   createReminderDispatch(data: CreateReminderDispatchData): Promise<CheckInReminderDispatch>;
@@ -137,6 +138,28 @@ export class PushTokenRepository implements IPushTokenRepository {
       },
       orderBy: { updatedAt: 'desc' },
     });
+  }
+
+  async findLatestActiveTimezoneByUserId(userId: string): Promise<string | undefined> {
+    if (!userId || userId.trim() === '') {
+      throw new Error('userId is required');
+    }
+
+    const latestPushToken = await this.prisma.pushToken.findFirst({
+      where: {
+        userId,
+        isActive: true,
+      },
+      select: {
+        timezone: true,
+      },
+      orderBy: [
+        { lastUsedAt: 'desc' },
+        { updatedAt: 'desc' },
+      ],
+    });
+
+    return latestPushToken?.timezone;
   }
 
   async findReminderCandidates(timezones?: string[]): Promise<ReminderCandidate[]> {

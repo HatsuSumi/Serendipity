@@ -34,5 +34,18 @@ class RemoteCheckInStatus {
           .toList(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'hasCheckedInToday': hasCheckedInToday,
+      'consecutiveDays': consecutiveDays,
+      'totalDays': totalDays,
+      'currentMonthDays': currentMonthDays,
+      'recentCheckIns': recentCheckIns.map((item) => item.toJson()).toList(),
+      'checkedInDatesInMonth': checkedInDatesInMonth
+          .map((item) => item.toIso8601String())
+          .toList(),
+    };
+  }
 }
 

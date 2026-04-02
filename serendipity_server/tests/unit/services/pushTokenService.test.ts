@@ -22,6 +22,7 @@ describe('PushTokenService', () => {
       deactivateByToken: jest.fn(),
       markInvalid: jest.fn(),
       findActiveByUserId: jest.fn(),
+      findLatestActiveTimezoneByUserId: jest.fn(),
       findReminderCandidates: jest.fn(),
       hasReminderDispatch: jest.fn(),
       createReminderDispatch: jest.fn(),
