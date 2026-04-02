@@ -4,6 +4,7 @@ import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
+import '../../models/push_token_registration.dart';
 import 'i_remote_data_repository.dart';
 import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
 
@@ -228,6 +229,16 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   Future<UserSettings?> downloadSettings(String userId) async {
     // 测试模式：返回 null（用户没有设置）
     return null;
+  }
+
+  @override
+  Future<void> registerPushToken(PushTokenRegistration registration) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
+  Future<void> unregisterPushToken(String token) async {
+    // 测试模式：不执行任何操作
   }
 
   // ==================== 收藏相关操作 ====================

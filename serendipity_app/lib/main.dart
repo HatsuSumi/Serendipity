@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/network_monitor_service.dart';
+import 'core/services/push_token_sync_service.dart';
 import 'core/repositories/check_in_repository.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
@@ -38,6 +42,14 @@ void main() async {
   // await createTestRecords();
   // return; // 创建完后直接退出，不启动 app
   
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    if (kDebugMode) {
+      print('Firebase 初始化失败: $e');
+    }
+  }
+
   // 初始化 Hive
   await Hive.initFlutter();
   
@@ -128,6 +140,8 @@ class _MyAppState extends ConsumerState<MyApp> {
     // 启动网络监听（在下一帧执行，避免在构建期间访问 Provider）
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(networkMonitorServiceProvider).startMonitoring(ref);
+      unawaited(ref.read(pushTokenSyncServiceProvider).initialize());
+      unawaited(ref.read(pushTokenSyncServiceProvider).syncForAuthenticatedUser());
     });
   }
   
@@ -135,6 +149,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   void dispose() {
     // 停止网络监听
     ref.read(networkMonitorServiceProvider).stopMonitoring();
+    unawaited(ref.read(pushTokenSyncServiceProvider).dispose());
     super.dispose();
   }
 

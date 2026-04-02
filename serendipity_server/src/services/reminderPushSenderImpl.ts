@@ -11,21 +11,28 @@ const JSON_HEADERS = {
   'Content-Type': 'application/json',
 };
 
+const FCM_OAUTH_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+const FCM_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const APNS_PRODUCTION_URL = 'https://api.push.apple.com';
 const APNS_SANDBOX_URL = 'https://api.sandbox.push.apple.com';
 
-interface FcmResponseBody {
-  success?: number;
-  results?: Array<{ message_id?: string; error?: string }>;
+interface FcmV1SuccessResponseBody {
+  name?: string;
 }
 
 interface ApnsResponseBody {
   reason?: string;
 }
 
+interface GoogleAccessTokenResponseBody {
+  access_token?: string;
+  expires_in?: number;
+}
+
 interface RuntimeReminderConfig {
-  fcmServerKey: string;
-  fcmEndpoint: string;
+  fcmProjectId: string;
+  fcmClientEmail: string;
+  fcmPrivateKey: string;
   apnsKeyId: string;
   apnsTeamId: string;
   apnsPrivateKey: string;
@@ -34,6 +41,13 @@ interface RuntimeReminderConfig {
 }
 
 export class ReminderPushSender implements IReminderPushSender {
+  private fcmAccessTokenCache:
+    | {
+        accessToken: string;
+        expiresAt: number;
+      }
+    | null = null;
+
   async send(payload: ReminderSendPayload): Promise<ReminderSendResult> {
     if (!payload.token || payload.token.trim() === '') {
       throw new Error('Push token is required');
@@ -53,64 +67,74 @@ export class ReminderPushSender implements IReminderPushSender {
     payload: ReminderSendPayload,
     runtimeConfig: RuntimeReminderConfig,
   ): Promise<ReminderSendResult> {
-    if (runtimeConfig.fcmServerKey === '') {
+    if (runtimeConfig.fcmProjectId === '') {
       return {
         success: false,
-        failureReason: 'fcm_server_key_missing',
+        failureReason: 'fcm_project_id_missing',
+      };
+    }
+    if (runtimeConfig.fcmClientEmail === '') {
+      return {
+        success: false,
+        failureReason: 'fcm_client_email_missing',
+      };
+    }
+    if (runtimeConfig.fcmPrivateKey === '') {
+      return {
+        success: false,
+        failureReason: 'fcm_private_key_missing',
       };
     }
 
-    const response = await fetch(runtimeConfig.fcmEndpoint, {
-      method: 'POST',
-      headers: {
-        ...JSON_HEADERS,
-        Authorization: `key=${runtimeConfig.fcmServerKey}`,
-      },
-      body: JSON.stringify({
-        to: payload.token,
-        notification: {
-          title: payload.title,
-          body: payload.body,
+    const accessToken = await this.getFcmAccessToken(runtimeConfig);
+    const response = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
+      {
+        method: 'POST',
+        headers: {
+          ...JSON_HEADERS,
+          Authorization: `Bearer ${accessToken}`,
         },
-        data: payload.data,
-        priority: 'high',
-      }),
-    });
+        body: JSON.stringify({
+          message: {
+            token: payload.token,
+            notification: {
+              title: payload.title,
+              body: payload.body,
+            },
+            data: payload.data,
+            android: {
+              priority: 'high',
+              notification: {
+                channel_id: 'check_in_reminder',
+                sound: 'default',
+              },
+            },
+          },
+        }),
+      },
+    );
 
     if (!response.ok) {
+      const rawBody = await response.text();
       return {
         success: false,
-        failureReason: `fcm_http_${response.status}`,
+        failureReason: this.parseFcmV1FailureReason(response.status, rawBody),
+        isInvalidToken: this.isFcmInvalidTokenResponse(response.status, rawBody),
       };
     }
 
-    const body = (await response.json()) as FcmResponseBody;
-    const result = body.results?.[0];
-    if (!result) {
+    const body = (await response.json()) as FcmV1SuccessResponseBody;
+    if (!body.name) {
       return {
         success: false,
         failureReason: 'fcm_empty_result',
       };
     }
 
-    if (result.error) {
-      return {
-        success: false,
-        failureReason: result.error,
-        isInvalidToken: this.isFcmInvalidTokenError(result.error),
-      };
-    }
-
-    if ((body.success ?? 0) < 1 || !result.message_id) {
-      return {
-        success: false,
-        failureReason: 'fcm_unknown_failure',
-      };
-    }
-
     return {
       success: true,
-      providerMessageId: result.message_id,
+      providerMessageId: body.name,
     };
   }
 
@@ -233,8 +257,11 @@ export class ReminderPushSender implements IReminderPushSender {
 
   private getRuntimeConfig(): RuntimeReminderConfig {
     return {
-      fcmServerKey: process.env.FCM_SERVER_KEY?.trim() || config.checkInReminder.fcm.serverKey.trim(),
-      fcmEndpoint: process.env.FCM_ENDPOINT?.trim() || config.checkInReminder.fcm.endpoint,
+      fcmProjectId: process.env.FCM_PROJECT_ID?.trim() || config.checkInReminder.fcm.projectId.trim(),
+      fcmClientEmail: process.env.FCM_CLIENT_EMAIL?.trim() || config.checkInReminder.fcm.clientEmail.trim(),
+      fcmPrivateKey: this.normalizePrivateKey(
+        process.env.FCM_PRIVATE_KEY || config.checkInReminder.fcm.privateKey,
+      ),
       apnsKeyId: process.env.APNS_KEY_ID?.trim() || config.checkInReminder.apns.keyId.trim(),
       apnsTeamId: process.env.APNS_TEAM_ID?.trim() || config.checkInReminder.apns.teamId.trim(),
       apnsPrivateKey: this.normalizePrivateKey(
@@ -260,6 +287,92 @@ export class ReminderPushSender implements IReminderPushSender {
     }
   }
 
+  private async getFcmAccessToken(runtimeConfig: RuntimeReminderConfig): Promise<string> {
+    const now = Date.now();
+    if (this.fcmAccessTokenCache && this.fcmAccessTokenCache.expiresAt > now + 60_000) {
+      return this.fcmAccessTokenCache.accessToken;
+    }
+
+    const issuedAt = Math.floor(now / 1000);
+    const expiresAt = issuedAt + 3600;
+    const assertion = jwt.sign(
+      {
+        iss: runtimeConfig.fcmClientEmail,
+        sub: runtimeConfig.fcmClientEmail,
+        aud: FCM_TOKEN_ENDPOINT,
+        scope: FCM_OAUTH_SCOPE,
+        iat: issuedAt,
+        exp: expiresAt,
+      },
+      runtimeConfig.fcmPrivateKey,
+      {
+        algorithm: 'RS256',
+      },
+    );
+
+    const response = await fetch(FCM_TOKEN_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to acquire FCM access token: ${response.status}`);
+    }
+
+    const body = (await response.json()) as GoogleAccessTokenResponseBody;
+    if (!body.access_token || !body.expires_in) {
+      throw new Error('FCM access token response is invalid');
+    }
+
+    this.fcmAccessTokenCache = {
+      accessToken: body.access_token,
+      expiresAt: now + body.expires_in * 1000,
+    };
+
+    return body.access_token;
+  }
+
+  private parseFcmV1FailureReason(statusCode: number, rawBody: string): string {
+    try {
+      const parsed = JSON.parse(rawBody) as {
+        error?: {
+          status?: string;
+          message?: string;
+          details?: Array<{ errorCode?: string }>;
+        };
+      };
+      const errorCode = parsed.error?.details?.find((detail) => detail.errorCode)?.errorCode;
+      if (errorCode) {
+        return errorCode;
+      }
+      if (parsed.error?.status) {
+        return parsed.error.status;
+      }
+      if (parsed.error?.message) {
+        return parsed.error.message;
+      }
+    } catch {
+      // ignore parse failure and fallback below
+    }
+
+    return `fcm_http_${statusCode}`;
+  }
+
+  private isFcmInvalidTokenResponse(statusCode: number, rawBody: string): boolean {
+    if (statusCode !== 400 && statusCode !== 404) {
+      return false;
+    }
+
+    const reason = this.parseFcmV1FailureReason(statusCode, rawBody);
+    return reason === 'UNREGISTERED' || reason === 'INVALID_ARGUMENT';
+  }
+
   private readHeaderValue(value: string | string[] | undefined): string {
     if (typeof value === 'string') {
       return value;
@@ -272,10 +385,6 @@ export class ReminderPushSender implements IReminderPushSender {
 
   private normalizePrivateKey(privateKey: string): string {
     return privateKey.trim().replace(/\\n/g, '\n');
-  }
-
-  private isFcmInvalidTokenError(errorCode: string): boolean {
-    return errorCode === 'InvalidRegistration' || errorCode === 'NotRegistered';
   }
 
   private isApnsInvalidTokenError(errorCode?: string): boolean {

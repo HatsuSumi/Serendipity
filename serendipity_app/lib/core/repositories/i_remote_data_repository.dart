@@ -4,6 +4,7 @@ import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
+import '../../models/push_token_registration.dart';
 import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
 
 /// 远程数据仓库接口
@@ -546,6 +547,18 @@ abstract class IRemoteDataRepository {
   /// - userId 为空：抛出 ArgumentError
   /// - 网络错误：抛出具体的网络异常（由实现类定义）
   Future<UserSettings?> downloadSettings(String userId);
+
+  // ==================== 推送相关操作 ====================
+
+  /// 注册设备 push token
+  ///
+  /// 调用者：PushTokenSyncService.syncCurrentToken()
+  Future<void> registerPushToken(PushTokenRegistration registration);
+
+  /// 注销设备 push token
+  ///
+  /// 调用者：PushTokenSyncService.unregisterCurrentToken()
+  Future<void> unregisterPushToken(String token);
 
   // ==================== 收藏相关操作 ====================
 

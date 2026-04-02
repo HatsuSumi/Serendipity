@@ -4,6 +4,7 @@ import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
+import '../../models/push_token_registration.dart';
 import 'i_remote_data_repository.dart';
 import '../services/http_client_service.dart';
 import '../config/server_config.dart';
@@ -876,6 +877,44 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
         return null;
       }
       throw Exception('下载用户设置失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<void> registerPushToken(PushTokenRegistration registration) async {
+    if (registration.token.isEmpty) {
+      throw ArgumentError('push token 不能为空');
+    }
+    if (registration.platform.isEmpty) {
+      throw ArgumentError('platform 不能为空');
+    }
+    if (registration.timezone.isEmpty) {
+      throw ArgumentError('timezone 不能为空');
+    }
+
+    try {
+      await _httpClient.post(
+        ServerConfig.pushTokens,
+        body: registration.toJson(),
+      );
+    } on HttpException catch (e) {
+      throw Exception('注册 push token 失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<void> unregisterPushToken(String token) async {
+    if (token.isEmpty) {
+      throw ArgumentError('push token 不能为空');
+    }
+
+    try {
+      await _httpClient.delete(
+        ServerConfig.pushTokens,
+        body: {'token': token},
+      );
+    } on HttpException catch (e) {
+      throw Exception('注销 push token 失败：${e.message}');
     }
   }
 

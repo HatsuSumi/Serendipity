@@ -86,6 +86,9 @@ class ServerConfig {
   static const String checkIns = '/check-ins';
   static const String checkInStatus = '/check-ins/status';
   static String checkInById(String id) => '/check-ins/$id';
+
+  // 推送相关
+  static const String pushTokens = '/push-tokens';
   
   // 统计相关
   static const String statisticsOverview = '/statistics/overview';

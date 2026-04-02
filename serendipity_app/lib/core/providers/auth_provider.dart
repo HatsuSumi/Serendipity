@@ -5,6 +5,7 @@ import '../repositories/test_auth_repository.dart';
 import '../repositories/custom_server_auth_repository.dart';
 import '../services/http_client_service.dart';
 import '../services/i_storage_service.dart';
+import '../services/push_token_sync_service.dart';
 import '../config/app_config.dart';
 import 'records_provider.dart';
 import 'story_lines_provider.dart';
@@ -491,6 +492,8 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
+      await ref.read(pushTokenSyncServiceProvider).unregisterForCurrentUser();
+
       // 1. 调用 AuthRepository 登出（清除 Token）
       await _repository.signOut();
       
@@ -594,6 +597,7 @@ class AuthNotifier extends StreamNotifier<User?> {
 
     // 先获取当前用户 ID，再注销（注销后 _currentUser 会被清空）
     final currentUser = await _repository.currentUser;
+    await ref.read(pushTokenSyncServiceProvider).unregisterForCurrentUser();
     await _repository.deleteAccount(password);
 
     if (currentUser != null) {

@@ -66,8 +66,9 @@ export const config = Object.freeze({
     notificationTitle: getOptionalEnv('CHECKIN_REMINDER_NOTIFICATION_TITLE', '今晚别忘了签到'),
     notificationBody: getOptionalEnv('CHECKIN_REMINDER_NOTIFICATION_BODY', '打开 Serendipity 完成今日签到。'),
     fcm: Object.freeze({
-      serverKey: getOptionalEnv('FCM_SERVER_KEY', ''),
-      endpoint: getOptionalEnv('FCM_ENDPOINT', 'https://fcm.googleapis.com/fcm/send'),
+      projectId: getOptionalEnv('FCM_PROJECT_ID', ''),
+      clientEmail: getOptionalEnv('FCM_CLIENT_EMAIL', ''),
+      privateKey: getOptionalEnv('FCM_PRIVATE_KEY', ''),
     }),
     apns: Object.freeze({
       keyId: getOptionalEnv('APNS_KEY_ID', ''),

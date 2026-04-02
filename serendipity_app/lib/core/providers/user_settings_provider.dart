@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import '../../models/user.dart';
 import '../../models/enums.dart';
 import '../services/i_storage_service.dart';
 import '../services/notification_service.dart';
+import '../services/push_token_sync_service.dart';
 import '../services/sync_service.dart';
 import 'auth_provider.dart';
 import 'membership_provider.dart';
@@ -144,7 +147,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   void _listenToSyncCompleted() {
     _ref.listen<int>(syncCompletedProvider, (previous, next) {
       if (previous != null && next > previous) {
-        _loadSettings();
+        unawaited(_loadSettings());
       }
     });
   }
@@ -156,13 +159,21 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   void _listenToAuthChanges() {
     _ref.listen<AsyncValue<User?>>(authProvider, (previous, next) {
       next.whenData((user) {
-        if (user != null) {
-          // 用户登录，重新加载设置
-          _loadSettings();
-        }
-        // 用户登出时不做任何操作，保留本地设置
+        unawaited(_handleAuthChanged(user));
       });
     });
+  }
+
+  Future<void> _handleAuthChanged(User? user) async {
+    if (_isLoggedInUser(user)) {
+      await _notificationService.cancelCheckInReminder();
+      await _ref.read(pushTokenSyncServiceProvider).syncForAuthenticatedUser();
+      await _loadSettings();
+      return;
+    }
+
+    await _ref.read(pushTokenSyncServiceProvider).unregisterForCurrentUser();
+    await _loadSettings();
   }
 
   /// 加载用户设置
@@ -174,23 +185,24 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// - 这里只需要从本地存储读取即可
   Future<void> _loadSettings() async {
     final settings = _storageService.getUserSettings();
+    final user = await _ref.read(authProvider.notifier).currentUser;
+    final isLoggedIn = _isLoggedInUser(user);
 
     if (settings != null) {
       state = settings;
 
-      // 如果启用了签到提醒，调度通知
-      if (settings.checkInReminderEnabled) {
+      if (settings.checkInReminderEnabled && !isLoggedIn) {
         await _scheduleCheckInReminder(settings.checkInReminderTime);
+      } else {
+        await _notificationService.cancelCheckInReminder();
       }
 
-      // 如果启用了纪念日提醒，重新调度本地通知
       if (settings.anniversaryReminder) {
         await _scheduleAnniversaryReminders();
       } else {
         await _notificationService.cancelAnniversaryReminders();
       }
     }
-    // 如果本地没有设置，保持当前 state（默认设置或之前的设置）
   }
 
   /// 调度纪念日提醒本地通知
@@ -532,22 +544,26 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// [time] 提醒时间
   Future<void> _scheduleCheckInReminder(TimeOfDay time) async {
     try {
-      // 请求通知权限
-      final granted = await _notificationService.requestPermission();
-      if (!granted) {
-        // 权限被拒绝，静默失败（不影响用户体验）
+      final user = await _ref.read(authProvider.notifier).currentUser;
+      if (_isLoggedInUser(user)) {
+        await _notificationService.cancelCheckInReminder();
         return;
       }
 
-      final user = await _ref.read(authProvider.notifier).currentUser;
-      final userId = user?.id;
+      final granted = await _notificationService.requestPermission();
+      if (!granted) {
+        return;
+      }
 
-      // 调度通知
-      await _notificationService.scheduleCheckInReminder(time, userId: userId);
+      await _notificationService.scheduleCheckInReminder(time);
     } catch (e) {
       // 调度失败，静默失败（不影响用户体验）
       // 生产环境应记录错误日志
     }
+  }
+
+  bool _isLoggedInUser(User? user) {
+    return user != null && user.id.isNotEmpty && user.id != 'guest';
   }
 }
 

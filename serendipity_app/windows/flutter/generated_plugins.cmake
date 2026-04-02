@@ -5,6 +5,8 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
   file_selector_windows
+  firebase_core
+  flutter_timezone
   geolocator_windows
   url_launcher_windows
 )
