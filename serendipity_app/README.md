@@ -8,7 +8,7 @@ Serendipity 的 Flutter 客户端。
 - Dart 3.x
 - Riverpod 2.x
 - Hive
-- go_router
+- Feature-first + Repository Pattern + Provider Pattern
 
 ## 项目结构
 
