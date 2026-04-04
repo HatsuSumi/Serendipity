@@ -43,20 +43,23 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   final IStorageService _storageService;
   final NotificationService _notificationService;
   final Ref _ref;
+  int _hydrationDepth = 0;
+  UserSettings? _lastUploadedSettings;
+  bool _hasHydratedOnce = false;
 
   UserSettingsNotifier(
     this._storageService,
     this._notificationService,
     this._ref,
   ) : super(_createDefaultSettings()) {
-    _loadSettings();
+    _hydrateSettings();
     _listenToAuthChanges();
     _listenToSyncCompleted();
     _listenToMembershipChanges();
   }
 
   /// 创建默认设置（访客模式）
-  ///
+  /// 调度纪念日提醒本地通知
   /// 单一职责：只负责创建默认配置
   static UserSettings _createDefaultSettings() {
     final now = DateTime.now();
@@ -97,12 +100,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       final prevIsPremium = previous?.valueOrNull?.isPremium ?? false;
       final nextIsPremium = next.valueOrNull?.isPremium ?? false;
 
-      if (kDebugMode) {
-        debugPrint('[UserSettings] membershipProvider changed: '
-            'prevIsPremium=$prevIsPremium, nextIsPremium=$nextIsPremium, '
-            'previous=${previous.runtimeType}, next=${next.runtimeType}');
-      }
-
       // 只在 premium → 非 premium 时触发降级
       if (prevIsPremium && !nextIsPremium) {
         _downgradeThemeIfNeeded();
@@ -114,10 +111,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   ///
   /// 调用者：_listenToMembershipChanges()
   Future<void> _downgradeThemeIfNeeded() async {
-    if (kDebugMode) {
-      debugPrint('[UserSettings] _downgradeThemeIfNeeded: current theme=${state.theme}, isPremium=${state.theme.isPremium}');
-    }
-
     if (!state.theme.isPremium) return;
 
     final now = DateTime.now();
@@ -129,10 +122,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _storageService.saveUserSettings(updated);
     state = updated;
-
-    if (kDebugMode) {
-      debugPrint('[UserSettings] _downgradeThemeIfNeeded: state updated to theme=${state.theme}');
-    }
 
     // 通知用户主题已自动降级
     _ref.read(messageProvider.notifier).showInfo('会员过期，主题自动恢复到跟随系统');
@@ -146,7 +135,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   void _listenToSyncCompleted() {
     _ref.listen<int>(syncCompletedProvider, (previous, next) {
       if (previous != null && next > previous) {
-        unawaited(_loadSettings());
+        unawaited(_hydrateSettings());
       }
     });
   }
@@ -166,43 +155,70 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   Future<void> _handleAuthChanged(User? user) async {
     if (_isLoggedInUser(user)) {
       await _notificationService.cancelCheckInReminder();
-      await _loadSettings();
       return;
     }
 
-    await _loadSettings();
+    if (_hasHydratedOnce) {
+      return;
+    }
+
+    await _hydrateSettings();
   }
 
   /// 加载用户设置
   ///
-  /// 单一职责：只负责从存储加载，不负责创建默认值
-  ///
-  /// 注意：
-  /// - 登录后由 SyncService 自动从云端同步到本地
-  /// - 这里只需要从本地存储读取即可
-  Future<void> _loadSettings() async {
-    final settings = _storageService.getUserSettings();
-    final user = await _ref.read(authProvider.notifier).currentUser;
-    final isLoggedIn = _isLoggedInUser(user);
-
-    if (settings != null) {
-      state = settings;
-
-      if (settings.checkInReminderEnabled && !isLoggedIn) {
-        await _scheduleCheckInReminder(settings.checkInReminderTime);
-      } else {
-        await _notificationService.cancelCheckInReminder();
+  /// 单一职责：只负责从存储恢复状态，不触发云端回写
+  Future<void> _hydrateSettings() async {
+    await _runHydration(() async {
+      final settings = _storageService.getUserSettings();
+      if (settings == null) {
+        return;
       }
 
-      if (settings.anniversaryReminder) {
-        await _scheduleAnniversaryReminders();
-      } else {
-        await _notificationService.cancelAnniversaryReminders();
-      }
+      final user = await _readResolvedAuthUser();
+      final isLoggedIn = _isLoggedInUser(user);
+      await _applyHydratedSettings(settings, isLoggedIn: isLoggedIn);
+    });
+  }
+
+  Future<void> _runHydration(Future<void> Function() action) async {
+    _hydrationDepth++;
+    try {
+      await action();
+    } finally {
+      _hydrationDepth--;
     }
   }
 
-  /// 调度纪念日提醒本地通知
+  bool get _isHydrating => _hydrationDepth > 0;
+
+  Future<User?> _readResolvedAuthUser() async {
+    final authState = _ref.read(authProvider);
+    if (authState.hasValue) {
+      return authState.value;
+    }
+
+    return await _ref.read(authProvider.future);
+  }
+
+  Future<void> _applyHydratedSettings(UserSettings settings, {required bool isLoggedIn}) async {
+    _hasHydratedOnce = true;
+    state = settings;
+    _lastUploadedSettings = settings;
+
+    if (settings.checkInReminderEnabled && !isLoggedIn) {
+      await _scheduleCheckInReminder(settings.checkInReminderTime);
+    } else {
+      await _notificationService.cancelCheckInReminder();
+    }
+
+    if (settings.anniversaryReminder) {
+      await _scheduleAnniversaryReminders();
+    } else {
+      await _notificationService.cancelAnniversaryReminders();
+    }
+  }
+
   ///
   /// 从当前用户的全量记录中筛选邂逅记录，交给 NotificationService 调度。
   /// 权限检查由 updateAnniversaryReminder 负责，此处不重复校验。
@@ -230,6 +246,10 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   ///
   /// 架构说明：通过 SyncService 上传，遵循 Provider → SyncService → Repository 分层约束
   Future<void> _uploadToCloud(UserSettings settings) async {
+    if (_isHydrating || _lastUploadedSettings == settings) {
+      return;
+    }
+
     try {
       // 检查用户是否登录
       final authState = _ref.read(authProvider);
@@ -247,12 +267,14 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       // 用服务端的 updatedAt 更新本地，确保下次同步时时间戳对齐
       await _storageService.saveUserSettings(serverSettings);
       state = serverSettings;
+      _lastUploadedSettings = serverSettings;
     } catch (e) {
       // 上传失败，回滚本地状态到上一个已知的好状态
       // 重新从存储加载，确保本地和存储一致
       final savedSettings = _storageService.getUserSettings();
       if (savedSettings != null) {
         state = savedSettings;
+        _lastUploadedSettings = savedSettings;
       }
       // 静默失败，不影响用户体验
       // 用户可以稍后手动同步或重新修改设置
@@ -541,7 +563,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// [time] 提醒时间
   Future<void> _scheduleCheckInReminder(TimeOfDay time) async {
     try {
-      final user = await _ref.read(authProvider.notifier).currentUser;
+      final user = await _readResolvedAuthUser();
       if (_isLoggedInUser(user)) {
         await _notificationService.cancelCheckInReminder();
         return;

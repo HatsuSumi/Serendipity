@@ -877,6 +877,11 @@ class SyncService {
     UserSettings localSettings,
     UserSettings remoteSettings,
   ) async {
+    if (_areSettingsEquivalent(localSettings, remoteSettings)) {
+      await _storageService.saveUserSettings(remoteSettings);
+      return;
+    }
+
     // 辅助函数：根据时间戳选择值
     T selectByTimestamp<T>(
       T localValue,
@@ -999,6 +1004,27 @@ class SyncService {
     
     // 用服务端返回的最新设置（含服务端生成的 updatedAt）更新本地
     await _storageService.saveUserSettings(serverSettings);
+  }
+
+  bool _areSettingsEquivalent(UserSettings localSettings, UserSettings remoteSettings) {
+    return localSettings.userId == remoteSettings.userId &&
+        localSettings.theme == remoteSettings.theme &&
+        localSettings.pageTransition == remoteSettings.pageTransition &&
+        localSettings.dialogAnimation == remoteSettings.dialogAnimation &&
+        localSettings.achievementNotification == remoteSettings.achievementNotification &&
+        localSettings.anniversaryReminder == remoteSettings.anniversaryReminder &&
+        localSettings.checkInReminderEnabled == remoteSettings.checkInReminderEnabled &&
+        localSettings.checkInReminderTime == remoteSettings.checkInReminderTime &&
+        localSettings.checkInVibrationEnabled == remoteSettings.checkInVibrationEnabled &&
+        localSettings.checkInConfettiEnabled == remoteSettings.checkInConfettiEnabled &&
+        localSettings.hidePublishWarning == remoteSettings.hidePublishWarning &&
+        localSettings.hasSeenPublishWarning == remoteSettings.hasSeenPublishWarning &&
+        localSettings.hasSeenCommunityIntro == remoteSettings.hasSeenCommunityIntro &&
+        localSettings.hasSeenFavoritesIntro == remoteSettings.hasSeenFavoritesIntro &&
+        localSettings.themeUpdatedAt == remoteSettings.themeUpdatedAt &&
+        localSettings.notificationsUpdatedAt == remoteSettings.notificationsUpdatedAt &&
+        localSettings.checkInUpdatedAt == remoteSettings.checkInUpdatedAt &&
+        localSettings.communityUpdatedAt == remoteSettings.communityUpdatedAt;
   }
 }
 
