@@ -4,10 +4,12 @@ import '../../models/achievement_unlock.dart';
 import '../../models/remote_check_in_status.dart';
 import '../../models/user.dart';
 import '../repositories/check_in_repository.dart';
+import '../services/notification_service.dart';
 import '../services/sync_service.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';
 import 'records_provider.dart';
+import 'user_settings_provider.dart';
 
 /// 签到仓储 Provider
 final checkInRepositoryProvider = Provider<CheckInRepository>((ref) {
@@ -201,6 +203,16 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     }
 
     await refresh();
+    await _refreshGuestCheckInReminder(currentUser);
+  }
+
+  Future<void> _refreshGuestCheckInReminder(User? currentUser) async {
+    if (currentUser != null) {
+      await ref.read(notificationServiceProvider).cancelCheckInReminder();
+      return;
+    }
+
+    await ref.read(userSettingsProvider.notifier).refreshGuestCheckInReminder();
   }
 
   /// 获取指定月份的签到日期

@@ -558,6 +558,14 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     await _uploadToCloud(updated);
   }
 
+  Future<void> refreshGuestCheckInReminder() async {
+    if (state.checkInReminderEnabled) {
+      await _scheduleCheckInReminder(state.checkInReminderTime);
+    } else {
+      await _notificationService.cancelCheckInReminder();
+    }
+  }
+
   /// 调度签到提醒通知
   ///
   /// [time] 提醒时间

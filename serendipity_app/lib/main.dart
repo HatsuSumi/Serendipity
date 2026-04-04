@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -13,7 +14,7 @@ import 'core/repositories/check_in_repository.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
-import 'core/providers/user_settings_provider.dart' show notificationServiceProvider;
+import 'core/providers/user_settings_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/smart_navigator.dart';
 import 'features/home/main_navigation_page.dart';
@@ -86,7 +87,10 @@ void main() async {
   
   // 初始化通知服务
   final checkInRepository = CheckInRepository(storageService);
-  final notificationService = NotificationService(checkInRepository);
+  final notificationService = NotificationService(
+    checkInRepository,
+    storageService: storageService,
+  );
 
   try {
     await notificationService.initialize();
@@ -132,24 +136,43 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     
     // 启动网络监听（在下一帧执行，避免在构建期间访问 Provider）
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(networkMonitorServiceProvider).startMonitoring(ref);
       unawaited(ref.read(pushTokenSyncServiceProvider).initialize());
+      unawaited(_refreshGuestCheckInReminder());
     });
   }
   
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     // 停止网络监听
     ref.read(networkMonitorServiceProvider).stopMonitoring();
     unawaited(ref.read(pushTokenSyncServiceProvider).dispose());
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshGuestCheckInReminder());
+    }
+  }
+
+  Future<void> _refreshGuestCheckInReminder() async {
+    final lifecycleState = SchedulerBinding.instance.lifecycleState;
+    if (lifecycleState != null && lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
+
+    await ref.read(userSettingsProvider.notifier).refreshGuestCheckInReminder();
   }
 
   @override
