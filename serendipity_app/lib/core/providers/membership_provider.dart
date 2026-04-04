@@ -44,7 +44,7 @@ class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
   Future<MembershipInfo> build() async {
     _repository = ref.read(membershipRepositoryProvider);
 
-    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    final currentUser = await ref.read(authProvider.future);
     if (currentUser == null) {
       return _buildFreeMembershipInfo();
     }
@@ -87,7 +87,7 @@ class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
       );
     }
 
-    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    final currentUser = await ref.read(authProvider.future);
     if (currentUser == null) {
       throw StateError('User not logged in');
     }
@@ -126,7 +126,7 @@ class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
   ///
   /// 删除当前用户的会员记录，恢复为免费版
   Future<void> resetMembership() async {
-    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    final currentUser = await ref.read(authProvider.future);
     if (currentUser == null) {
       throw StateError('User not logged in');
     }

@@ -8,6 +8,8 @@ import '../utils/check_in_reminder_helper.dart';
 import '../repositories/check_in_repository.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
+import '../../models/user_settings.dart';
+import 'i_storage_service.dart';
 
 /// 测试通知调度结果
 ///
@@ -36,10 +38,13 @@ enum TestNotificationResult {
 class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin;
   final CheckInRepository _checkInRepository;
+  final IStorageService? _storageService;
   bool _isInitialized = false;
+  DateTime Function() _nowProvider;
 
   /// 签到提醒通知ID（固定值，用于更新/取消通知）
   static const int _checkInReminderId = 0;
+  static const String _checkInReminderPayload = 'check_in_reminder';
 
   /// 纪念日提醒通知ID起始值
   /// 每条邂逅记录对应一个通知，ID = _anniversaryBaseId + index
@@ -55,8 +60,14 @@ class NotificationService {
   static const String _anniversaryChannelName = '纪念日提醒';
   static const String _anniversaryChannelDescription = '邂逅周年纪念日提醒';
 
-  NotificationService(this._checkInRepository)
-      : _plugin = FlutterLocalNotificationsPlugin();
+  NotificationService(
+    this._checkInRepository, {
+    IStorageService? storageService,
+    FlutterLocalNotificationsPlugin? plugin,
+    DateTime Function()? nowProvider,
+  })  : _storageService = storageService,
+        _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
+        _nowProvider = nowProvider ?? DateTime.now;
 
   /// 初始化通知服务
   /// 
@@ -81,12 +92,16 @@ class NotificationService {
       requestSoundPermission: false,
     );
 
-    const initSettings = InitializationSettings(
+    final initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
 
-    final initialized = await _plugin.initialize(initSettings);
+    final initialized = await _plugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _handleNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse: _handleBackgroundNotificationResponse,
+    );
 
     // Fail Fast：初始化失败立即报错
     if (initialized != true) {
@@ -152,11 +167,30 @@ class NotificationService {
     // Fail Fast：参数校验
     ArgumentError.checkNotNull(time, 'time');
 
-    // 取消旧的通知（如果存在）
+    await _scheduleNextCheckInReminder(time, userId: userId);
+  }
+
+  @pragma('vm:entry-point')
+  static void _handleBackgroundNotificationResponse(NotificationResponse response) {}
+
+  Future<void> _handleNotificationResponse(NotificationResponse response) async {
+    if (response.payload != _checkInReminderPayload) {
+      return;
+    }
+
+    final settings = await _loadCurrentUserSettings();
+    if (settings == null || !settings.checkInReminderEnabled) {
+      await cancelCheckInReminder();
+      return;
+    }
+
+    await _scheduleNextCheckInReminder(settings.checkInReminderTime);
+  }
+
+  Future<void> _scheduleNextCheckInReminder(TimeOfDay time, {String? userId}) async {
     await cancelCheckInReminder();
 
-    // 计算下一次通知时间
-    final now = DateTime.now();
+    final now = _nowProvider();
     var scheduledDate = DateTime(
       now.year,
       now.month,
@@ -165,19 +199,14 @@ class NotificationService {
       time.minute,
     );
 
-    // 如果今天的时间已过，调度到明天
-    if (scheduledDate.isBefore(now)) {
+    if (!scheduledDate.isAfter(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    // 转换为时区时间
     final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
-
-    // 生成通知内容
     final streakDays = _checkInRepository.calculateReminderStreakDays(userId: userId);
     final content = CheckInReminderHelper.generateContent(streakDays);
 
-    // Android 通知详情
     const androidDetails = AndroidNotificationDetails(
       _channelId,
       _channelName,
@@ -186,7 +215,6 @@ class NotificationService {
       priority: Priority.high,
     );
 
-    // iOS 通知详情
     const iosDetails = DarwinNotificationDetails();
 
     const notificationDetails = NotificationDetails(
@@ -194,7 +222,6 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // 调度通知（每天重复）
     await _plugin.zonedSchedule(
       _checkInReminderId,
       CheckInReminderHelper.title,
@@ -204,8 +231,12 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // 每天重复
+      payload: _checkInReminderPayload,
     );
+  }
+
+  Future<UserSettings?> _loadCurrentUserSettings() async {
+    return _storageService?.getUserSettings();
   }
 
   /// 取消签到提醒通知

@@ -124,12 +124,19 @@ class AuthNotifier extends StreamNotifier<User?> {
     ref.invalidate(myPostsProvider);
   }
 
-  /// 获取当前用户
-  /// 
-  /// 调用者：
-  /// - main.dart：判断是否已登录
-  /// - 各个需要用户信息的页面
-  Future<User?> get currentUser => _repository.currentUser;
+  /// 获取当前用户快照
+  ///
+  /// 约束：
+  /// - 优先从 authProvider 的状态读取，避免额外触发仓储层的 auth/me 请求
+  /// - 只在 authProvider 尚未解析完成时等待一次 future
+  Future<User?> get currentUser async {
+    final authState = state;
+    if (authState.hasValue) {
+      return authState.value;
+    }
+
+    return await future;
+  }
 
   /// 邮箱登录
   /// 
@@ -158,20 +165,17 @@ class AuthNotifier extends StreamNotifier<User?> {
     
     try {
       // 1. 调用 AuthRepository 登录
-      await _repository.signInWithEmail(email, password);
-      final user = await _repository.currentUser;
+      final user = await _repository.signInWithEmail(email, password);
       state = AsyncValue.data(user);
       
-      if (user != null) {
-        // 2. 绑定离线数据到当前用户
-        await _bindOfflineDataIfNeeded(user.id);
-        
-        // 3. 刷新所有数据 Provider
-        _invalidateDataProviders();
-        
-        // 4. 登录成功后触发数据同步
-        _triggerSync(user);
-      }
+      // 2. 绑定离线数据到当前用户
+      await _bindOfflineDataIfNeeded(user.id);
+      
+      // 3. 刷新所有数据 Provider
+      _invalidateDataProviders();
+      
+      // 4. 登录成功后触发数据同步
+      _triggerSync(user);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
@@ -281,20 +285,17 @@ class AuthNotifier extends StreamNotifier<User?> {
     
     try {
       // 1. 调用 AuthRepository 登录
-      await _repository.signInWithPhonePassword(phoneNumber, password);
-      final user = await _repository.currentUser;
+      final user = await _repository.signInWithPhonePassword(phoneNumber, password);
       state = AsyncValue.data(user);
       
-      if (user != null) {
-        // 2. 绑定离线数据到当前用户
-        await _bindOfflineDataIfNeeded(user.id);
-        
-        // 3. 刷新所有数据 Provider
-        _invalidateDataProviders();
-        
-        // 4. 登录成功后触发数据同步
-        _triggerSync(user);
-      }
+      // 2. 绑定离线数据到当前用户
+      await _bindOfflineDataIfNeeded(user.id);
+      
+      // 3. 刷新所有数据 Provider
+      _invalidateDataProviders();
+      
+      // 4. 登录成功后触发数据同步
+      _triggerSync(user);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
@@ -336,24 +337,21 @@ class AuthNotifier extends StreamNotifier<User?> {
     
     try {
       // 1. 调用 AuthRepository 登录
-      await _repository.signInWithPhone(
+      final user = await _repository.signInWithPhone(
         phoneNumber,
         verificationCode,
         verificationId,
       );
-      final user = await _repository.currentUser;
       state = AsyncValue.data(user);
       
-      if (user != null) {
-        // 2. 绑定离线数据到当前用户
-        await _bindOfflineDataIfNeeded(user.id);
-        
-        // 3. 刷新所有数据 Provider
-        _invalidateDataProviders();
-        
-        // 4. 登录成功后触发数据同步
-        _triggerSync(user);
-      }
+      // 2. 绑定离线数据到当前用户
+      await _bindOfflineDataIfNeeded(user.id);
+      
+      // 3. 刷新所有数据 Provider
+      _invalidateDataProviders();
+      
+      // 4. 登录成功后触发数据同步
+      _triggerSync(user);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
