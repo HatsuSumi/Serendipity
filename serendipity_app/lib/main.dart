@@ -141,7 +141,6 @@ class _MyAppState extends ConsumerState<MyApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(networkMonitorServiceProvider).startMonitoring(ref);
       unawaited(ref.read(pushTokenSyncServiceProvider).initialize());
-      unawaited(ref.read(pushTokenSyncServiceProvider).syncForAuthenticatedUser());
     });
   }
   

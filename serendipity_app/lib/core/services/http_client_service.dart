@@ -66,6 +66,11 @@ class HttpClientService {
   Future<String?> getRefreshToken() async {
     return await _storage.getString(_refreshTokenKey);
   }
+
+  /// 是否存在 Refresh Token
+  Future<bool> hasRefreshToken() async {
+    return await getRefreshToken() != null;
+  }
   
   /// 清除 Token
   Future<void> clearTokens() async {
@@ -324,8 +329,19 @@ class HttpClientService {
     
     // 如果不跳过认证，尝试添加 Authorization 头
     if (!skipAuth) {
+      final accessToken = await getAccessToken();
+      if (accessToken == null) {
+        return headers;
+      }
+
       // 检查 Token 是否即将过期
       if (await isTokenExpiringSoon()) {
+        final hasRefreshToken = await this.hasRefreshToken();
+        if (!hasRefreshToken) {
+          await clearTokens();
+          return headers;
+        }
+
         // 如果已有刷新在进行中，等待其完成
         if (_refreshTokenCompleter != null) {
           _refreshWaiters++;
@@ -343,7 +359,7 @@ class HttpClientService {
         } else {
           // 创建新的刷新操作
           _refreshTokenCompleter = Completer<void>();
-          _refreshWaiters = 0;  // 初始化为 0，创建者不计入等待者
+          _refreshWaiters = 0;  // 创建者不计入等待者
           try {
             await refreshToken();
             _refreshTokenCompleter!.complete();
@@ -359,9 +375,9 @@ class HttpClientService {
         }
       }
       
-      final accessToken = await getAccessToken();
-      if (accessToken != null) {
-        headers['Authorization'] = 'Bearer $accessToken';
+      final refreshedAccessToken = await getAccessToken();
+      if (refreshedAccessToken != null) {
+        headers['Authorization'] = 'Bearer $refreshedAccessToken';
       }
       // 没有 token 时不添加 Authorization 头，允许匿名访问公开接口
     }

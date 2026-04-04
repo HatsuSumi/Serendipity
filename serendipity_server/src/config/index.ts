@@ -63,8 +63,6 @@ export const config = Object.freeze({
   checkInReminder: Object.freeze({
     enabled: getOptionalEnv('CHECKIN_REMINDER_ENABLED', 'true') === 'true',
     scanIntervalMs: getOptionalIntEnv('CHECKIN_REMINDER_SCAN_INTERVAL_MS', 60000),
-    notificationTitle: getOptionalEnv('CHECKIN_REMINDER_NOTIFICATION_TITLE', '今晚别忘了签到'),
-    notificationBody: getOptionalEnv('CHECKIN_REMINDER_NOTIFICATION_BODY', '打开 Serendipity 完成今日签到。'),
     fcm: Object.freeze({
       projectId: getOptionalEnv('FCM_PROJECT_ID', ''),
       clientEmail: getOptionalEnv('FCM_CLIENT_EMAIL', ''),

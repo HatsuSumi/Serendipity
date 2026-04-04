@@ -83,7 +83,7 @@ describe('CheckInService', () => {
           checkedAt: new Date('2026-03-31T16:30:00.000Z'),
           createdAt: new Date('2026-03-31T16:30:00.000Z'),
           updatedAt: new Date('2026-03-31T16:30:00.000Z'),
-        },
+        }, 
         {
           id: 'march-last',
           userId: 'user-1',

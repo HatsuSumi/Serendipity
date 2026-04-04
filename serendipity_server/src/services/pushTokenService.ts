@@ -14,7 +14,7 @@ import {
 import { ICheckInRepository } from '../repositories/checkInRepository';
 import { IUserRepository } from '../repositories/userRepository';
 import { PushToken } from '@prisma/client';
-import { config } from '../config';
+import { buildCheckInReminderContent, calculateReminderConsecutiveDays } from './checkInReminderContentBuilder';
 
 const DEFAULT_TIME_WINDOW_MINUTES = 1;
 const HOURS_PER_DAY = 24;
@@ -142,7 +142,8 @@ export class PushTokenService implements IPushTokenService {
     const executions: ReminderDispatchExecution[] = [];
 
     for (const candidate of candidates) {
-      const sendResult = await this.reminderPushSender.send(this.buildReminderPayload(candidate));
+      const payload = await this.buildReminderPayload(candidate);
+      const sendResult = await this.reminderPushSender.send(payload);
       const execution = await this.finalizeDispatch(candidate, sendResult);
       executions.push(execution);
     }
@@ -230,12 +231,19 @@ export class PushTokenService implements IPushTokenService {
     };
   }
 
-  private buildReminderPayload(candidate: ReminderDispatchCandidate): ReminderSendPayload {
+  private async buildReminderPayload(candidate: ReminderDispatchCandidate): Promise<ReminderSendPayload> {
+    const reminderHistory = await this.checkInRepository.findByUserId(candidate.userId);
+    const consecutiveDays = calculateReminderConsecutiveDays(
+      reminderHistory.map((checkIn) => checkIn.date),
+      candidate.reminderDate,
+    );
+    const content = buildCheckInReminderContent(consecutiveDays);
+
     return {
       token: candidate.token,
       platform: candidate.platform,
-      title: config.checkInReminder.notificationTitle,
-      body: config.checkInReminder.notificationBody,
+      title: content.title,
+      body: content.body,
       data: {
         type: 'check_in_reminder',
         userId: candidate.userId,

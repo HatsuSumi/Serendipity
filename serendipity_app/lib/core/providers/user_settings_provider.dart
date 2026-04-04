@@ -8,7 +8,6 @@ import '../../models/user.dart';
 import '../../models/enums.dart';
 import '../services/i_storage_service.dart';
 import '../services/notification_service.dart';
-import '../services/push_token_sync_service.dart';
 import '../services/sync_service.dart';
 import 'auth_provider.dart';
 import 'membership_provider.dart';
@@ -167,12 +166,10 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   Future<void> _handleAuthChanged(User? user) async {
     if (_isLoggedInUser(user)) {
       await _notificationService.cancelCheckInReminder();
-      await _ref.read(pushTokenSyncServiceProvider).syncForAuthenticatedUser();
       await _loadSettings();
       return;
     }
 
-    await _ref.read(pushTokenSyncServiceProvider).unregisterForCurrentUser();
     await _loadSettings();
   }
 

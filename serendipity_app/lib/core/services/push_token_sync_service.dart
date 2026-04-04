@@ -12,20 +12,51 @@ import '../providers/auth_provider.dart';
 import '../repositories/i_remote_data_repository.dart';
 import 'sync_service.dart';
 
-final pushTokenSyncServiceProvider = Provider<PushTokenSyncService>((ref) {
+final pushTokenRemoteServiceProvider = Provider<PushTokenRemoteService>((ref) {
   final repository = ref.read(remoteDataRepositoryProvider);
-  return PushTokenSyncService(ref, repository);
+  return PushTokenRemoteService(repository);
 });
 
-class PushTokenSyncService {
-  PushTokenSyncService(this._ref, this._remoteRepository);
+final pushTokenSignOutInProgressProvider = StateProvider<bool>((ref) => false);
 
-  final Ref _ref;
+final pushTokenSyncServiceProvider = Provider<PushTokenSyncService>((ref) {
+  final remoteService = ref.read(pushTokenRemoteServiceProvider);
+  return PushTokenSyncService(ref, remoteService);
+});
+
+class PushTokenRemoteService {
+  PushTokenRemoteService(this._remoteRepository);
+
   final IRemoteDataRepository _remoteRepository;
 
+  Future<void> unregisterCurrentToken(String? fallbackToken) async {
+    final token = fallbackToken ?? await FirebaseMessaging.instance.getToken();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    try {
+      await _remoteRepository.unregisterPushToken(token);
+    } catch (_) {}
+  }
+
+  Future<void> registerToken(PushTokenRegistration registration) async {
+    await _remoteRepository.registerPushToken(registration);
+  }
+}
+
+class PushTokenSyncService {
+  PushTokenSyncService(this._ref, this._remoteService);
+
+  final Ref _ref;
+  final PushTokenRemoteService _remoteService;
+
   StreamSubscription<String>? _tokenRefreshSubscription;
+  ProviderSubscription<AsyncValue<User?>>? _authSubscription;
   String? _lastSyncedToken;
+  String? _lastAuthenticatedUserId;
   bool _initialized = false;
+  Future<void>? _activeSync;
 
   Future<void> initialize() async {
     if (_initialized || kIsWeb || AppConfig.serverType != ServerType.customServer) {
@@ -38,12 +69,28 @@ class PushTokenSyncService {
         _lastSyncedToken = token;
         unawaited(_syncForCurrentUser(tokenOverride: token));
       },
+      onError: (_, __) {},
     );
+    _authSubscription = _ref.listen<AsyncValue<User?>>(
+      authProvider,
+      (previous, next) {
+        _handleAuthStateChanged(next.valueOrNull);
+      },
+    );
+
+    final currentUser = _ref.read(authProvider).valueOrNull;
+    if (_isAuthenticatedUser(currentUser)) {
+      _lastAuthenticatedUserId = currentUser!.id;
+      await syncForAuthenticatedUser();
+    }
   }
 
   Future<void> dispose() async {
     await _tokenRefreshSubscription?.cancel();
     _tokenRefreshSubscription = null;
+    _authSubscription?.close();
+    _authSubscription = null;
+    _lastAuthenticatedUserId = null;
     _initialized = false;
   }
 
@@ -51,27 +98,66 @@ class PushTokenSyncService {
     await _syncForCurrentUser();
   }
 
+  Future<void> unregisterBeforeSignOut() async {
+    _lastAuthenticatedUserId = null;
+    await unregisterForCurrentUser();
+  }
+
   Future<void> unregisterForCurrentUser() async {
     if (kIsWeb || AppConfig.serverType != ServerType.customServer) {
       return;
     }
 
-    final token = _lastSyncedToken ?? await FirebaseMessaging.instance.getToken();
-    if (token == null || token.isEmpty) {
+    await _remoteService.unregisterCurrentToken(_lastSyncedToken);
+    _lastSyncedToken = null;
+  }
+
+  Future<void> _syncForCurrentUser({String? tokenOverride}) async {
+    if (_activeSync != null) {
+      await _activeSync;
+      return;
+    }
+
+    final syncFuture = _performSyncForCurrentUser(tokenOverride: tokenOverride);
+    _activeSync = syncFuture;
+    try {
+      await syncFuture;
+    } finally {
+      if (identical(_activeSync, syncFuture)) {
+        _activeSync = null;
+      }
+    }
+  }
+
+  void _handleAuthStateChanged(User? user) {
+    if (_isAuthenticatedUser(user)) {
+      final userId = user!.id;
+      if (_lastAuthenticatedUserId == userId) {
+        return;
+      }
+
+      _lastAuthenticatedUserId = userId;
+      unawaited(syncForAuthenticatedUser());
+      return;
+    }
+
+    if (_lastAuthenticatedUserId == null) {
+      return;
+    }
+
+    final isSigningOut = _ref.read(pushTokenSignOutInProgressProvider);
+    _lastAuthenticatedUserId = null;
+
+    if (isSigningOut) {
+      _ref.read(pushTokenSignOutInProgressProvider.notifier).state = false;
       _lastSyncedToken = null;
       return;
     }
 
-    try {
-      await _remoteRepository.unregisterPushToken(token);
-    } catch (_) {
-      // 登出路径静默失败，不阻塞主流程
-    } finally {
-      _lastSyncedToken = null;
-    }
+    unawaited(unregisterForCurrentUser());
   }
 
-  Future<void> _syncForCurrentUser({String? tokenOverride}) async {
+  Future<void> _performSyncForCurrentUser({String? tokenOverride}) async {
     if (kIsWeb || AppConfig.serverType != ServerType.customServer) {
       return;
     }
@@ -88,7 +174,22 @@ class PushTokenSyncService {
       return;
     }
 
-    final token = tokenOverride ?? await FirebaseMessaging.instance.getToken();
+    String? token;
+    try {
+      if (tokenOverride != null) {
+        token = tokenOverride;
+      } else {
+        token = await FirebaseMessaging.instance.getToken().timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            return null;
+          },
+        );
+      }
+    } catch (_) {
+      rethrow;
+    }
+
     if (token == null || token.isEmpty) {
       return;
     }
@@ -100,8 +201,12 @@ class PushTokenSyncService {
       timezone: timezone,
     );
 
-    await _remoteRepository.registerPushToken(registration);
-    _lastSyncedToken = token;
+    try {
+      await _remoteService.registerToken(registration);
+      _lastSyncedToken = token;
+    } catch (_) {
+      rethrow;
+    }
   }
 
   bool _isAuthenticatedUser(User? user) {
@@ -118,4 +223,3 @@ class PushTokenSyncService {
     }
   }
 }
-

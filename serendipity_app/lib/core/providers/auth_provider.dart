@@ -492,7 +492,10 @@ class AuthNotifier extends StreamNotifier<User?> {
     state = const AsyncValue.loading();
     
     try {
-      await ref.read(pushTokenSyncServiceProvider).unregisterForCurrentUser();
+      ref.read(pushTokenSignOutInProgressProvider.notifier).state = true;
+
+      final pushTokenRemoteService = ref.read(pushTokenRemoteServiceProvider);
+      await pushTokenRemoteService.unregisterCurrentToken(null);
 
       // 1. 调用 AuthRepository 登出（清除 Token）
       await _repository.signOut();
@@ -501,13 +504,15 @@ class AuthNotifier extends StreamNotifier<User?> {
       // 保留所有业务数据，支持多用户离线使用
       final storageService = ref.read(storageServiceProvider);
       await storageService.clearAuthData();
-      
-      // 3. 刷新所有数据 Provider
-      _invalidateDataProviders();
-      
-      // 4. 更新认证状态
+
+      // 3. 先更新认证状态，避免依赖 authProvider 的数据 Provider
+      // 在 token 已清除但仍拿到旧用户时发起受保护请求。
       state = const AsyncValue.data(null);
+      
+      // 4. 刷新所有数据 Provider
+      _invalidateDataProviders();
     } catch (e, stack) {
+      ref.read(pushTokenSignOutInProgressProvider.notifier).state = false;
       state = AsyncValue.error(e, stack);
       rethrow; // 重新抛出异常，让调用者可以捕获
     }
@@ -597,16 +602,24 @@ class AuthNotifier extends StreamNotifier<User?> {
 
     // 先获取当前用户 ID，再注销（注销后 _currentUser 会被清空）
     final currentUser = await _repository.currentUser;
-    await ref.read(pushTokenSyncServiceProvider).unregisterForCurrentUser();
-    await _repository.deleteAccount(password);
+    ref.read(pushTokenSignOutInProgressProvider.notifier).state = true;
+
+    try {
+      final pushTokenRemoteService = ref.read(pushTokenRemoteServiceProvider);
+      await pushTokenRemoteService.unregisterCurrentToken(null);
+      await _repository.deleteAccount(password);
+    } catch (e) {
+      ref.read(pushTokenSignOutInProgressProvider.notifier).state = false;
+      rethrow;
+    }
 
     if (currentUser != null) {
       final storageService = ref.read(storageServiceProvider);
       await storageService.deleteUserData(currentUser.id);
     }
 
-    _invalidateDataProviders();
     state = const AsyncValue.data(null);
+    _invalidateDataProviders();
   }
 
   /// 直接更新当前用户 state

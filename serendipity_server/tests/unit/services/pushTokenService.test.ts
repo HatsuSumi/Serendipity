@@ -249,7 +249,7 @@ describe('PushTokenService', () => {
   });
 
   describe('dispatchReminderNotifications', () => {
-    it('发送成功后应该更新为 sent', async () => {
+    it('发送成功后应该更新为 sent 并使用服务端统一动态文案', async () => {
       const now = new Date('2026-04-01T12:00:00.000Z');
       mockPushTokenRepository.findReminderCandidates.mockResolvedValue([
         {
@@ -263,6 +263,32 @@ describe('PushTokenService', () => {
       ]);
       mockPushTokenRepository.hasReminderDispatch.mockResolvedValue(false);
       mockCheckInRepository.findByUserAndDate.mockResolvedValue(null);
+      mockCheckInRepository.findByUserId.mockResolvedValue([
+        {
+          id: 'check-in-1',
+          userId: 'user-1',
+          date: new Date('2026-03-31T00:00:00.000Z'),
+          checkedAt: new Date('2026-03-31T12:00:00.000Z'),
+          createdAt: new Date('2026-03-31T12:00:00.000Z'),
+          updatedAt: new Date('2026-03-31T12:00:00.000Z'),
+        },
+        {
+          id: 'check-in-2',
+          userId: 'user-1',
+          date: new Date('2026-03-30T00:00:00.000Z'),
+          checkedAt: new Date('2026-03-30T12:00:00.000Z'),
+          createdAt: new Date('2026-03-30T12:00:00.000Z'),
+          updatedAt: new Date('2026-03-30T12:00:00.000Z'),
+        },
+        {
+          id: 'check-in-3',
+          userId: 'user-1',
+          date: new Date('2026-03-29T00:00:00.000Z'),
+          checkedAt: new Date('2026-03-29T12:00:00.000Z'),
+          createdAt: new Date('2026-03-29T12:00:00.000Z'),
+          updatedAt: new Date('2026-03-29T12:00:00.000Z'),
+        },
+      ] as any);
       mockPushTokenRepository.createReminderDispatch.mockResolvedValue({} as any);
       mockReminderPushSender.send.mockResolvedValue({
         success: true,
@@ -271,6 +297,18 @@ describe('PushTokenService', () => {
 
       const result = await pushTokenService.dispatchReminderNotifications(['Asia/Shanghai'], now);
 
+      expect(mockReminderPushSender.send).toHaveBeenCalledWith({
+        token: 'push-token-1',
+        platform: 'android',
+        title: '别忘了今天的签到哦 🌟',
+        body: '已连续签到 3 天，继续保持！',
+        data: {
+          type: 'check_in_reminder',
+          userId: 'user-1',
+          reminderDate: '2026-04-01T00:00:00.000Z',
+          reminderTime: '20:00',
+        },
+      });
       expect(mockPushTokenRepository.markReminderDispatchSent).toHaveBeenCalledTimes(1);
       expect(mockPushTokenRepository.markReminderDispatchFailed).not.toHaveBeenCalled();
       expect(result.sentCount).toBe(1);
@@ -292,6 +330,7 @@ describe('PushTokenService', () => {
       ]);
       mockPushTokenRepository.hasReminderDispatch.mockResolvedValue(false);
       mockCheckInRepository.findByUserAndDate.mockResolvedValue(null);
+      mockCheckInRepository.findByUserId.mockResolvedValue([]);
       mockPushTokenRepository.createReminderDispatch.mockResolvedValue({} as any);
       mockReminderPushSender.send.mockResolvedValue({
         success: false,
