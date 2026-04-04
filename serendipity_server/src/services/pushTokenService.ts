@@ -14,7 +14,11 @@ import {
 import { ICheckInRepository } from '../repositories/checkInRepository';
 import { IUserRepository } from '../repositories/userRepository';
 import { PushToken } from '@prisma/client';
-import { buildCheckInReminderContent, calculateReminderConsecutiveDays } from './checkInReminderContentBuilder';
+import {
+  buildCheckInReminderContent,
+  calculateReminderConsecutiveDays,
+} from './checkInReminderContentBuilder';
+import { AnniversaryReminderTestPayload } from '../types/pushToken.dto';
 
 const DEFAULT_TIME_WINDOW_MINUTES = 1;
 const HOURS_PER_DAY = 24;
@@ -61,6 +65,11 @@ export interface IPushTokenService {
   listPushTokens(userId: string): Promise<PushToken[]>;
   getReminderDispatchCandidates(timezones?: string[], now?: Date): Promise<ReminderDispatchCandidate[]>;
   dispatchReminderNotifications(timezones?: string[], now?: Date): Promise<ReminderDispatchSummary>;
+  dispatchReminderNotificationsForUser(
+    userId: string,
+    now?: Date,
+    overridePayload?: AnniversaryReminderTestPayload,
+  ): Promise<ReminderDispatchSummary>;
 }
 
 export class PushTokenService implements IPushTokenService {
@@ -139,10 +148,50 @@ export class PushTokenService implements IPushTokenService {
     now: Date = new Date(),
   ): Promise<ReminderDispatchSummary> {
     const candidates = await this.getReminderDispatchCandidates(timezones, now);
+    return this.dispatchReminderNotificationsForCandidates(candidates);
+  }
+
+  async dispatchReminderNotificationsForUser(
+    userId: string,
+    now: Date = new Date(),
+    overridePayload?: AnniversaryReminderTestPayload,
+  ): Promise<ReminderDispatchSummary> {
+    await this.ensureUserExists(userId);
+    this.validateNow(now);
+
+    const repositoryCandidates = await this.pushTokenRepository.findActiveByUserId(userId);
+    if (repositoryCandidates.length === 0) {
+      return {
+        scannedCandidates: 0,
+        sentCount: 0,
+        failedCount: 0,
+        executions: [],
+      };
+    }
+
+    const candidates = repositoryCandidates.map((pushToken) => ({
+      userId,
+      pushTokenId: pushToken.id,
+      token: pushToken.token,
+      platform: pushToken.platform,
+      timezone: pushToken.timezone,
+      reminderDate: now,
+      reminderTime: 'manual_test',
+    }));
+
+    return this.dispatchReminderNotificationsForCandidates(candidates, overridePayload);
+  }
+
+  private async dispatchReminderNotificationsForCandidates(
+    candidates: ReminderDispatchCandidate[],
+    overridePayload?: AnniversaryReminderTestPayload,
+  ): Promise<ReminderDispatchSummary> {
     const executions: ReminderDispatchExecution[] = [];
 
     for (const candidate of candidates) {
-      const payload = await this.buildReminderPayload(candidate);
+      const payload = overridePayload != null
+        ? this.buildOverrideReminderPayload(candidate, overridePayload)
+        : await this.buildReminderPayload(candidate);
       const sendResult = await this.reminderPushSender.send(payload);
       const execution = await this.finalizeDispatch(candidate, sendResult);
       executions.push(execution);
@@ -228,6 +277,31 @@ export class PushTokenService implements IPushTokenService {
       ...candidate,
       status: ReminderDispatchStatus.Failed,
       failureReason,
+    };
+  }
+
+  private buildOverrideReminderPayload(
+    candidate: ReminderDispatchCandidate,
+    overridePayload: AnniversaryReminderTestPayload,
+  ): ReminderSendPayload {
+    if (overridePayload.title.trim() === '') {
+      throw new Error('Reminder title is required');
+    }
+    if (overridePayload.body.trim() === '') {
+      throw new Error('Reminder body is required');
+    }
+
+    return {
+      token: candidate.token,
+      platform: candidate.platform,
+      title: overridePayload.title,
+      body: overridePayload.body,
+      data: {
+        type: 'anniversary_reminder_test',
+        userId: candidate.userId,
+        reminderDate: candidate.reminderDate.toISOString(),
+        reminderTime: candidate.reminderTime,
+      },
     };
   }
 

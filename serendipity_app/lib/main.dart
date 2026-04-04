@@ -15,6 +15,7 @@ import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
 import 'core/providers/user_settings_provider.dart';
+import 'core/services/sync_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/smart_navigator.dart';
 import 'features/home/main_navigation_page.dart';
@@ -87,8 +88,14 @@ void main() async {
   
   // 初始化通知服务
   final checkInRepository = CheckInRepository(storageService);
+  final providerContainer = ProviderContainer(
+    overrides: [
+      storageServiceProvider.overrideWithValue(storageService),
+    ],
+  );
   final notificationService = NotificationService(
     checkInRepository,
+    remoteDataRepository: providerContainer.read(remoteDataRepositoryProvider),
     storageService: storageService,
   );
 
@@ -113,9 +120,8 @@ void main() async {
   // 运行应用，并提供 storageServiceProvider 的实现
   runApp(
     ProviderScope(
+      parent: providerContainer,
       overrides: [
-        // 提供 StorageService 实例给所有 Provider
-        storageServiceProvider.overrideWithValue(storageService),
         // 提供已初始化的 NotificationService 单实例给所有 Provider
         notificationServiceProvider.overrideWithValue(notificationService),
       ],

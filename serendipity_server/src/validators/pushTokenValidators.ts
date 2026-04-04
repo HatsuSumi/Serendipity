@@ -25,3 +25,4 @@ export const unregisterPushTokenValidation = [
     .notEmpty()
     .withMessage('推送令牌不能为空'),
 ];
+ 

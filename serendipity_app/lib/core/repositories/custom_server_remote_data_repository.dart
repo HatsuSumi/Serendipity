@@ -918,6 +918,30 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     }
   }
 
+  @override
+  Future<Map<String, dynamic>> sendCheckInReminderTest() async {
+    try {
+      final response = await _httpClient.post(
+        '${ServerConfig.pushTokens}/test/check-in-reminder',
+      );
+      return response['data'] as Map<String, dynamic>;
+    } on HttpException catch (e) {
+      throw Exception('发送签到提醒测试推送失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> sendAnniversaryReminderTest() async {
+    try {
+      final response = await _httpClient.post(
+        '${ServerConfig.pushTokens}/test/anniversary-reminder',
+      );
+      return response['data'] as Map<String, dynamic>;
+    } on HttpException catch (e) {
+      throw Exception('发送纪念日提醒测试推送失败：${e.message}');
+    }
+  }
+
   // ==================== 收藏相关操作 ====================
 
   @override

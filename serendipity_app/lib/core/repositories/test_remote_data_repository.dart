@@ -241,6 +241,26 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
     // 测试模式：不执行任何操作
   }
 
+  @override
+  Future<Map<String, dynamic>> sendCheckInReminderTest() async {
+    return {
+      'scannedCandidates': 0,
+      'sentCount': 0,
+      'failedCount': 0,
+      'executions': [],
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> sendAnniversaryReminderTest() async {
+    return {
+      'scannedCandidates': 0,
+      'sentCount': 0,
+      'failedCount': 0,
+      'executions': [],
+    };
+  }
+
   // ==================== 收藏相关操作 ====================
 
   @override

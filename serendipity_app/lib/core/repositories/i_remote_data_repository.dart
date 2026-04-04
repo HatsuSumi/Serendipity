@@ -560,6 +560,12 @@ abstract class IRemoteDataRepository {
   /// 调用者：PushTokenSyncService.unregisterCurrentToken()
   Future<void> unregisterPushToken(String token);
 
+  /// 发送签到提醒服务端测试推送
+  Future<Map<String, dynamic>> sendCheckInReminderTest();
+
+  /// 发送纪念日提醒服务端测试推送
+  Future<Map<String, dynamic>> sendAnniversaryReminderTest();
+
   // ==================== 收藏相关操作 ====================
 
   /// 收藏社区帖子

@@ -1,8 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
-import { IPushTokenService } from '../services/pushTokenService';
-import { sendSuccess } from '../utils/response';
 import { PushToken } from '@prisma/client';
-import { PushTokenResponseDto, RegisterPushTokenDto, UnregisterPushTokenDto } from '../types/pushToken.dto';
+import { IPushTokenService } from '../services/pushTokenService';
+import {
+  AnniversaryReminderTestPayload,
+  PushTokenResponseDto,
+  RegisterPushTokenDto,
+  UnregisterPushTokenDto,
+} from '../types/pushToken.dto';
+import { sendSuccess } from '../utils/response';
+
+const ANNIVERSARY_TEST_PAYLOAD: AnniversaryReminderTestPayload = {
+  title: '今天是一个特别的纪念日 🌸',
+  body: '1年前的今天，你在某个地方邂逅了TA（测试推送）',
+};
 
 export class PushTokenController {
   constructor(private pushTokenService: IPushTokenService) {
@@ -40,6 +50,30 @@ export class PushTokenController {
       sendSuccess(res, {
         pushTokens: pushTokens.map((pushToken) => this.toPushTokenDto(pushToken)),
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  sendCheckInReminderTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const result = await this.pushTokenService.dispatchReminderNotificationsForUser(userId);
+      sendSuccess(res, result, 'Check-in reminder test sent successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  sendAnniversaryReminderTest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const result = await this.pushTokenService.dispatchReminderNotificationsForUser(
+        userId,
+        new Date(),
+        ANNIVERSARY_TEST_PAYLOAD,
+      );
+      sendSuccess(res, result, 'Anniversary reminder test sent successfully');
     } catch (error) {
       next(error);
     }

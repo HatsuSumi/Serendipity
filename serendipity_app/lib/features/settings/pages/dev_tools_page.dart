@@ -106,8 +106,8 @@ class DevToolsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.notifications_active_outlined,
                 color: Colors.pink),
-            title: const Text('发送纪念日测试推送'),
-            subtitle: const Text('5 秒后触发一条纪念日通知，验证推送是否正常'),
+            title: const Text('发送本地纪念日测试通知'),
+            subtitle: const Text('5 秒后触发一条本地纪念日通知，验证本地通知是否正常'),
             onTap: () async {
               final result = await ref
                   .read(notificationServiceProvider)
@@ -116,16 +116,16 @@ class DevToolsPage extends ConsumerWidget {
 
               switch (result) {
                 case TestNotificationResult.scheduled:
-                  MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+                  MessageHelper.showSuccess(context, '本地测试通知已安排，5 秒后将收到通知');
                   break;
                 case TestNotificationResult.permissionDenied:
-                  MessageHelper.showError(context, '通知权限未授予，无法发送测试推送');
+                  MessageHelper.showError(context, '通知权限未授予，无法发送本地测试通知');
                   break;
                 case TestNotificationResult.unsupportedPlatform:
-                  MessageHelper.showWarning(context, '当前平台不支持本地测试推送');
+                  MessageHelper.showWarning(context, '当前平台不支持本地测试通知');
                   break;
                 case TestNotificationResult.schedulingFailed:
-                  MessageHelper.showError(context, '测试推送调度失败，请检查系统通知权限');
+                  MessageHelper.showError(context, '本地测试通知调度失败，请检查系统通知权限');
                   break;
               }
             },
@@ -133,8 +133,8 @@ class DevToolsPage extends ConsumerWidget {
           ListTile(
             leading:
                 const Icon(Icons.alarm_outlined, color: Colors.teal),
-            title: const Text('发送签到提醒测试推送'),
-            subtitle: const Text('5 秒后触发一条签到提醒通知，验证推送是否正常'),
+            title: const Text('发送本地签到提醒测试通知'),
+            subtitle: const Text('5 秒后触发一条本地签到提醒通知，验证本地通知是否正常'),
             onTap: () async {
               final userId = ref.read(authProvider).value?.id;
               final result = await ref
@@ -144,16 +144,80 @@ class DevToolsPage extends ConsumerWidget {
 
               switch (result) {
                 case TestNotificationResult.scheduled:
-                  MessageHelper.showSuccess(context, '测试通知已安排，5 秒后将收到推送');
+                  MessageHelper.showSuccess(context, '本地测试通知已安排，5 秒后将收到通知');
+                  break;
+                case TestNotificationResult.permissionDenied:
+                  MessageHelper.showError(context, '通知权限未授予，无法发送本地测试通知');
+                  break;
+                case TestNotificationResult.unsupportedPlatform:
+                  MessageHelper.showWarning(context, '当前平台不支持本地测试通知');
+                  break;
+                case TestNotificationResult.schedulingFailed:
+                  MessageHelper.showError(context, '本地测试通知调度失败，请检查系统通知权限');
+                  break;
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_outlined, color: Colors.pink),
+            title: const Text('发送服务端纪念日测试推送'),
+            subtitle: const Text('调用服务端推送链路，立即向当前账号已注册设备发送纪念日测试推送'),
+            onTap: () async {
+              final userId = ref.read(authProvider).value?.id;
+              if (userId == null || userId.isEmpty) {
+                MessageHelper.showWarning(context, '请先登录后再测试服务端推送');
+                return;
+              }
+
+              final result = await ref
+                  .read(notificationServiceProvider)
+                  .sendServerTestAnniversaryNotification();
+              if (!context.mounted) return;
+
+              switch (result) {
+                case TestNotificationResult.scheduled:
+                  MessageHelper.showSuccess(context, '服务端纪念日测试推送已发送，请检查设备通知');
                   break;
                 case TestNotificationResult.permissionDenied:
                   MessageHelper.showError(context, '通知权限未授予，无法发送测试推送');
                   break;
                 case TestNotificationResult.unsupportedPlatform:
-                  MessageHelper.showWarning(context, '当前平台不支持本地测试推送');
+                  MessageHelper.showWarning(context, '当前环境未配置服务端推送测试能力');
                   break;
                 case TestNotificationResult.schedulingFailed:
-                  MessageHelper.showError(context, '测试推送调度失败，请检查系统通知权限');
+                  MessageHelper.showError(context, '纪念日测试推送发送失败，请检查 push token 与服务端配置');
+                  break;
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_upload_outlined, color: Colors.teal),
+            title: const Text('发送服务端签到提醒测试推送'),
+            subtitle: const Text('调用服务端推送链路，立即向当前账号已注册设备发送签到提醒测试推送'),
+            onTap: () async {
+              final userId = ref.read(authProvider).value?.id;
+              if (userId == null || userId.isEmpty) {
+                MessageHelper.showWarning(context, '请先登录后再测试服务端推送');
+                return;
+              }
+
+              final result = await ref
+                  .read(notificationServiceProvider)
+                  .sendServerTestCheckInNotification();
+              if (!context.mounted) return;
+
+              switch (result) {
+                case TestNotificationResult.scheduled:
+                  MessageHelper.showSuccess(context, '服务端签到提醒测试推送已发送，请检查设备通知');
+                  break;
+                case TestNotificationResult.permissionDenied:
+                  MessageHelper.showError(context, '通知权限未授予，无法发送测试推送');
+                  break;
+                case TestNotificationResult.unsupportedPlatform:
+                  MessageHelper.showWarning(context, '当前环境未配置服务端推送测试能力');
+                  break;
+                case TestNotificationResult.schedulingFailed:
+                  MessageHelper.showError(context, '签到提醒测试推送发送失败，请检查 push token 与服务端配置');
                   break;
               }
             },

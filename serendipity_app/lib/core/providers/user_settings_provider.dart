@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user_settings.dart';
 import '../../models/user.dart';
+import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../services/i_storage_service.dart';
 import '../services/notification_service.dart';
@@ -20,6 +21,29 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
     'notificationServiceProvider must be overridden in ProviderScope',
   );
 });
+
+final userSettingsStorageProvider = Provider<UserSettingsStorage>((ref) {
+  final storageService = ref.read(storageServiceProvider);
+  return UserSettingsStorage(storageService);
+});
+
+class UserSettingsStorage {
+  const UserSettingsStorage(this._storageService);
+
+  final IStorageService _storageService;
+
+  UserSettings? getUserSettings() {
+    return _storageService.getUserSettings();
+  }
+
+  Future<void> saveUserSettings(UserSettings settings) {
+    return _storageService.saveUserSettings(settings);
+  }
+
+  List<EncounterRecord> getAllRecords() {
+    return _storageService.getAllRecords();
+  }
+}
 
 /// 用户设置状态管理
 ///
@@ -40,16 +64,16 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 /// - 修改时：自动上传到云端（如果用户已登录）
 /// - 登出时：保留本地设置（下次登录会被覆盖）
 class UserSettingsNotifier extends StateNotifier<UserSettings> {
-  final IStorageService _storageService;
-  final NotificationService _notificationService;
+  final UserSettingsStorage _settingsStorage;
   final Ref _ref;
   int _hydrationDepth = 0;
   UserSettings? _lastUploadedSettings;
   bool _hasHydratedOnce = false;
 
+  NotificationService get _notificationService => _ref.read(notificationServiceProvider);
+
   UserSettingsNotifier(
-    this._storageService,
-    this._notificationService,
+    this._settingsStorage,
     this._ref,
   ) : super(_createDefaultSettings()) {
     _hydrateSettings();
@@ -120,7 +144,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 通知用户主题已自动降级
@@ -170,7 +194,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   /// 单一职责：只负责从存储恢复状态，不触发云端回写
   Future<void> _hydrateSettings() async {
     await _runHydration(() async {
-      final settings = _storageService.getUserSettings();
+      final settings = _settingsStorage.getUserSettings();
       if (settings == null) {
         return;
       }
@@ -231,7 +255,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       final granted = await _notificationService.requestPermission();
       if (!granted) return;
 
-      final records = _storageService.getAllRecords();
+      final records = _settingsStorage.getAllRecords();
       await _notificationService.scheduleAnniversaryReminders(records);
     } catch (e) {
       // 调度失败静默处理，不影响用户体验
@@ -265,13 +289,13 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       final serverSettings = await syncService.uploadSettings(settings);
 
       // 用服务端的 updatedAt 更新本地，确保下次同步时时间戳对齐
-      await _storageService.saveUserSettings(serverSettings);
+      await _settingsStorage.saveUserSettings(serverSettings);
       state = serverSettings;
       _lastUploadedSettings = serverSettings;
     } catch (e) {
       // 上传失败，回滚本地状态到上一个已知的好状态
       // 重新从存储加载，确保本地和存储一致
-      final savedSettings = _storageService.getUserSettings();
+      final savedSettings = _settingsStorage.getUserSettings();
       if (savedSettings != null) {
         state = savedSettings;
         _lastUploadedSettings = savedSettings;
@@ -298,7 +322,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -320,7 +344,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     if (enabled) {
@@ -341,7 +365,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -357,7 +381,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -377,7 +401,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 根据开关状态调度或取消通知
@@ -407,7 +431,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 如果签到提醒已启用，重新调度通知
@@ -428,7 +452,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -444,7 +468,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -465,7 +489,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -487,7 +511,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -509,7 +533,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -530,7 +554,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -551,7 +575,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
       updatedAt: now,
     );
 
-    await _storageService.saveUserSettings(updated);
+    await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
     // 上传到云端
@@ -597,7 +621,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 /// 用户设置 Provider
 final userSettingsProvider =
     StateNotifierProvider<UserSettingsNotifier, UserSettings>((ref) {
-      final storageService = ref.read(storageServiceProvider);
-      final notificationService = ref.read(notificationServiceProvider);
-      return UserSettingsNotifier(storageService, notificationService, ref);
+      final settingsStorage = ref.read(userSettingsStorageProvider);
+      return UserSettingsNotifier(settingsStorage, ref);
     });

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../utils/anniversary_helper.dart';
 import '../utils/check_in_reminder_helper.dart';
 import '../repositories/check_in_repository.dart';
+import '../repositories/i_remote_data_repository.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../../models/user_settings.dart';
@@ -38,6 +39,7 @@ enum TestNotificationResult {
 class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin;
   final CheckInRepository _checkInRepository;
+  final IRemoteDataRepository? _remoteDataRepository;
   final IStorageService? _storageService;
   bool _isInitialized = false;
   DateTime Function() _nowProvider;
@@ -62,10 +64,12 @@ class NotificationService {
 
   NotificationService(
     this._checkInRepository, {
+    IRemoteDataRepository? remoteDataRepository,
     IStorageService? storageService,
     FlutterLocalNotificationsPlugin? plugin,
     DateTime Function()? nowProvider,
-  })  : _storageService = storageService,
+  })  : _remoteDataRepository = remoteDataRepository,
+        _storageService = storageService,
         _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
         _nowProvider = nowProvider ?? DateTime.now;
 
@@ -356,6 +360,40 @@ class NotificationService {
       if (n.id >= _anniversaryBaseId) {
         await _plugin.cancel(n.id);
       }
+    }
+  }
+
+  /// 发送服务端签到提醒测试推送（开发测试用）
+  Future<TestNotificationResult> sendServerTestCheckInNotification() async {
+    if (_remoteDataRepository == null) {
+      return TestNotificationResult.unsupportedPlatform;
+    }
+
+    try {
+      final result = await _remoteDataRepository.sendCheckInReminderTest();
+      final sentCount = result['sentCount'] as int? ?? 0;
+      return sentCount > 0
+          ? TestNotificationResult.scheduled
+          : TestNotificationResult.schedulingFailed;
+    } catch (_) {
+      return TestNotificationResult.schedulingFailed;
+    }
+  }
+
+  /// 发送服务端纪念日测试推送（开发测试用）
+  Future<TestNotificationResult> sendServerTestAnniversaryNotification() async {
+    if (_remoteDataRepository == null) {
+      return TestNotificationResult.unsupportedPlatform;
+    }
+
+    try {
+      final result = await _remoteDataRepository.sendAnniversaryReminderTest();
+      final sentCount = result['sentCount'] as int? ?? 0;
+      return sentCount > 0
+          ? TestNotificationResult.scheduled
+          : TestNotificationResult.schedulingFailed;
+    } catch (_) {
+      return TestNotificationResult.schedulingFailed;
     }
   }
 

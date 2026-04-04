@@ -20,3 +20,8 @@ export interface RegisterPushTokenDto {
 export interface UnregisterPushTokenDto {
   token: string;
 }
+
+export interface AnniversaryReminderTestPayload {
+  title: string;
+  body: string;
+}

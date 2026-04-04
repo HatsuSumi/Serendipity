@@ -27,6 +27,16 @@ export function createPushTokenRoutes(pushTokenController: PushTokenController):
   );
 
   router.get('/', authMiddleware, pushTokenController.listPushTokens);
+  router.post(
+    '/test/check-in-reminder',
+    authMiddleware,
+    pushTokenController.sendCheckInReminderTest,
+  );
+  router.post(
+    '/test/anniversary-reminder',
+    authMiddleware,
+    pushTokenController.sendAnniversaryReminderTest,
+  );
 
   return router;
 }
