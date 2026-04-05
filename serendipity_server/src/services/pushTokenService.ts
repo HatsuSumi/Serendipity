@@ -72,6 +72,10 @@ export interface IPushTokenService {
   ): Promise<ReminderDispatchSummary>;
 }
 
+interface DispatchExecutionOptions {
+  persistDispatch: boolean;
+}
+
 export class PushTokenService implements IPushTokenService {
   constructor(
     private pushTokenRepository: IPushTokenRepository,
@@ -148,7 +152,9 @@ export class PushTokenService implements IPushTokenService {
     now: Date = new Date(),
   ): Promise<ReminderDispatchSummary> {
     const candidates = await this.getReminderDispatchCandidates(timezones, now);
-    return this.dispatchReminderNotificationsForCandidates(candidates);
+    return this.dispatchReminderNotificationsForCandidates(candidates, undefined, {
+      persistDispatch: true,
+    });
   }
 
   async dispatchReminderNotificationsForUser(
@@ -179,12 +185,15 @@ export class PushTokenService implements IPushTokenService {
       reminderTime: 'manual_test',
     }));
 
-    return this.dispatchReminderNotificationsForCandidates(candidates, overridePayload);
+    return this.dispatchReminderNotificationsForCandidates(candidates, overridePayload, {
+      persistDispatch: false,
+    });
   }
 
   private async dispatchReminderNotificationsForCandidates(
     candidates: ReminderDispatchCandidate[],
-    overridePayload?: AnniversaryReminderTestPayload,
+    overridePayload: AnniversaryReminderTestPayload | undefined,
+    options: DispatchExecutionOptions,
   ): Promise<ReminderDispatchSummary> {
     const executions: ReminderDispatchExecution[] = [];
 
@@ -193,7 +202,7 @@ export class PushTokenService implements IPushTokenService {
         ? this.buildOverrideReminderPayload(candidate, overridePayload)
         : await this.buildReminderPayload(candidate);
       const sendResult = await this.reminderPushSender.send(payload);
-      const execution = await this.finalizeDispatch(candidate, sendResult);
+      const execution = await this.finalizeDispatch(candidate, sendResult, options);
       executions.push(execution);
     }
 
@@ -253,9 +262,16 @@ export class PushTokenService implements IPushTokenService {
   private async finalizeDispatch(
     candidate: ReminderDispatchCandidate,
     sendResult: ReminderSendResult,
+    options: DispatchExecutionOptions,
   ): Promise<ReminderDispatchExecution> {
     if (sendResult.success) {
-      await this.pushTokenRepository.markReminderDispatchSent(candidate.pushTokenId, candidate.reminderDate, new Date());
+      if (options.persistDispatch) {
+        await this.pushTokenRepository.markReminderDispatchSent(
+          candidate.pushTokenId,
+          candidate.reminderDate,
+          new Date(),
+        );
+      }
       return {
         ...candidate,
         status: ReminderDispatchStatus.Sent,
@@ -263,11 +279,13 @@ export class PushTokenService implements IPushTokenService {
     }
 
     const failureReason = sendResult.failureReason?.trim() || 'push_send_failed';
-    await this.pushTokenRepository.markReminderDispatchFailed(
-      candidate.pushTokenId,
-      candidate.reminderDate,
-      failureReason,
-    );
+    if (options.persistDispatch) {
+      await this.pushTokenRepository.markReminderDispatchFailed(
+        candidate.pushTokenId,
+        candidate.reminderDate,
+        failureReason,
+      );
+    }
 
     if (sendResult.isInvalidToken) {
       await this.pushTokenRepository.markInvalid(candidate.token, failureReason);

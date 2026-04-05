@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -42,7 +45,7 @@ class NotificationService {
   final IRemoteDataRepository? _remoteDataRepository;
   final IStorageService? _storageService;
   bool _isInitialized = false;
-  DateTime Function() _nowProvider;
+  final DateTime Function() _nowProvider;
 
   /// 签到提醒通知ID（固定值，用于更新/取消通知）
   static const int _checkInReminderId = 0;
@@ -56,11 +59,13 @@ class NotificationService {
   static const String _channelId = 'check_in_reminder';
   static const String _channelName = '签到提醒';
   static const String _channelDescription = '每日签到提醒';
+  static const String _serverCheckInPayload = 'server_check_in_reminder';
 
   /// 纪念日提醒渠道
   static const String _anniversaryChannelId = 'anniversary_reminder';
   static const String _anniversaryChannelName = '纪念日提醒';
   static const String _anniversaryChannelDescription = '邂逅周年纪念日提醒';
+  static const String _serverAnniversaryPayload = 'server_anniversary_reminder';
 
   NotificationService(
     this._checkInRepository, {
@@ -112,7 +117,106 @@ class NotificationService {
       throw StateError('Failed to initialize notification service');
     }
 
+    await _createAndroidNotificationChannels();
+    await _configureFirebaseMessageHandlers();
+
     _isInitialized = true;
+  }
+
+  Future<void> _configureFirebaseMessageHandlers() async {
+    FirebaseMessaging.onMessage.listen(_handleForegroundRemoteMessage);
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleRemoteMessageOpenedApp);
+
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      await _handleRemoteMessageOpenedApp(initialMessage);
+    }
+  }
+
+  Future<void> _createAndroidNotificationChannels() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) {
+      return;
+    }
+
+    await androidPlugin.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDescription,
+        importance: Importance.high,
+      ),
+    );
+    await androidPlugin.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _anniversaryChannelId,
+        _anniversaryChannelName,
+        description: _anniversaryChannelDescription,
+        importance: Importance.high,
+      ),
+    );
+  }
+
+  Future<void> _handleForegroundRemoteMessage(RemoteMessage message) async {
+    await _showRemoteMessageNotification(message);
+  }
+
+  Future<void> _handleRemoteMessageOpenedApp(RemoteMessage message) async {}
+
+  Future<void> _showRemoteMessageNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    final data = message.data;
+    final title = notification?.title ?? _resolveRemoteMessageTitle(data);
+    final body = notification?.body ?? _resolveRemoteMessageBody(data);
+    if (title == null || body == null) {
+      return;
+    }
+
+    final payload = _resolveRemoteMessagePayload(data);
+    final channelId = payload == _serverAnniversaryPayload
+        ? _anniversaryChannelId
+        : _channelId;
+    final channelName = payload == _serverAnniversaryPayload
+        ? _anniversaryChannelName
+        : _channelName;
+    final channelDescription = payload == _serverAnniversaryPayload
+        ? _anniversaryChannelDescription
+        : _channelDescription;
+
+    await _plugin.show(
+      message.messageId.hashCode,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      payload: payload,
+    );
+  }
+
+  String _resolveRemoteMessagePayload(Map<String, dynamic> data) {
+    return switch (data['type']) {
+      'anniversary_reminder' || 'anniversary_reminder_test' => _serverAnniversaryPayload,
+      _ => _serverCheckInPayload,
+    };
+  }
+
+  String? _resolveRemoteMessageTitle(Map<String, dynamic> data) {
+    final title = data['title'];
+    return title is String && title.trim().isNotEmpty ? title : null;
+  }
+
+  String? _resolveRemoteMessageBody(Map<String, dynamic> data) {
+    final body = data['body'];
+    return body is String && body.trim().isNotEmpty ? body : null;
   }
 
   /// Fail Fast：确保通知服务已初始化

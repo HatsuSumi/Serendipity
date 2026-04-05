@@ -1,5 +1,9 @@
+  import http from 'node:http';
 import http2 from 'node:http2';
+import https from 'node:https';
+import { URL } from 'node:url';
 import jwt from 'jsonwebtoken';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import { config } from '../config';
 import {
   IReminderPushSender,
@@ -29,6 +33,12 @@ interface GoogleAccessTokenResponseBody {
   expires_in?: number;
 }
 
+interface HttpResponsePayload {
+  statusCode: number;
+  headers: Record<string, string | string[] | undefined>;
+  body: string;
+}
+
 interface RuntimeReminderConfig {
   fcmProjectId: string;
   fcmClientEmail: string;
@@ -40,6 +50,19 @@ interface RuntimeReminderConfig {
   apnsProduction: boolean;
 }
 
+interface ErrorWithCause extends Error {
+  cause?: unknown;
+  code?: string;
+  errno?: string | number;
+  syscall?: string;
+  address?: string;
+  port?: number;
+}
+
+interface FetchRuntimeOptions {
+  proxyUrl?: string;
+}
+
 export class ReminderPushSender implements IReminderPushSender {
   private fcmAccessTokenCache:
     | {
@@ -47,6 +70,8 @@ export class ReminderPushSender implements IReminderPushSender {
         expiresAt: number;
       }
     | null = null;
+
+  private readonly fetchRuntimeOptions = this.createFetchRuntimeOptions();
 
   async send(payload: ReminderSendPayload): Promise<ReminderSendResult> {
     if (!payload.token || payload.token.trim() === '') {
@@ -86,56 +111,65 @@ export class ReminderPushSender implements IReminderPushSender {
       };
     }
 
-    const accessToken = await this.getFcmAccessToken(runtimeConfig);
-    const response = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
-      {
-        method: 'POST',
-        headers: {
-          ...JSON_HEADERS,
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          message: {
-            token: payload.token,
-            notification: {
-              title: payload.title,
-              body: payload.body,
-            },
-            data: payload.data,
-            android: {
-              priority: 'high',
+    try {
+      const accessToken = await this.getFcmAccessToken(runtimeConfig);
+      const response = await this.requestJson(
+        `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
+        {
+          method: 'POST',
+          headers: {
+            ...JSON_HEADERS,
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            message: {
+              token: payload.token,
               notification: {
-                channel_id: 'check_in_reminder',
-                sound: 'default',
+                title: payload.title,
+                body: payload.body,
+              },
+              data: payload.data,
+              android: {
+                priority: 'high',
+                notification: {
+                  channel_id: 'check_in_reminder',
+                  sound: 'default',
+                },
               },
             },
-          },
-        }),
-      },
-    );
+          }),
+        },
+      );
 
-    if (!response.ok) {
-      const rawBody = await response.text();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        const failureReason = this.parseFcmV1FailureReason(response.statusCode, response.body);
+        return {
+          success: false,
+          failureReason,
+          isInvalidToken: this.isFcmInvalidTokenResponse(response.statusCode, response.body),
+        };
+      }
+
+      const body = JSON.parse(response.body) as FcmV1SuccessResponseBody;
+      if (!body.name) {
+        return {
+          success: false,
+          failureReason: 'fcm_empty_result',
+        };
+      }
+
       return {
-        success: false,
-        failureReason: this.parseFcmV1FailureReason(response.status, rawBody),
-        isInvalidToken: this.isFcmInvalidTokenResponse(response.status, rawBody),
+        success: true,
+        providerMessageId: body.name,
       };
+    } catch (error) {
+      this.logFetchFailure('FCM send request threw before response', error, {
+        endpoint: `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
+        platform: payload.platform,
+        tokenLength: payload.token.length,
+      });
+      throw error;
     }
-
-    const body = (await response.json()) as FcmV1SuccessResponseBody;
-    if (!body.name) {
-      return {
-        success: false,
-        failureReason: 'fcm_empty_result',
-      };
-    }
-
-    return {
-      success: true,
-      providerMessageId: body.name,
-    };
   }
 
   private async sendApns(
@@ -310,22 +344,31 @@ export class ReminderPushSender implements IReminderPushSender {
       },
     );
 
-    const response = await fetch(FCM_TOKEN_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to acquire FCM access token: ${response.status}`);
+    let response: HttpResponsePayload;
+    try {
+      response = await this.requestJson(FCM_TOKEN_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          assertion,
+        }).toString(),
+      });
+    } catch (error) {
+      this.logFetchFailure('FCM access token request threw before response', error, {
+        endpoint: FCM_TOKEN_ENDPOINT,
+        clientEmail: runtimeConfig.fcmClientEmail,
+      });
+      throw error;
     }
 
-    const body = (await response.json()) as GoogleAccessTokenResponseBody;
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw new Error(`Failed to acquire FCM access token: ${response.statusCode}`);
+    }
+
+    const body = JSON.parse(response.body) as GoogleAccessTokenResponseBody;
     if (!body.access_token || !body.expires_in) {
       throw new Error('FCM access token response is invalid');
     }
@@ -336,6 +379,95 @@ export class ReminderPushSender implements IReminderPushSender {
     };
 
     return body.access_token;
+  }
+
+  private async requestJson(
+    url: string,
+    init: {
+      method: 'POST';
+      headers: Record<string, string>;
+      body: string;
+    },
+  ): Promise<HttpResponsePayload> {
+    const parsedUrl = new URL(url);
+    const agent = this.createHttpsAgent();
+    const transport = parsedUrl.protocol === 'https:' ? https : http;
+
+    return new Promise((resolve, reject) => {
+      const request = transport.request(
+        {
+          protocol: parsedUrl.protocol,
+          hostname: parsedUrl.hostname,
+          port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+          path: `${parsedUrl.pathname}${parsedUrl.search}`,
+          method: init.method,
+          headers: {
+            ...init.headers,
+            'Content-Length': Buffer.byteLength(init.body).toString(),
+          },
+          agent,
+        },
+        (response) => {
+          const chunks: Buffer[] = [];
+          response.on('data', (chunk: Buffer | string) => {
+            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          });
+          response.on('end', () => {
+            resolve({
+              statusCode: response.statusCode ?? 0,
+              headers: response.headers,
+              body: Buffer.concat(chunks).toString('utf8'),
+            });
+          });
+        },
+      );
+
+      request.on('error', reject);
+      request.setTimeout(10_000, () => {
+        request.destroy(new Error(`Request timeout: ${parsedUrl.host}`));
+      });
+      request.write(init.body);
+      request.end();
+    });
+  }
+
+  private createHttpsAgent(): https.Agent | HttpsProxyAgent<string> | undefined {
+    const proxyUrl = this.fetchRuntimeOptions.proxyUrl;
+    if (!proxyUrl) {
+      return undefined;
+    }
+
+    return new HttpsProxyAgent(proxyUrl);
+  }
+
+  private createFetchRuntimeOptions(): FetchRuntimeOptions {
+    const proxyUrl = this.readProxyUrl();
+    if (!proxyUrl) {
+      return {};
+    }
+
+    return {
+      proxyUrl,
+    };
+  }
+
+  private readProxyUrl(): string | undefined {
+    const rawProxyUrl = process.env.HTTPS_PROXY ?? process.env.HTTP_PROXY;
+    const proxyUrl = rawProxyUrl?.trim();
+    return proxyUrl ? proxyUrl : undefined;
+  }
+
+  private maskProxyUrl(proxyUrl: string | undefined): string | undefined {
+    if (!proxyUrl) {
+      return undefined;
+    }
+
+    try {
+      const parsed = new URL(proxyUrl);
+      return `${parsed.protocol}//${parsed.host}`;
+    } catch {
+      return proxyUrl;
+    }
   }
 
   private parseFcmV1FailureReason(statusCode: number, rawBody: string): string {
@@ -381,6 +513,33 @@ export class ReminderPushSender implements IReminderPushSender {
       return value[0] ?? '';
     }
     return '';
+  }
+
+  private logFetchFailure(message: string, error: unknown, context: Record<string, unknown>): void {
+    const normalizedError = error as ErrorWithCause;
+    const cause = normalizedError.cause as ErrorWithCause | undefined;
+
+    console.error('[ReminderPushSender] fetch diagnostics', {
+      message,
+      ...context,
+      errorName: normalizedError?.name,
+      errorMessage: normalizedError?.message,
+      errorStack: normalizedError?.stack,
+      errorCode: normalizedError?.code,
+      errorErrno: normalizedError?.errno,
+      errorSyscall: normalizedError?.syscall,
+      errorAddress: normalizedError?.address,
+      errorPort: normalizedError?.port,
+      causeName: cause?.name,
+      causeMessage: cause?.message,
+      causeStack: cause?.stack,
+      causeCode: cause?.code,
+      causeErrno: cause?.errno,
+      causeSyscall: cause?.syscall,
+      causeAddress: cause?.address,
+      causePort: cause?.port,
+      cause,
+    });
   }
 
   private normalizePrivateKey(privateKey: string): string {
