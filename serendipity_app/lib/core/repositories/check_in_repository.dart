@@ -187,6 +187,15 @@ class CheckInRepository {
     return streakDays;
   }
 
+  /// 计算用于提醒文案的最长连续签到天数
+  ///
+  /// 用于区分“真的断签过”和“尚未形成签到习惯”：
+  /// - 返回历史最长连续签到天数
+  /// - 无签到记录时返回 0
+  int calculateMaxConsecutiveDays({String? userId}) {
+    return calculateLongestConsecutiveStreak(userId: userId).days;
+  }
+
   /// 获取累计签到天数
   /// 
   /// 参数：

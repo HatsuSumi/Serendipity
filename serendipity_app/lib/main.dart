@@ -16,6 +16,7 @@ import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
 import 'core/providers/user_settings_provider.dart';
 import 'core/services/sync_service.dart';
+import 'core/repositories/i_remote_data_repository.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/smart_navigator.dart';
 import 'features/home/main_navigation_page.dart';
@@ -88,16 +89,24 @@ void main() async {
   
   // 初始化通知服务
   final checkInRepository = CheckInRepository(storageService);
-  final providerContainer = ProviderContainer(
+  final bootstrapContainer = ProviderContainer(
     overrides: [
       storageServiceProvider.overrideWithValue(storageService),
     ],
   );
+  final remoteDataRepository = bootstrapContainer.read(remoteDataRepositoryProvider);
   final notificationService = NotificationService(
     checkInRepository,
-    remoteDataRepository: providerContainer.read(remoteDataRepositoryProvider),
+    remoteDataRepository: remoteDataRepository,
     storageService: storageService,
   );
+  final providerContainer = ProviderContainer(
+    overrides: [
+      storageServiceProvider.overrideWithValue(storageService),
+      notificationServiceProvider.overrideWithValue(notificationService),
+    ],
+  );
+  bootstrapContainer.dispose();
 
   try {
     await notificationService.initialize();
@@ -117,14 +126,10 @@ void main() async {
     SmartNavigator.debugMode = true;
   }
   
-  // 运行应用，并提供 storageServiceProvider 的实现
+  // 运行应用，并提供已初始化的 Provider 实现
   runApp(
-    ProviderScope(
-      parent: providerContainer,
-      overrides: [
-        // 提供已初始化的 NotificationService 单实例给所有 Provider
-        notificationServiceProvider.overrideWithValue(notificationService),
-      ],
+    UncontrolledProviderScope(
+      container: providerContainer,
       child: const MyApp(),
     ),
   );

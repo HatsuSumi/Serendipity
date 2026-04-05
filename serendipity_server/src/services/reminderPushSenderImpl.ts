@@ -112,56 +112,56 @@ export class ReminderPushSender implements IReminderPushSender {
     }
 
     try {
-      const accessToken = await this.getFcmAccessToken(runtimeConfig);
+    const accessToken = await this.getFcmAccessToken(runtimeConfig);
       const response = await this.requestJson(
-        `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
-        {
-          method: 'POST',
-          headers: {
-            ...JSON_HEADERS,
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            message: {
-              token: payload.token,
+      `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
+      {
+        method: 'POST',
+        headers: {
+          ...JSON_HEADERS,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          message: {
+            token: payload.token,
+            notification: {
+              title: payload.title,
+              body: payload.body,
+            },
+            data: payload.data,
+            android: {
+              priority: 'high',
               notification: {
-                title: payload.title,
-                body: payload.body,
-              },
-              data: payload.data,
-              android: {
-                priority: 'high',
-                notification: {
-                  channel_id: 'check_in_reminder',
-                  sound: 'default',
-                },
+                channel_id: 'check_in_reminder',
+                sound: 'default',
               },
             },
-          }),
-        },
-      );
+          },
+        }),
+      },
+    );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         const failureReason = this.parseFcmV1FailureReason(response.statusCode, response.body);
-        return {
-          success: false,
+      return {
+        success: false,
           failureReason,
           isInvalidToken: this.isFcmInvalidTokenResponse(response.statusCode, response.body),
-        };
-      }
+      };
+    }
 
       const body = JSON.parse(response.body) as FcmV1SuccessResponseBody;
-      if (!body.name) {
-        return {
-          success: false,
-          failureReason: 'fcm_empty_result',
-        };
-      }
-
+    if (!body.name) {
       return {
-        success: true,
-        providerMessageId: body.name,
+        success: false,
+        failureReason: 'fcm_empty_result',
       };
+    }
+
+    return {
+      success: true,
+      providerMessageId: body.name,
+    };
     } catch (error) {
       this.logFetchFailure('FCM send request threw before response', error, {
         endpoint: `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
@@ -347,15 +347,15 @@ export class ReminderPushSender implements IReminderPushSender {
     let response: HttpResponsePayload;
     try {
       response = await this.requestJson(FCM_TOKEN_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-          assertion,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion,
         }).toString(),
-      });
+    });
     } catch (error) {
       this.logFetchFailure('FCM access token request threw before response', error, {
         endpoint: FCM_TOKEN_ENDPOINT,
@@ -455,19 +455,6 @@ export class ReminderPushSender implements IReminderPushSender {
     const rawProxyUrl = process.env.HTTPS_PROXY ?? process.env.HTTP_PROXY;
     const proxyUrl = rawProxyUrl?.trim();
     return proxyUrl ? proxyUrl : undefined;
-  }
-
-  private maskProxyUrl(proxyUrl: string | undefined): string | undefined {
-    if (!proxyUrl) {
-      return undefined;
-    }
-
-    try {
-      const parsed = new URL(proxyUrl);
-      return `${parsed.protocol}//${parsed.host}`;
-    } catch {
-      return proxyUrl;
-    }
   }
 
   private parseFcmV1FailureReason(statusCode: number, rawBody: string): string {

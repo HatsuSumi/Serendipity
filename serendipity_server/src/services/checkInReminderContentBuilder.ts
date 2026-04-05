@@ -3,11 +3,27 @@ export interface CheckInReminderContent {
   body: string;
 }
 
-const DEFAULT_TITLE = '别忘了今天的签到哦 🌟';
+export interface CheckInReminderContentContext {
+  consecutiveDays: number;
+  maxConsecutiveDays: number;
+}
 
-export function buildCheckInReminderContent(consecutiveDays: number): CheckInReminderContent {
+const DEFAULT_TITLE = '别忘了今天的签到哦 🌟';
+const HABIT_FORMING_STREAK_DAYS = 2;
+
+export function buildCheckInReminderContent(
+  context: CheckInReminderContentContext,
+): CheckInReminderContent {
+  const { consecutiveDays, maxConsecutiveDays } = context;
+
   if (!Number.isInteger(consecutiveDays) || consecutiveDays < 0) {
     throw new Error('consecutiveDays must be a non-negative integer');
+  }
+  if (!Number.isInteger(maxConsecutiveDays) || maxConsecutiveDays < 0) {
+    throw new Error('maxConsecutiveDays must be a non-negative integer');
+  }
+  if (maxConsecutiveDays < consecutiveDays) {
+    throw new Error('maxConsecutiveDays must be greater than or equal to consecutiveDays');
   }
 
   if (consecutiveDays === 6) {
@@ -45,9 +61,16 @@ export function buildCheckInReminderContent(consecutiveDays: number): CheckInRem
     };
   }
 
+  if (maxConsecutiveDays >= HABIT_FORMING_STREAK_DAYS) {
+    return {
+      title: DEFAULT_TITLE,
+      body: '重新开始签到，加油！',
+    };
+  }
+
   return {
     title: DEFAULT_TITLE,
-    body: '重新开始签到，加油！',
+    body: '今天也别忘了签到哦～',
   };
 }
 
@@ -83,6 +106,32 @@ export function calculateReminderConsecutiveDays(checkInDates: Date[], reminderD
   }
 
   return streakDays;
+}
+
+export function calculateMaxConsecutiveDays(checkInDates: Date[]): number {
+  if (checkInDates.length === 0) {
+    return 0;
+  }
+
+  const normalizedDates = Array.from(new Set(checkInDates.map((date) => toDateKey(normalizeDate(date))))).sort();
+
+  let maxStreakDays = 1;
+  let currentStreakDays = 1;
+
+  for (let index = 1; index < normalizedDates.length; index += 1) {
+    const currentDate = new Date(`${normalizedDates[index]}T00:00:00.000Z`);
+    const previousDate = new Date(`${normalizedDates[index - 1]}T00:00:00.000Z`);
+
+    if (toDateKey(addDays(previousDate, 1)) === toDateKey(currentDate)) {
+      currentStreakDays += 1;
+      maxStreakDays = Math.max(maxStreakDays, currentStreakDays);
+      continue;
+    }
+
+    currentStreakDays = 1;
+  }
+
+  return maxStreakDays;
 }
 
 function normalizeDate(date: Date): Date {

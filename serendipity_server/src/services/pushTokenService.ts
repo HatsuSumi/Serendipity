@@ -16,6 +16,7 @@ import { IUserRepository } from '../repositories/userRepository';
 import { PushToken } from '@prisma/client';
 import {
   buildCheckInReminderContent,
+  calculateMaxConsecutiveDays,
   calculateReminderConsecutiveDays,
 } from './checkInReminderContentBuilder';
 import { AnniversaryReminderTestPayload } from '../types/pushToken.dto';
@@ -280,11 +281,11 @@ export class PushTokenService implements IPushTokenService {
 
     const failureReason = sendResult.failureReason?.trim() || 'push_send_failed';
     if (options.persistDispatch) {
-      await this.pushTokenRepository.markReminderDispatchFailed(
-        candidate.pushTokenId,
-        candidate.reminderDate,
-        failureReason,
-      );
+    await this.pushTokenRepository.markReminderDispatchFailed(
+      candidate.pushTokenId,
+      candidate.reminderDate,
+      failureReason,
+    );
     }
 
     if (sendResult.isInvalidToken) {
@@ -325,11 +326,16 @@ export class PushTokenService implements IPushTokenService {
 
   private async buildReminderPayload(candidate: ReminderDispatchCandidate): Promise<ReminderSendPayload> {
     const reminderHistory = await this.checkInRepository.findByUserId(candidate.userId);
+    const checkInDates = reminderHistory.map((checkIn) => checkIn.date);
     const consecutiveDays = calculateReminderConsecutiveDays(
-      reminderHistory.map((checkIn) => checkIn.date),
+      checkInDates,
       candidate.reminderDate,
     );
-    const content = buildCheckInReminderContent(consecutiveDays);
+    const maxConsecutiveDays = calculateMaxConsecutiveDays(checkInDates);
+    const content = buildCheckInReminderContent({
+      consecutiveDays,
+      maxConsecutiveDays,
+    });
 
     return {
       token: candidate.token,
