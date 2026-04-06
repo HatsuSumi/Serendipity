@@ -1,4 +1,4 @@
-  import http from 'node:http';
+import http from 'node:http';
 import http2 from 'node:http2';
 import https from 'node:https';
 import { URL } from 'node:url';
@@ -111,60 +111,65 @@ export class ReminderPushSender implements IReminderPushSender {
       };
     }
 
+    const endpoint = `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`;
+    const channelId = this.resolveAndroidChannelId(payload);
+
     try {
-    const accessToken = await this.getFcmAccessToken(runtimeConfig);
+      const accessToken = await this.getFcmAccessToken(runtimeConfig);
       const response = await this.requestJson(
-      `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
-      {
-        method: 'POST',
-        headers: {
-          ...JSON_HEADERS,
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          message: {
-            token: payload.token,
-            notification: {
-              title: payload.title,
-              body: payload.body,
-            },
-            data: payload.data,
-            android: {
-              priority: 'high',
+        endpoint,
+        {
+          method: 'POST',
+          headers: {
+            ...JSON_HEADERS,
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            message: {
+              token: payload.token,
               notification: {
-                channel_id: 'check_in_reminder',
-                sound: 'default',
+                title: payload.title,
+                body: payload.body,
+              },
+              data: payload.data,
+              android: {
+                priority: 'high',
+                notification: {
+                  channel_id: channelId,
+                  sound: 'default',
+                },
               },
             },
-          },
-        }),
-      },
-    );
+          }),
+        },
+      );
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         const failureReason = this.parseFcmV1FailureReason(response.statusCode, response.body);
-      return {
-        success: false,
+        return {
+          success: false,
           failureReason,
           isInvalidToken: this.isFcmInvalidTokenResponse(response.statusCode, response.body),
-      };
-    }
+        };
+      }
 
       const body = JSON.parse(response.body) as FcmV1SuccessResponseBody;
-    if (!body.name) {
-      return {
-        success: false,
-        failureReason: 'fcm_empty_result',
-      };
-    }
+      if (!body.name) {
+        return {
+          success: false,
+          failureReason: 'fcm_empty_result',
+        };
+      }
 
-    return {
-      success: true,
-      providerMessageId: body.name,
-    };
+      return {
+        success: true,
+        providerMessageId: body.name,
+      };
     } catch (error) {
       this.logFetchFailure('FCM send request threw before response', error, {
-        endpoint: `https://fcm.googleapis.com/v1/projects/${runtimeConfig.fcmProjectId}/messages:send`,
+        endpoint,
+        channelId,
+        messageType: payload.data.type,
         platform: payload.platform,
         tokenLength: payload.token.length,
       });
@@ -308,6 +313,12 @@ export class ReminderPushSender implements IReminderPushSender {
     };
   }
 
+  private resolveAndroidChannelId(payload: ReminderSendPayload): string {
+    return payload.data.type === 'anniversary_reminder' || payload.data.type === 'anniversary_reminder_test'
+      ? 'anniversary_reminder'
+      : 'check_in_reminder';
+  }
+
   private parseApnsReason(rawBody: string): string | undefined {
     if (rawBody.trim() === '') {
       return undefined;
@@ -347,15 +358,15 @@ export class ReminderPushSender implements IReminderPushSender {
     let response: HttpResponsePayload;
     try {
       response = await this.requestJson(FCM_TOKEN_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+          assertion,
         }).toString(),
-    });
+      });
     } catch (error) {
       this.logFetchFailure('FCM access token request threw before response', error, {
         endpoint: FCM_TOKEN_ENDPOINT,
