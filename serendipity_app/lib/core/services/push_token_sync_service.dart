@@ -10,6 +10,7 @@ import '../../models/user.dart';
 import '../config/app_config.dart';
 import '../providers/auth_provider.dart';
 import '../repositories/i_remote_data_repository.dart';
+import 'push_models.dart';
 import 'sync_service.dart';
 
 final pushTokenRemoteServiceProvider = Provider<PushTokenRemoteService>((ref) {
@@ -43,6 +44,10 @@ class PushTokenRemoteService {
   Future<void> registerToken(PushTokenRegistration registration) async {
     await _remoteRepository.registerPushToken(registration);
   }
+
+  Future<RepositoryPushTokenStatus> fetchRegisteredTokens() async {
+    return _remoteRepository.listPushTokens();
+  }
 }
 
 class PushTokenSyncService {
@@ -57,6 +62,7 @@ class PushTokenSyncService {
   String? _lastAuthenticatedUserId;
   bool _initialized = false;
   Future<void>? _activeSync;
+  PushTokenSyncStatus _lastSyncStatus = const PushTokenSyncStatus.idle();
 
   Future<void> initialize() async {
     if (_initialized || kIsWeb || AppConfig.serverType != ServerType.customServer) {
@@ -97,6 +103,25 @@ class PushTokenSyncService {
   Future<void> syncForAuthenticatedUser() async {
     await _syncForCurrentUser();
   }
+
+  User? get currentAuthenticatedUser {
+    final user = _ref.read(authProvider).value;
+    return _isAuthenticatedUser(user) ? user : null;
+  }
+
+  Future<RepositoryPushTokenStatus?> fetchRegisteredTokensForCurrentUser() async {
+    if (kIsWeb || AppConfig.serverType != ServerType.customServer) {
+      return null;
+    }
+
+    if (currentAuthenticatedUser == null) {
+      return null;
+    }
+
+    return _remoteService.fetchRegisteredTokens();
+  }
+
+  PushTokenSyncStatus get lastSyncStatus => _lastSyncStatus;
 
   Future<void> unregisterBeforeSignOut() async {
     _lastAuthenticatedUserId = null;
@@ -162,15 +187,16 @@ class PushTokenSyncService {
       return;
     }
 
-    final authState = _ref.read(authProvider);
-    final user = authState.value;
-    if (!_isAuthenticatedUser(user)) {
+    final user = currentAuthenticatedUser;
+    if (user == null) {
       return;
     }
 
-    final permission = await FirebaseMessaging.instance.requestPermission();
-    if (permission.authorizationStatus != AuthorizationStatus.authorized &&
-        permission.authorizationStatus != AuthorizationStatus.provisional) {
+    final settings = await FirebaseMessaging.instance.getNotificationSettings();
+    final permissionGranted = settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
+    if (!permissionGranted) {
+      _lastSyncStatus = const PushTokenSyncStatus.failure(errorMessage: '通知权限未授予');
       return;
     }
 
@@ -186,11 +212,13 @@ class PushTokenSyncService {
           },
         );
       }
-    } catch (_) {
+    } catch (error) {
+      _lastSyncStatus = PushTokenSyncStatus.failure(errorMessage: error.toString());
       rethrow;
     }
 
     if (token == null || token.isEmpty) {
+      _lastSyncStatus = const PushTokenSyncStatus.failure(errorMessage: '未获取到 push token');
       return;
     }
 
@@ -204,7 +232,9 @@ class PushTokenSyncService {
     try {
       await _remoteService.registerToken(registration);
       _lastSyncedToken = token;
-    } catch (_) {
+      _lastSyncStatus = PushTokenSyncStatus.success(syncedAt: DateTime.now());
+    } catch (error) {
+      _lastSyncStatus = PushTokenSyncStatus.failure(errorMessage: error.toString());
       rethrow;
     }
   }

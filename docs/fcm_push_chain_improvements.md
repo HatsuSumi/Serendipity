@@ -2,6 +2,28 @@
 
 本文汇总当前 FCM 推送链路中已识别的 9 个可改进点/潜在问题，便于后续逐项治理。
 
+## 已落地
+
+### 已完成的改进
+1. DevTools 服务端测试推送反馈已改为基于 `sentCount / failedCount / scannedCandidates` 的真实结果展示。
+2. 服务端测试接口已收紧业务语义：
+   - 没有活跃 push token：直接返回明确失败
+   - 全部发送失败：直接返回明确失败
+   - 部分成功 / 全部成功：返回 summary 给客户端展示
+3. DevTools 已增加轻量推送诊断入口，可查看：
+   - 当前平台
+   - 通知权限状态
+   - 当前 token 是否获取成功
+   - token 摘要
+4. 服务端已补充业务 summary 日志，包含：
+   - `userId`
+   - `dispatchSource`
+   - `scannedCandidates`
+   - `sentCount`
+   - `failedCount`
+   - `failureReasons`
+5. 测试触发与调度触发已通过 `dispatchSource` 区分为 `manual_test` / `scheduler`。
+
 ## 1. DevTools 成功提示语义不准确
 当前开发工具页只要服务端测试接口返回成功响应，就提示“测试推送已发送，请检查设备通知”。
 
@@ -14,9 +36,10 @@
 - 系统一定展示通知
 - 当前网络环境下 FCM 下行链路一定可达
 
-建议：
-- 将提示语改为更准确的“服务端已提交测试推送，请检查设备通知与网络环境”
-- 结合 `sentCount`、`failedCount`、`scannedCandidates` 生成反馈
+当前状态：
+- 已修复
+- 现在前端会提示“服务端已提交测试推送，请检查设备通知与网络环境”
+- 并同时展示 `sentCount`、`failedCount`、`scannedCandidates`
 
 ## 2. 服务端测试接口返回语义过宽松
 当前测试接口只要未抛异常，就统一返回成功响应；即使：
@@ -26,10 +49,11 @@
 
 前端也会把它当作“已发送成功”。
 
-建议：
-- `scannedCandidates = 0` 时返回更明确的业务失败语义
-- `sentCount = 0 && failedCount > 0` 时返回明确失败结果或至少带显式状态字段
-- 保留部分成功时的 summary 结果
+当前状态：
+- 已修复
+- `scannedCandidates = 0` 时直接返回明确失败
+- `sentCount = 0 && failedCount > 0` 时直接返回明确失败
+- 部分成功时保留 summary 结果
 
 ## 3. 缺少客户端 token/权限/注册状态自检能力
 当前排查推送问题时，缺少一个开发态总览入口来快速确认：
@@ -39,20 +63,24 @@
 - token 是否已同步到服务端
 - 服务端已注册 token 数量/最近一次同步结果
 
-建议：
-- 在 DevTools 增加推送诊断面板
-- 展示 token 摘要、权限状态、注册状态和最近同步结果
+当前状态：
+- 已修复
+- DevTools 已增加推送诊断面板
+- 当前可查看 token 获取状态、权限状态、平台与 token 摘要
+- 已补齐“服务端已注册 token 数量 / 最近一次同步结果 / 当前 token 是否已注册到服务端”
 
 ## 4. 服务端缺少业务汇总级日志
 当前服务端已有发送器级别日志，例如 FCM send succeeded / failed，但仍缺少用户维度、测试动作维度的 summary 日志。
 
-建议补充：
-- userId
-- scannedCandidates
-- sentCount
-- failedCount
-- failureReason 聚合
-- dispatch source（manual test / scheduler）
+当前状态：
+- 已修复
+- 已补充：
+  - `userId`
+  - `scannedCandidates`
+  - `sentCount`
+  - `failedCount`
+  - `failureReason` 聚合
+  - `dispatchSource`
 
 这样比单看底层发送器日志更容易复盘。
 
@@ -73,13 +101,16 @@
 - 在设计上不要把 FCM 视为国内 Android 环境下的绝对可靠通道
 - 后续评估厂商推送或聚合推送方案
 
+当前状态：
+- 尚未治理，属于架构层后续议题
+
 ## 6. 测试推送与正式推送的来源区分不够清晰
 当前测试推送与正式推送基本共用发送链路，这是合理的；但日志、响应结构和可观测性上，对“测试触发”和“调度触发”的区分还不够明显。
 
-建议：
-- 增加 `dispatchSource` 字段，例如 `manual_test` / `scheduler`
-- 在日志和响应体中显式带出来源
-- 便于后续定位是开发测试问题还是定时调度问题
+当前状态：
+- 已修复
+- 已增加 `dispatchSource` 字段：`manual_test` / `scheduler`
+- 已用于接口返回与 summary 日志
 
 ## 7. 前台展示依赖 payload 完整性，存在被静默跳过的风险
 当前客户端前台收到远程消息后，会从：
@@ -95,6 +126,9 @@
 - 保持前后台消息结构一致
 - 避免依赖不同平台对 notification/data 的隐式行为差异
 
+当前状态：
+- 仍需持续遵守约束，但当前测试推送链路已保持完整 title/body
+
 ## 8. 通知权限请求路径可能重复触发
 从日志可见，启动阶段出现了两次 Android 通知权限 granted 日志，这说明权限请求可能被重复调用。
 
@@ -108,6 +142,13 @@
 - 合并重复请求路径
 - 确保初始化阶段的权限请求职责单一
 
+当前状态：
+- 已修复
+- 已通过通知服务内部串行化权限请求，避免并发路径重复触发系统通知权限申请
+- Push token 同步流程已改为仅读取现有权限状态，不再额外发起一轮 FCM 权限请求
+- 当前应用内通知权限申请已收敛到 `NotificationService.requestPermission()` 统一入口，其他链路仅读取权限状态或基于既有权限继续执行
+- 服务端测试推送前仍会显式校验通知权限
+
 ## 9. 缺少“提交到 provider”与“到达设备”的显式语义区分
 当前链路里“发送成功”往往指的是：
 - 服务端已提交到 FCM/APNs
@@ -120,23 +161,26 @@
 
 这次问题已经说明，provider accepted 和 device delivered 之间还隔着真实网络环境。
 
-建议：
-- 在开发工具提示、接口返回、技术文档中明确区分这几个层次
-- 避免“已发送”这种容易误导的宽泛表述
+当前状态：
+- 已修复文案与返回语义层面的误导
+- DevTools 结果说明里已明确：当前结果只表示服务端已提交到 provider，设备是否收到仍取决于系统与网络环境
 
 ---
 
 ## 当前优先级建议
 
-### P1（建议优先处理）
+### 已完成（P1 + 部分 P2）
 1. 改进 DevTools 推送测试提示文案
 2. 前端按 `sentCount/failedCount` 展示真实测试结果
 3. 服务端测试接口返回更明确的业务语义
-
-### P2（建议近期处理）
 4. 增加客户端推送自检面板
 5. 增加服务端业务 summary 日志
 6. 区分 manual test 与 scheduler 的日志来源
+
+### 后续建议继续处理
+7. 补齐“服务端已注册 token 数量 / 最近一次同步结果”可视化
+8. 核查并收敛重复权限请求路径
+9. 评估国内 Android 的厂商推送 / 聚合推送方案
 
 ### P3（架构层面后续评估）
 7. 将 FCM 国内网络限制写入文档

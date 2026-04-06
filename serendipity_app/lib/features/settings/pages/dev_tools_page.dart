@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/providers/achievement_provider.dart';
-import '../../../core/providers/auth_provider.dart'
-    show authProvider, storageServiceProvider;
+import '../../../core/providers/auth_provider.dart' show authProvider;
 import '../../../core/providers/check_in_provider.dart';
 import '../../../core/providers/first_launch_provider.dart';
 import '../../../core/providers/membership_provider.dart';
+import '../../../core/providers/records_provider.dart' show recordsProvider;
 import '../../../core/providers/user_settings_provider.dart'
-    show userSettingsProvider, notificationServiceProvider;
-import '../../../core/providers/records_provider.dart'
-    show syncCompletedProvider, recordsProvider;
-import '../../../core/utils/message_helper.dart';
-import '../../../core/utils/dialog_helper.dart';
-import '../../../core/utils/async_action_helper.dart';
-import '../../../core/utils/navigation_helper.dart';
+    show notificationServiceProvider, userSettingsProvider;
 import '../../../core/services/notification_service.dart';
+import '../../../core/services/push_diagnostics_service.dart';
+import '../../../core/utils/async_action_helper.dart';
+import '../../../core/utils/dialog_helper.dart';
+import '../../../core/utils/message_helper.dart';
+import '../../../core/utils/navigation_helper.dart';
 import '../../../models/enums.dart';
 import '../../home/anniversary_reminder_dialog.dart';
 import '../../test/location_test_page.dart';
-import '../../auth/welcome_page.dart';
+import '../widgets/push_diagnostics_dialog.dart';
+import '../widgets/push_test_result_dialog.dart';
 
 /// 开发者工具页面（仅 AppConfig.isDeveloperMode 下可访问）
 ///
@@ -78,12 +79,6 @@ class DevToolsPage extends ConsumerWidget {
             onTap: () => _showResetCheckInsDialog(context, ref),
           ),
           ListTile(
-            leading: const Icon(Icons.history, color: Colors.orange),
-            title: const Text('清空同步历史记录'),
-            subtitle: const Text('清空所有同步历史数据'),
-            onTap: () => _showClearSyncHistoryDialog(context, ref),
-          ),
-          ListTile(
             leading: const Icon(Icons.restart_alt, color: Colors.blue),
             title: const Text('重置首次启动标记'),
             subtitle: const Text('下次启动将显示欢迎页面'),
@@ -97,15 +92,16 @@ class DevToolsPage extends ConsumerWidget {
             onTap: () => _showResetMembershipDialog(context, ref),
           ),
           ListTile(
-            leading:
-                const Icon(Icons.celebration_outlined, color: Colors.pink),
+            leading: const Icon(Icons.celebration_outlined, color: Colors.pink),
             title: const Text('强制触发纪念日弹窗'),
             subtitle: const Text('使用当前所有"邂逅"记录，绕过年份检查直接展示'),
             onTap: () => _showForceAnniversaryDialog(context, ref),
           ),
           ListTile(
-            leading: const Icon(Icons.notifications_active_outlined,
-                color: Colors.pink),
+            leading: const Icon(
+              Icons.notifications_active_outlined,
+              color: Colors.pink,
+            ),
             title: const Text('发送本地纪念日测试通知'),
             subtitle: const Text('5 秒后触发一条本地纪念日通知，验证本地通知是否正常'),
             onTap: () async {
@@ -131,8 +127,7 @@ class DevToolsPage extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading:
-                const Icon(Icons.alarm_outlined, color: Colors.teal),
+            leading: const Icon(Icons.alarm_outlined, color: Colors.teal),
             title: const Text('发送本地签到提醒测试通知'),
             subtitle: const Text('5 秒后触发一条本地签到提醒通知，验证本地通知是否正常'),
             onTap: () async {
@@ -174,20 +169,10 @@ class DevToolsPage extends ConsumerWidget {
                   .sendServerTestAnniversaryNotification();
               if (!context.mounted) return;
 
-              switch (result) {
-                case TestNotificationResult.scheduled:
-                  MessageHelper.showSuccess(context, '服务端纪念日测试推送已发送，请检查设备通知');
-                  break;
-                case TestNotificationResult.permissionDenied:
-                  MessageHelper.showError(context, '通知权限未授予，无法发送测试推送');
-                  break;
-                case TestNotificationResult.unsupportedPlatform:
-                  MessageHelper.showWarning(context, '当前环境未配置服务端推送测试能力');
-                  break;
-                case TestNotificationResult.schedulingFailed:
-                  MessageHelper.showError(context, '纪念日测试推送发送失败，请检查 push token 与服务端配置');
-                  break;
-              }
+              DialogHelper.show<void>(
+                context: context,
+                builder: (_) => PushTestResultDialog(result: result),
+              );
             },
           ),
           ListTile(
@@ -206,20 +191,25 @@ class DevToolsPage extends ConsumerWidget {
                   .sendServerTestCheckInNotification();
               if (!context.mounted) return;
 
-              switch (result) {
-                case TestNotificationResult.scheduled:
-                  MessageHelper.showSuccess(context, '服务端签到提醒测试推送已发送，请检查设备通知');
-                  break;
-                case TestNotificationResult.permissionDenied:
-                  MessageHelper.showError(context, '通知权限未授予，无法发送测试推送');
-                  break;
-                case TestNotificationResult.unsupportedPlatform:
-                  MessageHelper.showWarning(context, '当前环境未配置服务端推送测试能力');
-                  break;
-                case TestNotificationResult.schedulingFailed:
-                  MessageHelper.showError(context, '签到提醒测试推送发送失败，请检查 push token 与服务端配置');
-                  break;
-              }
+              DialogHelper.show<void>(
+                context: context,
+                builder: (_) => PushTestResultDialog(result: result),
+              );
+            },
+          ),
+          ListTile(
+            leading:
+                const Icon(Icons.medical_information_outlined, color: Colors.indigo),
+            title: const Text('查看推送诊断'),
+            subtitle: const Text('检查权限、平台与当前设备 token 获取状态'),
+            onTap: () async {
+              final snapshot =
+                  await ref.read(pushDiagnosticsServiceProvider).collectDiagnostics();
+              if (!context.mounted) return;
+              DialogHelper.show<void>(
+                context: context,
+                builder: (_) => PushDiagnosticsDialog(snapshot: snapshot),
+              );
             },
           ),
           const SizedBox(height: 32),
@@ -339,7 +329,8 @@ class DevToolsPage extends ConsumerWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text('重置所有成就'),
         content: const Text(
-            '确定要重置所有成就吗？\n\n这将清空所有已解锁的成就和进度，此操作不可恢复。'),
+          '确定要重置所有成就吗？\n\n这将清空所有已解锁的成就和进度，此操作不可恢复。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
@@ -373,7 +364,8 @@ class DevToolsPage extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('重置所有签到记录'),
         content: const Text(
-            '确定要重置所有签到记录吗？\n\n这将清空所有签到数据，此操作不可恢复。'),
+          '确定要重置所有签到记录吗？\n\n这将清空所有签到数据，此操作不可恢复。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -382,55 +374,17 @@ class DevToolsPage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              final success = await AsyncActionHelper.execute(
+              await AsyncActionHelper.execute(
                 context,
-                action: () =>
-                    ref.read(checkInProvider.notifier).resetAllCheckIns(),
+                action: () async {
+                  await ref.read(checkInProvider.notifier).resetAllCheckIns();
+                },
                 successMessage: '所有签到记录已重置',
                 errorMessagePrefix: '重置失败',
               );
-              if (success) {
-                ref.invalidate(checkInProvider);
-              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('确定重置'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showClearSyncHistoryDialog(BuildContext context, WidgetRef ref) {
-    DialogHelper.show(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('清空同步历史记录'),
-        content: const Text('确定要清空所有同步历史记录吗？\n\n此操作不可恢复。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              final success = await AsyncActionHelper.execute(
-                context,
-                action: () async {
-                  await ref
-                      .read(storageServiceProvider)
-                      .clearAllSyncHistories();
-                },
-                successMessage: '同步历史记录已清空',
-                errorMessagePrefix: '清空失败',
-              );
-              if (success) {
-                ref.read(syncCompletedProvider.notifier).state++;
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            child: const Text('确定清空'),
           ),
         ],
       ),
@@ -442,7 +396,9 @@ class DevToolsPage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('重置首次启动标记'),
-        content: const Text('确定要重置首次启动标记吗？\n\n将立即跳转到欢迎页面。'),
+        content: const Text(
+          '确定要重置首次启动标记吗？\n\n重置后，下次启动应用将显示欢迎页面。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -451,19 +407,14 @@ class DevToolsPage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              final success = await AsyncActionHelper.execute(
+              await AsyncActionHelper.execute(
                 context,
-                action: () =>
-                    ref.read(firstLaunchProvider.notifier).reset(),
+                action: () async {
+                  await ref.read(firstLaunchProvider.notifier).reset();
+                },
                 successMessage: '首次启动标记已重置',
                 errorMessagePrefix: '重置失败',
               );
-              if (success && context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const WelcomePage()),
-                  (route) => false,
-                );
-              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.blue),
             child: const Text('确定重置'),
@@ -476,22 +427,24 @@ class DevToolsPage extends ConsumerWidget {
   void _showResetMembershipDialog(BuildContext context, WidgetRef ref) {
     DialogHelper.show(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (context) => AlertDialog(
         title: const Text('重置会员状态'),
         content: const Text(
-            '确定要重置会员状态吗？\n\n这将清除当前会员数据，恢复为免费版，此操作不可恢复。'),
+          '确定要重置会员状态吗？\n\n这将清除当前会员数据，恢复为免费版。',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
+            onPressed: () => Navigator.of(context).pop(),
             child: const Text('取消'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(dialogContext).pop();
+              Navigator.of(context).pop();
               await AsyncActionHelper.execute(
                 context,
-                action: () =>
-                    ref.read(membershipProvider.notifier).resetMembership(),
+                action: () async {
+                  await ref.read(membershipProvider.notifier).resetMembership();
+                },
                 successMessage: '会员状态已重置',
                 errorMessagePrefix: '重置失败',
               );
@@ -504,18 +457,21 @@ class DevToolsPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _showForceAnniversaryDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final records = ref.read(recordsProvider).valueOrNull ?? [];
-    final metRecords =
-        records.where((r) => r.status == EncounterStatus.met).toList();
+  void _showForceAnniversaryDialog(BuildContext context, WidgetRef ref) {
+    final recordsState = ref.read(recordsProvider);
+    final metRecords = recordsState.valueOrNull
+            ?.where((record) => record.status == EncounterStatus.met)
+            .toList() ??
+        const [];
+
     if (metRecords.isEmpty) {
-      MessageHelper.showWarning(context, '没有任何"邂逅"记录，请先创建一条邂逅记录');
+      MessageHelper.showWarning(context, '当前没有可用于触发纪念日弹窗的"邂逅"记录');
       return;
     }
-    await AnniversaryReminderDialog.show(context, metRecords);
+
+    DialogHelper.show<void>(
+      context: context,
+      builder: (dialogContext) => AnniversaryReminderDialog(records: metRecords),
+    );
   }
 }
-
