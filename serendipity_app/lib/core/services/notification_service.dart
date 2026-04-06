@@ -1,19 +1,22 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../utils/anniversary_helper.dart';
-import '../utils/check_in_reminder_helper.dart';
-import '../repositories/check_in_repository.dart';
-import '../repositories/i_remote_data_repository.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../../models/user_settings.dart';
+import '../repositories/check_in_repository.dart';
+import '../repositories/i_remote_data_repository.dart'
+    show IRemoteDataRepository, RepositoryServerTestPushSummary;
+import '../utils/anniversary_helper.dart';
+import '../utils/check_in_reminder_helper.dart';
 import 'i_storage_service.dart';
+import 'push_models.dart';
 
 /// 测试通知调度结果
 ///
@@ -28,13 +31,13 @@ enum TestNotificationResult {
 }
 
 /// 本地通知服务
-/// 
+///
 /// 负责本地通知的初始化、调度和取消
-/// 
+///
 /// 调用者：
 /// - main.dart：应用启动时初始化
 /// - UserSettingsProvider：用户修改设置时调度/取消通知
-/// 
+///
 /// 设计原则：
 /// - 单一职责：只负责通知相关操作
 /// - Fail Fast：初始化失败立即抛出异常
@@ -46,6 +49,7 @@ class NotificationService {
   final IStorageService? _storageService;
   bool _isInitialized = false;
   final DateTime Function() _nowProvider;
+  Future<bool>? _activePermissionRequest;
 
   /// 签到提醒通知ID（固定值，用于更新/取消通知）
   static const int _checkInReminderId = 0;
@@ -79,24 +83,20 @@ class NotificationService {
         _nowProvider = nowProvider ?? DateTime.now;
 
   /// 初始化通知服务
-  /// 
+  ///
   /// 必须在使用通知功能前调用
-  /// 
+  ///
   /// 抛出 [StateError] 如果初始化失败
   Future<void> initialize() async {
     if (_isInitialized) {
       return;
     }
 
-    // 初始化时区数据
     tz.initializeTimeZones();
-    
-    // Android 初始化设置
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // iOS 初始化设置
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: false, // 稍后手动请求
+      requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
@@ -109,10 +109,10 @@ class NotificationService {
     final initialized = await _plugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _handleNotificationResponse,
-      onDidReceiveBackgroundNotificationResponse: _handleBackgroundNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse:
+          _handleBackgroundNotificationResponse,
     );
 
-    // Fail Fast：初始化失败立即报错
     if (initialized != true) {
       throw StateError('Failed to initialize notification service');
     }
@@ -204,7 +204,8 @@ class NotificationService {
 
   String _resolveRemoteMessagePayload(Map<String, dynamic> data) {
     return switch (data['type']) {
-      'anniversary_reminder' || 'anniversary_reminder_test' => _serverAnniversaryPayload,
+      'anniversary_reminder' || 'anniversary_reminder_test' =>
+        _serverAnniversaryPayload,
       _ => _serverCheckInPayload,
     };
   }
@@ -219,22 +220,32 @@ class NotificationService {
     return body is String && body.trim().isNotEmpty ? body : null;
   }
 
-  /// Fail Fast：确保通知服务已初始化
   void _ensureInitialized() {
     if (!_isInitialized) {
       throw StateError('NotificationService must be initialized before use');
     }
   }
 
-  /// 请求通知权限
-  /// 
-  /// Android 13+ 和 iOS 需要请求权限
-  /// 
-  /// 返回 true 如果用户授予权限，否则返回 false
   Future<bool> requestPermission() async {
     _ensureInitialized();
 
-    // Android 13+ 请求权限
+    final activeRequest = _activePermissionRequest;
+    if (activeRequest != null) {
+      return activeRequest;
+    }
+
+    final requestFuture = _performPermissionRequest();
+    _activePermissionRequest = requestFuture;
+    try {
+      return await requestFuture;
+    } finally {
+      if (identical(_activePermissionRequest, requestFuture)) {
+        _activePermissionRequest = null;
+      }
+    }
+  }
+
+  Future<bool> _performPermissionRequest() async {
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
@@ -244,9 +255,8 @@ class NotificationService {
       }
     }
 
-    // iOS 请求权限
-    final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final iosPlugin =
+        _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
     if (iosPlugin != null) {
       final granted = await iosPlugin.requestPermissions(
         alert: true,
@@ -261,20 +271,9 @@ class NotificationService {
     return true;
   }
 
-  /// 调度签到提醒通知
-  /// 
-  /// 每天在指定时间发送提醒（只在未签到时发送）
-  /// 
-  /// [time] 提醒时间，不能为 null
-  /// [userId] 当前用户 ID，null 表示离线数据
-  /// 
-  /// 抛出 [ArgumentError] 如果 time 为 null
   Future<void> scheduleCheckInReminder(TimeOfDay time, {String? userId}) async {
     _ensureInitialized();
-
-    // Fail Fast：参数校验
     ArgumentError.checkNotNull(time, 'time');
-
     await _scheduleNextCheckInReminder(time, userId: userId);
   }
 
@@ -312,8 +311,10 @@ class NotificationService {
     }
 
     final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
-    final consecutiveDays = _checkInRepository.calculateReminderStreakDays(userId: userId);
-    final maxConsecutiveDays = _checkInRepository.calculateMaxConsecutiveDays(userId: userId);
+    final consecutiveDays =
+        _checkInRepository.calculateReminderStreakDays(userId: userId);
+    final maxConsecutiveDays =
+        _checkInRepository.calculateMaxConsecutiveDays(userId: userId);
     final content = CheckInReminderHelper.generateContent(
       consecutiveDays: consecutiveDays,
       maxConsecutiveDays: maxConsecutiveDays,
@@ -351,32 +352,17 @@ class NotificationService {
     return _storageService?.getUserSettings();
   }
 
-  /// 取消签到提醒通知
   Future<void> cancelCheckInReminder() async {
     _ensureInitialized();
     await _plugin.cancel(_checkInReminderId);
   }
 
-  /// 检查是否有待处理的通知
-  /// 
-  /// 返回 true 如果有待处理的签到提醒通知
   Future<bool> hasScheduledCheckInReminder() async {
     _ensureInitialized();
     final pendingNotifications = await _plugin.pendingNotificationRequests();
     return pendingNotifications.any((n) => n.id == _checkInReminderId);
   }
 
-  /// 调度纪念日提醒通知
-  ///
-  /// 根据"邂逅"记录列表，为每条今年尚未触发的周年记录调度一次性通知。
-  /// 调度前先取消旧的所有纪念日通知，保证幂等。
-  ///
-  /// [records] 全量记录列表（仅会处理 EncounterStatus.encountered 的记录）
-  /// [notifyHour]   通知时间（小时），默认 0 点
-  /// [notifyMinute] 通知时间（分钟），默认 0 分
-  ///
-  /// 调用者：
-  /// - UserSettingsNotifier._scheduleAnniversaryReminders()
   Future<void> scheduleAnniversaryReminders(
     List<EncounterRecord> records, {
     int notifyHour = 0,
@@ -384,22 +370,16 @@ class NotificationService {
   }) async {
     _ensureInitialized();
 
-    // 先取消所有旧的纪念日通知，保证幂等
     await cancelAnniversaryReminders();
 
     final now = DateTime.now();
-
-    // 收集今年每条邂逅记录对应的提醒日期（月日），去重并按日期排序
-    // 用 Map<String, EncounterRecord> 以 'MM-DD' 为 key 去重，保留最早的记录
     final Map<String, EncounterRecord> dateKeyToRecord = {};
     for (final record in records) {
       if (record.status != EncounterStatus.met) continue;
       final ts = record.timestamp;
-      // 不包括当年本身
       if (ts.year >= now.year) continue;
       final key =
           '${ts.month.toString().padLeft(2, '0')}-${ts.day.toString().padLeft(2, '0')}';
-      // 同一天多条记录，保留最早的那条作为通知代表
       dateKeyToRecord.putIfAbsent(key, () => record);
     }
 
@@ -421,7 +401,6 @@ class NotificationService {
       final record = entry.value;
       final ts = record.timestamp;
 
-      // 计算今年该纪念日的通知时间
       var scheduledDate = DateTime(
         now.year,
         ts.month,
@@ -430,7 +409,6 @@ class NotificationService {
         notifyMinute,
       );
 
-      // 今年该日期已过，跳过（明年由下次调用重新调度）
       if (scheduledDate.isBefore(now)) {
         index++;
         continue;
@@ -448,19 +426,12 @@ class NotificationService {
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
-        // 不设置 matchDateTimeComponents：一次性通知，不每年自动重复
-        // 每年 App 启动时重新调度，保证文案中的年数始终正确
       );
 
       index++;
     }
   }
 
-  /// 取消所有纪念日提醒通知
-  ///
-  /// 调用者：
-  /// - scheduleAnniversaryReminders()：重新调度前先清空
-  /// - UserSettingsNotifier：用户关闭纪念日提醒时调用
   Future<void> cancelAnniversaryReminders() async {
     _ensureInitialized();
     final pending = await _plugin.pendingNotificationRequests();
@@ -471,47 +442,92 @@ class NotificationService {
     }
   }
 
-  /// 发送服务端签到提醒测试推送（开发测试用）
-  Future<TestNotificationResult> sendServerTestCheckInNotification() async {
+  Future<ServerPushTestResult> sendServerTestCheckInNotification() async {
     if (_remoteDataRepository == null) {
-      return TestNotificationResult.unsupportedPlatform;
+      return const ServerPushTestResult(
+        status: TestNotificationResult.unsupportedPlatform,
+        message: '当前环境未配置服务端推送测试能力',
+      );
+    }
+
+    final granted = await requestPermission();
+    if (!granted) {
+      return const ServerPushTestResult(
+        status: TestNotificationResult.permissionDenied,
+        message: '通知权限未授予，无法发送测试推送',
+      );
     }
 
     try {
       final result = await _remoteDataRepository.sendCheckInReminderTest();
-      final sentCount = result['sentCount'] as int? ?? 0;
-      return sentCount > 0
-          ? TestNotificationResult.scheduled
-          : TestNotificationResult.schedulingFailed;
-    } catch (_) {
-      return TestNotificationResult.schedulingFailed;
+      return _buildServerPushTestResult(
+        result,
+        successPrefix: '服务端已提交签到提醒测试推送',
+      );
+    } catch (error) {
+      return ServerPushTestResult(
+        status: TestNotificationResult.schedulingFailed,
+        message: '签到提醒测试推送发送失败',
+        details: error.toString(),
+      );
     }
   }
 
-  /// 发送服务端纪念日测试推送（开发测试用）
-  Future<TestNotificationResult> sendServerTestAnniversaryNotification() async {
+  Future<ServerPushTestResult> sendServerTestAnniversaryNotification() async {
     if (_remoteDataRepository == null) {
-      return TestNotificationResult.unsupportedPlatform;
+      return const ServerPushTestResult(
+        status: TestNotificationResult.unsupportedPlatform,
+        message: '当前环境未配置服务端推送测试能力',
+      );
+    }
+
+    final granted = await requestPermission();
+    if (!granted) {
+      return const ServerPushTestResult(
+        status: TestNotificationResult.permissionDenied,
+        message: '通知权限未授予，无法发送测试推送',
+      );
     }
 
     try {
       final result = await _remoteDataRepository.sendAnniversaryReminderTest();
-      final sentCount = result['sentCount'] as int? ?? 0;
-      return sentCount > 0
-          ? TestNotificationResult.scheduled
-          : TestNotificationResult.schedulingFailed;
-    } catch (_) {
-      return TestNotificationResult.schedulingFailed;
+      return _buildServerPushTestResult(
+        result,
+        successPrefix: '服务端已提交纪念日测试推送',
+      );
+    } catch (error) {
+      return ServerPushTestResult(
+        status: TestNotificationResult.schedulingFailed,
+        message: '纪念日测试推送发送失败',
+        details: error.toString(),
+      );
     }
   }
 
-  /// 发送签到提醒测试通知（开发测试用）
-  ///
-  /// 5 秒后触发一条签到提醒通知，用于验证通知权限和渠道配置。
-  /// 不受当前提醒时间设置影响。
-  /// [userId] 当前用户 ID，null 表示离线数据
-  ///
-  /// 调用者：ProfilePage 开发测试区
+  ServerPushTestResult _buildServerPushTestResult(
+    RepositoryServerTestPushSummary summary, {
+    required String successPrefix,
+  }) {
+    final details =
+        '${summary.toShortText()}；该结果只表示服务端已提交到 provider，设备是否收到仍取决于系统与网络环境';
+
+    if (summary.sentCount <= 0) {
+      return ServerPushTestResult(
+        status: TestNotificationResult.schedulingFailed,
+        message: '服务端未成功提交任何测试推送',
+        details: details,
+        summary: summary,
+      );
+    }
+
+    return ServerPushTestResult(
+      status: TestNotificationResult.scheduled,
+      message: '$successPrefix，请检查设备通知与当前网络环境',
+      details: details,
+      summary: summary,
+    );
+  }
+
   Future<TestNotificationResult> sendTestCheckInNotification({String? userId}) async {
     if (kIsWeb) {
       return TestNotificationResult.unsupportedPlatform;
@@ -528,8 +544,10 @@ class NotificationService {
       tz.local,
     );
 
-    final consecutiveDays = _checkInRepository.calculateReminderStreakDays(userId: userId);
-    final maxConsecutiveDays = _checkInRepository.calculateMaxConsecutiveDays(userId: userId);
+    final consecutiveDays =
+        _checkInRepository.calculateReminderStreakDays(userId: userId);
+    final maxConsecutiveDays =
+        _checkInRepository.calculateMaxConsecutiveDays(userId: userId);
     final content = CheckInReminderHelper.generateContent(
       consecutiveDays: consecutiveDays,
       maxConsecutiveDays: maxConsecutiveDays,
@@ -556,17 +574,11 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
       );
       return TestNotificationResult.scheduled;
-    } catch (e) {
+    } catch (_) {
       return TestNotificationResult.schedulingFailed;
     }
   }
 
-  /// 发送纪念日测试通知（开发测试用）
-  ///
-  /// 5 秒后触发一条固定文案的通知，用于验证通知权限和渠道配置。
-  /// 不依赖任何记录数据。
-  ///
-  /// 调用者：ProfilePage 开发测试区
   Future<TestNotificationResult> sendTestAnniversaryNotification() async {
     if (kIsWeb) {
       return TestNotificationResult.unsupportedPlatform;
@@ -604,9 +616,8 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
       );
       return TestNotificationResult.scheduled;
-    } catch (e) {
+    } catch (_) {
       return TestNotificationResult.schedulingFailed;
     }
   }
 }
-

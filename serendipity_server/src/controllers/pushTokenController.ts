@@ -1,10 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { PushToken } from '@prisma/client';
-import { IPushTokenService } from '../services/pushTokenService';
+import { AppError } from '../middlewares/errorHandler';
+import { ErrorCode } from '../types/errors';
+import {
+  IPushTokenService,
+  ReminderDispatchExecution,
+  ReminderDispatchSummary,
+} from '../services/pushTokenService';
 import {
   AnniversaryReminderTestPayload,
   PushTokenResponseDto,
   RegisterPushTokenDto,
+  ReminderDispatchExecutionDto,
+  ReminderDispatchSummaryDto,
   UnregisterPushTokenDto,
 } from '../types/pushToken.dto';
 import { sendSuccess } from '../utils/response';
@@ -59,7 +67,7 @@ export class PushTokenController {
     try {
       const userId = req.user!.userId;
       const result = await this.pushTokenService.dispatchReminderNotificationsForUser(userId);
-      sendSuccess(res, result, 'Check-in reminder test sent successfully');
+      this.sendDispatchTestResponse(res, result, 'Check-in reminder test sent successfully');
     } catch (error) {
       next(error);
     }
@@ -73,11 +81,50 @@ export class PushTokenController {
         new Date(),
         ANNIVERSARY_TEST_PAYLOAD,
       );
-      sendSuccess(res, result, 'Anniversary reminder test sent successfully');
+      this.sendDispatchTestResponse(res, result, 'Anniversary reminder test sent successfully');
     } catch (error) {
       next(error);
     }
   };
+
+  private sendDispatchTestResponse(
+    res: Response,
+    result: ReminderDispatchSummary,
+    successMessage: string,
+  ): void {
+    if (result.scannedCandidates === 0) {
+      throw new AppError('当前账号没有可用的 push token，请先完成设备注册', ErrorCode.INVALID_REQUEST);
+    }
+
+    if (result.sentCount === 0 && result.failedCount > 0) {
+      throw new AppError('测试推送提交失败，请检查 push token、FCM/APNs 配置与当前网络环境', ErrorCode.SERVICE_UNAVAILABLE);
+    }
+
+    sendSuccess(res, this.toReminderDispatchSummaryDto(result), successMessage);
+  }
+
+  private toReminderDispatchSummaryDto(summary: ReminderDispatchSummary): ReminderDispatchSummaryDto {
+    return {
+      dispatchSource: summary.dispatchSource,
+      scannedCandidates: summary.scannedCandidates,
+      sentCount: summary.sentCount,
+      failedCount: summary.failedCount,
+      executions: summary.executions.map((execution) => this.toReminderDispatchExecutionDto(execution)),
+    };
+  }
+
+  private toReminderDispatchExecutionDto(execution: ReminderDispatchExecution): ReminderDispatchExecutionDto {
+    return {
+      userId: execution.userId,
+      pushTokenId: execution.pushTokenId,
+      platform: execution.platform,
+      timezone: execution.timezone,
+      reminderDate: execution.reminderDate.toISOString(),
+      reminderTime: execution.reminderTime,
+      status: execution.status,
+      failureReason: execution.failureReason,
+    };
+  }
 
   private toPushTokenDto(pushToken: PushToken): PushTokenResponseDto {
     return {

@@ -281,7 +281,7 @@ class SyncService {
     if (settings.userId.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
-    return await _remoteRepository.uploadSettings(settings);
+    return await _remoteRepository.uploadSettings(settings.userId, settings);
   }
 
   /// 上传成就解锁记录到云端
@@ -846,7 +846,7 @@ class SyncService {
     UserSettings? localSettings,
   ) async {
     final settings = localSettings ?? UserSettings.createDefault(userId: user.id);
-    final serverSettings = await _remoteRepository.uploadSettings(settings);
+    final serverSettings = await _remoteRepository.uploadSettings(user.id, settings);
     await _storageService.saveUserSettings(serverSettings);
   }
   
@@ -1000,7 +1000,7 @@ class SyncService {
     );
     
     // 上传合并后的设置到云端
-    final serverSettings = await _remoteRepository.uploadSettings(merged);
+    final serverSettings = await _remoteRepository.uploadSettings(merged.userId, merged);
     
     // 用服务端返回的最新设置（含服务端生成的 updatedAt）更新本地
     await _storageService.saveUserSettings(serverSettings);

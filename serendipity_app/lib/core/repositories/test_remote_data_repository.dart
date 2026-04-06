@@ -220,8 +220,14 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
   
   @override
-  Future<UserSettings> uploadSettings(UserSettings settings) async {
-    // 测试模式：直接返回原设置（模拟服务端保存成功）
+  Future<UserSettings> uploadSettings(String userId, UserSettings settings) async {
+    // 测试模式：参数一致性校验后直接返回
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (settings.userId != userId) {
+      throw ArgumentError('用户设置中的用户 ID 与参数不一致');
+    }
     return settings;
   }
   
@@ -242,23 +248,28 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> sendCheckInReminderTest() async {
-    return {
-      'scannedCandidates': 0,
-      'sentCount': 0,
-      'failedCount': 0,
-      'executions': [],
-    };
+  Future<RepositoryPushTokenStatus> listPushTokens() async {
+    return const RepositoryPushTokenStatus(pushTokens: []);
   }
 
   @override
-  Future<Map<String, dynamic>> sendAnniversaryReminderTest() async {
-    return {
-      'scannedCandidates': 0,
-      'sentCount': 0,
-      'failedCount': 0,
-      'executions': [],
-    };
+  Future<RepositoryServerTestPushSummary> sendCheckInReminderTest() async {
+    return const RepositoryServerTestPushSummary(
+      dispatchSource: 'manual_test',
+      scannedCandidates: 0,
+      sentCount: 0,
+      failedCount: 0,
+    );
+  }
+
+  @override
+  Future<RepositoryServerTestPushSummary> sendAnniversaryReminderTest() async {
+    return const RepositoryServerTestPushSummary(
+      dispatchSource: 'manual_test',
+      scannedCandidates: 0,
+      sentCount: 0,
+      failedCount: 0,
+    );
   }
 
   // ==================== 收藏相关操作 ====================

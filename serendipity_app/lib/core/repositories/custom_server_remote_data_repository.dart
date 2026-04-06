@@ -839,20 +839,24 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   // ==================== 用户设置相关操作 ====================
   
   @override
-  Future<UserSettings> uploadSettings(UserSettings settings) async {
+  Future<UserSettings> uploadSettings(String userId, UserSettings settings) async {
     // Fail Fast：参数验证
-    if (settings.userId.isEmpty) {
+    if (userId.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
-    
+    if (settings.userId.isEmpty) {
+      throw ArgumentError('用户设置中的用户 ID 不能为空');
+    }
+    if (settings.userId != userId) {
+      throw ArgumentError('用户设置中的用户 ID 与参数不一致');
+    }
+
     try {
-      final response = await _httpClient.put(
+      await _httpClient.put(
         ServerConfig.usersSettings,
         body: settings.toServerDto(),
       );
-      // 用服务端返回的最新设置（含服务端生成的 updatedAt）更新本地
-      final data = response['data'] as Map<String, dynamic>;
-      return UserSettings.fromServerDto(data, settings.userId);
+      return settings;
     } on HttpException catch (e) {
       throw Exception('上传用户设置失败：${e.message}');
     }
@@ -919,24 +923,34 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> sendCheckInReminderTest() async {
+  Future<RepositoryPushTokenStatus> listPushTokens() async {
+    try {
+      final response = await _httpClient.get(ServerConfig.pushTokens);
+      return RepositoryPushTokenStatus.fromJson(response['data'] as Map<String, dynamic>);
+    } on HttpException catch (e) {
+      throw Exception('获取 push token 注册状态失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<RepositoryServerTestPushSummary> sendCheckInReminderTest() async {
     try {
       final response = await _httpClient.post(
         '${ServerConfig.pushTokens}/test/check-in-reminder',
       );
-      return response['data'] as Map<String, dynamic>;
+      return RepositoryServerTestPushSummary.fromJson(response['data'] as Map<String, dynamic>);
     } on HttpException catch (e) {
       throw Exception('发送签到提醒测试推送失败：${e.message}');
     }
   }
 
   @override
-  Future<Map<String, dynamic>> sendAnniversaryReminderTest() async {
+  Future<RepositoryServerTestPushSummary> sendAnniversaryReminderTest() async {
     try {
       final response = await _httpClient.post(
         '${ServerConfig.pushTokens}/test/anniversary-reminder',
       );
-      return response['data'] as Map<String, dynamic>;
+      return RepositoryServerTestPushSummary.fromJson(response['data'] as Map<String, dynamic>);
     } on HttpException catch (e) {
       throw Exception('发送纪念日提醒测试推送失败：${e.message}');
     }

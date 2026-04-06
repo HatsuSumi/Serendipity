@@ -19,7 +19,11 @@ import {
   calculateMaxConsecutiveDays,
   calculateReminderConsecutiveDays,
 } from './checkInReminderContentBuilder';
-import { AnniversaryReminderTestPayload } from '../types/pushToken.dto';
+import {
+  AnniversaryReminderTestPayload,
+  ReminderDispatchSource,
+} from '../types/pushToken.dto';
+import { logger } from '../utils/logger';
 
 const DEFAULT_TIME_WINDOW_MINUTES = 1;
 const HOURS_PER_DAY = 24;
@@ -53,6 +57,7 @@ export interface ReminderDispatchExecution {
 }
 
 export interface ReminderDispatchSummary {
+  dispatchSource: ReminderDispatchSource;
   scannedCandidates: number;
   sentCount: number;
   failedCount: number;
@@ -75,6 +80,7 @@ export interface IPushTokenService {
 
 interface DispatchExecutionOptions {
   persistDispatch: boolean;
+  dispatchSource: ReminderDispatchSource;
 }
 
 export class PushTokenService implements IPushTokenService {
@@ -155,6 +161,7 @@ export class PushTokenService implements IPushTokenService {
     const candidates = await this.getReminderDispatchCandidates(timezones, now);
     return this.dispatchReminderNotificationsForCandidates(candidates, undefined, {
       persistDispatch: true,
+      dispatchSource: 'scheduler',
     });
   }
 
@@ -168,12 +175,15 @@ export class PushTokenService implements IPushTokenService {
 
     const repositoryCandidates = await this.pushTokenRepository.findActiveByUserId(userId);
     if (repositoryCandidates.length === 0) {
-      return {
+      const emptySummary: ReminderDispatchSummary = {
+        dispatchSource: 'manual_test',
         scannedCandidates: 0,
         sentCount: 0,
         failedCount: 0,
         executions: [],
       };
+      this.logDispatchSummary(userId, emptySummary);
+      return emptySummary;
     }
 
     const candidates = repositoryCandidates.map((pushToken) => ({
@@ -188,6 +198,7 @@ export class PushTokenService implements IPushTokenService {
 
     return this.dispatchReminderNotificationsForCandidates(candidates, overridePayload, {
       persistDispatch: false,
+      dispatchSource: 'manual_test',
     });
   }
 
@@ -207,12 +218,15 @@ export class PushTokenService implements IPushTokenService {
       executions.push(execution);
     }
 
-    return {
+    const summary: ReminderDispatchSummary = {
+      dispatchSource: options.dispatchSource,
       scannedCandidates: candidates.length,
       sentCount: executions.filter((execution) => execution.status === ReminderDispatchStatus.Sent).length,
       failedCount: executions.filter((execution) => execution.status === ReminderDispatchStatus.Failed).length,
       executions,
     };
+    this.logDispatchSummary(candidates[0]?.userId, summary);
+    return summary;
   }
 
   private async buildReminderCandidate(
@@ -281,11 +295,11 @@ export class PushTokenService implements IPushTokenService {
 
     const failureReason = sendResult.failureReason?.trim() || 'push_send_failed';
     if (options.persistDispatch) {
-    await this.pushTokenRepository.markReminderDispatchFailed(
-      candidate.pushTokenId,
-      candidate.reminderDate,
-      failureReason,
-    );
+      await this.pushTokenRepository.markReminderDispatchFailed(
+        candidate.pushTokenId,
+        candidate.reminderDate,
+        failureReason,
+      );
     }
 
     if (sendResult.isInvalidToken) {
@@ -319,19 +333,13 @@ export class PushTokenService implements IPushTokenService {
         type: 'anniversary_reminder_test',
         userId: candidate.userId,
         reminderDate: candidate.reminderDate.toISOString(),
-        reminderTime: candidate.reminderTime,
       },
     };
   }
 
   private async buildReminderPayload(candidate: ReminderDispatchCandidate): Promise<ReminderSendPayload> {
-    const reminderHistory = await this.checkInRepository.findByUserId(candidate.userId);
-    const checkInDates = reminderHistory.map((checkIn) => checkIn.date);
-    const consecutiveDays = calculateReminderConsecutiveDays(
-      checkInDates,
-      candidate.reminderDate,
-    );
-    const maxConsecutiveDays = calculateMaxConsecutiveDays(checkInDates);
+    const consecutiveDays = await this.getConsecutiveDays(candidate.userId, candidate.reminderDate);
+    const maxConsecutiveDays = await this.getMaxConsecutiveDays(candidate.userId);
     const content = buildCheckInReminderContent({
       consecutiveDays,
       maxConsecutiveDays,
@@ -346,20 +354,111 @@ export class PushTokenService implements IPushTokenService {
         type: 'check_in_reminder',
         userId: candidate.userId,
         reminderDate: candidate.reminderDate.toISOString(),
-        reminderTime: candidate.reminderTime,
       },
     };
   }
 
-  private async ensureUserExists(userId: string): Promise<void> {
-    if (!userId || userId.trim() === '') {
-      throw new AppError('userId is required', ErrorCode.INVALID_REQUEST);
+  private async getConsecutiveDays(userId: string, reminderDate: Date): Promise<number> {
+    const checkIns = await this.checkInRepository.findByUserId(userId);
+    return calculateReminderConsecutiveDays(
+      checkIns.map((checkIn) => checkIn.date),
+      reminderDate,
+    );
+  }
+
+  private async getMaxConsecutiveDays(userId: string): Promise<number> {
+    const checkIns = await this.checkInRepository.findByUserId(userId);
+    return calculateMaxConsecutiveDays(checkIns.map((checkIn) => checkIn.date));
+  }
+
+  private parseReminderTime(reminderTime: string): ReminderClock {
+    const match = reminderTime.match(/^(\d{2}):(\d{2})$/);
+    if (!match) {
+      throw new AppError('invalid reminder time format', ErrorCode.INVALID_REQUEST);
     }
 
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
-      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour < 0 || hour >= HOURS_PER_DAY || minute < 0 || minute >= MINUTES_PER_HOUR) {
+      throw new AppError('invalid reminder time value', ErrorCode.INVALID_REQUEST);
     }
+
+    return { hour, minute };
+  }
+
+  private isWithinReminderWindow(now: Date, timezone: string, reminderClock: ReminderClock): boolean {
+    const localizedNow = this.getLocalizedNow(now, timezone);
+    const reminderMinutes = reminderClock.hour * MINUTES_PER_HOUR + reminderClock.minute;
+    const nowMinutes = localizedNow.getHours() * MINUTES_PER_HOUR + localizedNow.getMinutes();
+    const diffMinutes = Math.abs(nowMinutes - reminderMinutes);
+    return diffMinutes <= DEFAULT_TIME_WINDOW_MINUTES;
+  }
+
+  private getLocalizedNow(now: Date, timezone: string): Date {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+
+    const parts = formatter.formatToParts(now);
+    const getPart = (type: string): string => {
+      const value = parts.find((part) => part.type === type)?.value;
+      if (!value) {
+        throw new AppError('invalid timezone conversion result', ErrorCode.INTERNAL_ERROR);
+      }
+      return value;
+    };
+
+    const year = Number(getPart('year'));
+    const month = Number(getPart('month'));
+    const day = Number(getPart('day'));
+    const hour = Number(getPart('hour'));
+    const minute = Number(getPart('minute'));
+    const second = Number(getPart('second'));
+
+    return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  }
+
+  private getCurrentDateInTimezone(timezone: string, now: Date): Date {
+    const localizedNow = this.getLocalizedNow(now, timezone);
+    return new Date(Date.UTC(
+      localizedNow.getUTCFullYear(),
+      localizedNow.getUTCMonth(),
+      localizedNow.getUTCDate(),
+      0,
+      0,
+      0,
+      0,
+    ));
+  }
+
+  private normalizeTimezones(timezones?: string[]): string[] | undefined {
+    if (timezones === undefined) {
+      return undefined;
+    }
+    if (!Array.isArray(timezones)) {
+      throw new AppError('timezones must be an array', ErrorCode.INVALID_REQUEST);
+    }
+
+    const trimmed = timezones.map((timezone) => {
+      if (typeof timezone !== 'string') {
+        throw new AppError('timezone must be a string', ErrorCode.INVALID_REQUEST);
+      }
+      return timezone.trim();
+    });
+
+    const invalid = trimmed.find((timezone) => timezone === '');
+    if (invalid !== undefined) {
+      throw new AppError('timezone is required', ErrorCode.INVALID_REQUEST);
+    }
+
+    return trimmed;
   }
 
   private validateRegisterData(data: RegisterPushTokenData): void {
@@ -369,113 +468,54 @@ export class PushTokenService implements IPushTokenService {
     if (!data.platform || data.platform.trim() === '') {
       throw new AppError('platform is required', ErrorCode.INVALID_REQUEST);
     }
-    if (data.platform !== 'android' && data.platform !== 'ios') {
-      throw new AppError('platform must be android or ios', ErrorCode.INVALID_REQUEST);
-    }
     if (!data.timezone || data.timezone.trim() === '') {
       throw new AppError('timezone is required', ErrorCode.INVALID_REQUEST);
     }
-
-    this.assertValidTimezone(data.timezone);
   }
 
   private validateNow(now: Date): void {
     if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
-      throw new Error('Invalid current time');
+      throw new AppError('invalid now parameter', ErrorCode.INVALID_REQUEST);
     }
-  }
-
-  private normalizeTimezones(timezones?: string[]): string[] | undefined {
-    if (!timezones) {
-      return undefined;
-    }
-
-    const normalized = Array.from(
-      new Set(
-        timezones
-          .map((timezone) => timezone.trim())
-          .filter((timezone) => timezone.length > 0),
-      ),
-    );
-
-    normalized.forEach((timezone) => this.assertValidTimezone(timezone));
-
-    return normalized.length > 0 ? normalized : undefined;
-  }
-
-  private assertValidTimezone(timezone: string): void {
-    try {
-      Intl.DateTimeFormat(undefined, { timeZone: timezone });
-    } catch {
-      throw new AppError('timezone is invalid', ErrorCode.INVALID_REQUEST);
-    }
-  }
-
-  private parseReminderTime(reminderTime: string): ReminderClock {
-    if (!/^\d{2}:\d{2}$/.test(reminderTime)) {
-      throw new Error(`Invalid reminder time: ${reminderTime}`);
-    }
-
-    const [hourString, minuteString] = reminderTime.split(':');
-    const hour = Number(hourString);
-    const minute = Number(minuteString);
-    if (!Number.isInteger(hour) || hour < 0 || hour >= HOURS_PER_DAY) {
-      throw new Error(`Invalid reminder hour: ${reminderTime}`);
-    }
-    if (!Number.isInteger(minute) || minute < 0 || minute >= MINUTES_PER_HOUR) {
-      throw new Error(`Invalid reminder minute: ${reminderTime}`);
-    }
-
-    return { hour, minute };
-  }
-
-  private isWithinReminderWindow(now: Date, timezone: string, reminderClock: ReminderClock): boolean {
-    const currentMinutes = this.getMinutesInDayForTimezone(now, timezone);
-    const reminderMinutes = reminderClock.hour * MINUTES_PER_HOUR + reminderClock.minute;
-    const minuteDifference = currentMinutes - reminderMinutes;
-
-    return minuteDifference >= 0 && minuteDifference < DEFAULT_TIME_WINDOW_MINUTES;
-  }
-
-  private getMinutesInDayForTimezone(now: Date, timezone: string): number {
-    const formatter = new Intl.DateTimeFormat('en-GB', {
-      timeZone: timezone,
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    const parts = formatter.formatToParts(now);
-    const hour = Number(parts.find((part) => part.type === 'hour')?.value);
-    const minute = Number(parts.find((part) => part.type === 'minute')?.value);
-    if (!Number.isInteger(hour) || hour < 0 || hour >= HOURS_PER_DAY) {
-      throw new Error(`Invalid timezone hour for ${timezone}`);
-    }
-    if (!Number.isInteger(minute) || minute < 0 || minute >= MINUTES_PER_HOUR) {
-      throw new Error(`Invalid timezone minute for ${timezone}`);
-    }
-
-    return hour * MINUTES_PER_HOUR + minute;
-  }
-
-  private getCurrentDateInTimezone(timezone: string, now: Date): Date {
-    const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-    const parts = formatter.formatToParts(now);
-    const year = Number(parts.find((part) => part.type === 'year')?.value);
-    const month = Number(parts.find((part) => part.type === 'month')?.value);
-    const day = Number(parts.find((part) => part.type === 'day')?.value);
-    if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
-      throw new Error(`Invalid timezone date for ${timezone}`);
-    }
-
-    return new Date(Date.UTC(year, month - 1, day));
   }
 
   private getProviderByPlatform(platform: string): string {
-    return platform === 'ios' ? 'apns' : 'fcm';
+    switch (platform) {
+      case 'ios':
+        return 'apns';
+      case 'android':
+      default:
+        return 'fcm';
+    }
+  }
+
+  private async ensureUserExists(userId: string): Promise<void> {
+    if (!userId || userId.trim() === '') {
+      throw new AppError('user id is required', ErrorCode.INVALID_REQUEST);
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppError('user not found', ErrorCode.USER_NOT_FOUND);
+    }
+  }
+
+  private logDispatchSummary(userId: string | undefined, summary: ReminderDispatchSummary): void {
+    const failureReasons = summary.executions
+      .filter((execution) => execution.failureReason != null)
+      .reduce<Record<string, number>>((acc, execution) => {
+        const key = execution.failureReason!;
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      }, {});
+
+    logger.info('Reminder dispatch summary', {
+      userId,
+      dispatchSource: summary.dispatchSource,
+      scannedCandidates: summary.scannedCandidates,
+      sentCount: summary.sentCount,
+      failedCount: summary.failedCount,
+      failureReasons,
+    });
   }
 }

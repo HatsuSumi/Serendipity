@@ -25,3 +25,24 @@ export interface AnniversaryReminderTestPayload {
   title: string;
   body: string;
 }
+
+export type ReminderDispatchSource = 'manual_test' | 'scheduler';
+
+export interface ReminderDispatchExecutionDto {
+  userId: string;
+  pushTokenId: string;
+  platform: string;
+  timezone: string;
+  reminderDate: string;
+  reminderTime: string;
+  status: 'pending' | 'sent' | 'failed';
+  failureReason?: string;
+}
+
+export interface ReminderDispatchSummaryDto {
+  dispatchSource: ReminderDispatchSource;
+  scannedCandidates: number;
+  sentCount: number;
+  failedCount: number;
+  executions: ReminderDispatchExecutionDto[];
+}
