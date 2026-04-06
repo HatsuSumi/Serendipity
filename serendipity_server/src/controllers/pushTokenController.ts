@@ -105,6 +105,7 @@ export class PushTokenController {
 
   private toReminderDispatchSummaryDto(summary: ReminderDispatchSummary): ReminderDispatchSummaryDto {
     return {
+      dispatchType: summary.dispatchType,
       dispatchSource: summary.dispatchSource,
       scannedCandidates: summary.scannedCandidates,
       sentCount: summary.sentCount,

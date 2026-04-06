@@ -7,13 +7,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../../models/encounter_record.dart';
-import '../../models/enums.dart';
 import '../../models/user_settings.dart';
 import '../repositories/check_in_repository.dart';
 import '../repositories/i_remote_data_repository.dart'
     show IRemoteDataRepository, RepositoryServerTestPushSummary;
-import '../utils/anniversary_helper.dart';
 import '../utils/check_in_reminder_helper.dart';
 import 'i_storage_service.dart';
 import 'push_models.dart';
@@ -31,13 +28,13 @@ enum TestNotificationResult {
 }
 
 /// 本地通知服务
-///
+/// 
 /// 负责本地通知的初始化、调度和取消
-///
+/// 
 /// 调用者：
 /// - main.dart：应用启动时初始化
 /// - UserSettingsProvider：用户修改设置时调度/取消通知
-///
+/// 
 /// 设计原则：
 /// - 单一职责：只负责通知相关操作
 /// - Fail Fast：初始化失败立即抛出异常
@@ -54,10 +51,6 @@ class NotificationService {
   /// 签到提醒通知ID（固定值，用于更新/取消通知）
   static const int _checkInReminderId = 0;
   static const String _checkInReminderPayload = 'check_in_reminder';
-
-  /// 纪念日提醒通知ID起始值
-  /// 每条邂逅记录对应一个通知，ID = _anniversaryBaseId + index
-  static const int _anniversaryBaseId = 100;
 
   /// 签到提醒渠道
   static const String _channelId = 'check_in_reminder';
@@ -83,9 +76,9 @@ class NotificationService {
         _nowProvider = nowProvider ?? DateTime.now;
 
   /// 初始化通知服务
-  ///
+  /// 
   /// 必须在使用通知功能前调用
-  ///
+  /// 
   /// 抛出 [StateError] 如果初始化失败
   Future<void> initialize() async {
     if (_isInitialized) {
@@ -93,7 +86,7 @@ class NotificationService {
     }
 
     tz.initializeTimeZones();
-
+    
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -363,85 +356,6 @@ class NotificationService {
     return pendingNotifications.any((n) => n.id == _checkInReminderId);
   }
 
-  Future<void> scheduleAnniversaryReminders(
-    List<EncounterRecord> records, {
-    int notifyHour = 0,
-    int notifyMinute = 0,
-  }) async {
-    _ensureInitialized();
-
-    await cancelAnniversaryReminders();
-
-    final now = DateTime.now();
-    final Map<String, EncounterRecord> dateKeyToRecord = {};
-    for (final record in records) {
-      if (record.status != EncounterStatus.met) continue;
-      final ts = record.timestamp;
-      if (ts.year >= now.year) continue;
-      final key =
-          '${ts.month.toString().padLeft(2, '0')}-${ts.day.toString().padLeft(2, '0')}';
-      dateKeyToRecord.putIfAbsent(key, () => record);
-    }
-
-    if (dateKeyToRecord.isEmpty) return;
-
-    final notificationDetails = NotificationDetails(
-      android: const AndroidNotificationDetails(
-        _anniversaryChannelId,
-        _anniversaryChannelName,
-        channelDescription: _anniversaryChannelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-      iOS: const DarwinNotificationDetails(),
-    );
-
-    int index = 0;
-    for (final entry in dateKeyToRecord.entries) {
-      final record = entry.value;
-      final ts = record.timestamp;
-
-      var scheduledDate = DateTime(
-        now.year,
-        ts.month,
-        ts.day,
-        notifyHour,
-        notifyMinute,
-      );
-
-      if (scheduledDate.isBefore(now)) {
-        index++;
-        continue;
-      }
-
-      final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
-      final body = AnniversaryHelper.generateNotificationBody(record);
-
-      await _plugin.zonedSchedule(
-        _anniversaryBaseId + index,
-        AnniversaryHelper.notificationTitle,
-        body,
-        tzScheduledDate,
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-
-      index++;
-    }
-  }
-
-  Future<void> cancelAnniversaryReminders() async {
-    _ensureInitialized();
-    final pending = await _plugin.pendingNotificationRequests();
-    for (final n in pending) {
-      if (n.id >= _anniversaryBaseId) {
-        await _plugin.cancel(n.id);
-      }
-    }
-  }
-
   Future<ServerPushTestResult> sendServerTestCheckInNotification() async {
     if (_remoteDataRepository == null) {
       return const ServerPushTestResult(
@@ -597,8 +511,8 @@ class NotificationService {
 
     try {
       await _plugin.zonedSchedule(
-        _anniversaryBaseId + 999,
-        AnniversaryHelper.notificationTitle,
+        999,
+        '今天是一个特别的纪念日 🌸',
         '1年前的今天，你在某个地方邂逅了TA（测试通知）',
         scheduledDate,
         const NotificationDetails(

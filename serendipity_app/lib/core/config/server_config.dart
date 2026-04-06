@@ -31,7 +31,7 @@ class ServerConfig {
   static const int connectTimeout = 10;
   
   /// Token 刷新提前时间（分钟）
-  /// 在 Token 过期前 5 分钟自动刷新
+  /// 在 Token 过期前 5 分钟自动刷新  
   static const int tokenRefreshAdvance = 5;
   
   /// 网络状态轮询间隔（秒）

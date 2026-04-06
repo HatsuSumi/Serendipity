@@ -1,4 +1,10 @@
-import { PrismaClient, CheckInReminderDispatch, PushToken } from '@prisma/client';
+import {
+  PrismaClient,
+  AnniversaryReminderDispatch,
+  CheckInReminderDispatch,
+  PushToken,
+  Record,
+} from '@prisma/client';
 import { ReminderDispatchStatus } from '../services/reminderPushSender';
 
 export interface RegisterPushTokenData {
@@ -10,6 +16,17 @@ export interface RegisterPushTokenData {
 export interface CreateReminderDispatchData {
   userId: string;
   pushTokenId: string;
+  reminderDate: Date;
+  status: string;
+  provider: string;
+  failureReason?: string;
+  sentAt?: Date;
+}
+
+export interface CreateAnniversaryReminderDispatchData {
+  userId: string;
+  pushTokenId: string;
+  recordId: string;
   reminderDate: Date;
   status: string;
   provider: string;
@@ -30,6 +47,16 @@ interface ReminderNotificationsConfig {
   checkInReminderTime?: string;
 }
 
+export interface AnniversaryReminderCandidate {
+  userId: string;
+  pushTokenId: string;
+  token: string;
+  platform: string;
+  timezone: string;
+  reminderDate: Date;
+  record: Record;
+}
+
 export interface IPushTokenRepository {
   register(userId: string, data: RegisterPushTokenData): Promise<PushToken>;
   deactivateByToken(userId: string, token: string): Promise<void>;
@@ -37,10 +64,25 @@ export interface IPushTokenRepository {
   findActiveByUserId(userId: string): Promise<PushToken[]>;
   findLatestActiveTimezoneByUserId(userId: string): Promise<string | undefined>;
   findReminderCandidates(timezones?: string[]): Promise<ReminderCandidate[]>;
+  findAnniversaryReminderCandidates(timezones?: string[], now?: Date): Promise<AnniversaryReminderCandidate[]>;
   hasReminderDispatch(pushTokenId: string, reminderDate: Date): Promise<boolean>;
+  hasAnniversaryReminderDispatch(pushTokenId: string, recordId: string, reminderDate: Date): Promise<boolean>;
   createReminderDispatch(data: CreateReminderDispatchData): Promise<CheckInReminderDispatch>;
+  createAnniversaryReminderDispatch(data: CreateAnniversaryReminderDispatchData): Promise<AnniversaryReminderDispatch>;
   markReminderDispatchSent(pushTokenId: string, reminderDate: Date, sentAt: Date): Promise<void>;
   markReminderDispatchFailed(pushTokenId: string, reminderDate: Date, failureReason: string): Promise<void>;
+  markAnniversaryReminderDispatchSent(
+    pushTokenId: string,
+    recordId: string,
+    reminderDate: Date,
+    sentAt: Date,
+  ): Promise<void>;
+  markAnniversaryReminderDispatchFailed(
+    pushTokenId: string,
+    recordId: string,
+    reminderDate: Date,
+    failureReason: string,
+  ): Promise<void>;
 }
 
 export class PushTokenRepository implements IPushTokenRepository {
@@ -230,13 +272,98 @@ export class PushTokenRepository implements IPushTokenRepository {
     });
   }
 
+  async findAnniversaryReminderCandidates(
+    timezones?: string[],
+    now: Date = new Date(),
+  ): Promise<AnniversaryReminderCandidate[]> {
+    if (timezones && timezones.length === 0) {
+      return [];
+    }
+
+    const timezoneFilter = timezones
+      ? {
+          timezone: {
+            in: timezones,
+          },
+        }
+      : {};
+
+    const settings = await this.prisma.userSettings.findMany({
+      where: {
+        notifications: {
+          path: ['anniversaryReminder'],
+          equals: true,
+        },
+        user: {
+          membership: {
+            is: {
+              status: 'active',
+              OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+            },
+          },
+          pushTokens: {
+            some: {
+              isActive: true,
+              ...timezoneFilter,
+            },
+          },
+          records: {
+            some: {
+              status: 'met',
+              timestamp: { lt: now },
+            },
+          },
+        },
+      },
+      select: {
+        userId: true,
+        user: {
+          select: {
+            pushTokens: {
+              where: {
+                isActive: true,
+                ...timezoneFilter,
+              },
+              select: {
+                id: true,
+                token: true,
+                platform: true,
+                timezone: true,
+              },
+            },
+            records: {
+              where: {
+                status: 'met',
+                timestamp: { lt: now },
+              },
+              orderBy: { timestamp: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    return settings.flatMap((setting) => {
+      if (setting.user.pushTokens.length === 0 || setting.user.records.length === 0) {
+        return [];
+      }
+
+      return setting.user.pushTokens.flatMap((pushToken) =>
+        setting.user.records.map((record) => ({
+          userId: setting.userId,
+          pushTokenId: pushToken.id,
+          token: pushToken.token,
+          platform: pushToken.platform,
+          timezone: pushToken.timezone,
+          reminderDate: now,
+          record,
+        })),
+      );
+    });
+  }
+
   async hasReminderDispatch(pushTokenId: string, reminderDate: Date): Promise<boolean> {
-    if (!pushTokenId || pushTokenId.trim() === '') {
-      throw new Error('pushTokenId is required');
-    }
-    if (!(reminderDate instanceof Date) || Number.isNaN(reminderDate.getTime())) {
-      throw new Error('Invalid reminderDate');
-    }
+    this.validateCheckInDispatchLookup(pushTokenId, reminderDate);
 
     const existing = await this.prisma.checkInReminderDispatch.findUnique({
       where: {
@@ -250,16 +377,31 @@ export class PushTokenRepository implements IPushTokenRepository {
     return existing !== null;
   }
 
+  async hasAnniversaryReminderDispatch(
+    pushTokenId: string,
+    recordId: string,
+    reminderDate: Date,
+  ): Promise<boolean> {
+    this.validateAnniversaryDispatchLookup(pushTokenId, recordId, reminderDate);
+
+    const existing = await this.prisma.anniversaryReminderDispatch.findUnique({
+      where: {
+        pushTokenId_recordId_reminderDate: {
+          pushTokenId,
+          recordId,
+          reminderDate,
+        },
+      },
+    });
+
+    return existing !== null;
+  }
+
   async createReminderDispatch(data: CreateReminderDispatchData): Promise<CheckInReminderDispatch> {
     if (!data.userId || data.userId.trim() === '') {
       throw new Error('userId is required');
     }
-    if (!data.pushTokenId || data.pushTokenId.trim() === '') {
-      throw new Error('pushTokenId is required');
-    }
-    if (!(data.reminderDate instanceof Date) || Number.isNaN(data.reminderDate.getTime())) {
-      throw new Error('Invalid reminderDate');
-    }
+    this.validateCheckInDispatchLookup(data.pushTokenId, data.reminderDate);
     if (!data.status || data.status.trim() === '') {
       throw new Error('status is required');
     }
@@ -280,8 +422,36 @@ export class PushTokenRepository implements IPushTokenRepository {
     });
   }
 
+  async createAnniversaryReminderDispatch(
+    data: CreateAnniversaryReminderDispatchData,
+  ): Promise<AnniversaryReminderDispatch> {
+    if (!data.userId || data.userId.trim() === '') {
+      throw new Error('userId is required');
+    }
+    this.validateAnniversaryDispatchLookup(data.pushTokenId, data.recordId, data.reminderDate);
+    if (!data.status || data.status.trim() === '') {
+      throw new Error('status is required');
+    }
+    if (!data.provider || data.provider.trim() === '') {
+      throw new Error('provider is required');
+    }
+
+    return this.prisma.anniversaryReminderDispatch.create({
+      data: {
+        userId: data.userId,
+        pushTokenId: data.pushTokenId,
+        recordId: data.recordId,
+        reminderDate: data.reminderDate,
+        status: data.status,
+        provider: data.provider,
+        failureReason: data.failureReason,
+        sentAt: data.sentAt,
+      },
+    });
+  }
+
   async markReminderDispatchSent(pushTokenId: string, reminderDate: Date, sentAt: Date): Promise<void> {
-    this.validateDispatchLookup(pushTokenId, reminderDate);
+    this.validateCheckInDispatchLookup(pushTokenId, reminderDate);
     if (!(sentAt instanceof Date) || Number.isNaN(sentAt.getTime())) {
       throw new Error('Invalid sentAt');
     }
@@ -302,7 +472,7 @@ export class PushTokenRepository implements IPushTokenRepository {
   }
 
   async markReminderDispatchFailed(pushTokenId: string, reminderDate: Date, failureReason: string): Promise<void> {
-    this.validateDispatchLookup(pushTokenId, reminderDate);
+    this.validateCheckInDispatchLookup(pushTokenId, reminderDate);
     if (!failureReason || failureReason.trim() === '') {
       throw new Error('failureReason is required');
     }
@@ -321,9 +491,78 @@ export class PushTokenRepository implements IPushTokenRepository {
     });
   }
 
-  private validateDispatchLookup(pushTokenId: string, reminderDate: Date): void {
+  async markAnniversaryReminderDispatchSent(
+    pushTokenId: string,
+    recordId: string,
+    reminderDate: Date,
+    sentAt: Date,
+  ): Promise<void> {
+    this.validateAnniversaryDispatchLookup(pushTokenId, recordId, reminderDate);
+    if (!(sentAt instanceof Date) || Number.isNaN(sentAt.getTime())) {
+      throw new Error('Invalid sentAt');
+    }
+
+    await this.prisma.anniversaryReminderDispatch.update({
+      where: {
+        pushTokenId_recordId_reminderDate: {
+          pushTokenId,
+          recordId,
+          reminderDate,
+        },
+      },
+      data: {
+        status: ReminderDispatchStatus.Sent,
+        sentAt,
+        failureReason: null,
+      },
+    });
+  }
+
+  async markAnniversaryReminderDispatchFailed(
+    pushTokenId: string,
+    recordId: string,
+    reminderDate: Date,
+    failureReason: string,
+  ): Promise<void> {
+    this.validateAnniversaryDispatchLookup(pushTokenId, recordId, reminderDate);
+    if (!failureReason || failureReason.trim() === '') {
+      throw new Error('failureReason is required');
+    }
+
+    await this.prisma.anniversaryReminderDispatch.update({
+      where: {
+        pushTokenId_recordId_reminderDate: {
+          pushTokenId,
+          recordId,
+          reminderDate,
+        },
+      },
+      data: {
+        status: ReminderDispatchStatus.Failed,
+        failureReason,
+      },
+    });
+  }
+
+  private validateCheckInDispatchLookup(pushTokenId: string, reminderDate: Date): void {
     if (!pushTokenId || pushTokenId.trim() === '') {
       throw new Error('pushTokenId is required');
+    }
+    if (!(reminderDate instanceof Date) || Number.isNaN(reminderDate.getTime())) {
+      throw new Error('Invalid reminderDate');
+    }
+  }
+
+  private validateAnniversaryDispatchLookup(
+    pushTokenId: string,
+    recordId: string,
+    reminderDate: Date,
+  ): void {
+    if (!pushTokenId || pushTokenId.trim() === '') {
+      throw new Error('pushTokenId is required');
+    }
+    if (!recordId || recordId.trim() === '') {
+      throw new Error('recordId is required');
     }
     if (!(reminderDate instanceof Date) || Number.isNaN(reminderDate.getTime())) {
       throw new Error('Invalid reminderDate');

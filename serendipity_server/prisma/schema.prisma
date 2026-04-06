@@ -7,28 +7,29 @@ datasource db {
 }
 
 model User {
-  id                String              @id @default(uuid())
-  email             String?             @unique
-  phoneNumber       String?             @unique @map("phone_number")
-  passwordHash      String              @map("password_hash")
-  authProvider      String              @default("email") @map("auth_provider") @db.VarChar(20)
-  recoveryKey       String?             @map("recovery_key")
-  displayName       String?             @map("display_name") @db.VarChar(100)
-  avatarUrl         String?             @map("avatar_url")
-  createdAt         DateTime            @default(now()) @map("created_at")
-  updatedAt         DateTime            @updatedAt @map("updated_at")
-  lastLoginAt       DateTime?           @map("last_login_at")
-  achievementUnlocks AchievementUnlock[]
-  checkIns          CheckIn[]
-  communityPosts    CommunityPost[]
-  favorites         Favorite[]
-  membership        Membership?
-  pushTokens        PushToken[]
-  records           Record[]
-  refreshTokens     RefreshToken[]
-  reminderDispatches CheckInReminderDispatch[]
-  storyLines        StoryLine[]
-  settings          UserSettings?
+  id                   String                      @id @default(uuid())
+  email                String?                     @unique
+  phoneNumber          String?                     @unique @map("phone_number")
+  passwordHash         String                      @map("password_hash")
+  authProvider         String                      @default("email") @map("auth_provider") @db.VarChar(20)
+  recoveryKey          String?                     @map("recovery_key")
+  displayName          String?                     @map("display_name") @db.VarChar(100)
+  avatarUrl            String?                     @map("avatar_url")
+  createdAt            DateTime                    @default(now()) @map("created_at")
+  updatedAt            DateTime                    @updatedAt @map("updated_at")
+  lastLoginAt          DateTime?                   @map("last_login_at")
+  achievementUnlocks   AchievementUnlock[]
+  anniversaryReminderDispatches AnniversaryReminderDispatch[]
+  checkIns             CheckIn[]
+  communityPosts       CommunityPost[]
+  favorites            Favorite[]
+  membership           Membership?
+  pushTokens           PushToken[]
+  records              Record[]
+  refreshTokens        RefreshToken[]
+  reminderDispatches   CheckInReminderDispatch[]
+  storyLines           StoryLine[]
+  settings             UserSettings?
 
   @@index([email])
   @@index([phoneNumber])
@@ -36,24 +37,25 @@ model User {
 }
 
 model Record {
-  id                  String     @id @default(uuid())
-  userId              String     @map("user_id")
-  timestamp           DateTime
-  location            Json
-  description         String?
-  tags                Json       @default("[]")
-  emotion             String?    @db.VarChar(50)
-  status              String     @db.VarChar(50)
-  storyLineId         String?    @map("story_line_id")
-  ifReencounter       String?    @map("if_reencounter")
-  conversationStarter String?    @map("conversation_starter")
-  backgroundMusic     String?    @map("background_music") @db.VarChar(255)
-  weather             Json       @default("[]")
-  isPinned            Boolean    @default(false) @map("is_pinned")
-  createdAt           DateTime   @map("created_at")
-  updatedAt           DateTime   @map("updated_at")
-  storyLine           StoryLine? @relation(fields: [storyLineId], references: [id])
-  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                            String                        @id @default(uuid())
+  userId                        String                        @map("user_id")
+  timestamp                     DateTime
+  location                      Json
+  description                   String?
+  tags                          Json                          @default("[]")
+  emotion                       String?                       @db.VarChar(50)
+  status                        String                        @db.VarChar(50)
+  storyLineId                   String?                       @map("story_line_id")
+  ifReencounter                 String?                       @map("if_reencounter")
+  conversationStarter           String?                       @map("conversation_starter")
+  backgroundMusic               String?                       @map("background_music") @db.VarChar(255)
+  weather                       Json                          @default("[]")
+  isPinned                      Boolean                       @default(false) @map("is_pinned")
+  createdAt                     DateTime                      @map("created_at")
+  updatedAt                     DateTime                      @map("updated_at")
+  anniversaryReminderDispatches AnniversaryReminderDispatch[]
+  storyLine                     StoryLine?                    @relation(fields: [storyLineId], references: [id])
+  user                          User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([updatedAt])
@@ -232,19 +234,20 @@ model AchievementUnlock {
 }
 
 model PushToken {
-  id                  String   @id @default(uuid())
-  userId              String   @map("user_id")
-  token               String   @unique
-  platform            String   @db.VarChar(20)
-  timezone            String   @db.VarChar(64)
-  isActive            Boolean  @default(true) @map("is_active")
-  lastUsedAt          DateTime @default(now()) @map("last_used_at")
-  invalidatedAt       DateTime? @map("invalidated_at")
-  invalidReason       String?  @map("invalid_reason") @db.VarChar(255)
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reminderDispatches  CheckInReminderDispatch[]
+  id                            String                        @id @default(uuid())
+  userId                        String                        @map("user_id")
+  token                         String                        @unique
+  platform                      String                        @db.VarChar(20)
+  timezone                      String                        @db.VarChar(64)
+  isActive                      Boolean                       @default(true) @map("is_active")
+  lastUsedAt                    DateTime                      @default(now()) @map("last_used_at")
+  invalidatedAt                 DateTime?                     @map("invalidated_at")
+  invalidReason                 String?                       @map("invalid_reason") @db.VarChar(255)
+  createdAt                     DateTime                      @default(now()) @map("created_at")
+  updatedAt                     DateTime                      @updatedAt @map("updated_at")
+  anniversaryReminderDispatches AnniversaryReminderDispatch[]
+  user                          User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminderDispatches            CheckInReminderDispatch[]
 
   @@index([userId])
   @@index([userId, isActive])
@@ -253,21 +256,44 @@ model PushToken {
 }
 
 model CheckInReminderDispatch {
-  id                String    @id @default(uuid())
-  userId            String    @map("user_id")
-  pushTokenId       String    @map("push_token_id")
-  reminderDate      DateTime  @db.Date @map("reminder_date")
-  status            String    @db.VarChar(20)
-  provider          String    @db.VarChar(20)
-  failureReason     String?   @map("failure_reason") @db.VarChar(255)
-  sentAt            DateTime? @map("sent_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  pushToken         PushToken @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  pushTokenId   String    @map("push_token_id")
+  reminderDate  DateTime  @db.Date @map("reminder_date")
+  status        String    @db.VarChar(20)
+  provider      String    @db.VarChar(20)
+  failureReason String?   @map("failure_reason") @db.VarChar(255)
+  sentAt        DateTime? @map("sent_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  pushToken     PushToken @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([pushTokenId, reminderDate])
   @@index([userId, reminderDate])
   @@index([status, reminderDate])
   @@map("check_in_reminder_dispatches")
+}
+
+model AnniversaryReminderDispatch {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  pushTokenId   String    @map("push_token_id")
+  recordId      String    @map("record_id")
+  reminderDate  DateTime  @db.Date @map("reminder_date")
+  status        String    @db.VarChar(20)
+  provider      String    @db.VarChar(20)
+  failureReason String?   @map("failure_reason") @db.VarChar(255)
+  sentAt        DateTime? @map("sent_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  pushToken     PushToken @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
+  record        Record    @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pushTokenId, recordId, reminderDate])
+  @@index([userId, reminderDate])
+  @@index([recordId, reminderDate])
+  @@index([status, reminderDate])
+  @@map("anniversary_reminder_dispatches")
 }

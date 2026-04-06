@@ -15,7 +15,7 @@ let isReminderScanRunning = false;
 
 function startReminderScheduler(currentContainer: Container): void {
   if (!config.checkInReminder.enabled) {
-    logger.info('Check-in reminder scheduler disabled');
+    logger.info('Reminder scheduler disabled');
     return;
   }
 
@@ -24,23 +24,27 @@ function startReminderScheduler(currentContainer: Container): void {
     void runReminderScan(pushTokenService);
   }, config.checkInReminder.scanIntervalMs);
 
-  logger.info('Check-in reminder scheduler started', {
+  logger.info('Reminder scheduler started', {
     scanIntervalMs: config.checkInReminder.scanIntervalMs,
   });
 }
 
 async function runReminderScan(pushTokenService: IPushTokenService): Promise<void> {
   if (isReminderScanRunning) {
-    logger.warn('Check-in reminder scan skipped because previous run is still active');
+    logger.warn('Reminder scan skipped because previous run is still active');
     return;
   }
 
   isReminderScanRunning = true;
   try {
-    const summary = await pushTokenService.dispatchReminderNotifications();
-    logger.info('Check-in reminder scan completed', summary);
+    const [checkInSummary, anniversarySummary] = await Promise.all([
+      pushTokenService.dispatchReminderNotifications(),
+      pushTokenService.dispatchAnniversaryReminderNotifications(),
+    ]);
+    logger.info('Check-in reminder scan completed', checkInSummary);
+    logger.info('Anniversary reminder scan completed', anniversarySummary);
   } catch (error) {
-    logger.error('Check-in reminder scan failed', error);
+    logger.error('Reminder scan failed', error);
   } finally {
     isReminderScanRunning = false;
   }

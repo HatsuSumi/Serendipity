@@ -1,6 +1,7 @@
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
 import {
+  AnniversaryReminderCandidate,
   IPushTokenRepository,
   RegisterPushTokenData,
   ReminderCandidate,
@@ -22,6 +23,7 @@ import {
 import {
   AnniversaryReminderTestPayload,
   ReminderDispatchSource,
+  ReminderDispatchType,
 } from '../types/pushToken.dto';
 import { logger } from '../utils/logger';
 
@@ -57,6 +59,7 @@ export interface ReminderDispatchExecution {
 }
 
 export interface ReminderDispatchSummary {
+  dispatchType: ReminderDispatchType;
   dispatchSource: ReminderDispatchSource;
   scannedCandidates: number;
   sentCount: number;
@@ -71,6 +74,7 @@ export interface IPushTokenService {
   listPushTokens(userId: string): Promise<PushToken[]>;
   getReminderDispatchCandidates(timezones?: string[], now?: Date): Promise<ReminderDispatchCandidate[]>;
   dispatchReminderNotifications(timezones?: string[], now?: Date): Promise<ReminderDispatchSummary>;
+  dispatchAnniversaryReminderNotifications(timezones?: string[], now?: Date): Promise<ReminderDispatchSummary>;
   dispatchReminderNotificationsForUser(
     userId: string,
     now?: Date,
@@ -81,6 +85,13 @@ export interface IPushTokenService {
 interface DispatchExecutionOptions {
   persistDispatch: boolean;
   dispatchSource: ReminderDispatchSource;
+  dispatchType: ReminderDispatchType;
+}
+
+interface AnniversaryDispatchExecutionContext {
+  pushTokenId: string;
+  recordId: string;
+  reminderDate: Date;
 }
 
 export class PushTokenService implements IPushTokenService {
@@ -135,7 +146,10 @@ export class PushTokenService implements IPushTokenService {
     return this.pushTokenRepository.findActiveByUserId(userId);
   }
 
-  async getReminderDispatchCandidates(timezones?: string[], now: Date = new Date()): Promise<ReminderDispatchCandidate[]> {
+  async getReminderDispatchCandidates(
+    timezones?: string[],
+    now: Date = new Date(),
+  ): Promise<ReminderDispatchCandidate[]> {
     this.validateNow(now);
     const targetTimezones = this.normalizeTimezones(timezones);
     const repositoryCandidates = await this.pushTokenRepository.findReminderCandidates(targetTimezones);
@@ -162,6 +176,39 @@ export class PushTokenService implements IPushTokenService {
     return this.dispatchReminderNotificationsForCandidates(candidates, undefined, {
       persistDispatch: true,
       dispatchSource: 'scheduler',
+      dispatchType: 'check_in',
+    });
+  }
+
+  async dispatchAnniversaryReminderNotifications(
+    timezones?: string[],
+    now: Date = new Date(),
+  ): Promise<ReminderDispatchSummary> {
+    this.validateNow(now);
+    const targetTimezones = this.normalizeTimezones(timezones);
+    const repositoryCandidates = await this.pushTokenRepository.findAnniversaryReminderCandidates(
+      targetTimezones,
+      now,
+    );
+    if (repositoryCandidates.length === 0) {
+      return {
+        dispatchType: 'anniversary',
+        dispatchSource: 'scheduler',
+        scannedCandidates: 0,
+        sentCount: 0,
+        failedCount: 0,
+        executions: [],
+      };
+    }
+
+    const candidates = repositoryCandidates.filter((candidate) =>
+      this.shouldDispatchAnniversaryReminder(candidate, now),
+    );
+
+    return this.dispatchAnniversaryReminderCandidates(candidates, {
+      persistDispatch: true,
+      dispatchSource: 'scheduler',
+      dispatchType: 'anniversary',
     });
   }
 
@@ -176,6 +223,7 @@ export class PushTokenService implements IPushTokenService {
     const repositoryCandidates = await this.pushTokenRepository.findActiveByUserId(userId);
     if (repositoryCandidates.length === 0) {
       const emptySummary: ReminderDispatchSummary = {
+        dispatchType: overridePayload == null ? 'check_in' : 'anniversary',
         dispatchSource: 'manual_test',
         scannedCandidates: 0,
         sentCount: 0,
@@ -199,6 +247,7 @@ export class PushTokenService implements IPushTokenService {
     return this.dispatchReminderNotificationsForCandidates(candidates, overridePayload, {
       persistDispatch: false,
       dispatchSource: 'manual_test',
+      dispatchType: overridePayload == null ? 'check_in' : 'anniversary',
     });
   }
 
@@ -214,19 +263,115 @@ export class PushTokenService implements IPushTokenService {
         ? this.buildOverrideReminderPayload(candidate, overridePayload)
         : await this.buildReminderPayload(candidate);
       const sendResult = await this.reminderPushSender.send(payload);
-      const execution = await this.finalizeDispatch(candidate, sendResult, options);
+      const execution = await this.finalizeCheckInDispatch(candidate, sendResult, options);
       executions.push(execution);
     }
 
+    return this.buildDispatchSummary(candidates.length, executions, options);
+  }
+
+  private async dispatchAnniversaryReminderCandidates(
+    candidates: AnniversaryReminderCandidate[],
+    options: DispatchExecutionOptions,
+  ): Promise<ReminderDispatchSummary> {
+    const executions: ReminderDispatchExecution[] = [];
+
+    for (const candidate of candidates) {
+      const reminderDate = this.getCurrentDateInTimezone(candidate.timezone, candidate.reminderDate);
+      const alreadyDispatched = await this.pushTokenRepository.hasAnniversaryReminderDispatch(
+        candidate.pushTokenId,
+        candidate.record.id,
+        reminderDate,
+      );
+      if (alreadyDispatched) {
+        continue;
+      }
+
+      await this.pushTokenRepository.createAnniversaryReminderDispatch({
+        userId: candidate.userId,
+        pushTokenId: candidate.pushTokenId,
+        recordId: candidate.record.id,
+        reminderDate,
+        status: ReminderDispatchStatus.Pending,
+        provider: this.getProviderByPlatform(candidate.platform),
+      });
+
+      const sendResult = await this.reminderPushSender.send(
+        this.buildAnniversaryReminderPayload(candidate, reminderDate),
+      );
+      const execution = await this.finalizeAnniversaryDispatch(
+        {
+          userId: candidate.userId,
+          pushTokenId: candidate.pushTokenId,
+          token: candidate.token,
+          platform: candidate.platform,
+          timezone: candidate.timezone,
+          reminderDate,
+          reminderTime: 'anniversary',
+        },
+        sendResult,
+        {
+          pushTokenId: candidate.pushTokenId,
+          recordId: candidate.record.id,
+          reminderDate,
+        },
+        options,
+      );
+      executions.push(execution);
+    }
+
+    return this.buildDispatchSummary(candidates.length, executions, options);
+  }
+
+  private buildDispatchSummary(
+    scannedCandidates: number,
+    executions: ReminderDispatchExecution[],
+    options: DispatchExecutionOptions,
+  ): ReminderDispatchSummary {
     const summary: ReminderDispatchSummary = {
+      dispatchType: options.dispatchType,
       dispatchSource: options.dispatchSource,
-      scannedCandidates: candidates.length,
+      scannedCandidates,
       sentCount: executions.filter((execution) => execution.status === ReminderDispatchStatus.Sent).length,
       failedCount: executions.filter((execution) => execution.status === ReminderDispatchStatus.Failed).length,
       executions,
     };
-    this.logDispatchSummary(candidates[0]?.userId, summary);
+    this.logDispatchSummary(executions[0]?.userId, summary);
     return summary;
+  }
+
+  private buildAnniversaryReminderPayload(
+    candidate: AnniversaryReminderCandidate,
+    reminderDate: Date,
+  ): ReminderSendPayload {
+    return {
+      token: candidate.token,
+      platform: candidate.platform,
+      title: '今天是一个特别的纪念日 🌸',
+      body: this.buildAnniversaryReminderBody(candidate.record.timestamp, reminderDate),
+      data: {
+        type: 'anniversary_reminder',
+        userId: candidate.userId,
+        reminderDate: reminderDate.toISOString(),
+        recordId: candidate.record.id,
+      },
+    };
+  }
+
+  private buildAnniversaryReminderBody(timestamp: Date, reminderDate: Date): string {
+    const years = Math.max(reminderDate.getUTCFullYear() - timestamp.getUTCFullYear(), 1);
+    return `${years}年前的今天，你在某个地方邂逅了TA`;
+  }
+
+  private shouldDispatchAnniversaryReminder(
+    candidate: AnniversaryReminderCandidate,
+    now: Date,
+  ): boolean {
+    const localizedNow = this.getLocalizedNow(now, candidate.timezone);
+    const localizedTimestamp = this.getLocalizedNow(candidate.record.timestamp, candidate.timezone);
+
+    return localizedTimestamp.getUTCMonth() === localizedNow.getUTCMonth()
+      && localizedTimestamp.getUTCDate() === localizedNow.getUTCDate();
   }
 
   private async buildReminderCandidate(
@@ -274,7 +419,7 @@ export class PushTokenService implements IPushTokenService {
     };
   }
 
-  private async finalizeDispatch(
+  private async finalizeCheckInDispatch(
     candidate: ReminderDispatchCandidate,
     sendResult: ReminderSendResult,
     options: DispatchExecutionOptions,
@@ -298,6 +443,48 @@ export class PushTokenService implements IPushTokenService {
       await this.pushTokenRepository.markReminderDispatchFailed(
         candidate.pushTokenId,
         candidate.reminderDate,
+        failureReason,
+      );
+    }
+
+    if (sendResult.isInvalidToken) {
+      await this.pushTokenRepository.markInvalid(candidate.token, failureReason);
+    }
+
+    return {
+      ...candidate,
+      status: ReminderDispatchStatus.Failed,
+      failureReason,
+    };
+  }
+
+  private async finalizeAnniversaryDispatch(
+    candidate: ReminderDispatchCandidate,
+    sendResult: ReminderSendResult,
+    context: AnniversaryDispatchExecutionContext,
+    options: DispatchExecutionOptions,
+  ): Promise<ReminderDispatchExecution> {
+    if (sendResult.success) {
+      if (options.persistDispatch) {
+        await this.pushTokenRepository.markAnniversaryReminderDispatchSent(
+          context.pushTokenId,
+          context.recordId,
+          context.reminderDate,
+          new Date(),
+        );
+      }
+      return {
+        ...candidate,
+        status: ReminderDispatchStatus.Sent,
+      };
+    }
+
+    const failureReason = sendResult.failureReason?.trim() || 'push_send_failed';
+    if (options.persistDispatch) {
+      await this.pushTokenRepository.markAnniversaryReminderDispatchFailed(
+        context.pushTokenId,
+        context.recordId,
+        context.reminderDate,
         failureReason,
       );
     }
@@ -511,6 +698,7 @@ export class PushTokenService implements IPushTokenService {
 
     logger.info('Reminder dispatch summary', {
       userId,
+      dispatchType: summary.dispatchType,
       dispatchSource: summary.dispatchSource,
       scannedCandidates: summary.scannedCandidates,
       sentCount: summary.sentCount,

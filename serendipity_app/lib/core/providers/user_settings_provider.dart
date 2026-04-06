@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user_settings.dart';
 import '../../models/user.dart';
-import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
 import '../services/i_storage_service.dart';
 import '../services/notification_service.dart';
@@ -38,10 +37,6 @@ class UserSettingsStorage {
 
   Future<void> saveUserSettings(UserSettings settings) {
     return _storageService.saveUserSettings(settings);
-  }
-
-  List<EncounterRecord> getAllRecords() {
-    return _storageService.getAllRecords();
   }
 }
 
@@ -83,7 +78,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   }
 
   /// 创建默认设置（访客模式）
-  /// 调度纪念日提醒本地通知
   /// 单一职责：只负责创建默认配置
   static UserSettings _createDefaultSettings() {
     final now = DateTime.now();
@@ -237,28 +231,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     }
 
     if (settings.anniversaryReminder) {
-      await _scheduleAnniversaryReminders();
-    } else {
-      await _notificationService.cancelAnniversaryReminders();
-    }
-  }
-
-  ///
-  /// 从当前用户的全量记录中筛选邂逅记录，交给 NotificationService 调度。
-  /// 权限检查由 updateAnniversaryReminder 负责，此处不重复校验。
-  ///
-  /// 调用者：
-  /// - _loadSettings()：App 启动/同步完成后重新调度
-  /// - updateAnniversaryReminder()：用户开启纪念日提醒时调度
-  Future<void> _scheduleAnniversaryReminders() async {
-    try {
-      final granted = await _notificationService.requestPermission();
-      if (!granted) return;
-
-      final records = _settingsStorage.getAllRecords();
-      await _notificationService.scheduleAnniversaryReminders(records);
-    } catch (e) {
-      // 调度失败静默处理，不影响用户体验
+      return;
     }
   }
 
@@ -346,12 +319,6 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
     await _settingsStorage.saveUserSettings(updated);
     state = updated;
-
-    if (enabled) {
-      await _scheduleAnniversaryReminders();
-    } else {
-      await _notificationService.cancelAnniversaryReminders();
-    }
 
     await _uploadToCloud(updated);
   }

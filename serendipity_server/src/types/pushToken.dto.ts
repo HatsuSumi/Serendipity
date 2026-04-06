@@ -28,6 +28,8 @@ export interface AnniversaryReminderTestPayload {
 
 export type ReminderDispatchSource = 'manual_test' | 'scheduler';
 
+export type ReminderDispatchType = 'check_in' | 'anniversary';
+
 export interface ReminderDispatchExecutionDto {
   userId: string;
   pushTokenId: string;
@@ -40,6 +42,7 @@ export interface ReminderDispatchExecutionDto {
 }
 
 export interface ReminderDispatchSummaryDto {
+  dispatchType: ReminderDispatchType;
   dispatchSource: ReminderDispatchSource;
   scannedCandidates: number;
   sentCount: number;
