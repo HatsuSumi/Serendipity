@@ -10,6 +10,8 @@ import '../../../core/providers/records_provider.dart' show recordsProvider;
 import '../../../core/providers/user_settings_provider.dart'
     show notificationServiceProvider, userSettingsProvider;
 import '../../../core/services/notification_service.dart';
+import '../../../core/services/push_models.dart';
+import '../../../core/utils/message_helper.dart';
 import '../../../core/services/push_diagnostics_service.dart';
 import '../../../core/utils/async_action_helper.dart';
 import '../../../core/utils/dialog_helper.dart';
@@ -169,10 +171,7 @@ class DevToolsPage extends ConsumerWidget {
                   .sendServerTestAnniversaryNotification();
               if (!context.mounted) return;
 
-              DialogHelper.show<void>(
-                context: context,
-                builder: (_) => PushTestResultDialog(result: result),
-              );
+              _showServerPushTestFeedback(context, result);
             },
           ),
           ListTile(
@@ -191,10 +190,7 @@ class DevToolsPage extends ConsumerWidget {
                   .sendServerTestCheckInNotification();
               if (!context.mounted) return;
 
-              DialogHelper.show<void>(
-                context: context,
-                builder: (_) => PushTestResultDialog(result: result),
-              );
+              _showServerPushTestFeedback(context, result);
             },
           ),
           ListTile(
@@ -215,6 +211,29 @@ class DevToolsPage extends ConsumerWidget {
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+
+  void _showServerPushTestFeedback(
+    BuildContext context,
+    ServerPushTestResult result,
+  ) {
+    switch (result.status) {
+      case TestNotificationResult.scheduled:
+        MessageHelper.showSuccess(context, result.message);
+        break;
+      case TestNotificationResult.permissionDenied:
+      case TestNotificationResult.schedulingFailed:
+        MessageHelper.showError(context, result.message);
+        break;
+      case TestNotificationResult.unsupportedPlatform:
+        MessageHelper.showWarning(context, result.message);
+        break;
+    }
+
+    DialogHelper.show<void>(
+      context: context,
+      builder: (_) => PushTestResultDialog(result: result),
     );
   }
 
