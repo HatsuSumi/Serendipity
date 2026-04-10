@@ -702,7 +702,10 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
   ///
   /// 调用者：_handleMenuAction()
   void _exportRecord(BuildContext context) async {
-    final success = await RecordExportCard.export(context, _currentRecord);
+    final success = await RecordExportCard.export(
+      context,
+      _currentRecord,
+    );
     if (!context.mounted) return;
     if (success) {
       MessageHelper.showSuccess(context, '已保存到相册');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/export_service.dart';
+import '../../core/theme/export_card_palette.dart';
 import '../../core/utils/date_time_helper.dart';
 import '../../core/utils/record_helper.dart';
 import '../../models/encounter_record.dart';
@@ -41,37 +42,42 @@ class StoryLineExportCard extends StatelessWidget {
   ) async {
     assert(records.isNotEmpty, 'records must not be empty');
 
-    final key = GlobalKey();
-    late OverlayEntry entry;
+    return ExportService.runWithDebugPaintDisabled(() async {
+      final key = GlobalKey();
+      late OverlayEntry entry;
 
-    entry = OverlayEntry(
-      builder: (_) => Positioned(
-        left: -2000,
-        top: -2000,
-        child: RepaintBoundary(
-          key: key,
-          child: MediaQuery(
-            data: MediaQuery.of(context),
-            child: Directionality(
-              textDirection: TextDirection.ltr,
-              child: StoryLineExportCard(
-                storyLine: storyLine,
-                records: records,
+      entry = OverlayEntry(
+        builder: (_) => Positioned(
+          left: -2000,
+          top: -2000,
+          child: RepaintBoundary(
+            key: key,
+            child: InheritedTheme.captureAll(
+              context,
+              MediaQuery(
+                data: MediaQuery.of(context),
+                child: Directionality(
+                  textDirection: Directionality.of(context),
+                  child: StoryLineExportCard(
+                    storyLine: storyLine,
+                    records: records,
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    Overlay.of(context).insert(entry);
-    await Future.delayed(const Duration(milliseconds: 300));
+      Overlay.of(context).insert(entry);
+      await Future.delayed(const Duration(milliseconds: 300));
 
-    final bytes = await ExportService.capture(key);
-    entry.remove();
+      final bytes = await ExportService.capture(key);
+      entry.remove();
 
-    if (bytes == null) return false;
-    return ExportService.saveToGallery(bytes, name: 'serendipity_storyline');
+      if (bytes == null) return false;
+      return ExportService.saveToGallery(bytes, name: 'serendipity_storyline');
+    });
   }
 
   @override
@@ -94,15 +100,12 @@ class _CardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bgColor = Color(0xFF0F0F1A);
-    const cardColor = Color(0xFF1A1A2E);
-    const accentColor = Color(0xFF7B68EE);
-    const textPrimary = Color(0xFFF5F5F5);
-    const textSecondary = Color(0xFFAAAAAA);
-    const lineColor = Color(0xFF2A2A4A);
+    final palette = ExportCardPalette.light(
+      accentColor: const Color(0xFF7D6BC9),
+    );
 
     return Container(
-      color: bgColor,
+      color: palette.backgroundColor,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,17 +118,21 @@ class _CardContent extends StatelessWidget {
                 width: 4,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: accentColor,
+                  color: palette.accentColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Serendipity',
-                style: TextStyle(
-                  color: textSecondary,
-                  fontSize: 13,
-                  letterSpacing: 1.5,
+              Expanded(
+                child: Text(
+                  'Serendipity',
+                  style: TextStyle(
+                    color: palette.secondaryTextColor,
+                    fontSize: 13,
+                    letterSpacing: 1.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -135,19 +142,23 @@ class _CardContent extends StatelessWidget {
           // 故事线标题
           Text(
             '📖 ${storyLine.name}',
-            style: const TextStyle(
-              color: textPrimary,
+            style: TextStyle(
+              color: palette.primaryTextColor,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 6),
           Text(
             '共 ${records.length} 段记录 · ${DateTimeHelper.formatChineseDate(records.first.timestamp)} 起',
-            style: const TextStyle(
-              color: textSecondary,
+            style: TextStyle(
+              color: palette.secondaryTextColor,
               fontSize: 13,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 20),
 
@@ -158,11 +169,11 @@ class _CardContent extends StatelessWidget {
             return _TimelineItem(
               record: record,
               isLast: isLast,
-              accentColor: accentColor,
-              cardColor: cardColor,
-              lineColor: lineColor,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
+              accentColor: palette.accentColor,
+              cardColor: palette.surfaceColor,
+              lineColor: palette.dividerColor,
+              textPrimary: palette.primaryTextColor,
+              textSecondary: palette.secondaryTextColor,
             );
           }),
 
@@ -173,7 +184,7 @@ class _CardContent extends StatelessWidget {
             child: Text(
               '错过了么 · 有些错过，只能被记住',
               style: TextStyle(
-                color: textSecondary.withValues(alpha: 0.6),
+                color: palette.secondaryTextColor.withValues(alpha: 0.72),
                 fontSize: 11,
                 letterSpacing: 0.5,
               ),
@@ -219,9 +230,12 @@ class _TimelineItem extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.2),
+                    color: accentColor.withValues(alpha: 0.14),
                     shape: BoxShape.circle,
-                    border: Border.all(color: accentColor, width: 1.5),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.7),
+                      width: 1.5,
+                    ),
                   ),
                   child: Center(
                     child: Text(
@@ -252,31 +266,46 @@ class _TimelineItem extends StatelessWidget {
                 color: cardColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: accentColor.withValues(alpha: 0.2),
+                  color: accentColor.withValues(alpha: 0.22),
                   width: 1,
                 ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x12000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 状态 + 日期
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        record.status.label,
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          record.status.label,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 12),
                       Text(
                         DateTimeHelper.formatShortDate(record.timestamp),
                         style: TextStyle(
                           color: textSecondary,
                           fontSize: 12,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
                       ),
                     ],
                   ),
@@ -325,8 +354,11 @@ class _TimelineItem extends StatelessWidget {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: accentColor.withValues(alpha: 0.12),
+                                color: accentColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: accentColor.withValues(alpha: 0.22),
+                                ),
                               ),
                               child: Text(
                                 t.tag,

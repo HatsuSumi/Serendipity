@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/export_service.dart';
+import '../../../core/theme/export_card_palette.dart';
 import '../../../core/utils/date_time_helper.dart';
 import '../../../core/utils/record_helper.dart';
 import '../../../models/encounter_record.dart';
@@ -20,7 +21,10 @@ import '../../../models/encounter_record.dart';
 class RecordExportCard extends StatelessWidget {
   final EncounterRecord record;
 
-  const RecordExportCard({super.key, required this.record});
+  const RecordExportCard({
+    super.key,
+    required this.record,
+  });
 
   /// 将记录渲染并保存到相册
   ///
@@ -32,35 +36,39 @@ class RecordExportCard extends StatelessWidget {
     BuildContext context,
     EncounterRecord record,
   ) async {
-    final key = GlobalKey();
-    late OverlayEntry entry;
+    return ExportService.runWithDebugPaintDisabled(() async {
+      final key = GlobalKey();
+      late OverlayEntry entry;
 
-    entry = OverlayEntry(
-      builder: (_) => Positioned(
-        left: -2000,
-        top: -2000,
-        child: RepaintBoundary(
-          key: key,
-          child: MediaQuery(
-            data: MediaQuery.of(context),
-            child: Directionality(
-              textDirection: TextDirection.ltr,
-              child: RecordExportCard(record: record),
+      entry = OverlayEntry(
+        builder: (_) => Positioned(
+          left: -2000,
+          top: -2000,
+          child: RepaintBoundary(
+            key: key,
+            child: InheritedTheme.captureAll(
+              context,
+              MediaQuery(
+                data: MediaQuery.of(context),
+                child: Directionality(
+                  textDirection: Directionality.of(context),
+                  child: RecordExportCard(record: record),
+                ),
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    Overlay.of(context).insert(entry);
-    // 等待渲染完成
-    await Future.delayed(const Duration(milliseconds: 300));
+      Overlay.of(context).insert(entry);
+      await Future.delayed(const Duration(milliseconds: 300));
 
-    final bytes = await ExportService.capture(key);
-    entry.remove();
+      final bytes = await ExportService.capture(key);
+      entry.remove();
 
-    if (bytes == null) return false;
-    return ExportService.saveToGallery(bytes, name: 'serendipity_record');
+      if (bytes == null) return false;
+      return ExportService.saveToGallery(bytes, name: 'serendipity_record');
+    });
   }
 
   @override
@@ -76,160 +84,173 @@ class RecordExportCard extends StatelessWidget {
 class _CardContent extends StatelessWidget {
   final EncounterRecord record;
 
-  const _CardContent({required this.record});
+  const _CardContent({
+    required this.record,
+  });
 
   @override
   Widget build(BuildContext context) {
-    const bgColor = Color(0xFF1A1A2E);
-    const cardColor = Color(0xFF16213E);
-    const accentColor = Color(0xFFE94560);
-    const textPrimary = Color(0xFFF5F5F5);
-    const textSecondary = Color(0xFFAAAAAA);
+    final palette = ExportCardPalette.light(
+      accentColor: const Color(0xFFD96B7C),
+    );
+    final hasDescription = record.description != null && record.description!.isNotEmpty;
+    final hasEmotion = record.emotion != null;
+    final hasWeather = record.weather.isNotEmpty;
+    final hasMusic = record.backgroundMusic != null && record.backgroundMusic!.isNotEmpty;
+    final hasConversationStarter =
+        record.conversationStarter != null && record.conversationStarter!.isNotEmpty;
+    final hasTags = record.tags.isNotEmpty;
 
     return Container(
-      color: bgColor,
+      color: palette.backgroundColor,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 顶部品牌标识
           Row(
             children: [
               Container(
                 width: 4,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: accentColor,
+                  color: palette.accentColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Serendipity',
-                style: TextStyle(
-                  color: textSecondary,
-                  fontSize: 13,
-                  letterSpacing: 1.5,
+              Expanded(
+                child: Text(
+                  'Serendipity',
+                  style: TextStyle(
+                    color: palette.secondaryTextColor,
+                    fontSize: 13,
+                    letterSpacing: 1.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 12),
               Text(
                 DateTimeHelper.formatChineseDate(record.timestamp),
-                style: const TextStyle(
-                  color: textSecondary,
+                style: TextStyle(
+                  color: palette.secondaryTextColor,
                   fontSize: 12,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
               ),
             ],
           ),
           const SizedBox(height: 20),
-
-          // 状态核心区
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: cardColor,
+              color: palette.surfaceColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: accentColor.withValues(alpha: 0.3),
+                color: palette.accentColor.withValues(alpha: 0.28),
                 width: 1,
               ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x14000000),
+                  blurRadius: 16,
+                  offset: Offset(0, 6),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 状态图标 + 标签
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       record.status.icon,
                       style: const TextStyle(fontSize: 32),
                     ),
                     const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          record.status.label,
-                          style: const TextStyle(
-                            color: textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            record.status.label,
+                            style: TextStyle(
+                              color: palette.primaryTextColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        Text(
-                          DateTimeHelper.formatDateTime(record.timestamp),
-                          style: const TextStyle(
-                            color: textSecondary,
-                            fontSize: 12,
+                          Text(
+                            DateTimeHelper.formatDateTime(record.timestamp),
+                            style: TextStyle(
+                              color: palette.secondaryTextColor,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // 地点
                 _InfoRow(
                   icon: '📍',
                   text: RecordHelper.getLocationText(record.location),
+                  textColor: palette.secondaryTextColor,
                 ),
-
-                // 描述
-                if (record.description != null &&
-                    record.description!.isNotEmpty) ...[
+                if (hasDescription) ...[
                   const SizedBox(height: 10),
                   _InfoRow(
                     icon: '💭',
                     text: record.description!,
+                    textColor: palette.primaryTextColor,
                     maxLines: 4,
                   ),
                 ],
-
-                // 情绪
-                if (record.emotion != null) ...[
+                if (hasEmotion) ...[
                   const SizedBox(height: 10),
                   _InfoRow(
                     icon: '❤️',
                     text: record.emotion!.label,
+                    textColor: palette.primaryTextColor,
                   ),
                 ],
-
-                // 天气
-                if (record.weather.isNotEmpty) ...[
+                if (hasWeather) ...[
                   const SizedBox(height: 10),
                   _InfoRow(
                     icon: '🌤️',
                     text: record.weather.map((w) => w.label).join('  '),
+                    textColor: palette.secondaryTextColor,
                   ),
                 ],
-
-                // 背景音乐
-                if (record.backgroundMusic != null &&
-                    record.backgroundMusic!.isNotEmpty) ...[
+                if (hasMusic) ...[
                   const SizedBox(height: 10),
                   _InfoRow(
                     icon: '🎵',
                     text: record.backgroundMusic!,
+                    textColor: palette.primaryTextColor,
                   ),
                 ],
-
-                // 对话契机（邂逅状态）
-                if (record.conversationStarter != null &&
-                    record.conversationStarter!.isNotEmpty) ...[
+                if (hasConversationStarter) ...[
                   const SizedBox(height: 10),
                   _InfoRow(
                     icon: '💬',
                     text: record.conversationStarter!,
+                    textColor: palette.primaryTextColor,
                     maxLines: 3,
                   ),
                 ],
-
-                // 标签
-                if (record.tags.isNotEmpty) ...[
+                if (hasTags) ...[
                   const SizedBox(height: 14),
                   Wrap(
                     spacing: 8,
@@ -243,16 +264,16 @@ class _CardContent extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.15),
+                              color: palette.accentColor.withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: accentColor.withValues(alpha: 0.4),
+                                color: palette.accentColor.withValues(alpha: 0.35),
                               ),
                             ),
                             child: Text(
                               t.tag,
-                              style: const TextStyle(
-                                color: textPrimary,
+                              style: TextStyle(
+                                color: palette.primaryTextColor,
                                 fontSize: 12,
                               ),
                             ),
@@ -264,15 +285,12 @@ class _CardContent extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // 底部水印
           Center(
             child: Text(
               '错过了么 · 有些错过，只能被记住',
               style: TextStyle(
-                color: textSecondary.withValues(alpha: 0.6),
+                color: palette.secondaryTextColor.withValues(alpha: 0.72),
                 fontSize: 11,
                 letterSpacing: 0.5,
               ),
@@ -289,17 +307,17 @@ class _InfoRow extends StatelessWidget {
   final String icon;
   final String text;
   final int maxLines;
+  final Color textColor;
 
   const _InfoRow({
     required this.icon,
     required this.text,
+    required this.textColor,
     this.maxLines = 2,
   });
 
   @override
   Widget build(BuildContext context) {
-    const textSecondary = Color(0xFFAAAAAA);
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,8 +326,8 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              color: textSecondary,
+            style: TextStyle(
+              color: textColor,
               fontSize: 13,
               height: 1.5,
             ),
@@ -321,4 +339,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-

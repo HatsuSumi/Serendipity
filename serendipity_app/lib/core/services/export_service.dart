@@ -2,7 +2,49 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+
+class _DebugPaintSnapshot {
+  final bool baselinesEnabled;
+  final bool sizeEnabled;
+  final bool pointersEnabled;
+  final bool repaintRainbowEnabled;
+
+  const _DebugPaintSnapshot({
+    required this.baselinesEnabled,
+    required this.sizeEnabled,
+    required this.pointersEnabled,
+    required this.repaintRainbowEnabled,
+  });
+
+  static _DebugPaintSnapshot? disableForExport() {
+    if (!kDebugMode) return null;
+
+    final snapshot = _DebugPaintSnapshot(
+      baselinesEnabled: debugPaintBaselinesEnabled,
+      sizeEnabled: debugPaintSizeEnabled,
+      pointersEnabled: debugPaintPointersEnabled,
+      repaintRainbowEnabled: debugRepaintRainbowEnabled,
+    );
+
+    debugPaintBaselinesEnabled = false;
+    debugPaintSizeEnabled = false;
+    debugPaintPointersEnabled = false;
+    debugRepaintRainbowEnabled = false;
+
+    return snapshot;
+  }
+
+  void restore() {
+    if (!kDebugMode) return;
+
+    debugPaintBaselinesEnabled = baselinesEnabled;
+    debugPaintSizeEnabled = sizeEnabled;
+    debugPaintPointersEnabled = pointersEnabled;
+    debugRepaintRainbowEnabled = repaintRainbowEnabled;
+  }
+}
 
 /// 图片导出服务
 ///
@@ -18,6 +60,34 @@ import 'package:image_gallery_saver/image_gallery_saver.dart';
 /// - Fail Fast：Web 平台立即返回失败，不走后续逻辑
 class ExportService {
   ExportService._();
+
+  static Future<void> _flushDebugPaintState() async {
+    final renderView = RendererBinding.instance.renderViews.firstOrNull;
+    renderView?.markNeedsPaint();
+    renderView?.markNeedsLayout();
+    WidgetsBinding.instance.scheduleFrame();
+    await WidgetsBinding.instance.endOfFrame;
+  }
+
+  /// 在导出期间临时关闭 Flutter 调试辅助绘制，避免污染导出图片。
+  static Future<T> runWithDebugPaintDisabled<T>(
+    Future<T> Function() action,
+  ) async {
+    final debugPaintSnapshot = _DebugPaintSnapshot.disableForExport();
+
+    try {
+      if (debugPaintSnapshot != null) {
+        await _flushDebugPaintState();
+      }
+
+      return await action();
+    } finally {
+      debugPaintSnapshot?.restore();
+      if (debugPaintSnapshot != null) {
+        await _flushDebugPaintState();
+      }
+    }
+  }
 
   /// 将 [key] 对应的 RepaintBoundary 渲染为 PNG 字节
   ///
