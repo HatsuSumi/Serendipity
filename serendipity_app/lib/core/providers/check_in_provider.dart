@@ -4,7 +4,6 @@ import '../../models/achievement_unlock.dart';
 import '../../models/remote_check_in_status.dart';
 import '../../models/user.dart';
 import '../repositories/check_in_repository.dart';
-import '../services/notification_service.dart';
 import '../services/sync_service.dart';
 import 'auth_provider.dart';
 import 'achievement_provider.dart';

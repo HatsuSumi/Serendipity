@@ -1,14 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:serendipity_app/core/repositories/check_in_repository.dart';
 import 'package:serendipity_app/core/services/i_storage_service.dart';
-import 'package:serendipity_app/models/achievement.dart';
 import 'package:serendipity_app/models/check_in_record.dart';
-import 'package:serendipity_app/models/membership.dart';
 import 'package:serendipity_app/models/remote_check_in_status.dart';
-import 'package:serendipity_app/models/story_line.dart';
-import 'package:serendipity_app/models/sync_history.dart';
-import 'package:serendipity_app/models/user_settings.dart';
-import 'package:serendipity_app/models/encounter_record.dart';
 
 class InMemoryStorageService implements IStorageService {
   final Map<String, dynamic> _values = {};

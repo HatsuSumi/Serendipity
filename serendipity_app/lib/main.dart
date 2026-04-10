@@ -1,8 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -16,7 +15,6 @@ import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
 import 'core/providers/user_settings_provider.dart';
 import 'core/services/sync_service.dart';
-import 'core/repositories/i_remote_data_repository.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/smart_navigator.dart';
 import 'features/home/main_navigation_page.dart';

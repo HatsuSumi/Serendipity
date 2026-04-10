@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:serendipity_app/core/providers/achievement_provider.dart';
 import 'package:serendipity_app/core/providers/auth_provider.dart';
 import 'package:serendipity_app/core/providers/check_in_provider.dart';
 import 'package:serendipity_app/core/repositories/achievement_repository.dart';
@@ -14,15 +13,9 @@ import 'package:serendipity_app/core/services/i_storage_service.dart';
 import 'package:serendipity_app/core/services/sync_service.dart';
 import 'package:serendipity_app/models/achievement.dart';
 import 'package:serendipity_app/models/check_in_record.dart';
-import 'package:serendipity_app/models/encounter_record.dart';
 import 'package:serendipity_app/models/enums.dart';
-import 'package:serendipity_app/models/membership.dart';
 import 'package:serendipity_app/models/remote_check_in_status.dart';
-import 'package:serendipity_app/models/register_result.dart';
-import 'package:serendipity_app/models/story_line.dart';
-import 'package:serendipity_app/models/sync_history.dart';
 import 'package:serendipity_app/models/user.dart';
-import 'package:serendipity_app/models/user_settings.dart';
 
 class InMemoryStorageService implements IStorageService {
   final Map<String, dynamic> _keyValues = {};
@@ -126,10 +119,9 @@ class FakeRemoteDataRepository implements IRemoteDataRepository {
 }
 
 class FailingCheckInSyncService extends SyncService {
-  FailingCheckInSyncService({required IStorageService storageService})
+  FailingCheckInSyncService({required super.storageService})
       : super(
           remoteRepository: FakeRemoteDataRepository(),
-          storageService: storageService,
           achievementRepository: AchievementRepository(storageService),
         );
 

@@ -75,7 +75,7 @@ class PushTokenSyncService {
         _lastSyncedToken = token;
         unawaited(_syncForCurrentUser(tokenOverride: token));
       },
-      onError: (_, __) {},
+      onError: (_, _) {},
     );
     _authSubscription = _ref.listen<AsyncValue<User?>>(
       authProvider,

@@ -3,20 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:serendipity_app/core/providers/auth_provider.dart';
 import 'package:serendipity_app/core/providers/check_in_provider.dart';
-import 'package:serendipity_app/core/providers/membership_provider.dart';
-import 'package:serendipity_app/core/providers/message_provider.dart';
-import 'package:serendipity_app/core/providers/records_provider.dart';
 import 'package:serendipity_app/core/providers/user_settings_provider.dart';
 import 'package:serendipity_app/core/repositories/check_in_repository.dart';
 import 'package:serendipity_app/core/services/i_storage_service.dart';
 import 'package:serendipity_app/core/services/notification_service.dart';
 import 'package:serendipity_app/models/achievement.dart';
 import 'package:serendipity_app/models/check_in_record.dart';
-import 'package:serendipity_app/models/encounter_record.dart';
 import 'package:serendipity_app/models/enums.dart';
-import 'package:serendipity_app/models/membership.dart';
-import 'package:serendipity_app/models/story_line.dart';
-import 'package:serendipity_app/models/sync_history.dart';
 import 'package:serendipity_app/models/user.dart';
 import 'package:serendipity_app/models/user_settings.dart';
 
@@ -114,9 +107,9 @@ class RecordingNotificationService extends NotificationService {
   TimeOfDay? lastScheduledTime;
 
   RecordingNotificationService(
-    CheckInRepository repository, {
-    IStorageService? storageService,
-  }) : super(repository, storageService: storageService);
+    super.repository, {
+    super.storageService,
+  });
 
   @override
   Future<void> initialize() async {}
@@ -138,19 +131,18 @@ class RecordingNotificationService extends NotificationService {
     cancelCount++;
   }
 
-  @override
   Future<void> cancelAnniversaryReminders() async {
     anniversaryCancelCount++;
   }
 }
 
 class TestAuthNotifier extends AuthNotifier {
-  final User? current;
-
   TestAuthNotifier(this.current);
 
+  final User? current;
+
   @override
-  Stream<User?> build() => Stream<User?>.value(current);
+  Stream<User?> build() => Stream.value(current);
 }
 
 void main() {
