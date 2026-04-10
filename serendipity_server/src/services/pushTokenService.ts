@@ -440,11 +440,11 @@ export class PushTokenService implements IPushTokenService {
 
     const failureReason = sendResult.failureReason?.trim() || 'push_send_failed';
     if (options.persistDispatch) {
-      await this.pushTokenRepository.markReminderDispatchFailed(
-        candidate.pushTokenId,
-        candidate.reminderDate,
-        failureReason,
-      );
+    await this.pushTokenRepository.markReminderDispatchFailed(
+      candidate.pushTokenId,
+      candidate.reminderDate,
+      failureReason,
+    );
     }
 
     if (sendResult.isInvalidToken) {

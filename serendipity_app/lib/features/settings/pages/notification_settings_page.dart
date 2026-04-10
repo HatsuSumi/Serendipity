@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/membership_provider.dart';
 import '../../../core/providers/user_settings_provider.dart';
 import '../../../core/utils/message_helper.dart';
-
 
 /// 提醒设置子页面
 ///
@@ -16,10 +16,14 @@ class NotificationSettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(userSettingsProvider);
+    final authState = ref.watch(authProvider);
     final membershipAsync = ref.watch(membershipProvider);
+    final isLoggedIn = authState.valueOrNull != null;
+    final canUseCheckInReminder = isLoggedIn;
+    final canConfigureCheckInReminder = isLoggedIn && settings.checkInReminderEnabled;
 
     final canUseAnniversaryReminder = membershipAsync.when(
-      data: (info) => info.canUseAnniversaryReminder,
+      data: (info) => isLoggedIn && info.canUseAnniversaryReminder,
       loading: () => false,
       error: (_, e) => false,
     );
@@ -38,10 +42,29 @@ class NotificationSettingsPage extends ConsumerWidget {
           ),
 
           SwitchListTile(
-            title: const Text('签到提醒'),
-            subtitle: const Text('每天提醒你签到'),
-            value: settings.checkInReminderEnabled,
+            title: Row(
+              children: [
+                const Text('签到提醒'),
+                const SizedBox(width: 8),
+                if (!canUseCheckInReminder)
+                  Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+              ],
+            ),
+            subtitle: Text(
+              canUseCheckInReminder
+                  ? '每天提醒你签到'
+                  : '登录后可开启签到提醒',
+            ),
+            value: canUseCheckInReminder && settings.checkInReminderEnabled,
             onChanged: (value) async {
+              if (!canUseCheckInReminder) {
+                MessageHelper.showWarning(context, '请先登录后再开启签到提醒');
+                return;
+              }
               await ref
                   .read(userSettingsProvider.notifier)
                   .updateCheckInReminderEnabled(value);
@@ -60,8 +83,8 @@ class NotificationSettingsPage extends ConsumerWidget {
               '${settings.checkInReminderTime.hour.toString().padLeft(2, '0')}:${settings.checkInReminderTime.minute.toString().padLeft(2, '0')}',
             ),
             trailing: const Icon(Icons.access_time),
-            enabled: settings.checkInReminderEnabled,
-            onTap: settings.checkInReminderEnabled
+            enabled: canConfigureCheckInReminder,
+            onTap: canConfigureCheckInReminder
                 ? () => _showTimePickerDialog(
                       context,
                       ref,
@@ -72,24 +95,36 @@ class NotificationSettingsPage extends ConsumerWidget {
 
           SwitchListTile(
             title: const Text('签到震动'),
-            subtitle: const Text('签到时震动反馈'),
-            value: settings.checkInVibrationEnabled,
-            onChanged: (value) async {
-              await ref
-                  .read(userSettingsProvider.notifier)
-                  .updateCheckInVibrationEnabled(value);
-            },
+            subtitle: Text(
+              isLoggedIn ? '签到时震动反馈' : '登录后可配置签到震动',
+            ),
+            value: isLoggedIn && settings.checkInVibrationEnabled,
+            onChanged: isLoggedIn
+                ? (value) async {
+                    await ref
+                        .read(userSettingsProvider.notifier)
+                        .updateCheckInVibrationEnabled(value);
+                  }
+                : (_) {
+                    MessageHelper.showWarning(context, '请先登录后再配置签到提醒');
+                  },
           ),
 
           SwitchListTile(
             title: const Text('签到粒子特效'),
-            subtitle: const Text('签到时显示彩色粒子'),
-            value: settings.checkInConfettiEnabled,
-            onChanged: (value) async {
-              await ref
-                  .read(userSettingsProvider.notifier)
-                  .updateCheckInConfettiEnabled(value);
-            },
+            subtitle: Text(
+              isLoggedIn ? '签到时显示彩色粒子' : '登录后可配置签到粒子特效',
+            ),
+            value: isLoggedIn && settings.checkInConfettiEnabled,
+            onChanged: isLoggedIn
+                ? (value) async {
+                    await ref
+                        .read(userSettingsProvider.notifier)
+                        .updateCheckInConfettiEnabled(value);
+                  }
+                : (_) {
+                    MessageHelper.showWarning(context, '请先登录后再配置签到提醒');
+                  },
           ),
 
           const Divider(),
@@ -119,10 +154,16 @@ class NotificationSettingsPage extends ConsumerWidget {
             subtitle: Text(
               canUseAnniversaryReminder
                   ? '每次"邂逅"记录的周年纪念日当天提醒'
-                  : '会员专属功能，升级后可使用',
+                  : isLoggedIn
+                  ? '会员专属功能，升级后可使用'
+                  : '登录后可开启纪念日提醒',
             ),
             value: canUseAnniversaryReminder && settings.anniversaryReminder,
             onChanged: (value) async {
+              if (!isLoggedIn) {
+                MessageHelper.showWarning(context, '请先登录后再开启纪念日提醒');
+                return;
+              }
               if (!canUseAnniversaryReminder) {
                 MessageHelper.showWarning(context, '纪念日提醒为会员专属功能');
                 return;

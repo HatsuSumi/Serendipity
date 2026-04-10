@@ -171,10 +171,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   }
 
   Future<void> _handleAuthChanged(User? user) async {
-    if (_isLoggedInUser(user)) {
-      await _notificationService.cancelCheckInReminder();
-      return;
-    }
+    await _notificationService.cancelCheckInReminder();
 
     if (_hasHydratedOnce) {
       return;
@@ -193,9 +190,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
         return;
       }
 
-      final user = await _readResolvedAuthUser();
-      final isLoggedIn = _isLoggedInUser(user);
-      await _applyHydratedSettings(settings, isLoggedIn: isLoggedIn);
+      await _applyHydratedSettings(settings);
     });
   }
 
@@ -219,20 +214,12 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     return await _ref.read(authProvider.future);
   }
 
-  Future<void> _applyHydratedSettings(UserSettings settings, {required bool isLoggedIn}) async {
+  Future<void> _applyHydratedSettings(UserSettings settings) async {
     _hasHydratedOnce = true;
     state = settings;
     _lastUploadedSettings = settings;
 
-    if (settings.checkInReminderEnabled && !isLoggedIn) {
-      await _scheduleCheckInReminder(settings.checkInReminderTime);
-    } else {
-      await _notificationService.cancelCheckInReminder();
-    }
-
-    if (settings.anniversaryReminder) {
-      return;
-    }
+    await _notificationService.cancelCheckInReminder();
   }
 
   /// 上传设置到云端（如果用户已登录）
@@ -359,8 +346,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   ///
   /// [enabled] 是否启用签到提醒
   ///
-  /// 如果启用，会调度通知；如果禁用，会取消通知
+  /// 签到提醒为登录用户的服务端设置项，
+  /// App 端不再承担访客态本地调度。
   Future<void> updateCheckInReminderEnabled(bool enabled) async {
+    await _ensureLoggedInForCheckInReminder();
+
     final now = DateTime.now();
     final updated = state.copyWith(
       checkInReminderEnabled: enabled,
@@ -371,12 +361,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
-    // 根据开关状态调度或取消通知
-    if (enabled) {
-      await _scheduleCheckInReminder(updated.checkInReminderTime);
-    } else {
-      await _notificationService.cancelCheckInReminder();
-    }
+    await _notificationService.cancelCheckInReminder();
 
     // 上传到云端
     await _uploadToCloud(updated);
@@ -386,10 +371,11 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
   ///
   /// [time] 提醒时间，不能为 null
   ///
-  /// 如果签到提醒已启用，会重新调度通知
+  /// 签到提醒时间属于登录用户的服务端设置，
+  /// App 端只负责持久化并同步，不再本地重调度。
   Future<void> updateCheckInReminderTime(TimeOfDay time) async {
-    // Fail Fast：参数校验
     ArgumentError.checkNotNull(time, 'time');
+    await _ensureLoggedInForCheckInReminder();
 
     final now = DateTime.now();
     final updated = state.copyWith(
@@ -401,10 +387,7 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     await _settingsStorage.saveUserSettings(updated);
     state = updated;
 
-    // 如果签到提醒已启用，重新调度通知
-    if (updated.checkInReminderEnabled) {
-      await _scheduleCheckInReminder(time);
-    }
+    await _notificationService.cancelCheckInReminder();
 
     // 上传到云端
     await _uploadToCloud(updated);
@@ -412,6 +395,8 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
   /// 更新签到震动开关
   Future<void> updateCheckInVibrationEnabled(bool enabled) async {
+    await _ensureLoggedInForCheckInReminder();
+
     final now = DateTime.now();
     final updated = state.copyWith(
       checkInVibrationEnabled: enabled,
@@ -428,6 +413,8 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
 
   /// 更新签到粒子特效开关
   Future<void> updateCheckInConfettiEnabled(bool enabled) async {
+    await _ensureLoggedInForCheckInReminder();
+
     final now = DateTime.now();
     final updated = state.copyWith(
       checkInConfettiEnabled: enabled,
@@ -549,34 +536,10 @@ class UserSettingsNotifier extends StateNotifier<UserSettings> {
     await _uploadToCloud(updated);
   }
 
-  Future<void> refreshGuestCheckInReminder() async {
-    if (state.checkInReminderEnabled) {
-      await _scheduleCheckInReminder(state.checkInReminderTime);
-    } else {
-      await _notificationService.cancelCheckInReminder();
-    }
-  }
-
-  /// 调度签到提醒通知
-  ///
-  /// [time] 提醒时间
-  Future<void> _scheduleCheckInReminder(TimeOfDay time) async {
-    try {
-      final user = await _readResolvedAuthUser();
-      if (_isLoggedInUser(user)) {
-        await _notificationService.cancelCheckInReminder();
-        return;
-      }
-
-      final granted = await _notificationService.requestPermission();
-      if (!granted) {
-        return;
-      }
-
-      await _notificationService.scheduleCheckInReminder(time);
-    } catch (e) {
-      // 调度失败，静默失败（不影响用户体验）
-      // 生产环境应记录错误日志
+  Future<void> _ensureLoggedInForCheckInReminder() async {
+    final user = await _readResolvedAuthUser();
+    if (!_isLoggedInUser(user)) {
+      throw StateError('Check-in reminder requires login');
     }
   }
 

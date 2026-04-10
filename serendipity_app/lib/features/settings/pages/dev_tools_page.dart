@@ -131,7 +131,7 @@ class DevToolsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.alarm_outlined, color: Colors.teal),
             title: const Text('发送本地签到提醒测试通知'),
-            subtitle: const Text('5 秒后触发一条本地签到提醒通知，验证本地通知是否正常'),
+            subtitle: const Text('5 秒后触发一条本地签到提醒通知，仅验证本地通知能力是否正常'),
             onTap: () async {
               final userId = ref.read(authProvider).value?.id;
               final result = await ref
