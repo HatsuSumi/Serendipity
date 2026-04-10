@@ -203,16 +203,7 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     }
 
     await refresh();
-    await _refreshGuestCheckInReminder(currentUser);
-  }
-
-  Future<void> _refreshGuestCheckInReminder(User? currentUser) async {
-    if (currentUser != null) {
-      await ref.read(notificationServiceProvider).cancelCheckInReminder();
-      return;
-    }
-
-    await ref.read(userSettingsProvider.notifier).refreshGuestCheckInReminder();
+    await ref.read(notificationServiceProvider).cancelCheckInReminder();
   }
 
   /// 获取指定月份的签到日期

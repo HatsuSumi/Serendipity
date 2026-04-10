@@ -350,12 +350,6 @@ class NotificationService {
     await _plugin.cancel(_checkInReminderId);
   }
 
-  Future<bool> hasScheduledCheckInReminder() async {
-    _ensureInitialized();
-    final pendingNotifications = await _plugin.pendingNotificationRequests();
-    return pendingNotifications.any((n) => n.id == _checkInReminderId);
-  }
-
   Future<ServerPushTestResult> sendServerTestCheckInNotification() async {
     if (_remoteDataRepository == null) {
       return const ServerPushTestResult(

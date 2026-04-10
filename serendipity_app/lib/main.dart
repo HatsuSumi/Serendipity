@@ -157,7 +157,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(networkMonitorServiceProvider).startMonitoring(ref);
       unawaited(ref.read(pushTokenSyncServiceProvider).initialize());
-      unawaited(_refreshGuestCheckInReminder());
+      unawaited(ref.read(notificationServiceProvider).cancelCheckInReminder());
     });
   }
   
@@ -173,17 +173,8 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(_refreshGuestCheckInReminder());
+      unawaited(ref.read(notificationServiceProvider).cancelCheckInReminder());
     }
-  }
-
-  Future<void> _refreshGuestCheckInReminder() async {
-    final lifecycleState = SchedulerBinding.instance.lifecycleState;
-    if (lifecycleState != null && lifecycleState != AppLifecycleState.resumed) {
-      return;
-    }
-
-    await ref.read(userSettingsProvider.notifier).refreshGuestCheckInReminder();
   }
 
   @override

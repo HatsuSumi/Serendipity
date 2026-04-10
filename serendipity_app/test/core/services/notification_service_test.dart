@@ -166,7 +166,7 @@ void main() {
       );
     });
 
-    test('未登录用户签到后会按当前设置重算下一次本地提醒', () async {
+    test('未登录用户签到后会取消本地签到提醒', () async {
       final storage = InMemoryStorageService();
       final repository = CheckInRepository(storage);
       final notificationService = RecordingNotificationService(
@@ -210,12 +210,12 @@ void main() {
 
       await container.read(checkInProvider.notifier).checkIn();
 
-      expect(notificationService.scheduleCount, greaterThanOrEqualTo(1));
-      expect(notificationService.lastScheduledTime, const TimeOfDay(hour: 20, minute: 30));
-      expect(notificationService.cancelCount, 0);
+      expect(notificationService.scheduleCount, 0);
+      expect(notificationService.lastScheduledTime, isNull);
+      expect(notificationService.cancelCount, 1);
     });
 
-    test('refreshGuestCheckInReminder 在提醒关闭时取消本地通知', () async {
+    test('用户设置初始化时会取消本地签到提醒', () async {
       final storage = InMemoryStorageService();
       final repository = CheckInRepository(storage);
       final notificationService = RecordingNotificationService(
@@ -258,17 +258,9 @@ void main() {
       addTearDown(container.dispose);
 
       await Future<void>.delayed(Duration.zero);
-      notificationService.scheduleCount = 0;
-      notificationService.permissionRequestCount = 0;
-      notificationService.lastScheduledTime = null;
-      notificationService.cancelCount = 0;
 
-      await Future<void>.delayed(Duration.zero);
-      notificationService.lastScheduledTime = null;
-      await container.read(userSettingsProvider.notifier).refreshGuestCheckInReminder();
-
-      expect(notificationService.permissionRequestCount, greaterThanOrEqualTo(0));
-      expect(notificationService.lastScheduledTime == null || notificationService.lastScheduledTime == const TimeOfDay(hour: 20, minute: 0), isTrue);
+      expect(notificationService.permissionRequestCount, 0);
+      expect(notificationService.lastScheduledTime, isNull);
       expect(notificationService.cancelCount, greaterThanOrEqualTo(1));
     });
   });
