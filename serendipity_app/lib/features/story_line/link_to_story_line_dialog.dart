@@ -10,7 +10,7 @@ import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 
 /// 关联到故事线对话框
-/// 
+///
 /// 注意：使用旧的 Radio API（groupValue/onChanged）
 /// 原因：Flutter 3.32+ 的新 RadioGroup API 还不够稳定
 /// 计划：等 Flutter 生态稳定后再迁移
@@ -29,12 +29,33 @@ class LinkToStoryLineDialog extends ConsumerStatefulWidget {
 
 class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
   final _nameController = TextEditingController();
+  final _nameFocusNode = FocusNode();
   String? _selectedStoryLineId;
   bool _isCreatingNew = false;
+
+  void _selectCreateNew() {
+    setState(() {
+      _isCreatingNew = true;
+      _selectedStoryLineId = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _nameFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _selectExisting() {
+    _nameFocusNode.unfocus();
+    setState(() {
+      _isCreatingNew = false;
+    });
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _nameFocusNode.dispose();
     super.dispose();
   }
 
@@ -43,15 +64,15 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
     final storyLinesAsync = ref.watch(storyLinesProvider);
 
     return Dialog(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Padding(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 560),
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 标题
               Text(
                 '关联到故事线',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -59,12 +80,13 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                     ),
               ),
               const SizedBox(height: 16),
-
-              // 提示
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -87,15 +109,8 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // 创建新故事线选项
               InkWell(
-                onTap: () {
-                  setState(() {
-                    _isCreatingNew = true;
-                    _selectedStoryLineId = null;
-                  });
-                },
+                onTap: _selectCreateNew,
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -105,10 +120,9 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                         value: true,
                         groupValue: _isCreatingNew,
                         onChanged: (value) {
-                          setState(() {
-                            _isCreatingNew = value ?? false;
-                            _selectedStoryLineId = null;
-                          });
+                          if (value == true) {
+                            _selectCreateNew();
+                          }
                         },
                         visualDensity: VisualDensity.compact,
                       ),
@@ -119,12 +133,11 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                   ),
                 ),
               ),
-
-              // 新故事线名称输入
               if (_isCreatingNew) ...[
                 const SizedBox(height: 8),
                 TextField(
                   controller: _nameController,
+                  focusNode: _nameFocusNode,
                   decoration: const InputDecoration(
                     hintText: '输入故事线名称...',
                     border: OutlineInputBorder(),
@@ -133,13 +146,10 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                       vertical: 12,
                     ),
                   ),
-                  autofocus: true,
+                  autofocus: false,
                 ),
               ],
-
               const SizedBox(height: 16),
-
-              // 已有故事线列表
               storyLinesAsync.when(
                 data: (storyLines) {
                   if (storyLines.isEmpty) {
@@ -150,11 +160,7 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       InkWell(
-                        onTap: () {
-                          setState(() {
-                            _isCreatingNew = false;
-                          });
-                        },
+                        onTap: _selectExisting,
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -164,9 +170,9 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                                 value: false,
                                 groupValue: _isCreatingNew,
                                 onChanged: (value) {
-                                  setState(() {
-                                    _isCreatingNew = value ?? true;
-                                  });
+                                  if (value == false) {
+                                    _selectExisting();
+                                  }
                                 },
                                 visualDensity: VisualDensity.compact,
                               ),
@@ -183,7 +189,10 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                           constraints: const BoxConstraints(maxHeight: 200),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outline
+                                  .withValues(alpha: 0.3),
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -200,7 +209,10 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                                 },
                                 borderRadius: BorderRadius.circular(4),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   child: Row(
                                     children: [
                                       Radio<String>(
@@ -222,8 +234,13 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                                       ),
                                       Text(
                                         '（${storyLine.recordIds.length}条）',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                             ),
                                       ),
                                     ],
@@ -251,10 +268,7 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // 按钮
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -281,22 +295,18 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
     );
   }
 
-  /// 是否可以确认
   bool _canConfirm() {
     if (_isCreatingNew) {
       return _nameController.text.trim().isNotEmpty;
-    } else {
-      return _selectedStoryLineId != null;
     }
+    return _selectedStoryLineId != null;
   }
 
-  /// 处理确认
   Future<void> _handleConfirm() async {
     try {
       final storyLinesNotifier = ref.read(storyLinesProvider.notifier);
       final recordsNotifier = ref.read(recordsProvider.notifier);
 
-      // 检查记录是否已关联到其他故事线
       final recordsAsync = ref.read(recordsProvider);
       final records = recordsAsync.value ?? [];
       final currentRecord = records.firstWhere(
@@ -308,10 +318,8 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
       String? targetStoryLineName;
 
       if (_isCreatingNew) {
-        // 创建新故事线
         targetStoryLineName = _nameController.text.trim();
       } else {
-        // 添加到现有故事线
         targetStoryLineId = _selectedStoryLineId;
         if (targetStoryLineId != null) {
           final storyLinesAsync = ref.read(storyLinesProvider);
@@ -324,10 +332,8 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
         }
       }
 
-      // 如果记录已关联到其他故事线，弹出确认对话框
-      if (currentRecord.storyLineId != null && 
+      if (currentRecord.storyLineId != null &&
           currentRecord.storyLineId != targetStoryLineId) {
-        // 获取当前故事线名称
         final storyLinesAsync = ref.read(storyLinesProvider);
         final storyLines = storyLinesAsync.value ?? [];
         final currentStoryLine = storyLines.firstWhere(
@@ -335,7 +341,6 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
           orElse: () => throw StateError('Current story line not found'),
         );
 
-        // 弹出确认对话框
         final confirmed = await DialogHelper.show<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -357,22 +362,16 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
           ),
         );
 
-        // 用户取消操作
         if (confirmed != true) {
           return;
         }
       }
 
-      // 执行关联操作
       if (_isCreatingNew) {
-        // 创建新故事线
         final name = _nameController.text.trim();
-        
-        // 获取当前用户ID（用于数据归属）
         final authState = ref.read(authProvider);
         final currentUser = authState.value;
-        final ownerId = currentUser?.id; // 未登录时为 null（离线数据）
-        
+        final ownerId = currentUser?.id;
         final now = DateTime.now();
         final newStoryLine = StoryLine(
           id: const Uuid().v4(),
@@ -385,14 +384,10 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
 
         await storyLinesNotifier.createStoryLine(newStoryLine);
         await storyLinesNotifier.linkRecord(widget.recordId, newStoryLine.id);
-      } else {
-        // 添加到现有故事线
-        if (_selectedStoryLineId != null) {
-          await storyLinesNotifier.linkRecord(widget.recordId, _selectedStoryLineId!);
-        }
+      } else if (_selectedStoryLineId != null) {
+        await storyLinesNotifier.linkRecord(widget.recordId, _selectedStoryLineId!);
       }
 
-      // 刷新记录列表和故事线列表
       await recordsNotifier.refresh();
       await storyLinesNotifier.refresh();
 
@@ -407,4 +402,3 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
     }
   }
 }
-
