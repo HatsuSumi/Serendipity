@@ -237,6 +237,8 @@ export class UserService implements IUserService {
       status: statusMap[membership.status] ?? 1,
       startedAt: membership.startedAt?.toISOString(),
       expiresAt: membership.expiresAt?.toISOString(),
+      monthlyAmount: membership.monthlyAmount ?? undefined,
+      autoRenew: membership.autoRenew,
       createdAt: membership.createdAt.toISOString(),
       updatedAt: membership.updatedAt.toISOString(),
     };

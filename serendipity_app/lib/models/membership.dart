@@ -9,6 +9,8 @@ class Membership {
   final MembershipStatus status;
   final DateTime? startedAt;
   final DateTime? expiresAt;
+  final double? monthlyAmount;
+  final bool autoRenew;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,6 +21,8 @@ class Membership {
     required this.status,
     this.startedAt,
     this.expiresAt,
+    this.monthlyAmount,
+    this.autoRenew = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -44,6 +48,8 @@ class Membership {
       expiresAt: json['expiresAt'] != null
           ? DateTime.parse(json['expiresAt'] as String)
           : null,
+      monthlyAmount: (json['monthlyAmount'] as num?)?.toDouble(),
+      autoRenew: json['autoRenew'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -58,6 +64,8 @@ class Membership {
       'status': status.value,
       'startedAt': startedAt?.toIso8601String(),
       'expiresAt': expiresAt?.toIso8601String(),
+      'monthlyAmount': monthlyAmount,
+      'autoRenew': autoRenew,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -71,6 +79,8 @@ class Membership {
     MembershipStatus? status,
     DateTime? startedAt,
     DateTime? expiresAt,
+    double? monthlyAmount,
+    bool? autoRenew,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -81,6 +91,8 @@ class Membership {
       status: status ?? this.status,
       startedAt: startedAt ?? this.startedAt,
       expiresAt: expiresAt ?? this.expiresAt,
+      monthlyAmount: monthlyAmount ?? this.monthlyAmount,
+      autoRenew: autoRenew ?? this.autoRenew,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -88,7 +100,8 @@ class Membership {
 
   @override
   String toString() {
-    return 'Membership(id: $id, tier: ${tier.label}, status: ${status.label})';
+    return 'Membership(id: $id, tier: ${tier.label}, status: ${status.label}, '
+        'monthlyAmount: $monthlyAmount, autoRenew: $autoRenew)';
   }
 
   @override
@@ -102,6 +115,8 @@ class Membership {
         other.status == status &&
         other.startedAt == startedAt &&
         other.expiresAt == expiresAt &&
+        other.monthlyAmount == monthlyAmount &&
+        other.autoRenew == autoRenew &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -114,6 +129,8 @@ class Membership {
         status.hashCode ^
         startedAt.hashCode ^
         expiresAt.hashCode ^
+        monthlyAmount.hashCode ^
+        autoRenew.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }

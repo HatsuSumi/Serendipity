@@ -282,7 +282,7 @@ describe('UserService', () => {
     it('应该成功开通会员', async () => {
       const userId = 'test-user-id';
       const user = createMockUser({ id: userId });
-      const membership = createMockMembership({ userId, monthlyAmount: 88 });
+      const membership = createMockMembership({ userId, monthlyAmount: 88, autoRenew: false });
 
       mockUserRepository.findById.mockResolvedValue(user);
       mockMembershipRepository.activateOrCreate.mockResolvedValue(membership);
@@ -292,11 +292,34 @@ describe('UserService', () => {
       expect(result.userId).toBe(userId);
       expect(result.tier).toBe(2);
       expect(result.status).toBe(2);
+      expect(result.monthlyAmount).toBe(88);
+      expect(result.autoRenew).toBe(false);
       expect(mockMembershipRepository.activateOrCreate).toHaveBeenCalledWith(
         userId,
         88,
         expect.any(Date),
       );
+    });
+
+    it('应该返回会员扩展字段', async () => {
+      const userId = 'test-user-id';
+      const user = createMockUser({ id: userId });
+      const membership = createMockMembership({
+        userId,
+        monthlyAmount: 128,
+        autoRenew: true,
+      });
+
+      mockUserRepository.findById.mockResolvedValue(user);
+      mockMembershipRepository.findByUserId.mockResolvedValue(membership);
+
+      const result = await userService.getMembership(userId);
+
+      expect(result).toMatchObject({
+        userId,
+        monthlyAmount: 128,
+        autoRenew: true,
+      });
     });
 
     it('用户不存在时应该抛出错误', async () => {

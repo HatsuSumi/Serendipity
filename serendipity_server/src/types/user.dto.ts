@@ -9,6 +9,8 @@ export interface MembershipDto {
   status: number;
   startedAt?: string;
   expiresAt?: string;
+  monthlyAmount?: number;
+  autoRenew: boolean;
   createdAt: string;
   updatedAt: string;
 }

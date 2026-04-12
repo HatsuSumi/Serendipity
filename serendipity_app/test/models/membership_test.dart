@@ -16,6 +16,8 @@ void main() {
         status: MembershipStatus.active,
         startedAt: startedAt,
         expiresAt: expiresAt,
+        monthlyAmount: 88,
+        autoRenew: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -24,6 +26,8 @@ void main() {
       expect(membership.userId, 'user123');
       expect(membership.tier, MembershipTier.premium);
       expect(membership.status, MembershipStatus.active);
+      expect(membership.monthlyAmount, 88);
+      expect(membership.autoRenew, true);
       expect(membership.startedAt, startedAt);
       expect(membership.expiresAt, expiresAt);
     });
@@ -57,6 +61,8 @@ void main() {
         status: MembershipStatus.active,
         startedAt: startedAt,
         expiresAt: expiresAt,
+        monthlyAmount: 88,
+        autoRenew: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -67,6 +73,8 @@ void main() {
       expect(json['userId'], 'user123');
       expect(json['tier'], MembershipTier.premium.value);
       expect(json['status'], MembershipStatus.active.value);
+      expect(json['monthlyAmount'], 88);
+      expect(json['autoRenew'], true);
     });
 
     test('toJson 转换（免费版）', () {
@@ -96,6 +104,8 @@ void main() {
         'status': 2,
         'startedAt': '2026-01-12T10:00:00.000',
         'expiresAt': '2027-01-12T10:00:00.000',
+        'monthlyAmount': 88,
+        'autoRenew': true,
         'createdAt': '2026-02-12T10:00:00.000',
         'updatedAt': '2026-02-12T10:00:00.000',
       };
@@ -139,6 +149,8 @@ void main() {
         status: MembershipStatus.active,
         startedAt: startedAt,
         expiresAt: expiresAt,
+        monthlyAmount: 88,
+        autoRenew: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -150,6 +162,8 @@ void main() {
       expect(restored.userId, original.userId);
       expect(restored.tier, original.tier);
       expect(restored.status, original.status);
+      expect(restored.monthlyAmount, original.monthlyAmount);
+      expect(restored.autoRenew, original.autoRenew);
     });
 
     test('copyWith 修改字段', () {
@@ -167,11 +181,15 @@ void main() {
       final updated = original.copyWith(
         tier: MembershipTier.premium,
         status: MembershipStatus.active,
+        monthlyAmount: 88,
+        autoRenew: true,
       );
 
       expect(updated.id, original.id);
       expect(updated.tier, MembershipTier.premium);
       expect(updated.status, MembershipStatus.active);
+      expect(updated.monthlyAmount, 88);
+      expect(updated.autoRenew, true);
     });
 
     test('相等性比较', () {
