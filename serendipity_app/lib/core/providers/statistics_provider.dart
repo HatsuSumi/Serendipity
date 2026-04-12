@@ -96,13 +96,16 @@ final statisticsOverviewProvider = FutureProvider<StatisticsOverview>((ref) asyn
   final repository = ref.read(statisticsRepositoryProvider);
 
   // 收藏数据：仅登录后可用
+  // 口径与“我的收藏”页面一致：包含仍存在的收藏条目 + 已删除但仍保留收藏关系的条目
   int favoritedRecordCount = 0;
   int favoritedPostCount = 0;
   if (currentUser != null) {
     try {
       final favoritesState = await ref.watch(favoritesProvider.future);
-      favoritedRecordCount = favoritesState.favoritedRecordIds.length;
-      favoritedPostCount = favoritesState.favoritedPosts.length;
+      favoritedRecordCount =
+          favoritesState.favoritedRecords.length + favoritesState.deletedFavoritedRecords.length;
+      favoritedPostCount =
+          favoritesState.favoritedPosts.length + favoritesState.deletedFavoritedPosts.length;
     } catch (_) {
       // 收藏加载失败不影响统计总览展示
     }

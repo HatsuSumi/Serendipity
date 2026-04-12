@@ -20,8 +20,8 @@ export function createFavoriteRoutes(favoriteController: FavoriteController): Ro
   // 取消收藏记录
   router.delete('/records/:recordId', authMiddleware, favoriteController.unfavoriteRecord);
 
-  // 获取收藏的记录 ID 列表
-  router.get('/records', authMiddleware, favoriteController.getFavoritedRecordIds);
+  // 获取收藏的记录列表
+  router.get('/records', authMiddleware, favoriteController.getFavoritedRecords);
 
   return router;
 }

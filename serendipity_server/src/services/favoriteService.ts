@@ -1,40 +1,22 @@
-import { IFavoriteRepository } from '../repositories/favoriteRepository';
+import { CommunityPost, Record } from '@prisma/client';
+import {
+  FavoritePostRow,
+  FavoriteRecordRow,
+  IFavoriteRepository,
+} from '../repositories/favoriteRepository';
 import { ICommunityPostRepository } from '../repositories/communityPostRepository';
 import { IRecordRepository } from '../repositories/recordRepository';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
-import { fromJsonValue } from '../utils/prisma-json';
-import { CommunityPost } from '@prisma/client';
-
-export interface FavoritedPostsResponseDto {
-  posts: CommunityPostResponseDto[];
-  /// 已被删除但仍在收藏列表中的帖子 ID（孤儿收藏）
-  deletedPostIds: string[];
-}
-
-export interface FavoritedRecordIdsResponseDto {
-  recordIds: string[];
-  /// 已被删除但仍在收藏列表中的记录 ID（孤儿收藏）
-  deletedRecordIds: string[];
-}
-
-export interface CommunityPostResponseDto {
-  id: string;
-  recordId: string;
-  timestamp: string;
-  address?: string;
-  placeName?: string;
-  placeType?: string;
-  province?: string;
-  city?: string;
-  area?: string;
-  description?: string;
-  tags: any[];
-  status: string;
-  publishedAt: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { fromJsonValue, fromJsonValueOptional } from '../utils/prisma-json';
+import {
+  FavoritePostSnapshotDto,
+  FavoriteRecordSnapshotDto,
+  FavoritedPostsResponseDto,
+  FavoritedRecordsResponseDto,
+} from '../types/favorite.dto';
+import { CommunityPostResponseDto } from '../types/community.dto';
+import { LocationDto, RecordResponseDto, TagWithNoteDto } from '../types/record.dto';
 
 export interface IFavoriteService {
   favoritePost(userId: string, postId: string): Promise<void>;
@@ -42,7 +24,7 @@ export interface IFavoriteService {
   getFavoritedPosts(userId: string): Promise<FavoritedPostsResponseDto>;
   favoriteRecord(userId: string, recordId: string): Promise<void>;
   unfavoriteRecord(userId: string, recordId: string): Promise<void>;
-  getFavoritedRecordIds(userId: string): Promise<FavoritedRecordIdsResponseDto>;
+  getFavoritedRecords(userId: string): Promise<FavoritedRecordsResponseDto>;
 }
 
 export class FavoriteService implements IFavoriteService {
@@ -59,7 +41,7 @@ export class FavoriteService implements IFavoriteService {
     const post = await this.communityPostRepository.findById(postId);
     if (!post) throw new AppError('Post not found', ErrorCode.NOT_FOUND);
 
-    await this.favoriteRepository.favoritePost(userId, postId);
+    await this.favoriteRepository.favoritePost(userId, postId, this.toPostDto(post));
   }
 
   async unfavoritePost(userId: string, postId: string): Promise<void> {
@@ -72,23 +54,29 @@ export class FavoriteService implements IFavoriteService {
   async getFavoritedPosts(userId: string): Promise<FavoritedPostsResponseDto> {
     if (!userId) throw new AppError('userId is required', ErrorCode.VALIDATION_ERROR);
 
-    const postIds = await this.favoriteRepository.getFavoritedPosts(userId);
-    if (postIds.length === 0) return { posts: [], deletedPostIds: [] };
+    const favoriteRows = await this.favoriteRepository.getFavoritedPosts(userId);
+    if (favoriteRows.length === 0) {
+      return { posts: [], deletedPosts: [], deletedPostIds: [] };
+    }
 
-    // 单次批量查询，消除 N+1 问题
+    const postIds = favoriteRows.map((row) => row.postId);
     const existingPosts = await this.communityPostRepository.findManyByIds(postIds);
-    const existingIdSet = new Set(existingPosts.map(p => p.id));
-    const deletedPostIds = postIds.filter(id => !existingIdSet.has(id));
+    const existingIdSet = new Set(existingPosts.map((post) => post.id));
+    const postMap = new Map(existingPosts.map((post) => [post.id, post]));
 
-    // 保持原始收藏顺序
-    const postMap = new Map(existingPosts.map(p => [p.id, p]));
-    const orderedPosts = postIds
-      .filter(id => existingIdSet.has(id))
-      .map(id => postMap.get(id)!);
+    const posts = postIds
+      .filter((id) => existingIdSet.has(id))
+      .map((id) => this.toPostDto(postMap.get(id)!));
+
+    const deletedRows = favoriteRows.filter((row) => !existingIdSet.has(row.postId));
+    const deletedPosts = deletedRows
+      .map((row) => this.toDeletedPostSnapshot(row))
+      .filter((post): post is CommunityPostResponseDto => post !== undefined);
 
     return {
-      posts: orderedPosts.map(post => this.toPostDto(post)),
-      deletedPostIds,
+      posts,
+      deletedPosts,
+      deletedPostIds: deletedPosts.map((post) => post.id),
     };
   }
 
@@ -96,7 +84,10 @@ export class FavoriteService implements IFavoriteService {
     if (!userId) throw new AppError('userId is required', ErrorCode.VALIDATION_ERROR);
     if (!recordId) throw new AppError('recordId is required', ErrorCode.VALIDATION_ERROR);
 
-    await this.favoriteRepository.favoriteRecord(userId, recordId);
+    const record = await this.recordRepository.findById(recordId, userId);
+    if (!record) throw new AppError('Record not found', ErrorCode.NOT_FOUND);
+
+    await this.favoriteRepository.favoriteRecord(userId, recordId, this.toRecordDto(record));
   }
 
   async unfavoriteRecord(userId: string, recordId: string): Promise<void> {
@@ -106,19 +97,39 @@ export class FavoriteService implements IFavoriteService {
     await this.favoriteRepository.unfavoriteRecord(userId, recordId);
   }
 
-  async getFavoritedRecordIds(userId: string): Promise<FavoritedRecordIdsResponseDto> {
+  async getFavoritedRecords(userId: string): Promise<FavoritedRecordsResponseDto> {
     if (!userId) throw new AppError('userId is required', ErrorCode.VALIDATION_ERROR);
 
-    const allRecordIds = await this.favoriteRepository.getFavoritedRecordIds(userId);
-    if (allRecordIds.length === 0) return { recordIds: [], deletedRecordIds: [] };
+    const favoriteRows = await this.favoriteRepository.getFavoritedRecordIds(userId);
+    if (favoriteRows.length === 0) {
+      return { records: [], deletedRecords: [], deletedRecordIds: [] };
+    }
 
-    // 单次批量查询，消除 N+1 问题
+    const allRecordIds = favoriteRows.map((row) => row.recordId);
     const existingRecords = await this.recordRepository.findManyByIds(allRecordIds);
-    const existingIdSet = new Set(existingRecords.map(r => r.id));
-    const recordIds = allRecordIds.filter(id => existingIdSet.has(id));
-    const deletedRecordIds = allRecordIds.filter(id => !existingIdSet.has(id));
+    const existingIdSet = new Set(existingRecords.map((record) => record.id));
+    const recordMap = new Map(existingRecords.map((record) => [record.id, record]));
+    const records = allRecordIds
+      .filter((id) => existingIdSet.has(id))
+      .map((id) => this.toRecordDto(recordMap.get(id)!));
+    const deletedRows = favoriteRows.filter((row) => !existingIdSet.has(row.recordId));
+    const deletedRecords = deletedRows
+      .map((row) => this.toDeletedRecordSnapshot(row))
+      .filter((record): record is RecordResponseDto => record !== undefined);
 
-    return { recordIds, deletedRecordIds };
+    return {
+      records,
+      deletedRecords,
+      deletedRecordIds: deletedRecords.map((record) => record.id),
+    };
+  }
+
+  private toDeletedPostSnapshot(row: FavoritePostRow): CommunityPostResponseDto | undefined {
+    return fromJsonValueOptional<FavoritePostSnapshotDto>(row.postSnapshot);
+  }
+
+  private toDeletedRecordSnapshot(row: FavoriteRecordRow): RecordResponseDto | undefined {
+    return fromJsonValueOptional<FavoriteRecordSnapshotDto>(row.recordSnapshot);
   }
 
   private toPostDto(post: CommunityPost): CommunityPostResponseDto {
@@ -133,12 +144,33 @@ export class FavoriteService implements IFavoriteService {
       city: post.city ?? undefined,
       area: post.area ?? undefined,
       description: post.description ?? undefined,
-      tags: fromJsonValue(post.tags),
+      tags: fromJsonValue<TagWithNoteDto[]>(post.tags),
       status: post.status,
+      isOwner: true,
       publishedAt: post.publishedAt.toISOString(),
       createdAt: post.createdAt.toISOString(),
       updatedAt: post.updatedAt.toISOString(),
     };
   }
-}
 
+  private toRecordDto(record: Record): RecordResponseDto {
+    return {
+      id: record.id,
+      ownerId: record.userId,
+      timestamp: record.timestamp.toISOString(),
+      location: fromJsonValue<LocationDto>(record.location),
+      description: record.description ?? undefined,
+      tags: fromJsonValue<TagWithNoteDto[]>(record.tags),
+      emotion: record.emotion ?? undefined,
+      status: record.status,
+      storyLineId: record.storyLineId ?? undefined,
+      ifReencounter: record.ifReencounter ?? undefined,
+      conversationStarter: record.conversationStarter ?? undefined,
+      backgroundMusic: record.backgroundMusic ?? undefined,
+      weather: fromJsonValue<string[]>(record.weather),
+      isPinned: record.isPinned,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+    };
+  }
+}

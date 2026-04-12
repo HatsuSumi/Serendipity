@@ -44,7 +44,7 @@ final class StatisticsRepository {
   /// 字段注入策略：
   /// - registeredAt：从传入的 [currentUser] 读取，与数据源无关
   /// - favoritesAvailable / favoritedRecordCount / favoritedPostCount：
-  ///   由调用方（Provider 层）传入，保持与 favoritesProvider 数据一致
+  ///   由调用方（Provider 层）传入，口径与 favoritesProvider 和“我的收藏”页面保持一致
   ///
   /// 参数：
   /// - currentUser：当前登录用户，null 表示未登录

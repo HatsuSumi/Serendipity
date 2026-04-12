@@ -11,15 +11,19 @@ import 'community_provider.dart';
 /// 区分仍存在的记录 ID 和已被删除的记录 ID，
 /// 避免将「记录不存在」与「网络错误」混淆。
 class FavoritedRecordsResult {
-  /// 仍然存在的收藏记录 ID
-  final Set<String> recordIds;
+  /// 仍然存在的收藏记录
+  final List<EncounterRecord> records;
 
   /// 已被删除但收藏关系仍存在的记录 ID
   final Set<String> deletedRecordIds;
 
+  /// 已被删除但仍在收藏中的记录完整数据（优先来自云端快照）
+  final List<EncounterRecord> deletedRecords;
+
   const FavoritedRecordsResult({
-    required this.recordIds,
+    required this.records,
     required this.deletedRecordIds,
+    this.deletedRecords = const [],
   });
 }
 
@@ -34,9 +38,13 @@ class FavoritedPostsResult {
   /// 已被删除但收藏关系仍存在的帖子 ID
   final Set<String> deletedPostIds;
 
+  /// 已被删除但仍在收藏中的帖子完整数据（优先来自云端快照）
+  final List<CommunityPost> deletedPosts;
+
   const FavoritedPostsResult({
     required this.posts,
     required this.deletedPostIds,
+    this.deletedPosts = const [],
   });
 }
 
@@ -60,8 +68,8 @@ class FavoritesState {
   /// UI 层在卡片右下角显示「该帖子已被删除」。
   final List<CommunityPost> deletedFavoritedPosts;
 
-  /// 收藏的记录 ID 集合（仍存在的记录，从服务端拉取）
-  final Set<String> favoritedRecordIds;
+  /// 收藏的记录列表（从服务端拉取，记录仍存在）
+  final List<EncounterRecord> favoritedRecords;
 
   /// 已被删除但仍在收藏中的记录完整数据（从本地快照读取）
   ///
@@ -70,6 +78,9 @@ class FavoritesState {
 
   /// 收藏的帖子 ID 集合（派生自 favoritedPosts，用于 O(1) 查找）
   final Set<String> _favoritedPostIds;
+
+  /// 收藏的记录 ID 集合（派生自 favoritedRecords，用于 O(1) 查找）
+  final Set<String> _favoritedRecordIds;
 
   /// 已被删除的帖子 ID 集合（派生自 deletedFavoritedPosts，用于 O(1) 查找）
   final Set<String> _deletedFavoritedPostIds;
@@ -80,22 +91,23 @@ class FavoritesState {
   FavoritesState({
     this.favoritedPosts = const [],
     this.deletedFavoritedPosts = const [],
-    this.favoritedRecordIds = const {},
+    this.favoritedRecords = const [],
     this.deletedFavoritedRecords = const [],
   })  : _favoritedPostIds = {for (final p in favoritedPosts) p.id},
+        _favoritedRecordIds = {for (final r in favoritedRecords) r.id},
         _deletedFavoritedPostIds = {for (final p in deletedFavoritedPosts) p.id},
         _deletedFavoritedRecordIds = {for (final r in deletedFavoritedRecords) r.id};
 
   FavoritesState copyWith({
     List<CommunityPost>? favoritedPosts,
     List<CommunityPost>? deletedFavoritedPosts,
-    Set<String>? favoritedRecordIds,
+    List<EncounterRecord>? favoritedRecords,
     List<EncounterRecord>? deletedFavoritedRecords,
   }) {
     return FavoritesState(
       favoritedPosts: favoritedPosts ?? this.favoritedPosts,
       deletedFavoritedPosts: deletedFavoritedPosts ?? this.deletedFavoritedPosts,
-      favoritedRecordIds: favoritedRecordIds ?? this.favoritedRecordIds,
+      favoritedRecords: favoritedRecords ?? this.favoritedRecords,
       deletedFavoritedRecords: deletedFavoritedRecords ?? this.deletedFavoritedRecords,
     );
   }
@@ -105,7 +117,7 @@ class FavoritesState {
 
   /// 判断某条记录是否已收藏（O(1) 查找）
   bool isRecordFavorited(String recordId) =>
-      favoritedRecordIds.contains(recordId);
+      _favoritedRecordIds.contains(recordId);
 
   /// 判断某个帖子是否已被删除（O(1) 查找）
   bool isPostDeleted(String postId) =>
@@ -157,26 +169,29 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
       final postsResult = results[0] as FavoritedPostsResult;
       final recordsResult = results[1] as FavoritedRecordsResult;
 
-      // 从本地快照读已删除帖子的完整数据
-      final deletedFavoritedPosts = postsResult.deletedPostIds
-          .map((id) {
-            final json = storage.getFavoritedPostSnapshot(id);
-            if (json == null) return null;
-            return CommunityPost.fromJson(json);
-          })
-          .whereType<CommunityPost>()
-          .toList();
+      // 已删除条目优先使用云端快照，本地快照仅作兜底缓存
+      final deletedFavoritedPosts = postsResult.deletedPosts.isNotEmpty
+          ? postsResult.deletedPosts
+          : postsResult.deletedPostIds
+              .map((id) {
+                final json = storage.getFavoritedPostSnapshot(id);
+                if (json == null) return null;
+                return CommunityPost.fromJson(json);
+              })
+              .whereType<CommunityPost>()
+              .toList();
 
-      // 从本地快照读已删除记录的完整数据
-      final deletedFavoritedRecords = recordsResult.deletedRecordIds
-          .map((id) => storage.getFavoritedRecordSnapshot(id))
-          .whereType<EncounterRecord>()
-          .toList();
+      final deletedFavoritedRecords = recordsResult.deletedRecords.isNotEmpty
+          ? recordsResult.deletedRecords
+          : recordsResult.deletedRecordIds
+              .map((id) => storage.getFavoritedRecordSnapshot(id))
+              .whereType<EncounterRecord>()
+              .toList();
 
       return FavoritesState(
         favoritedPosts: postsResult.posts,
         deletedFavoritedPosts: deletedFavoritedPosts,
-        favoritedRecordIds: recordsResult.recordIds,
+        favoritedRecords: recordsResult.records,
         deletedFavoritedRecords: deletedFavoritedRecords,
       );
     } catch (e) {
@@ -287,8 +302,8 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
     await storage.saveFavoritedRecordSnapshot(record);
 
     // 乐观更新
-    final optimisticIds = {...currentState.favoritedRecordIds, record.id};
-    state = AsyncData(currentState.copyWith(favoritedRecordIds: optimisticIds));
+    final optimisticRecords = [...currentState.favoritedRecords, record];
+    state = AsyncData(currentState.copyWith(favoritedRecords: optimisticRecords));
 
     try {
       await _repository.favoriteRecord(currentUser.id, record.id);
@@ -312,11 +327,12 @@ class FavoritesNotifier extends AsyncNotifier<FavoritesState> {
     if (currentState == null) return;
 
     // 乐观更新：从正常列表或已删除列表中移除
-    final optimisticIds = {...currentState.favoritedRecordIds}..remove(recordId);
+    final optimisticRecords =
+        currentState.favoritedRecords.where((r) => r.id != recordId).toList();
     final optimisticDeletedRecords =
         currentState.deletedFavoritedRecords.where((r) => r.id != recordId).toList();
     state = AsyncData(currentState.copyWith(
-      favoritedRecordIds: optimisticIds,
+      favoritedRecords: optimisticRecords,
       deletedFavoritedRecords: optimisticDeletedRecords,
     ));
 

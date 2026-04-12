@@ -1043,9 +1043,14 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       final deletedPostIds = ((data['deletedPostIds'] as List?) ?? [])
           .map((e) => e as String)
           .toSet();
+      final deletedPostsJson = (data['deletedPosts'] as List?) ?? const [];
+      final deletedPosts = deletedPostsJson
+          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
+          .toList();
       return FavoritedPostsResult(
         posts: posts,
         deletedPostIds: deletedPostIds,
+        deletedPosts: deletedPosts,
       );
     } on HttpException catch (e) {
       throw Exception('获取收藏帖子失败：${e.message}');
@@ -1080,15 +1085,21 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     try {
       final response = await _httpClient.get(ServerConfig.favoriteRecords);
       final data = response['data'] as Map<String, dynamic>;
-      final recordIds = ((data['recordIds'] as List?) ?? [])
-          .map((e) => e as String)
-          .toSet();
+      final recordsJson = data['records'] as List;
+      final records = recordsJson
+          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
+          .toList();
       final deletedRecordIds = ((data['deletedRecordIds'] as List?) ?? [])
           .map((e) => e as String)
           .toSet();
+      final deletedRecordsJson = (data['deletedRecords'] as List?) ?? const [];
+      final deletedRecords = deletedRecordsJson
+          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
+          .toList();
       return FavoritedRecordsResult(
-        recordIds: recordIds,
+        records: records,
         deletedRecordIds: deletedRecordIds,
+        deletedRecords: deletedRecords,
       );
     } on HttpException catch (e) {
       throw Exception('获取收藏记录失败：${e.message}');

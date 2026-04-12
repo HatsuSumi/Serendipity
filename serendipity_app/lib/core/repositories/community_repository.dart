@@ -371,7 +371,7 @@ class CommunityRepository {
   /// 获取用户收藏的记录（区分存在和已删除）
   ///
   /// 返回 [FavoritedRecordsResult]，包含：
-  /// - recordIds：仍然存在的记录 ID 集合
+  /// - records：仍然存在的记录列表
   /// - deletedRecordIds：已被删除的记录 ID 集合
   ///
   /// 调用者：FavoritesNotifier.build()

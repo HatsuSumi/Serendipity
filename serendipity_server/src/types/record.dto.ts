@@ -70,7 +70,7 @@ export interface GetRecordsQueryDto {
 export interface RecordResponseDto {
   id: string;
   ownerId: string;
-  timestamp: Date;
+  timestamp: string;
   location: LocationDto;
   description?: string;
   tags: TagWithNoteDto[];
@@ -82,8 +82,8 @@ export interface RecordResponseDto {
   backgroundMusic?: string;
   weather: string[];
   isPinned: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 批量上传响应

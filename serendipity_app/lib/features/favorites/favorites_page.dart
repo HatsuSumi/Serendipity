@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/favorites_provider.dart';
-import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/auth_error_helper.dart';
 import 'favorites_intro_dialog.dart';
@@ -125,11 +124,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   }
 
   int _getFavoritedRecordCount(FavoritesState favoritesState) {
-    final allRecords = ref.watch(recordsProvider).value ?? [];
-    final existingCount = allRecords
-        .where((record) => favoritesState.favoritedRecordIds.contains(record.id))
-        .length;
-    return existingCount + favoritesState.deletedFavoritedRecords.length;
+    return favoritesState.favoritedRecords.length +
+        favoritesState.deletedFavoritedRecords.length;
   }
 
   int _getFavoritedPostCount(FavoritesState favoritesState) {
@@ -140,11 +136,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage>
   // ==================== 收藏的记录 Tab ====================
 
   Widget _buildFavoritedRecordsTab(FavoritesState favoritesState) {
-    final allRecords = ref.watch(recordsProvider).value ?? [];
-    final favoritedIds = favoritesState.favoritedRecordIds;
-    final records = favoritedIds.isEmpty
-        ? <EncounterRecord>[]
-        : allRecords.where((r) => favoritedIds.contains(r.id)).toList();
+    final records = favoritesState.favoritedRecords;
     final deletedRecords = favoritesState.deletedFavoritedRecords;
     final totalCount = records.length + deletedRecords.length;
 

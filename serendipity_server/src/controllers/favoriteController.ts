@@ -65,11 +65,11 @@ export class FavoriteController {
     }
   };
 
-  // 获取收藏的记录 ID 列表
-  getFavoritedRecordIds = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // 获取收藏的记录列表
+  getFavoritedRecords = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user!.userId;
-      const result = await this.favoriteService.getFavoritedRecordIds(userId);
+      const result = await this.favoriteService.getFavoritedRecords(userId);
       sendSuccess(res, result);
     } catch (error) {
       next(error);

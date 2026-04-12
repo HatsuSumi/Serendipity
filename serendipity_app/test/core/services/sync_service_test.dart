@@ -94,6 +94,11 @@ class FakeRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
+  Future<Membership> activateMembership(String userId, double monthlyAmount) async {
+    return downloadedMembership ?? createMembership(userId);
+  }
+
+  @override
   Future<List<EncounterRecord>> downloadRecords(String userId) async => [];
 
   @override
@@ -211,7 +216,7 @@ class FakeRemoteDataRepository implements IRemoteDataRepository {
   Future<void> unfavoriteRecord(String userId, String recordId) async {}
 
   @override
-  Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) async => const FavoritedRecordsResult(recordIds: {}, deletedRecordIds: {});
+  Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) async => const FavoritedRecordsResult(records: [], deletedRecordIds: {});
 }
 
 class FakeStorageService implements IStorageService {

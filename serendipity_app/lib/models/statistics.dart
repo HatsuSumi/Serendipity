@@ -147,10 +147,10 @@ class StatisticsOverview {
   /// 当前用户是否可查看收藏统计
   final bool favoritesAvailable;
 
-  /// 已收藏的记录数量
+  /// 已收藏的记录数量（包含已删除但仍保留收藏关系的条目）
   final int favoritedRecordCount;
 
-  /// 已收藏的帖子数量
+  /// 已收藏的帖子数量（包含已删除但仍保留收藏关系的条目）
   final int favoritedPostCount;
 
   /// 已置顶的记录总数

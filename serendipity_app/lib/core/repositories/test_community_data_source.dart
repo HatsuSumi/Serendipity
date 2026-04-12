@@ -123,7 +123,7 @@ class TestCommunityDataSource implements ICommunityDataSource {
   @override
   Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) async {
     // 测试模式：返回空结果
-    return const FavoritedRecordsResult(recordIds: {}, deletedRecordIds: {});
+    return const FavoritedRecordsResult(records: [], deletedRecordIds: {});
   }
 }
 
