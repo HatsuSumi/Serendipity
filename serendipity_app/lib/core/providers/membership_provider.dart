@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/membership.dart';
 import '../../models/enums.dart';
 import '../config/app_config.dart';
+import '../services/sync_service.dart';
+import '../repositories/i_remote_data_repository.dart';
 import '../repositories/membership_repository.dart';
 import 'auth_provider.dart';
+import 'records_provider.dart';
 
 const int freeStoryLineLimit = 3;
-const Duration membershipDuration = Duration(days: 30);
 
 /// 会员仓储 Provider
 final membershipRepositoryProvider = Provider<MembershipRepository>((ref) {
@@ -40,9 +42,14 @@ bool _isMembershipActive(Membership membership, DateTime now) {
 class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
   late MembershipRepository _repository;
 
+  SyncService get _syncService => ref.read(syncServiceProvider);
+  IRemoteDataRepository get _remoteRepository =>
+      ref.read(remoteDataRepositoryProvider);
+
   @override
   Future<MembershipInfo> build() async {
     _repository = ref.read(membershipRepositoryProvider);
+    ref.watch(syncCompletedProvider);
 
     final currentUser = await ref.read(authProvider.future);
     if (currentUser == null) {
@@ -98,18 +105,10 @@ class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
       throw StateError('Membership is still active');
     }
 
-    final now = DateTime.now();
-    final membership = Membership(
-      id: existingMembership?.id ?? now.millisecondsSinceEpoch.toString(),
-      userId: currentUser.id,
-      tier: MembershipTier.premium,
-      status: MembershipStatus.active,
-      startedAt: now,
-      expiresAt: now.add(membershipDuration),
-      createdAt: existingMembership?.createdAt ?? now,
-      updatedAt: now,
+    final membership = await _remoteRepository.activateMembership(
+      currentUser.id,
+      amount,
     );
-
     await _repository.saveMembership(membership);
 
     ref.invalidateSelf();
@@ -118,6 +117,12 @@ class MembershipNotifier extends AsyncNotifier<MembershipInfo> {
 
   /// 刷新会员状态
   Future<void> refresh() async {
+    final currentUser = await ref.read(authProvider.future);
+    if (currentUser != null) {
+      await _syncService.refreshMembership(currentUser);
+      ref.read(syncCompletedProvider.notifier).state++;
+    }
+
     ref.invalidateSelf();
     await future;
   }

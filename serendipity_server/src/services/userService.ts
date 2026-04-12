@@ -29,6 +29,7 @@ export interface IUserService {
   getUserSettings(userId: string): Promise<UserSettingsDto>;
   updateUserSettings(userId: string, data: UpdateUserSettingsDto): Promise<UserSettingsDto>;
   getMembership(userId: string): Promise<MembershipDto | null>;
+  activateMembership(userId: string, monthlyAmount: number): Promise<MembershipDto>;
 }
 
 /**
@@ -150,6 +151,36 @@ export class UserService implements IUserService {
     if (!membership) {
       return null;
     }
+
+    return this.mapMembershipToDto(membership);
+  }
+
+  /**
+   * 开通会员
+   */
+  async activateMembership(
+    userId: string,
+    monthlyAmount: number,
+  ): Promise<MembershipDto> {
+    const user = await this.userRepository.findById(userId);
+
+    if (!user) {
+      throw new AppError('User not found', ErrorCode.USER_NOT_FOUND);
+    }
+
+    if (!Number.isFinite(monthlyAmount) || monthlyAmount < 0 || monthlyAmount > 648) {
+      throw new AppError('monthlyAmount must be between 0 and 648', ErrorCode.INVALID_REQUEST);
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    const membership = await this.membershipRepository.activateOrCreate(
+      userId,
+      monthlyAmount,
+      expiresAt,
+    );
 
     return this.mapMembershipToDto(membership);
   }

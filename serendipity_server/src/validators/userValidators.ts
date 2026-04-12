@@ -23,6 +23,17 @@ export const updateUserValidation = [
 /**
  * 更新用户设置验证规则
  */
+export const activateMembershipValidation = [
+  body('monthlyAmount')
+    .exists()
+    .withMessage('月支持金额不能为空')
+    .isFloat({ min: 0, max: 648 })
+    .withMessage('月支持金额必须在0到648之间'),
+];
+
+/**
+ * 更新用户设置验证规则
+ */
 export const updateUserSettingsValidation = [
   body('theme')
     .optional()

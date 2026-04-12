@@ -4,6 +4,7 @@ import '../../models/story_line.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/remote_check_in_status.dart';
+import '../../models/membership.dart';
 import '../../models/user.dart';
 import '../../models/user_settings.dart';
 import '../../models/sync_history.dart';
@@ -763,15 +764,27 @@ class SyncService {
   /// 会员数据以服务端为真源：
   /// - 云端存在 → 覆盖本地
   /// - 云端不存在 → 删除本地残留
+  ///
+  /// 返回：服务端最新会员信息；云端不存在时返回 null
+  Future<Membership?> refreshMembership(User user) async {
+    if (user.id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+
+    final remoteMembership = await _remoteRepository.downloadMembership(user.id);
+    if (remoteMembership == null) {
+      await _storageService.deleteMembership(user.id);
+      return null;
+    }
+
+    await _storageService.saveMembership(remoteMembership);
+    return remoteMembership;
+  }
+
+  /// 同步会员信息
   Future<void> _syncMembership(User user) async {
     try {
-      final remoteMembership = await _remoteRepository.downloadMembership(user.id);
-      if (remoteMembership == null) {
-        await _storageService.deleteMembership(user.id);
-        return;
-      }
-
-      await _storageService.saveMembership(remoteMembership);
+      await refreshMembership(user);
     } catch (e) {
       // 会员同步失败不影响其他数据同步
     }

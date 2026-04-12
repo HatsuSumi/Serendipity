@@ -93,6 +93,25 @@ export class UserController {
   };
 
   /**
+   * 开通会员
+   * POST /api/v1/users/membership
+   */
+  activateMembership = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const monthlyAmount = req.body.monthlyAmount as number;
+      const result = await this.userService.activateMembership(userId, monthlyAmount);
+      sendSuccess(res, result, 'Membership activated successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
    * 更新用户设置
    * PUT /api/v1/users/settings
    */

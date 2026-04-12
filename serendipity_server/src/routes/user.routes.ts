@@ -11,6 +11,7 @@ import { validateRequest } from '../utils/validation';
 import { uploadAvatarMiddleware } from '../middlewares/upload';
 import {
   updateUserValidation,
+  activateMembershipValidation,
   updateUserSettingsValidation,
 } from '../validators/userValidators';
 
@@ -38,6 +39,14 @@ export const createUserRoutes = (userController: UserController): Router => {
 
   // GET /api/v1/users/membership - 获取用户会员信息
   router.get('/membership', userController.getMembership);
+
+  // POST /api/v1/users/membership - 开通会员
+  router.post(
+    '/membership',
+    activateMembershipValidation,
+    validateRequest,
+    userController.activateMembership
+  );
 
   // GET /api/v1/users/settings - 获取用户设置
   router.get('/settings', userController.getUserSettings);

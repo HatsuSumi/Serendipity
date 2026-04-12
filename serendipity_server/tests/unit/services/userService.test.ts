@@ -5,10 +5,24 @@
 import { UserService } from '../../../src/services/userService';
 import { IUserRepository } from '../../../src/repositories/userRepository';
 import { IUserSettingsRepository } from '../../../src/repositories/userSettingsRepository';
-import { IMembershipRepository } from '../../../src/repositories/membershipRepository';
+import { IMembershipRepository, Membership } from '../../../src/repositories/membershipRepository';
 import { createMockUser, createMockUserSettings } from '../../helpers/factories';
 import { AppError } from '../../../src/middlewares/errorHandler';
 import { ErrorCode } from '../../../src/types/errors';
+
+const createMockMembership = (overrides?: Partial<Membership>): Membership => ({
+  id: 'membership-1',
+  userId: 'test-user-id',
+  tier: 'premium',
+  status: 'active',
+  startedAt: new Date('2026-04-12T00:00:00.000Z'),
+  expiresAt: new Date('2026-05-12T00:00:00.000Z'),
+  monthlyAmount: 30,
+  autoRenew: false,
+  createdAt: new Date('2026-04-12T00:00:00.000Z'),
+  updatedAt: new Date('2026-04-12T00:00:00.000Z'),
+  ...overrides,
+});
 
 describe('UserService', () => {
   let userService: UserService;
@@ -222,6 +236,36 @@ describe('UserService', () => {
       await expect(userService.updateUserSettings(userId, updateData)).rejects.toMatchObject({
         code: ErrorCode.USER_NOT_FOUND,
       });
+    });
+  });
+
+  describe('activateMembership', () => {
+    it('应该成功开通会员', async () => {
+      const userId = 'test-user-id';
+      const user = createMockUser({ id: userId });
+      const membership = createMockMembership({ userId, monthlyAmount: 88 });
+
+      mockUserRepository.findById.mockResolvedValue(user);
+      mockMembershipRepository.activateOrCreate.mockResolvedValue(membership);
+
+      const result = await userService.activateMembership(userId, 88);
+
+      expect(result.userId).toBe(userId);
+      expect(result.tier).toBe(2);
+      expect(result.status).toBe(2);
+      expect(mockMembershipRepository.activateOrCreate).toHaveBeenCalledWith(
+        userId,
+        88,
+        expect.any(Date),
+      );
+    });
+
+    it('用户不存在时应该抛出错误', async () => {
+      mockUserRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        userService.activateMembership('missing-user', 88),
+      ).rejects.toMatchObject({ code: ErrorCode.USER_NOT_FOUND });
     });
   });
 });

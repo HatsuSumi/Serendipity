@@ -418,6 +418,7 @@ abstract class IRemoteDataRepository {
 
   // ==================== 会员相关操作 ====================
   Future<Membership?> downloadMembership(String userId);
+  Future<Membership> activateMembership(String userId, double monthlyAmount);
 
   // ==================== 推送相关操作 ====================
 

@@ -5,6 +5,7 @@ import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
 import '../../models/membership.dart';
+import '../../models/enums.dart';
 import '../../models/push_token_registration.dart';
 import 'i_remote_data_repository.dart';
 import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
@@ -241,6 +242,28 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   @override
   Future<Membership?> downloadMembership(String userId) async {
     return null;
+  }
+
+  @override
+  Future<Membership> activateMembership(String userId, double monthlyAmount) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (monthlyAmount < 0 || monthlyAmount > 648) {
+      throw ArgumentError('monthlyAmount 必须在 0 到 648 之间');
+    }
+
+    final now = DateTime.now();
+    return Membership(
+      id: now.millisecondsSinceEpoch.toString(),
+      userId: userId,
+      tier: MembershipTier.premium,
+      status: MembershipStatus.active,
+      startedAt: now,
+      expiresAt: now.add(const Duration(days: 30)),
+      createdAt: now,
+      updatedAt: now,
+    );
   }
 
   @override
