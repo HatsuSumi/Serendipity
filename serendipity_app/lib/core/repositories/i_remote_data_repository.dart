@@ -4,6 +4,7 @@ import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
+import '../../models/membership.dart';
 import '../../models/push_token_registration.dart';
 import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
 
@@ -414,6 +415,9 @@ abstract class IRemoteDataRepository {
   // ==================== 用户设置相关操作 ====================
   Future<UserSettings> uploadSettings(String userId, UserSettings settings);
   Future<UserSettings?> downloadSettings(String userId);
+
+  // ==================== 会员相关操作 ====================
+  Future<Membership?> downloadMembership(String userId);
 
   // ==================== 推送相关操作 ====================
 

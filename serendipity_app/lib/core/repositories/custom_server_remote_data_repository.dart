@@ -4,6 +4,7 @@ import '../../models/community_post.dart';
 import '../../models/check_in_record.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/user_settings.dart';
+import '../../models/membership.dart';
 import '../../models/push_token_registration.dart';
 import 'i_remote_data_repository.dart';
 import '../services/http_client_service.dart';
@@ -881,6 +882,27 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
         return null;
       }
       throw Exception('下载用户设置失败：${e.message}');
+    }
+  }
+
+  @override
+  Future<Membership?> downloadMembership(String userId) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+
+    try {
+      final response = await _httpClient.get(ServerConfig.usersMembership);
+      final data = response['data'];
+      if (data == null) {
+        return null;
+      }
+      return Membership.fromJson(data as Map<String, dynamic>);
+    } on HttpException catch (e) {
+      if (e.statusCode == 404) {
+        return null;
+      }
+      throw Exception('下载会员信息失败：${e.message}');
     }
   }
 

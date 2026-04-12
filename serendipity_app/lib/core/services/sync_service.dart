@@ -754,6 +754,25 @@ class SyncService {
     }
   }
   
+  /// 同步会员信息
+  ///
+  /// 会员数据以服务端为真源：
+  /// - 云端存在 → 覆盖本地
+  /// - 云端不存在 → 删除本地残留
+  Future<void> _syncMembership(User user) async {
+    try {
+      final remoteMembership = await _remoteRepository.downloadMembership(user.id);
+      if (remoteMembership == null) {
+        await _storageService.deleteMembership(user.id);
+        return;
+      }
+
+      await _storageService.saveMembership(remoteMembership);
+    } catch (e) {
+      // 会员同步失败不影响其他数据同步
+    }
+  }
+
   /// 同步用户设置
   /// 
   /// 调用者：syncAllData()
