@@ -510,14 +510,18 @@ class CustomServerAuthRepository implements IAuthRepository {
     // Fail Fast：必需字段验证
     final id = data['id'] as String?;
     final createdAtStr = data['createdAt'] as String?;
-    
+    final updatedAtStr = data['updatedAt'] as String?;
+
     if (id == null || id.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');
     }
     if (createdAtStr == null || createdAtStr.isEmpty) {
       throw ArgumentError('创建时间不能为空');
     }
-    
+    if (updatedAtStr == null || updatedAtStr.isEmpty) {
+      throw ArgumentError('更新时间不能为空');
+    }
+
     return User(
       id: id,
       email: data['email'] as String?,
@@ -525,12 +529,13 @@ class CustomServerAuthRepository implements IAuthRepository {
       displayName: data['displayName'] as String?,
       avatarUrl: data['avatarUrl'] as String?,
       authProvider: _parseAuthProvider(data['authProvider'] as String?),
-      isEmailVerified: data['isEmailVerified'] as bool? ?? false,
-      isPhoneVerified: data['isPhoneVerified'] as bool? ?? false,
+      isEmailVerified: data['isEmailVerified'] as bool,
+      isPhoneVerified: data['isPhoneVerified'] as bool,
+      lastLoginAt: data['lastLoginAt'] != null
+          ? DateTime.parse(data['lastLoginAt'] as String)
+          : null,
       createdAt: DateTime.parse(createdAtStr),
-      updatedAt: data['updatedAt'] != null 
-          ? DateTime.parse(data['updatedAt'] as String)
-          : null,  // User 构造函数会自动使用 createdAt 作为降级
+      updatedAt: DateTime.parse(updatedAtStr),
     );
   }
   

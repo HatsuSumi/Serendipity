@@ -1,5 +1,19 @@
 // 认证相关的 DTO（Data Transfer Object）
 
+export interface AuthUserDto {
+  id: string;
+  email?: string;
+  phoneNumber?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  authProvider: 'email' | 'phone';
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
+  lastLoginAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // 邮箱注册请求
 export interface RegisterEmailDto {
   email: string;
@@ -76,13 +90,7 @@ export interface DeleteAccountDto {
 
 // 认证响应
 export interface AuthResponseDto {
-  user: {
-    id: string;
-    email?: string;
-    phoneNumber?: string;
-    authProvider: 'email' | 'phone';
-    createdAt: Date;
-  };
+  user: AuthUserDto;
   tokens: {
     accessToken: string;
     refreshToken: string;
@@ -93,13 +101,7 @@ export interface AuthResponseDto {
 }
 
 // 用户信息响应
-export interface UserMeDto {
-  id: string;
-  email?: string;
-  phoneNumber?: string;
-  displayName?: string;
-  authProvider: 'email' | 'phone';
-  createdAt: Date;
+export interface UserMeDto extends AuthUserDto {
   membership: {
     tier: string;
     status: string;

@@ -451,12 +451,7 @@ export class AuthService implements IAuthService {
     const membershipStatus = this.resolveMembershipStatus(membership);
 
     return {
-      id: user.id,
-      email: user.email || undefined,
-      phoneNumber: user.phoneNumber || undefined,
-      displayName: user.displayName || undefined,
-      authProvider: user.authProvider as 'email' | 'phone',
-      createdAt: user.createdAt,
+      ...this.toAuthUserDto(user),
       membership: {
         tier: membershipTier,
         status: membershipStatus,
@@ -638,13 +633,7 @@ export class AuthService implements IAuthService {
     await this.refreshTokenRepository.deleteAllExceptNewest(user.id);
 
     return {
-      user: {
-        id: user.id,
-        email: user.email || undefined,
-        phoneNumber: user.phoneNumber || undefined,
-        authProvider: user.authProvider as 'email' | 'phone',
-        createdAt: user.createdAt,
-      },
+      user: this.toAuthUserDto(user),
       tokens: {
         accessToken,
         refreshToken,
@@ -685,13 +674,7 @@ export class AuthService implements IAuthService {
     await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt);
 
     return {
-      user: {
-        id: user.id,
-        email: user.email || undefined,
-        phoneNumber: user.phoneNumber || undefined,
-        authProvider: user.authProvider as 'email' | 'phone',
-        createdAt: user.createdAt,
-      },
+      user: this.toAuthUserDto(user),
       tokens: {
         accessToken,
         refreshToken,
@@ -715,6 +698,22 @@ export class AuthService implements IAuthService {
       return 'active';
     }
     return 'expired';
+  }
+
+  private toAuthUserDto(user: User): AuthResponseDto['user'] {
+    return {
+      id: user.id,
+      email: user.email || undefined,
+      phoneNumber: user.phoneNumber || undefined,
+      displayName: user.displayName || undefined,
+      avatarUrl: user.avatarUrl || undefined,
+      authProvider: user.authProvider as 'email' | 'phone',
+      isEmailVerified: user.email ? true : false,
+      isPhoneVerified: user.phoneNumber ? true : false,
+      lastLoginAt: user.lastLoginAt || undefined,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 
   /**

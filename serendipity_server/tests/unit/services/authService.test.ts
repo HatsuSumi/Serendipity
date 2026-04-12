@@ -69,7 +69,9 @@ describe('AuthService', () => {
         password: 'password123',
       };
 
-      const mockUser = createMockUser();
+      const mockUser = createMockUser({
+        lastLoginAt: new Date('2026-02-01T08:00:00.000Z'),
+      });
       
       mockUserRepository.findByEmail.mockResolvedValue(null);
       mockPasswordHasher.hash.mockResolvedValue('hashed-password');
@@ -85,6 +87,16 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('tokens');
       expect(result).toHaveProperty('recoveryKey');
+      expect(result.user).toMatchObject({
+        id: mockUser.id,
+        email: mockUser.email ?? undefined,
+        displayName: mockUser.displayName ?? undefined,
+        authProvider: mockUser.authProvider as 'email' | 'phone',
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        lastLoginAt: mockUser.lastLoginAt ?? undefined,
+        updatedAt: mockUser.updatedAt,
+      });
     });
 
     it('邮箱已存在时应该抛出错误', async () => {
@@ -121,6 +133,16 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('tokens');
       expect(mockUserRepository.updateLastLogin).toHaveBeenCalledWith(mockUser.id);
+      expect(result.user).toMatchObject({
+        id: mockUser.id,
+        email: mockUser.email ?? undefined,
+        displayName: mockUser.displayName ?? undefined,
+        authProvider: mockUser.authProvider as 'email' | 'phone',
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        lastLoginAt: mockUser.lastLoginAt ?? undefined,
+        updatedAt: mockUser.updatedAt,
+      });
     });
 
     it('用户不存在时应该抛出错误', async () => {

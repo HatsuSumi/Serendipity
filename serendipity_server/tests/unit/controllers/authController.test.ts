@@ -50,7 +50,15 @@ describe('AuthController', () => {
       const next = createMockNext();
 
       const mockResult = {
-        user: { id: 'user-id', email: 'test@example.com', authProvider: 'email' as const, createdAt: new Date() },
+        user: {
+          id: 'user-id',
+          email: 'test@example.com',
+          authProvider: 'email' as const,
+          isEmailVerified: true,
+          isPhoneVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 
@@ -90,7 +98,15 @@ describe('AuthController', () => {
       const next = createMockNext();
 
       const mockResult = {
-        user: { id: 'user-id', email: 'test@example.com', authProvider: 'email' as const, createdAt: new Date() },
+        user: {
+          id: 'user-id',
+          email: 'test@example.com',
+          authProvider: 'email' as const,
+          isEmailVerified: true,
+          isPhoneVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 
@@ -161,7 +177,15 @@ describe('AuthController', () => {
       const next = createMockNext();
 
       const mockResult = {
-        user: { id: 'user-id', email: 'test@example.com', authProvider: 'email' as const, createdAt: new Date() },
+        user: {
+          id: 'user-id',
+          email: 'test@example.com',
+          authProvider: 'email' as const,
+          isEmailVerified: true,
+          isPhoneVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         tokens: { accessToken: 'new-token', refreshToken: 'new-refresh', expiresIn: 604800, expiresAt: new Date().toISOString() },
       };
 
@@ -186,7 +210,11 @@ describe('AuthController', () => {
       const mockResult = {
         id: 'test-user-id',
         email: 'test@example.com',
+        authProvider: 'email' as const,
+        isEmailVerified: true,
+        isPhoneVerified: false,
         createdAt: new Date(),
+        updatedAt: new Date(),
         membership: { tier: 'free', status: 'inactive' },
       };
 
