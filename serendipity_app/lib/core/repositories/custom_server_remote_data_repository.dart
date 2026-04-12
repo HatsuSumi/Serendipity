@@ -22,6 +22,12 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   CustomServerRemoteDataRepository({required HttpClientService httpClient})
       : _httpClient = httpClient;
 
+  Map<String, dynamic> _toStoryLineServerDto(StoryLine storyLine) {
+    final json = storyLine.toJson();
+    json.remove('ownerId');
+    return json;
+  }
+
   Future<List<EncounterRecord>> _downloadRecordsPaged(
     String userId, {
     DateTime? lastSyncTime,
@@ -336,7 +342,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     try {
       await _httpClient.post(
         ServerConfig.storylines,
-        body: storyLine.toJson(),
+        body: _toStoryLineServerDto(storyLine),
       );
     } on HttpException catch (e) {
       throw Exception('上传故事线失败：${e.message}');
@@ -355,7 +361,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       // 只传输完整数据（后端会根据 UpdateStoryLineDto 只更新传入的字段）
       await _httpClient.put(
         ServerConfig.storylineById(storyLine.id),
-        body: storyLine.toJson(),
+        body: _toStoryLineServerDto(storyLine),
       );
     } on HttpException catch (e) {
       throw Exception('更新故事线失败：${e.message}');
@@ -377,7 +383,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
       await _httpClient.post(
         ServerConfig.storylinesBatch,
         body: {
-          'storyLines': storyLines.map((s) => s.toJson()).toList(),
+          'storyLines': storyLines.map(_toStoryLineServerDto).toList(),
         },
       );
     } on HttpException catch (e) {
@@ -853,11 +859,12 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     }
 
     try {
-      await _httpClient.put(
+      final response = await _httpClient.put(
         ServerConfig.usersSettings,
         body: settings.toServerDto(),
       );
-      return settings;
+      final data = response['data'] as Map<String, dynamic>;
+      return UserSettings.fromServerDto(data, userId);
     } on HttpException catch (e) {
       throw Exception('上传用户设置失败：${e.message}');
     }
