@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { User } from '@prisma/client';
 import { IUserRepository } from '../repositories/userRepository';
 import { IRefreshTokenRepository } from '../repositories/refreshTokenRepository';
+import { IMembershipRepository } from '../repositories/membershipRepository';
 import { IPasswordHasher } from './passwordHasher';
 import { JwtService, JwtPayload } from './jwtService';
 import {
@@ -52,6 +53,7 @@ export class AuthService implements IAuthService {
   constructor(
     private userRepository: IUserRepository,
     private refreshTokenRepository: IRefreshTokenRepository,
+    private membershipRepository: IMembershipRepository,
     private jwtService: JwtService,
     private passwordHasher: IPasswordHasher
   ) {}
@@ -444,8 +446,10 @@ export class AuthService implements IAuthService {
       throw new AppError('用户不存在', ErrorCode.USER_NOT_FOUND);
     }
 
-    // TODO: 获取会员信息
-    // 暂时返回默认会员信息
+    const membership = await this.membershipRepository.findByUserId(userId);
+    const membershipTier = membership?.tier === 'premium' ? 'premium' : 'free';
+    const membershipStatus = this.resolveMembershipStatus(membership);
+
     return {
       id: user.id,
       email: user.email || undefined,
@@ -454,8 +458,8 @@ export class AuthService implements IAuthService {
       authProvider: user.authProvider as 'email' | 'phone',
       createdAt: user.createdAt,
       membership: {
-        tier: 'free',
-        status: 'inactive',
+        tier: membershipTier,
+        status: membershipStatus,
       },
     };
   }
@@ -696,6 +700,21 @@ export class AuthService implements IAuthService {
       },
       recoveryKey, // 仅在注册时返回一次
     };
+  }
+
+  private resolveMembershipStatus(
+    membership: Awaited<ReturnType<IMembershipRepository['findByUserId']>>
+  ): 'inactive' | 'active' | 'expired' | 'cancelled' {
+    if (!membership) {
+      return 'inactive';
+    }
+    if (membership.status !== 'active') {
+      return membership.status as 'inactive' | 'active' | 'expired' | 'cancelled';
+    }
+    if (!membership.expiresAt || membership.expiresAt > new Date()) {
+      return 'active';
+    }
+    return 'expired';
   }
 
   /**

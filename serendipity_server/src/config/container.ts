@@ -192,13 +192,14 @@ export const initializeContainer = (): Container => {
   const authService = new AuthService(
     userRepository,
     refreshTokenRepository,
+    membershipRepository,
     jwtService,
     passwordHasher,
   );
   const recordService = new RecordService(recordRepository);
   const storyLineService = new StoryLineService(storyLineRepository);
   const communityPostService = new CommunityPostService(communityPostRepository);
-  const userService = new UserService(userRepository, userSettingsRepository);
+  const userService = new UserService(userRepository, userSettingsRepository, membershipRepository);
   const checkInService = new CheckInService(checkInRepository, userTimezoneResolver);
   const reminderPushSender = new ReminderPushSender();
   const pushTokenService = new PushTokenService(

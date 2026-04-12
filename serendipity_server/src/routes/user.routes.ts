@@ -36,6 +36,9 @@ export const createUserRoutes = (userController: UserController): Router => {
   // POST /api/v1/users/avatar - 上传头像
   router.post('/avatar', uploadAvatarMiddleware, userController.uploadAvatar);
 
+  // GET /api/v1/users/membership - 获取用户会员信息
+  router.get('/membership', userController.getMembership);
+
   // GET /api/v1/users/settings - 获取用户设置
   router.get('/settings', userController.getUserSettings);
 

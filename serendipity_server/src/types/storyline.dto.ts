@@ -5,6 +5,7 @@ export interface CreateStoryLineDto {
   id: string;
   name: string;
   recordIds: string[];
+  isPinned: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +19,7 @@ export interface BatchCreateStoryLinesDto {
 export interface UpdateStoryLineDto {
   name?: string;
   recordIds?: string[];
+  isPinned?: boolean;
   updatedAt: Date;
 }
 
@@ -34,6 +36,7 @@ export interface StoryLineResponseDto {
   ownerId: string;
   name: string;
   recordIds: string[];
+  isPinned: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

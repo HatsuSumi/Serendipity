@@ -19,6 +19,7 @@ export interface CreateMembershipDto {
  * 会员实体类型
  */
 export interface Membership {
+  id: string;
   userId: string;
   tier: string;
   status: string;

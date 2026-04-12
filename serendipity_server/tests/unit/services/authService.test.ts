@@ -56,6 +56,7 @@ describe('AuthService', () => {
     authService = new AuthService(
       mockUserRepository,
       mockRefreshTokenRepository,
+      {} as any,
       mockJwtService,
       mockPasswordHasher
     );
@@ -216,7 +217,7 @@ describe('AuthService', () => {
         userId,
         'new-hashed-password'
       );
-      expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(userId);
+      expect(mockRefreshTokenRepository.deleteByUserId).not.toHaveBeenCalled();
     });
 
     it('当前密码错误时应该抛出错误', async () => {

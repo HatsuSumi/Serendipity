@@ -2,6 +2,17 @@
  * 用户相关 DTO
  */
 
+export interface MembershipDto {
+  id: string;
+  userId: string;
+  tier: number;
+  status: number;
+  startedAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UserProfileDto {
   id: string;
   email?: string;

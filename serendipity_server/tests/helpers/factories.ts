@@ -27,6 +27,7 @@ export const createMockUserSettings = (overrides?: Partial<UserSettings>): UserS
     checkInReminder: false,
     checkInReminderTime: '20:00',
     achievementUnlocked: true,
+    anniversaryReminder: false,
   },
   checkIn: {
     vibrationEnabled: true,

@@ -296,17 +296,17 @@ export class ReminderPushSender implements IReminderPushSender {
 
   private getRuntimeConfig(): RuntimeReminderConfig {
     return {
-      fcmProjectId: process.env.FCM_PROJECT_ID?.trim() || config.checkInReminder.fcm.projectId.trim(),
-      fcmClientEmail: process.env.FCM_CLIENT_EMAIL?.trim() || config.checkInReminder.fcm.clientEmail.trim(),
+      fcmProjectId: process.env.FCM_PROJECT_ID?.trim() ?? config.checkInReminder.fcm.projectId.trim(),
+      fcmClientEmail: process.env.FCM_CLIENT_EMAIL?.trim() ?? config.checkInReminder.fcm.clientEmail.trim(),
       fcmPrivateKey: this.normalizePrivateKey(
-        process.env.FCM_PRIVATE_KEY || config.checkInReminder.fcm.privateKey,
+        process.env.FCM_PRIVATE_KEY ?? config.checkInReminder.fcm.privateKey,
       ),
-      apnsKeyId: process.env.APNS_KEY_ID?.trim() || config.checkInReminder.apns.keyId.trim(),
-      apnsTeamId: process.env.APNS_TEAM_ID?.trim() || config.checkInReminder.apns.teamId.trim(),
+      apnsKeyId: process.env.APNS_KEY_ID?.trim() ?? config.checkInReminder.apns.keyId.trim(),
+      apnsTeamId: process.env.APNS_TEAM_ID?.trim() ?? config.checkInReminder.apns.teamId.trim(),
       apnsPrivateKey: this.normalizePrivateKey(
-        process.env.APNS_PRIVATE_KEY || config.checkInReminder.apns.privateKey,
+        process.env.APNS_PRIVATE_KEY ?? config.checkInReminder.apns.privateKey,
       ),
-      apnsBundleId: process.env.APNS_BUNDLE_ID?.trim() || config.checkInReminder.apns.bundleId.trim(),
+      apnsBundleId: process.env.APNS_BUNDLE_ID?.trim() ?? config.checkInReminder.apns.bundleId.trim(),
       apnsProduction:
         process.env.APNS_PRODUCTION === 'true' ||
         (process.env.APNS_PRODUCTION ? false : config.checkInReminder.apns.production),

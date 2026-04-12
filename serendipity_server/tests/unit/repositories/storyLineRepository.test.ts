@@ -15,6 +15,7 @@ describe('StoryLineRepository', () => {
         userId: 'user-id',
         name: 'Test StoryLine',
         recordIds: [],
+        isPinned: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -26,6 +27,7 @@ describe('StoryLineRepository', () => {
         id: 'storyline-id',
         name: 'Test StoryLine',
         recordIds: [],
+        isPinned: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -42,6 +44,7 @@ describe('StoryLineRepository', () => {
         userId: 'user-id',
         name: 'Test StoryLine',
         recordIds: [],
+        isPinned: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

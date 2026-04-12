@@ -14,6 +14,10 @@ export const createStoryLineValidation = [
     .withMessage('每个记录ID必须是有效的UUID'),
   body('createdAt').isISO8601().withMessage('创建时间必须是有效的日期'),
   body('updatedAt').isISO8601().withMessage('更新时间必须是有效的日期'),
+  body('isPinned')
+    .optional()
+    .isBoolean()
+    .withMessage('置顶状态必须是布尔值'),
 ];
 
 // 批量创建故事线验证
@@ -45,6 +49,10 @@ export const updateStoryLineValidation = [
     .optional()
     .isUUID()
     .withMessage('每个记录ID必须是有效的UUID'),
+  body('isPinned')
+    .optional()
+    .isBoolean()
+    .withMessage('置顶状态必须是布尔值'),
   body('updatedAt').isISO8601().withMessage('更新时间必须是有效的日期'),
 ];
 

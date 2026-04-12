@@ -256,6 +256,7 @@ export class StoryLineService implements IStoryLineService {
       ownerId: storyline.userId,
       name: storyline.name,
       recordIds: fromJsonValue<string[]>(storyline.recordIds),
+      isPinned: storyline.isPinned,
       createdAt: storyline.createdAt,
       updatedAt: storyline.updatedAt,
     };

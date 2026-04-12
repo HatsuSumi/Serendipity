@@ -75,6 +75,24 @@ export class UserController {
   };
 
   /**
+   * 获取用户会员信息
+   * GET /api/v1/users/membership
+   */
+  getMembership = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user!.userId;
+      const result = await this.userService.getMembership(userId);
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
    * 更新用户设置
    * PUT /api/v1/users/settings
    */

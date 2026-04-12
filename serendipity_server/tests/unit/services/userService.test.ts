@@ -5,6 +5,7 @@
 import { UserService } from '../../../src/services/userService';
 import { IUserRepository } from '../../../src/repositories/userRepository';
 import { IUserSettingsRepository } from '../../../src/repositories/userSettingsRepository';
+import { IMembershipRepository } from '../../../src/repositories/membershipRepository';
 import { createMockUser, createMockUserSettings } from '../../helpers/factories';
 import { AppError } from '../../../src/middlewares/errorHandler';
 import { ErrorCode } from '../../../src/types/errors';
@@ -13,6 +14,7 @@ describe('UserService', () => {
   let userService: UserService;
   let mockUserRepository: jest.Mocked<IUserRepository>;
   let mockUserSettingsRepository: jest.Mocked<IUserSettingsRepository>;
+  let mockMembershipRepository: jest.Mocked<IMembershipRepository>;
 
   beforeEach(() => {
     mockUserRepository = {
@@ -39,7 +41,15 @@ describe('UserService', () => {
       upsert: jest.fn(),
     };
 
-    userService = new UserService(mockUserRepository, mockUserSettingsRepository);
+    mockMembershipRepository = {
+      findByUserId: jest.fn(),
+      create: jest.fn(),
+      updateStatus: jest.fn(),
+      activateOrCreate: jest.fn(),
+      isUserPremium: jest.fn(),
+    };
+
+    userService = new UserService(mockUserRepository, mockUserSettingsRepository, mockMembershipRepository);
   });
 
   describe('updateUser', () => {
@@ -122,19 +132,18 @@ describe('UserService', () => {
       expect(mockUserSettingsRepository.findByUserId).toHaveBeenCalledWith(userId);
     });
 
-    it('设置不存在时应该创建默认设置', async () => {
+    it('设置不存在时应该抛出 not found 错误', async () => {
       const userId = 'test-user-id';
       const mockUser = createMockUser({ id: userId });
-      const mockSettings = createMockUserSettings({ userId });
 
       mockUserRepository.findById.mockResolvedValue(mockUser);
       mockUserSettingsRepository.findByUserId.mockResolvedValue(null);
-      mockUserSettingsRepository.create.mockResolvedValue(mockSettings);
 
-      const result = await userService.getUserSettings(userId);
-
-      expect(result.theme).toBe(mockSettings.theme);
-      expect(mockUserSettingsRepository.create).toHaveBeenCalledWith(userId);
+      await expect(userService.getUserSettings(userId)).rejects.toThrow(AppError);
+      await expect(userService.getUserSettings(userId)).rejects.toMatchObject({
+        code: ErrorCode.NOT_FOUND,
+      });
+      expect(mockUserSettingsRepository.create).not.toHaveBeenCalled();
     });
 
     it('用户不存在时应该抛出错误', async () => {

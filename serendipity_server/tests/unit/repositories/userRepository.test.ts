@@ -73,7 +73,13 @@ describe('UserRepository', () => {
 
       expect(result).toEqual(mockUser);
       expect(prismaMock.user.create).toHaveBeenCalledWith({
-        data: createData,
+        data: {
+          email: 'test@example.com',
+          phoneNumber: undefined,
+          passwordHash: 'hashed-password',
+          displayName: undefined,
+          authProvider: 'email',
+        },
       });
     });
   });

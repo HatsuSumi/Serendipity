@@ -25,9 +25,11 @@ import {
   ReminderDispatchSource,
   ReminderDispatchType,
 } from '../types/pushToken.dto';
+import { config } from '../config';
 import { logger } from '../utils/logger';
 
 const DEFAULT_TIME_WINDOW_MINUTES = 1;
+const REMINDER_TIME_WINDOW_MINUTES = config.checkInReminder.scanIntervalMs / (1000 * 60);
 const HOURS_PER_DAY = 24;
 const MINUTES_PER_HOUR = 60;
 
@@ -440,11 +442,11 @@ export class PushTokenService implements IPushTokenService {
 
     const failureReason = sendResult.failureReason?.trim() || 'push_send_failed';
     if (options.persistDispatch) {
-    await this.pushTokenRepository.markReminderDispatchFailed(
-      candidate.pushTokenId,
-      candidate.reminderDate,
-      failureReason,
-    );
+      await this.pushTokenRepository.markReminderDispatchFailed(
+        candidate.pushTokenId,
+        candidate.reminderDate,
+        failureReason,
+      );
     }
 
     if (sendResult.isInvalidToken) {
@@ -541,6 +543,7 @@ export class PushTokenService implements IPushTokenService {
         type: 'check_in_reminder',
         userId: candidate.userId,
         reminderDate: candidate.reminderDate.toISOString(),
+        reminderTime: candidate.reminderTime,
       },
     };
   }
@@ -576,9 +579,15 @@ export class PushTokenService implements IPushTokenService {
   private isWithinReminderWindow(now: Date, timezone: string, reminderClock: ReminderClock): boolean {
     const localizedNow = this.getLocalizedNow(now, timezone);
     const reminderMinutes = reminderClock.hour * MINUTES_PER_HOUR + reminderClock.minute;
-    const nowMinutes = localizedNow.getHours() * MINUTES_PER_HOUR + localizedNow.getMinutes();
+    const nowMinutes = localizedNow.getUTCHours() * MINUTES_PER_HOUR + localizedNow.getUTCMinutes();
     const diffMinutes = Math.abs(nowMinutes - reminderMinutes);
-    return diffMinutes <= DEFAULT_TIME_WINDOW_MINUTES;
+    return diffMinutes < this.getReminderWindowMinutes();
+  }
+
+  private getReminderWindowMinutes(): number {
+    return Number.isFinite(REMINDER_TIME_WINDOW_MINUTES) && REMINDER_TIME_WINDOW_MINUTES > 0
+      ? REMINDER_TIME_WINDOW_MINUTES
+      : DEFAULT_TIME_WINDOW_MINUTES;
   }
 
   private getLocalizedNow(now: Date, timezone: string): Date {
@@ -633,19 +642,20 @@ export class PushTokenService implements IPushTokenService {
       throw new AppError('timezones must be an array', ErrorCode.INVALID_REQUEST);
     }
 
-    const trimmed = timezones.map((timezone) => {
+    const normalized = timezones.flatMap((timezone) => {
       if (typeof timezone !== 'string') {
         throw new AppError('timezone must be a string', ErrorCode.INVALID_REQUEST);
       }
-      return timezone.trim();
+
+      const trimmedTimezone = timezone.trim();
+      if (trimmedTimezone !== '') {
+        this.assertValidTimezone(trimmedTimezone);
+      }
+
+      return trimmedTimezone === '' ? [] : [trimmedTimezone];
     });
 
-    const invalid = trimmed.find((timezone) => timezone === '');
-    if (invalid !== undefined) {
-      throw new AppError('timezone is required', ErrorCode.INVALID_REQUEST);
-    }
-
-    return trimmed;
+    return normalized.length === 0 ? undefined : normalized;
   }
 
   private validateRegisterData(data: RegisterPushTokenData): void {
@@ -658,11 +668,21 @@ export class PushTokenService implements IPushTokenService {
     if (!data.timezone || data.timezone.trim() === '') {
       throw new AppError('timezone is required', ErrorCode.INVALID_REQUEST);
     }
+
+    this.assertValidTimezone(data.timezone.trim());
+  }
+
+  private assertValidTimezone(timezone: string): void {
+    try {
+      Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
+    } catch {
+      throw new AppError(`Invalid timezone: ${timezone}`, ErrorCode.INVALID_REQUEST);
+    }
   }
 
   private validateNow(now: Date): void {
     if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
-      throw new AppError('invalid now parameter', ErrorCode.INVALID_REQUEST);
+      throw new AppError('Invalid current time', ErrorCode.INVALID_REQUEST);
     }
   }
 

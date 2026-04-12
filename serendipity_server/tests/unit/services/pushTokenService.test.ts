@@ -24,10 +24,15 @@ describe('PushTokenService', () => {
       findActiveByUserId: jest.fn(),
       findLatestActiveTimezoneByUserId: jest.fn(),
       findReminderCandidates: jest.fn(),
+      findAnniversaryReminderCandidates: jest.fn(),
       hasReminderDispatch: jest.fn(),
+      hasAnniversaryReminderDispatch: jest.fn(),
       createReminderDispatch: jest.fn(),
+      createAnniversaryReminderDispatch: jest.fn(),
       markReminderDispatchSent: jest.fn(),
       markReminderDispatchFailed: jest.fn(),
+      markAnniversaryReminderDispatchSent: jest.fn(),
+      markAnniversaryReminderDispatchFailed: jest.fn(),
     };
 
     mockCheckInRepository = {
@@ -222,6 +227,7 @@ describe('PushTokenService', () => {
       expect(result).toEqual([]);
       expect(mockPushTokenRepository.findReminderCandidates).toHaveBeenCalledWith(['Asia/Shanghai', 'Asia/Tokyo']);
     });
+    
 
     it('当前时间非法时应该快速失败', async () => {
       await expect(
@@ -244,7 +250,7 @@ describe('PushTokenService', () => {
 
       await expect(
         pushTokenService.getReminderDispatchCandidates(['Asia/Shanghai'], now),
-      ).rejects.toThrow('Invalid reminder time: 8pm');
+      ).rejects.toThrow('invalid reminder time format');
     });
   });
 
