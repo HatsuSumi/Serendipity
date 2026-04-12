@@ -264,7 +264,7 @@ class StorageService implements IStorageService {
   @override
   List<StoryLine> getStoryLinesByUser(String? userId) {
     final storyLines = getAllStoryLines()
-        .where((storyLine) => storyLine.ownerId == userId)
+        .where((storyLine) => storyLine.userId == userId)
         .toList();
     storyLines.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return storyLines;
@@ -569,10 +569,10 @@ class StorageService implements IStorageService {
     
     // 绑定故事线
     final offlineStoryLines = getAllStoryLines()
-        .where((storyLine) => storyLine.ownerId == null)
+        .where((storyLine) => storyLine.userId == null)
         .toList();
     for (final storyLine in offlineStoryLines) {
-      final boundStoryLine = storyLine.copyWith(ownerId: () => userId);
+      final boundStoryLine = storyLine.copyWith(userId: () => userId);
       await saveStoryLine(boundStoryLine);
     }
     
@@ -598,7 +598,7 @@ class StorageService implements IStorageService {
   
   /// 删除所有离线数据
   /// 
-  /// 删除所有 ownerId = null 的数据
+  /// 删除所有 userId = null 的数据
   /// 
   /// 调用者：AuthNotifier（用户选择不绑定离线数据时）
   @override
@@ -613,7 +613,7 @@ class StorageService implements IStorageService {
     
     // 删除离线故事线
     final offlineStoryLines = getAllStoryLines()
-        .where((storyLine) => storyLine.ownerId == null)
+        .where((storyLine) => storyLine.userId == null)
         .toList();
     for (final storyLine in offlineStoryLines) {
       await deleteStoryLine(storyLine.id);
@@ -638,7 +638,7 @@ class StorageService implements IStorageService {
   /// 
   /// 设计说明：
   /// - 支持多用户场景：用户 A 登出后，A 的数据保留在本地
-  /// - 用户 B 登录，只看到 B 的数据（通过 ownerId 过滤）
+  /// - 用户 B 登录，只看到 B 的数据（通过 userId 过滤）
   /// - 用户 A 重新登录，数据立即可用（无需等待同步）
   /// 
   /// Fail Fast：

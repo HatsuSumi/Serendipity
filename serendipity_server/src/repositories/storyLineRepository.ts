@@ -11,21 +11,28 @@ import { toJsonValue } from '../utils/prisma-json';
  */
 export interface IStoryLineRepository {
   /**
-   * 创建或更新故事线（使用 upsert）
+   * 创建故事线
    * @param userId - 用户 ID
    * @param data - 故事线数据
-   * @returns 创建或更新的故事线
+   * @returns 创建后的故事线
    */
   create(userId: string, data: CreateStoryLineDto): Promise<StoryLine>;
-  
+
   /**
-   * 批量创建或更新故事线（使用事务）
+   * 批量创建故事线
    * @param userId - 用户 ID
    * @param storylines - 故事线数据数组
    * @returns 成功创建的故事线数组
    */
   batchCreate(userId: string, storylines: CreateStoryLineDto[]): Promise<StoryLine[]>;
-  
+
+  /**
+   * 根据 ID 全局查找故事线
+   * @param id - 故事线 ID
+   * @returns 故事线对象，不存在则返回 null
+   */
+  findByIdGlobal(id: string): Promise<StoryLine | null>;
+
   /**
    * 根据 ID 查找故事线
    * @param id - 故事线 ID
@@ -33,7 +40,7 @@ export interface IStoryLineRepository {
    * @returns 故事线对象，不存在则返回 null
    */
   findById(id: string, userId: string): Promise<StoryLine | null>;
-  
+
   /**
    * 根据用户 ID 查找故事线列表（支持增量同步和分页）
    * @param userId - 用户 ID
@@ -48,7 +55,7 @@ export interface IStoryLineRepository {
     limit?: number,
     offset?: number
   ): Promise<{ storylines: StoryLine[]; total: number }>;
-  
+
   /**
    * 更新故事线
    * @param id - 故事线 ID
@@ -60,7 +67,7 @@ export interface IStoryLineRepository {
     id: string,
     data: UpdateStoryLineDto
   ): Promise<StoryLine>;
-  
+
   /**
    * 删除故事线
    * @param id - 故事线 ID
@@ -77,19 +84,11 @@ export class StoryLineRepository implements IStoryLineRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
-   * 创建或更新故事线（使用 upsert）
-   * 如果故事线已存在则更新，否则创建新故事线
+   * 创建故事线
    */
   async create(userId: string, data: CreateStoryLineDto): Promise<StoryLine> {
-    return this.prisma.storyLine.upsert({
-      where: { id: data.id },
-      update: {
-        name: data.name,
-        recordIds: toJsonValue(data.recordIds),
-        isPinned: data.isPinned,
-        updatedAt: new Date(data.updatedAt),
-      },
-      create: {
+    return this.prisma.storyLine.create({
+      data: {
         id: data.id,
         userId,
         name: data.name,
@@ -102,26 +101,13 @@ export class StoryLineRepository implements IStoryLineRepository {
   }
 
   /**
-   * 批量创建或更新故事线（使用事务）
-   * 性能优化：使用 Prisma 事务批量处理，避免 N+1 问题
-   * 
-   * 性能对比：
-   * - 逐条 upsert：100 条记录 ~2000ms
-   * - 批量事务：100 条记录 ~50ms（40 倍提升）
+   * 批量创建故事线（使用事务）
    */
   async batchCreate(userId: string, storylines: CreateStoryLineDto[]): Promise<StoryLine[]> {
-    // 使用事务确保原子性：要么全部成功，要么全部失败
     return this.prisma.$transaction(
       storylines.map((data) =>
-        this.prisma.storyLine.upsert({
-          where: { id: data.id },
-          update: {
-            name: data.name,
-            recordIds: toJsonValue(data.recordIds),
-            isPinned: data.isPinned,
-            updatedAt: new Date(data.updatedAt),
-          },
-          create: {
+        this.prisma.storyLine.create({
+          data: {
             id: data.id,
             userId,
             name: data.name,
@@ -133,6 +119,15 @@ export class StoryLineRepository implements IStoryLineRepository {
         })
       )
     );
+  }
+
+  /**
+   * 根据 ID 全局查找故事线
+   */
+  async findByIdGlobal(id: string): Promise<StoryLine | null> {
+    return this.prisma.storyLine.findUnique({
+      where: { id },
+    });
   }
 
   /**
@@ -221,4 +216,3 @@ export class StoryLineRepository implements IStoryLineRepository {
     return updateData;
   }
 }
-

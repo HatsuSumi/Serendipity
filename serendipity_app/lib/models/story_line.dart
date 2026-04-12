@@ -36,7 +36,7 @@ class StoryLine {
 
   /// 数据归属用户ID，null 表示离线创建未绑定账号
   @HiveField(6)
-  final String? ownerId;
+  final String? userId;
 
   const StoryLine({
     required this.id,
@@ -45,7 +45,7 @@ class StoryLine {
     required this.createdAt,
     required this.updatedAt,
     this.isPinned = false,
-    this.ownerId,
+    this.userId,
   }) : assert(id != '', 'ID cannot be empty'),
        assert(name != '', 'Name cannot be empty');
 
@@ -60,7 +60,7 @@ class StoryLine {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       isPinned: json['isPinned'] as bool? ?? false,
-      ownerId: json['ownerId'] as String?,
+      userId: json['userId'] as String?,
     );
   }
 
@@ -73,7 +73,7 @@ class StoryLine {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'isPinned': isPinned,
-      'ownerId': ownerId,
+      'userId': userId,
     };
   }
 
@@ -85,7 +85,7 @@ class StoryLine {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isPinned,
-    String? Function()? ownerId,
+    String? Function()? userId,
   }) {
     return StoryLine(
       id: id ?? this.id,
@@ -94,7 +94,7 @@ class StoryLine {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
-      ownerId: ownerId != null ? ownerId() : this.ownerId,
+      userId: userId != null ? userId() : this.userId,
     );
   }
 
@@ -115,7 +115,7 @@ class StoryLine {
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
         other.isPinned == isPinned &&
-        other.ownerId == ownerId;
+        other.userId == userId;
   }
 
   @override
@@ -126,7 +126,7 @@ class StoryLine {
         createdAt.hashCode ^
         updatedAt.hashCode ^
         isPinned.hashCode ^
-        ownerId.hashCode;
+        userId.hashCode;
   }
 }
 

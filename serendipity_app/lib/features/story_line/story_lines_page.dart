@@ -551,7 +551,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
               // 获取当前用户ID（用于数据归属）
               final authState = ref.read(authProvider);
               final currentUser = authState.value;
-              final ownerId = currentUser?.id; // 未登录时为 null（离线数据）
+              final userId = currentUser?.id; // 未登录时为 null（离线数据）
 
               final now = DateTime.now();
               final newStoryLine = StoryLine(
@@ -560,7 +560,7 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                 recordIds: [],
                 createdAt: now,
                 updatedAt: now,
-                ownerId: ownerId,
+                userId: userId,
               );
 
               try {

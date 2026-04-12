@@ -105,7 +105,7 @@ class InMemoryStorageService implements IStorageService {
   @override
   List<StoryLine> getStoryLinesByUser(String? userId) {
     return _storyLines.values
-        .where((s) => s.ownerId == userId)
+        .where((s) => s.userId == userId)
         .toList();
   }
 
@@ -240,8 +240,8 @@ class InMemoryStorageService implements IStorageService {
       }
     }
     for (final storyLine in _storyLines.values.toList()) {
-      if (storyLine.ownerId == null) {
-        _storyLines[storyLine.id] = storyLine.copyWith(ownerId: () => userId);
+      if (storyLine.userId == null) {
+        _storyLines[storyLine.id] = storyLine.copyWith(userId: () => userId);
       }
     }
   }
@@ -249,7 +249,7 @@ class InMemoryStorageService implements IStorageService {
   @override
   Future<void> deleteOfflineData() async {
     _records.removeWhere((_, r) => r.ownerId == null);
-    _storyLines.removeWhere((_, s) => s.ownerId == null);
+    _storyLines.removeWhere((_, s) => s.userId == null);
     _checkIns.removeWhere((_, c) => c.userId == null);
   }
 
@@ -314,7 +314,7 @@ class InMemoryStorageService implements IStorageService {
   Future<void> deleteUserData(String userId) async {
     if (userId.isEmpty) throw ArgumentError('userId cannot be empty');
     _records.removeWhere((_, r) => r.ownerId == userId);
-    _storyLines.removeWhere((_, s) => s.ownerId == userId);
+    _storyLines.removeWhere((_, s) => s.userId == userId);
     _checkIns.removeWhere((_, c) => c.userId == userId);
     _achievements.clear();
     _memberships.remove(userId);
@@ -426,7 +426,7 @@ void main() {
           recordIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          ownerId: userId,
+          userId: userId,
         );
 
         final storyLineB = StoryLine(
@@ -435,7 +435,7 @@ void main() {
           recordIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          ownerId: userId,
+          userId: userId,
         );
 
         await storyLineRepository.saveStoryLine(storyLineA);

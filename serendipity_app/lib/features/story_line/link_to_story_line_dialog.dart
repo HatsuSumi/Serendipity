@@ -371,7 +371,7 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
         final name = _nameController.text.trim();
         final authState = ref.read(authProvider);
         final currentUser = authState.value;
-        final ownerId = currentUser?.id;
+        final userId = currentUser?.id;
         final now = DateTime.now();
         final newStoryLine = StoryLine(
           id: const Uuid().v4(),
@@ -379,7 +379,7 @@ class _LinkToStoryLineDialogState extends ConsumerState<LinkToStoryLineDialog> {
           recordIds: [],
           createdAt: now,
           updatedAt: now,
-          ownerId: ownerId,
+          userId: userId,
         );
 
         await storyLinesNotifier.createStoryLine(newStoryLine);

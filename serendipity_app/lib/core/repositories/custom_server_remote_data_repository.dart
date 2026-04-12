@@ -24,7 +24,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
 
   Map<String, dynamic> _toStoryLineServerDto(StoryLine storyLine) {
     final json = storyLine.toJson();
-    json.remove('ownerId');
+    json.remove('userId');
     return json;
   }
 
