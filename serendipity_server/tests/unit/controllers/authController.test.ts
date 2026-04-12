@@ -269,7 +269,7 @@ describe('AuthController', () => {
   });
 
   describe('changeEmail', () => {
-    it('应该成功更换邮箱', async () => {
+    it('应该成功更换邮箱并返回完整用户契约字段', async () => {
       const req = createMockRequest({
         user: { userId: 'test-user-id' },
         body: {
@@ -281,34 +281,68 @@ describe('AuthController', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      mockAuthService.changeEmail.mockResolvedValue(undefined);
+      mockAuthService.changeEmail.mockResolvedValue({
+        id: 'test-user-id',
+        email: 'new@example.com',
+        authProvider: 'email',
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       await authController.changeEmail(req, res, next);
 
       expect(mockAuthService.changeEmail).toHaveBeenCalledWith('test-user-id', req.body);
-      expect(res.json).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            email: 'new@example.com',
+            isEmailVerified: true,
+            updatedAt: expect.any(Date),
+          }),
+        }),
+      );
       expect(next).not.toHaveBeenCalled();
     });
   });
 
   describe('changePhone', () => {
-    it('应该成功更换手机号', async () => {
+    it('应该成功更换手机号并返回完整用户契约字段', async () => {
       const req = createMockRequest({
         user: { userId: 'test-user-id' },
         body: {
           newPhoneNumber: '+8613800138000',
-          verificationCode: '123456',
+          password: 'password123',
         },
       });
       const res = createMockResponse();
       const next = createMockNext();
 
-      mockAuthService.changePhone.mockResolvedValue(undefined);
+      mockAuthService.changePhone.mockResolvedValue({
+        id: 'test-user-id',
+        phoneNumber: '+8613800138000',
+        authProvider: 'phone',
+        isEmailVerified: false,
+        isPhoneVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       await authController.changePhone(req, res, next);
 
       expect(mockAuthService.changePhone).toHaveBeenCalledWith('test-user-id', req.body);
-      expect(res.json).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            phoneNumber: '+8613800138000',
+            isPhoneVerified: true,
+            updatedAt: expect.any(Date),
+          }),
+        }),
+      );
       expect(next).not.toHaveBeenCalled();
     });
   });

@@ -6,7 +6,7 @@
 
 import path from 'path';
 import fs from 'fs';
-import { User, UserSettings } from '@prisma/client';
+import { UserSettings } from '@prisma/client';
 import { IUserRepository } from '../repositories/userRepository';
 import { IUserSettingsRepository } from '../repositories/userSettingsRepository';
 import { IMembershipRepository, Membership } from '../repositories/membershipRepository';
@@ -19,6 +19,7 @@ import {
 } from '../types/user.dto';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
+import { toUserProfileDto } from '../types/user.mapper';
 
 /**
  * 用户服务接口
@@ -57,7 +58,7 @@ export class UserService implements IUserService {
 
     const updatedUser = await this.userRepository.updateUser(userId, data);
 
-    return this.mapUserToDto(updatedUser);
+    return toUserProfileDto(updatedUser);
   }
 
   /**
@@ -86,7 +87,7 @@ export class UserService implements IUserService {
 
     const avatarUrl = `${baseUrl}/uploads/avatars/${file.filename}`;
     const updatedUser = await this.userRepository.updateAvatarUrl(userId, avatarUrl);
-    return this.mapUserToDto(updatedUser);
+    return toUserProfileDto(updatedUser);
   }
 
   /**
@@ -183,21 +184,6 @@ export class UserService implements IUserService {
     );
 
     return this.mapMembershipToDto(membership);
-  }
-
-  /**
-   * 将 User 实体映射为 DTO
-   */
-  private mapUserToDto(user: User): UserProfileDto {
-    return {
-      id: user.id,
-      email: user.email || undefined,
-      phoneNumber: user.phoneNumber || undefined,
-      displayName: user.displayName || undefined,
-      avatarUrl: user.avatarUrl || undefined,
-      authProvider: user.authProvider || 'email',
-      createdAt: user.createdAt,
-    };
   }
 
   /**

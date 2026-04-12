@@ -91,7 +91,7 @@ describe('AuthService', () => {
         id: mockUser.id,
         email: mockUser.email ?? undefined,
         displayName: mockUser.displayName ?? undefined,
-        authProvider: mockUser.authProvider as 'email' | 'phone',
+        authProvider: 'email',
         isEmailVerified: true,
         isPhoneVerified: false,
         lastLoginAt: mockUser.lastLoginAt ?? undefined,
@@ -137,7 +137,7 @@ describe('AuthService', () => {
         id: mockUser.id,
         email: mockUser.email ?? undefined,
         displayName: mockUser.displayName ?? undefined,
-        authProvider: mockUser.authProvider as 'email' | 'phone',
+        authProvider: 'email',
         isEmailVerified: true,
         isPhoneVerified: false,
         lastLoginAt: mockUser.lastLoginAt ?? undefined,
@@ -257,6 +257,71 @@ describe('AuthService', () => {
       await expect(authService.changePassword(userId, changeData)).rejects.toThrow(AppError);
       await expect(authService.changePassword(userId, changeData)).rejects.toMatchObject({
         code: ErrorCode.INVALID_CREDENTIALS,
+      });
+    });
+  });
+
+  describe('changeEmail', () => {
+    it('应该成功更换邮箱并返回完整用户契约字段', async () => {
+      const userId = 'test-user-id';
+      const changeData = {
+        newEmail: 'new@example.com',
+        password: 'password123',
+      };
+      const mockUser = createMockUser();
+      const updatedUser = createMockUser({
+        id: userId,
+        email: changeData.newEmail,
+        updatedAt: new Date('2026-04-12T12:00:00.000Z'),
+      });
+
+      mockUserRepository.findById.mockResolvedValue(mockUser);
+      mockPasswordHasher.compare.mockResolvedValue(true);
+      mockUserRepository.findByEmail.mockResolvedValue(null);
+      mockUserRepository.bindEmail.mockResolvedValue(updatedUser);
+
+      const result = await authService.changeEmail(userId, changeData);
+
+      expect(mockUserRepository.bindEmail).toHaveBeenCalledWith(userId, changeData.newEmail);
+      expect(result).toMatchObject({
+        id: userId,
+        email: changeData.newEmail,
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        updatedAt: updatedUser.updatedAt,
+      });
+    });
+  });
+
+  describe('changePhone', () => {
+    it('应该成功更换手机号并返回完整用户契约字段', async () => {
+      const userId = 'test-user-id';
+      const changeData = {
+        newPhoneNumber: '+8613800138000',
+        password: 'password123',
+      };
+      const mockUser = createMockUser({ phoneNumber: '+8613800000000', authProvider: 'phone' });
+      const updatedUser = createMockUser({
+        id: userId,
+        phoneNumber: changeData.newPhoneNumber,
+        authProvider: 'phone',
+        updatedAt: new Date('2026-04-12T12:30:00.000Z'),
+      });
+
+      mockUserRepository.findById.mockResolvedValue(mockUser);
+      mockPasswordHasher.compare.mockResolvedValue(true);
+      mockUserRepository.findByPhone.mockResolvedValue(null);
+      mockUserRepository.bindPhone.mockResolvedValue(updatedUser);
+
+      const result = await authService.changePhone(userId, changeData);
+
+      expect(mockUserRepository.bindPhone).toHaveBeenCalledWith(userId, changeData.newPhoneNumber);
+      expect(result).toMatchObject({
+        id: userId,
+        phoneNumber: changeData.newPhoneNumber,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        updatedAt: updatedUser.updatedAt,
       });
     });
   });

@@ -67,7 +67,7 @@ describe('UserService', () => {
   });
 
   describe('updateUser', () => {
-    it('应该成功更新用户信息', async () => {
+    it('应该成功更新用户信息并返回完整用户契约字段', async () => {
       const userId = 'test-user-id';
       const updateData = {
         displayName: 'New Name',
@@ -88,6 +88,11 @@ describe('UserService', () => {
 
       expect(result.displayName).toBe(updateData.displayName);
       expect(result.avatarUrl).toBe(updateData.avatarUrl);
+      expect(result.isEmailVerified).toBe(true);
+      expect(result.isPhoneVerified).toBe(false);
+      expect(result.lastLoginAt).toBe(mockUser.lastLoginAt?.toISOString());
+      expect(result.createdAt).toBe(updatedUser.createdAt.toISOString());
+      expect(result.updatedAt).toBe(updatedUser.updatedAt.toISOString());
       expect(mockUserRepository.findById).toHaveBeenCalledWith(userId);
       expect(mockUserRepository.updateUser).toHaveBeenCalledWith(userId, updateData);
     });
@@ -129,6 +134,40 @@ describe('UserService', () => {
   });
 
   describe('getUserSettings', () => {
+    it('应该返回用户资料接口所需的完整用户字段', async () => {
+      const userId = 'test-user-id';
+      const updateData = {
+        displayName: 'Updated Name',
+      };
+      const lastLoginAt = new Date('2026-04-12T10:00:00.000Z');
+      const updatedAt = new Date('2026-04-12T11:00:00.000Z');
+      const mockUser = createMockUser({ id: userId, lastLoginAt });
+      const updatedUser = createMockUser({
+        id: userId,
+        displayName: updateData.displayName,
+        lastLoginAt,
+        updatedAt,
+      });
+
+      mockUserRepository.findById.mockResolvedValue(mockUser);
+      mockUserRepository.updateUser.mockResolvedValue(updatedUser);
+
+      const result = await userService.updateUser(userId, updateData);
+
+      expect(result).toMatchObject({
+        id: userId,
+        email: updatedUser.email ?? undefined,
+        phoneNumber: updatedUser.phoneNumber ?? undefined,
+        displayName: updateData.displayName,
+        authProvider: 'email',
+        isEmailVerified: true,
+        isPhoneVerified: false,
+        lastLoginAt: lastLoginAt.toISOString(),
+        createdAt: updatedUser.createdAt.toISOString(),
+        updatedAt: updatedAt.toISOString(),
+      });
+    });
+
     it('应该成功获取用户设置', async () => {
       const userId = 'test-user-id';
       const mockUser = createMockUser({ id: userId });

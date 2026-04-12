@@ -426,12 +426,8 @@ class CustomServerAuthRepository implements IAuthRepository {
         },
       );
       
-      // 更新本地用户信息（只更新变化的字段）
       final data = response['data'] as Map<String, dynamic>;
-      _currentUser = _currentUser!.copyWith(
-        email: () => data['email'] as String,
-        updatedAt: () => DateTime.parse(data['updatedAt'] as String),
-      );
+      _currentUser = _convertToAppUser(data);
     } on HttpException catch (e) {
       throw Exception(e.message);
     }
@@ -463,12 +459,8 @@ class CustomServerAuthRepository implements IAuthRepository {
         },
       );
       
-      // 更新本地用户信息（只更新变化的字段）
       final data = response['data'] as Map<String, dynamic>;
-      _currentUser = _currentUser!.copyWith(
-        phoneNumber: () => data['phoneNumber'] as String,
-        updatedAt: () => DateTime.parse(data['updatedAt'] as String),
-      );
+      _currentUser = _convertToAppUser(data);
     } on HttpException catch (e) {
       throw Exception(e.message);
     }

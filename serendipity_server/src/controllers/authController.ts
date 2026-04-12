@@ -207,11 +207,8 @@ export class AuthController {
     try {
       const userId = req.user!.userId;
       const data: ChangeEmailDto = req.body;
-      await this.authService.changeEmail(userId, data);
-      sendSuccess(res, {
-        email: data.newEmail,
-        updatedAt: new Date(),
-      });
+      const result = await this.authService.changeEmail(userId, data);
+      sendSuccess(res, result);
     } catch (error) {
       next(error);
     }
@@ -225,11 +222,8 @@ export class AuthController {
     try {
       const userId = req.user!.userId;
       const data: ChangePhoneDto = req.body;
-      await this.authService.changePhone(userId, data);
-      sendSuccess(res, {
-        phoneNumber: data.newPhoneNumber,
-        updatedAt: new Date(),
-      });
+      const result = await this.authService.changePhone(userId, data);
+      sendSuccess(res, result);
     } catch (error) {
       next(error);
     }

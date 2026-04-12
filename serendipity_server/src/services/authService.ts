@@ -21,6 +21,7 @@ import {
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
 import { AUTH_CONFIG } from '../config/auth.config';
+import { toAuthUserDto } from '../types/user.mapper';
 
 /**
  * 认证服务接口
@@ -35,8 +36,8 @@ export interface IAuthService {
   loginPhone(data: LoginPhoneDto): Promise<AuthResponseDto>;
   resetPassword(data: ResetPasswordDto): Promise<void>;
   changePassword(userId: string, data: ChangePasswordDto): Promise<void>;
-  changeEmail(userId: string, data: ChangeEmailDto): Promise<void>;
-  changePhone(userId: string, data: ChangePhoneDto): Promise<void>;
+  changeEmail(userId: string, data: ChangeEmailDto): Promise<AuthResponseDto['user']>;
+  changePhone(userId: string, data: ChangePhoneDto): Promise<AuthResponseDto['user']>;
   getMe(userId: string): Promise<UserMeDto>;
   refreshToken(refreshToken: string): Promise<AuthResponseDto>;
   logout(userId: string): Promise<void>;
@@ -321,7 +322,7 @@ export class AuthService implements IAuthService {
    * @param data - 更换邮箱数据（新邮箱、密码）
    * @throws {AppError} 用户不存在、密码错误、未绑定邮箱或邮箱已被使用
    */
-  async changeEmail(userId: string, data: ChangeEmailDto): Promise<void> {
+  async changeEmail(userId: string, data: ChangeEmailDto): Promise<AuthResponseDto['user']> {
     // Fail Fast：参数验证
     if (!userId) {
       throw new AppError('用户ID不能为空', ErrorCode.INVALID_CREDENTIALS);
@@ -365,8 +366,8 @@ export class AuthService implements IAuthService {
       throw new AppError('邮箱已被使用', ErrorCode.EMAIL_ALREADY_EXISTS);
     }
 
-    // 更新邮箱
-    await this.userRepository.bindEmail(userId, data.newEmail);
+    const updatedUser = await this.userRepository.bindEmail(userId, data.newEmail);
+    return toAuthUserDto(updatedUser);
   }
 
   /**
@@ -375,7 +376,7 @@ export class AuthService implements IAuthService {
    * @param data - 更换手机号数据（新手机号、密码）
    * @throws {AppError} 用户不存在、密码错误、未绑定手机号或手机号已被使用
    */
-  async changePhone(userId: string, data: ChangePhoneDto): Promise<void> {
+  async changePhone(userId: string, data: ChangePhoneDto): Promise<AuthResponseDto['user']> {
     // Fail Fast：参数验证
     if (!userId) {
       throw new AppError('用户ID不能为空', ErrorCode.INVALID_CREDENTIALS);
@@ -424,8 +425,8 @@ export class AuthService implements IAuthService {
       );
     }
 
-    // 更新手机号
-    await this.userRepository.bindPhone(userId, data.newPhoneNumber);
+    const updatedUser = await this.userRepository.bindPhone(userId, data.newPhoneNumber);
+    return toAuthUserDto(updatedUser);
   }
 
   /**
@@ -451,7 +452,7 @@ export class AuthService implements IAuthService {
     const membershipStatus = this.resolveMembershipStatus(membership);
 
     return {
-      ...this.toAuthUserDto(user),
+      ...toAuthUserDto(user),
       membership: {
         tier: membershipTier,
         status: membershipStatus,
@@ -633,7 +634,7 @@ export class AuthService implements IAuthService {
     await this.refreshTokenRepository.deleteAllExceptNewest(user.id);
 
     return {
-      user: this.toAuthUserDto(user),
+      user: toAuthUserDto(user),
       tokens: {
         accessToken,
         refreshToken,
@@ -674,7 +675,7 @@ export class AuthService implements IAuthService {
     await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt);
 
     return {
-      user: this.toAuthUserDto(user),
+      user: toAuthUserDto(user),
       tokens: {
         accessToken,
         refreshToken,
@@ -698,22 +699,6 @@ export class AuthService implements IAuthService {
       return 'active';
     }
     return 'expired';
-  }
-
-  private toAuthUserDto(user: User): AuthResponseDto['user'] {
-    return {
-      id: user.id,
-      email: user.email || undefined,
-      phoneNumber: user.phoneNumber || undefined,
-      displayName: user.displayName || undefined,
-      avatarUrl: user.avatarUrl || undefined,
-      authProvider: user.authProvider as 'email' | 'phone',
-      isEmailVerified: user.email ? true : false,
-      isPhoneVerified: user.phoneNumber ? true : false,
-      lastLoginAt: user.lastLoginAt || undefined,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
   }
 
   /**

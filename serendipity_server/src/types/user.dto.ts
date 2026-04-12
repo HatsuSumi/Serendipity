@@ -20,7 +20,11 @@ export interface UserProfileDto {
   displayName?: string;
   avatarUrl?: string;
   authProvider?: string;
-  createdAt: Date;
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UpdateProfileDto {
