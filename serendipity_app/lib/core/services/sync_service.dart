@@ -452,12 +452,16 @@ class SyncService {
       // 3. 同步用户设置
       onProgress?.call('正在同步用户设置...');
       await _syncUserSettings(user);
+
+      // 4. 同步会员信息（服务端真源）
+      onProgress?.call('正在同步会员信息...');
+      await _syncMembership(user);
       
-      // 4. 同步成就解锁状态（静默，不触发通知）
+      // 5. 同步成就解锁状态（静默，不触发通知）
       onProgress?.call('正在同步成就...');
       final syncedAchievements = await _syncAchievementUnlocks(user);
       
-      // 5. 构建同步结果统计
+      // 6. 构建同步结果统计
       final result = SyncResult(
         uploadedRecords: uploadStats['records'] ?? 0,
         uploadedStoryLines: uploadStats['storyLines'] ?? 0,
@@ -471,7 +475,7 @@ class SyncService {
         syncedAchievements: syncedAchievements,
       );
       
-      // 6. 保存同步历史记录（成功）
+      // 7. 保存同步历史记录（成功）
       final syncEndTime = DateTime.now();
       final history = SyncHistory.fromSuccess(
         result: result,
@@ -482,10 +486,10 @@ class SyncService {
       );
       await _storageService.saveSyncHistory(history);
       
-      // 7. 持久化上次同步时间（供下次增量同步使用）
+      // 8. 持久化上次同步时间（供下次增量同步使用）
       await _saveLastSyncTime(user.id, syncStartTime);
       
-      // 8. 返回同步结果统计
+      // 9. 返回同步结果统计
       onProgress?.call('同步完成');
       return result;
     } catch (e) {

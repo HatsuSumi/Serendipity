@@ -86,6 +86,7 @@ export class StoryLineRepository implements IStoryLineRepository {
       update: {
         name: data.name,
         recordIds: toJsonValue(data.recordIds),
+        isPinned: data.isPinned,
         updatedAt: new Date(data.updatedAt),
       },
       create: {
@@ -93,6 +94,7 @@ export class StoryLineRepository implements IStoryLineRepository {
         userId,
         name: data.name,
         recordIds: toJsonValue(data.recordIds),
+        isPinned: data.isPinned,
         createdAt: new Date(data.createdAt),
         updatedAt: new Date(data.updatedAt),
       },

@@ -9,31 +9,72 @@ describe('StoryLineRepository', () => {
   });
 
   describe('create', () => {
-    it('应该创建新故事线', async () => {
+    it('应该创建新故事线并持久化 isPinned', async () => {
+      const createdAt = new Date();
+      const updatedAt = new Date();
       const mockStoryLine = {
         id: 'storyline-id',
         userId: 'user-id',
         name: 'Test StoryLine',
         recordIds: [],
-        isPinned: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        isPinned: true,
+        createdAt,
+        updatedAt,
       };
 
-      // Repository 使用 upsert 而不是 create
       prismaMock.storyLine.upsert.mockResolvedValue(mockStoryLine as any);
 
       const result = await storyLineRepository.create('user-id', {
         id: 'storyline-id',
         name: 'Test StoryLine',
         recordIds: [],
-        isPinned: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        isPinned: true,
+        createdAt,
+        updatedAt,
       });
 
       expect(result).toEqual(mockStoryLine);
-      expect(prismaMock.storyLine.upsert).toHaveBeenCalled();
+      expect(prismaMock.storyLine.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: expect.objectContaining({
+            isPinned: true,
+          }),
+          create: expect.objectContaining({
+            isPinned: true,
+          }),
+        })
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('应该更新故事线的 isPinned', async () => {
+      const updatedAt = new Date();
+      const mockStoryLine = {
+        id: 'storyline-id',
+        userId: 'user-id',
+        name: 'Test StoryLine',
+        recordIds: [],
+        isPinned: true,
+        createdAt: new Date(),
+        updatedAt,
+      };
+
+      prismaMock.storyLine.update.mockResolvedValue(mockStoryLine as any);
+
+      const result = await storyLineRepository.update('storyline-id', {
+        isPinned: true,
+        updatedAt,
+      });
+
+      expect(result).toEqual(mockStoryLine);
+      expect(prismaMock.storyLine.update).toHaveBeenCalledWith({
+        where: { id: 'storyline-id' },
+        data: expect.objectContaining({
+          isPinned: true,
+          updatedAt,
+        }),
+      });
     });
   });
 
@@ -57,5 +98,4 @@ describe('StoryLineRepository', () => {
     });
   });
 });
-
 
