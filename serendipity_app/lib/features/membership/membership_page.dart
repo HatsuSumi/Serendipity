@@ -136,7 +136,7 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
             _MembershipBenefitRow(title: '主题', detail: '解锁朦胧、深夜、温暖、秋日主题'),
             _MembershipBenefitRow(
               title: '同步',
-              detail: '免费版仅保留当前设备业务数据视角，不自动下载其他设备的记录/故事线；会员支持多设备业务数据同步',
+              detail: '免费版仅保留当前设备的核心内容主资产视角，不自动下载其他设备数据；这里的同步数据仅包括记录、故事线、签到记录，不包括用户设置、会员状态、成就状态、自己发布的帖子、帖子收藏、记录收藏，以及统计图表、词云、趋势分析等派生展示结果；会员支持这些核心内容主资产的多设备同步',
             ),
             _MembershipBenefitRow(title: '导出', detail: '故事线详情页支持导出故事线为图文卡片'),
             _MembershipBenefitRow(
