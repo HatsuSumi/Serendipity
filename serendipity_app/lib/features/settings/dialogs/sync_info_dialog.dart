@@ -37,38 +37,56 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '自动同步：在以下情况下自动触发',
+              '同步能力分为两层：',
+            ),
+            const SizedBox(height: 4),
+            _buildInfoText(
+              context,
+              '1. 所有已登录用户都会同步：用户设置、会员状态、成就，以及签到服务端状态',
+            ),
+            _buildInfoText(
+              context,
+              '2. 业务主数据（记录 / 故事线）是否可下载，取决于会员状态',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '1. 注册成功后（跳过下载，只上传本地数据）',
+              '自动同步会在以下情况下触发：',
+            ),
+            const SizedBox(height: 8),
+            _buildInfoText(
+              context,
+              '1. 注册成功后（上传当前设备本地数据，不自动下载业务主数据）',
             ),
             _buildInfoText(
               context,
-              '2. 登录成功后（增量同步）',
+              '2. 登录成功后（免费版仅上传业务主数据；会员版执行双向同步）',
             ),
             _buildInfoText(
               context,
-              '3. App 启动时（增量同步，如果已登录）',
+              '3. App 启动时（已登录情况下自动检查；会员版可下载业务主数据变更）',
             ),
             _buildInfoText(
               context,
-              '4. 网络重新连接时（增量同步）',
+              '4. 网络重新连接时（自动重试同步）',
             ),
             _buildInfoText(
               context,
-              '5. 每 60 秒轮询一次服务器健康状态（如果服务器从故障恢复则触发同步）',
+              '5. 每 60 秒检查一次服务器健康状态（服务器恢复可用时触发同步）',
             ),
             const SizedBox(height: 16),
             _buildInfoText(
               context,
-              '手动同步：点击"手动同步"按钮（增量同步）',
+              '手动同步：点击"手动同步"按钮，立即执行一次同步流程。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '说明：以上同步会记录到"同步历史"，支持多设备数据同步，最多保留最近 100 条记录。',
+              '说明：手动同步和自动同步都会记录到"同步历史"，最多保留最近 100 条记录。',
+            ),
+            _buildInfoText(
+              context,
+              '免费版不会把其他设备的记录/故事线自动下载到当前设备；会员版支持多设备业务数据同步。',
             ),
             const SizedBox(height: 16),
             _buildInfoText(
@@ -120,7 +138,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '说明：实时同步无需等待，操作完成即同步完成，不会记录到"同步历史"。',
+              '说明：实时同步是单项操作即时上传/提交，不会记录到"同步历史"。',
             ),
             const SizedBox(height: 16),
 
@@ -134,11 +152,11 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 4),
             _buildInfoText(
               context,
-              '1. 更换设备后，首次登录时（自动同步已触发，但可手动再次同步确认）',
+              '1. 更换设备后，首次登录时（免费版不会自动拉取旧设备的记录/故事线；会员版会同步账号历史业务数据）',
             ),
             _buildInfoText(
               context,
-              '2. 长时间未使用应用后（自动同步已触发，但可手动再次同步确认）',
+              '2. 长时间未使用应用后（可手动确认最新设置、会员状态与业务数据是否已同步）',
             ),
             _buildInfoText(
               context,
@@ -151,17 +169,22 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '全量同步：扫描所有数据，上传和下载所有内容。',
+              '全量同步：把云端当前完整数据集拉回本地，并与本地做一次完整对齐。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '增量同步：只同步有变化的数据（根据最后更新时间判断），节省流量和时间。',
+              '增量同步：只处理自上次同步后发生变化的数据（包括新增、更新，以及可被增量消费的删除）。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '本应用使用增量同步策略，支持多设备数据同步。',
+              '当前默认以增量同步为主；首次同步或需要完整对齐时会进入全量分支。',
+            ),
+            const SizedBox(height: 8),
+            _buildInfoText(
+              context,
+              '免费版与会员版的差异不在“是否自动触发同步”，而在“业务主数据是否允许下载到当前设备”。',
             ),
             const SizedBox(height: 16),
 
@@ -170,17 +193,17 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '上传：将本地有变化的数据发送到云端服务器。',
+              '上传：将当前设备本地有变化的数据发送到云端服务器。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '下载：从云端服务器获取有变化的数据到本地。',
+              '下载：从云端获取变化的数据到当前设备。用户设置、会员状态、成就与签到服务端状态会正常刷新；记录/故事线是否下载取决于会员权限。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '如果显示"数据已是最新，无需同步"，说明本地和云端数据完全一致。',
+              '如果显示"数据已是最新，无需同步"，表示这次同步没有发现新的上传或下载变更。',
             ),
           ],
         ),
