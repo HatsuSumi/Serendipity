@@ -87,6 +87,7 @@ export class StoryLineService implements IStoryLineService {
       recordIds: data.recordIds,
       isPinned: data.isPinned,
       updatedAt: data.updatedAt,
+      deletedAt: data.deletedAt,
     });
 
     return this.toResponseDto(updatedStoryLine);
@@ -142,6 +143,7 @@ export class StoryLineService implements IStoryLineService {
           recordIds: storyLine.recordIds,
           isPinned: storyLine.isPinned,
           updatedAt: storyLine.updatedAt,
+          deletedAt: storyLine.deletedAt,
         });
       }
 
@@ -249,7 +251,7 @@ export class StoryLineService implements IStoryLineService {
       );
     }
 
-    await this.storyLineRepository.delete(id);
+    await this.storyLineRepository.delete(id, new Date());
   }
 
   private toResponseDto(storyline: StoryLine): StoryLineResponseDto {
@@ -261,6 +263,7 @@ export class StoryLineService implements IStoryLineService {
       isPinned: storyline.isPinned,
       createdAt: storyline.createdAt,
       updatedAt: storyline.updatedAt,
+      deletedAt: storyline.deletedAt || undefined,
     };
   }
 }

@@ -18,6 +18,7 @@ describe('StoryLineRepository', () => {
         name: 'Test StoryLine',
         recordIds: [],
         isPinned: true,
+        deletedAt: null,
         createdAt,
         updatedAt,
       };
@@ -101,6 +102,7 @@ describe('StoryLineRepository', () => {
         name: 'Test StoryLine',
         recordIds: [],
         isPinned: false,
+        deletedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -155,6 +157,7 @@ describe('StoryLineRepository', () => {
         name: 'Test StoryLine',
         recordIds: [],
         isPinned: false,
+        deletedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -165,7 +168,24 @@ describe('StoryLineRepository', () => {
 
       expect(result).toEqual(mockStoryLine);
       expect(prismaMock.storyLine.findFirst).toHaveBeenCalledWith({
-        where: { id: 'storyline-id', userId: 'user-id' },
+        where: { id: 'storyline-id', userId: 'user-id', deletedAt: null },
+      });
+    });
+  });
+
+  describe('delete', () => {
+    it('应该将故事线墓碑化而不是物理删除', async () => {
+      const deletedAt = new Date('2026-04-13T10:00:00.000Z');
+      prismaMock.storyLine.update.mockResolvedValue({} as any);
+
+      await storyLineRepository.delete('storyline-id', deletedAt);
+
+      expect(prismaMock.storyLine.update).toHaveBeenCalledWith({
+        where: { id: 'storyline-id' },
+        data: {
+          deletedAt,
+          updatedAt: deletedAt,
+        },
       });
     });
   });

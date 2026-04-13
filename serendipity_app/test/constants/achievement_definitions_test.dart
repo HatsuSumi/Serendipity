@@ -5,7 +5,7 @@ import 'package:serendipity_app/models/achievement.dart';
 void main() {
   group('AchievementDefinitions Tests', () {
     test('所有成就定义都存在', () {
-      expect(AchievementDefinitions.all.length, 27);
+      expect(AchievementDefinitions.all.length, 30);
     });
 
     test('成就ID唯一性', () {
@@ -46,7 +46,7 @@ void main() {
       final rareAchievements = AchievementDefinitions.all
           .where((a) => a.category == AchievementCategory.rare)
           .toList();
-      expect(rareAchievements.length, 4);
+      expect(rareAchievements.length, 7);
     });
 
     test('故事线成就数量正确', () {

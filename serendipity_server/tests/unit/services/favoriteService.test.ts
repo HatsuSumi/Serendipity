@@ -47,6 +47,7 @@ const createMockRecord = (overrides?: Partial<Record>): Record => ({
   backgroundMusic: null,
   weather: toJsonValue(['sunny']) as Prisma.JsonValue,
   isPinned: false,
+  deletedAt: null,
   createdAt: new Date('2026-04-12T10:00:00.000Z'),
   updatedAt: new Date('2026-04-12T10:10:00.000Z'),
   ...overrides,

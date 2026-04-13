@@ -265,8 +265,8 @@ export class RecordService implements IRecordService {
       );
     }
 
-    // 权限验证通过，执行删除
-    await this.recordRepository.delete(id);
+    // 权限验证通过，执行删除（墓碑化）
+    await this.recordRepository.delete(id, new Date());
   }
 
   /**
@@ -395,7 +395,7 @@ export class RecordService implements IRecordService {
     return {
       id: record.id,
       ownerId: record.userId,
-      timestamp: record.timestamp,
+      timestamp: record.timestamp.toISOString(),
       location: fromJsonValue<LocationDto>(record.location),
       description: record.description || undefined,
       tags: fromJsonValue<TagWithNoteDto[]>(record.tags),
@@ -407,8 +407,9 @@ export class RecordService implements IRecordService {
       backgroundMusic: record.backgroundMusic || undefined,
       weather: fromJsonValue<string[]>(record.weather),
       isPinned: record.isPinned,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+      deletedAt: record.deletedAt?.toISOString(),
     };
   }
 }

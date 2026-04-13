@@ -564,10 +564,8 @@ class SyncService {
   /// 参数：
   /// - user：当前用户
   /// - lastSyncTime：上次同步时间
-  ///   - null → 全量同步：下载所有数据，并删除云端已不存在的本地记录
-  ///   - 非 null → 增量同步：只下载 updatedAt > lastSyncTime 的数据
-  ///     注意：增量同步无法感知删除操作（被删除的记录不会出现在结果中）
-  ///     跨设备的删除同步依赖下一次全量同步（用户手动触发或 lastSyncTime 被清除）
+  ///   - null → 全量同步：下载所有数据并与本地对齐
+  ///   - 非 null → 增量同步：下载 updatedAt > lastSyncTime 的变更，包含墓碑删除
   /// - isFullSync：是否强制全量同步（用于注册场景）
   /// 
   /// 返回：下载和合并统计信息
@@ -624,8 +622,17 @@ class SyncService {
   ) async {
     int mergedCount = 0;
 
-    // 合并到本地（最后更新时间优先）
+    // 合并到本地（墓碑优先，其次最后更新时间优先）
     for (final remoteRecord in remoteRecords) {
+      if (remoteRecord.deletedAt != null) {
+        final localRecord = _storageService.getRecord(remoteRecord.id);
+        if (localRecord != null) {
+          await _storageService.deleteRecord(remoteRecord.id);
+          mergedCount++;
+        }
+        continue;
+      }
+
       final localRecord = _storageService.getRecord(remoteRecord.id);
       if (localRecord == null ||
           remoteRecord.updatedAt.isAfter(localRecord.updatedAt)) {
@@ -665,8 +672,17 @@ class SyncService {
   ) async {
     int mergedCount = 0;
 
-    // 合并到本地（最后更新时间优先）
+    // 合并到本地（墓碑优先，其次最后更新时间优先）
     for (final remoteStoryLine in remoteStoryLines) {
+      if (remoteStoryLine.deletedAt != null) {
+        final localStoryLine = _storageService.getStoryLine(remoteStoryLine.id);
+        if (localStoryLine != null) {
+          await _storageService.deleteStoryLine(remoteStoryLine.id);
+          mergedCount++;
+        }
+        continue;
+      }
+
       final localStoryLine = _storageService.getStoryLine(remoteStoryLine.id);
       if (localStoryLine == null ||
           remoteStoryLine.updatedAt.isAfter(localStoryLine.updatedAt)) {

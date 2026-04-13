@@ -194,7 +194,7 @@ void main() {
       expect(json['description'], '她在读《百年孤独》');
       expect(json['tags'], isList);
       expect((json['tags'] as List).length, 1);
-      expect(json['emotion'], EmotionIntensity.thoughtOnWayHome.value);
+      expect(json['emotion'], EmotionIntensity.thoughtOnWayHome.name);
       expect(json['status'], EncounterStatus.missed.name);
     });
 
@@ -214,13 +214,13 @@ void main() {
           {'tag': '长发', 'note': '光线不好，可能是深棕色'},
           {'tag': '戴眼镜', 'note': null},
         ],
-        'emotion': 3,
+        'emotion': 'thoughtOnWayHome',
         'status': 'missed',
         'storyLineId': 'story_1',
         'ifReencounter': null,
         'conversationStarter': null,
         'backgroundMusic': null,
-        'weather': [1],
+        'weather': ['1'],
         'createdAt': '2026-02-11T18:30:00.000',
         'updatedAt': '2026-02-11T18:30:00.000',
       };

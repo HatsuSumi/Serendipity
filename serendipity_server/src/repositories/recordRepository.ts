@@ -79,10 +79,6 @@ export interface IRecordRepository {
   ): Promise<{ records: Record[]; total: number }>;
   
   /**
-   * 更新记录
-   * @param id - 记录 ID
-   * @param data - 更新数据
-  /**
    * 批量根据 ID 列表查找记录（跨用户，用于收藏有效性检查）
    * @param ids - 记录 ID 列表
    * @returns 存在的记录列表
@@ -96,11 +92,12 @@ export interface IRecordRepository {
   update(id: string, data: UpdateRecordDto): Promise<Record>;
   
   /**
-   * 删除记录
+   * 删除记录（墓碑化）
    * @param id - 记录 ID
+   * @param deletedAt - 删除时间
    * @note 权限验证应在 Service 层完成
    */
-  delete(id: string): Promise<void>;
+  delete(id: string, deletedAt: Date): Promise<void>;
 }
 
 /**
@@ -144,6 +141,7 @@ export class RecordRepository implements IRecordRepository {
         weather: toJsonValue(data.weather),
         isPinned: data.isPinned,
         updatedAt: new Date(data.updatedAt),
+        deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
       },
       create: {
         id: data.id,
@@ -162,6 +160,7 @@ export class RecordRepository implements IRecordRepository {
         isPinned: data.isPinned,
         createdAt: new Date(data.createdAt),
         updatedAt: new Date(data.updatedAt),
+        deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
       },
     });
   }
@@ -169,13 +168,8 @@ export class RecordRepository implements IRecordRepository {
   /**
    * 批量创建或更新记录（使用事务）
    * 性能优化：使用 Prisma 事务批量处理，避免 N+1 问题
-   * 
-   * 性能对比：
-   * - 逐条 upsert：100 条记录 ~2000ms
-   * - 批量事务：100 条记录 ~50ms（40 倍提升）
    */
   async batchCreate(userId: string, records: CreateRecordDto[]): Promise<Record[]> {
-    // 使用事务确保原子性：要么全部成功，要么全部失败
     return this.prisma.$transaction(
       records.map((data) =>
         this.prisma.record.upsert({
@@ -194,6 +188,7 @@ export class RecordRepository implements IRecordRepository {
             weather: toJsonValue(data.weather),
             isPinned: data.isPinned,
             updatedAt: new Date(data.updatedAt),
+            deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
           },
           create: {
             id: data.id,
@@ -212,24 +207,19 @@ export class RecordRepository implements IRecordRepository {
             isPinned: data.isPinned,
             createdAt: new Date(data.createdAt),
             updatedAt: new Date(data.updatedAt),
+            deletedAt: data.deletedAt ? new Date(data.deletedAt) : null,
           },
         })
       )
     );
   }
 
-  /**
-   * 根据 ID 查找记录
-   */
   async findById(id: string, userId: string): Promise<Record | null> {
     return this.prisma.record.findFirst({
-      where: { id, userId },
+      where: { id, userId, deletedAt: null },
     });
   }
 
-  /**
-   * 根据用户 ID 查找记录列表（支持增量同步和分页）
-   */
   async findByUserId(
     userId: string,
     lastSyncTime?: Date,
@@ -254,15 +244,6 @@ export class RecordRepository implements IRecordRepository {
     return { records, total };
   }
 
-  /**
-   * 筛选记录（支持多条件组合）
-   * 
-   * 设计原则：
-   * - 统一使用原始 SQL 处理所有筛选逻辑
-   * - 支持 JSONB 字段的多值筛选（placeType、tags）
-   * - 支持标签的全词匹配和包含匹配
-   * - 支持排序和分页
-   */
   async findByFilters(
     userId: string,
     filters: {
@@ -288,7 +269,6 @@ export class RecordRepository implements IRecordRepository {
       offset: number;
     }
   ): Promise<{ records: Record[]; total: number }> {
-    // 参数验证
     if (!userId || userId.trim() === '') {
       throw new Error('userId cannot be empty');
     }
@@ -302,19 +282,16 @@ export class RecordRepository implements IRecordRepository {
       throw new Error('startDate must be before endDate');
     }
 
-    // 构建 WHERE 条件
     const conditions: Prisma.Sql[] = [];
     conditions.push(Prisma.sql`user_id = ${userId}`);
+    conditions.push(Prisma.sql`deleted_at IS NULL`);
 
-    // 时间范围
     if (filters.startDate) {
       conditions.push(Prisma.sql`timestamp >= ${filters.startDate}`);
     }
     if (filters.endDate) {
       conditions.push(Prisma.sql`timestamp <= ${filters.endDate}`);
     }
-
-    // 地点筛选
     if (filters.province) {
       conditions.push(Prisma.sql`location->>'province' = ${filters.province}`);
     }
@@ -359,7 +336,6 @@ export class RecordRepository implements IRecordRepository {
       conditions.push(Prisma.sql`(${Prisma.join(backgroundMusicConditions, ' OR ')})`);
     }
 
-    // 场所类型筛选
     if (filters.placeTypes && filters.placeTypes.length > 0) {
       const placeTypeConditions = filters.placeTypes.map(
         (type) => Prisma.sql`location->>'placeType' = ${type}`
@@ -367,7 +343,6 @@ export class RecordRepository implements IRecordRepository {
       conditions.push(Prisma.sql`(${Prisma.join(placeTypeConditions, ' OR ')})`);
     }
 
-    // 状态筛选
     if (filters.statuses && filters.statuses.length > 0) {
       const statusConditions = filters.statuses.map(
         (status) => Prisma.sql`status = ${status}`
@@ -375,7 +350,6 @@ export class RecordRepository implements IRecordRepository {
       conditions.push(Prisma.sql`(${Prisma.join(statusConditions, ' OR ')})`);
     }
 
-    // 情绪强度筛选
     if (filters.emotionIntensities && filters.emotionIntensities.length > 0) {
       const emotionConditions = filters.emotionIntensities.map(
         (emotion) => Prisma.sql`emotion = ${emotion}`
@@ -383,7 +357,6 @@ export class RecordRepository implements IRecordRepository {
       conditions.push(Prisma.sql`(${Prisma.join(emotionConditions, ' OR ')})`);
     }
 
-    // 天气筛选
     if (filters.weathers && filters.weathers.length > 0) {
       const weatherConditions = filters.weathers.map(
         (weather) => Prisma.sql`weather @> ${JSON.stringify([weather])}`
@@ -391,7 +364,6 @@ export class RecordRepository implements IRecordRepository {
       conditions.push(Prisma.sql`(${Prisma.join(weatherConditions, ' OR ')})`);
     }
 
-    // 标签筛选
     if (filters.tags && filters.tags.length > 0) {
       const tagMatchMode = filters.tagMatchMode || 'contains';
       const tagConditions = filters.tags.map(tag => {
@@ -400,24 +372,20 @@ export class RecordRepository implements IRecordRepository {
             SELECT 1 FROM jsonb_array_elements(tags) AS t
             WHERE t->>'tag' = ${tag}
           )`;
-        } else {
-          return Prisma.sql`EXISTS (
-            SELECT 1 FROM jsonb_array_elements(tags) AS t
-            WHERE t->>'tag' ILIKE ${`%${tag}%`}
-          )`;
         }
+        return Prisma.sql`EXISTS (
+          SELECT 1 FROM jsonb_array_elements(tags) AS t
+          WHERE t->>'tag' ILIKE ${`%${tag}%`}
+        )`;
       });
       conditions.push(Prisma.sql`(${Prisma.join(tagConditions, ' OR ')})`);
     }
 
-    // 排序
     const sortBy = filters.sortBy || 'createdAt';
     const sortOrder = filters.sortOrder || 'desc';
     const dbColumnName = this.getDbColumnName(sortBy);
-
-    // 构建查询
     const whereClause = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
-    
+
     const query = Prisma.sql`
       SELECT 
         id,
@@ -435,102 +403,79 @@ export class RecordRepository implements IRecordRepository {
         weather,
         is_pinned as "isPinned",
         created_at as "createdAt",
-        updated_at as "updatedAt"
+        updated_at as "updatedAt",
+        deleted_at as "deletedAt"
       FROM "records"
       ${whereClause}
-      ORDER BY "${Prisma.raw(dbColumnName)}" ${Prisma.raw(sortOrder.toUpperCase())}
+      ORDER BY ${Prisma.raw(dbColumnName)} ${Prisma.raw(sortOrder.toUpperCase())}
       LIMIT ${filters.limit}
       OFFSET ${filters.offset}
     `;
 
     const countQuery = Prisma.sql`
-      SELECT COUNT(*) as count FROM "records"
+      SELECT COUNT(*)::int as total
+      FROM "records"
       ${whereClause}
     `;
 
     const [records, countResult] = await Promise.all([
       this.prisma.$queryRaw<Record[]>(query),
-      this.prisma.$queryRaw<[{ count: bigint }]>(countQuery),
+      this.prisma.$queryRaw<Array<{ total: number }>>(countQuery),
     ]);
 
-    const total = Number(countResult[0].count);
-
-    return { records, total };
+    return {
+      records,
+      total: countResult[0]?.total ?? 0,
+    };
   }
 
-  /**
-   * 批量根据 ID 列表查找记录（跨用户，用于收藏有效性检查）
-   */
   async findManyByIds(ids: string[]): Promise<Record[]> {
-    if (ids.length === 0) return [];
+    if (ids.length === 0) {
+      return [];
+    }
+
     return this.prisma.record.findMany({
-      where: { id: { in: ids } },
+      where: {
+        id: { in: ids },
+        deletedAt: null,
+      },
     });
   }
 
-  /**
-   * 更新记录
-   * 使用辅助函数构建更新数据，避免大量 if 判断
-   * 注意：调用前必须先通过 findById 验证记录归属
-   */
-  async update(
-    id: string,
-    data: UpdateRecordDto
-  ): Promise<Record> {
-    const updateData = this.buildUpdateData(data);
-
-    const record = await this.prisma.record.update({
-      where: { id },
-      data: updateData,
-    });
-
-    return record;
-  }
-
-  /**
-   * 删除记录
-   * 注意：调用前必须先通过 findById 验证记录归属
-   */
-  async delete(id: string): Promise<void> {
-    await this.prisma.record.delete({
-      where: { id },
-    });
-  }
-
-  /**
-   * 构建更新数据对象
-   * 提取为私有方法，简化 update 方法
-   * @private
-   */
-  private buildUpdateData(data: UpdateRecordDto): any {
-    const updateData: any = {
+  async update(id: string, data: UpdateRecordDto): Promise<Record> {
+    const updateData: Prisma.RecordUncheckedUpdateInput = {
       updatedAt: new Date(data.updatedAt),
     };
 
-    const fieldMappings: Array<{
-      key: keyof UpdateRecordDto;
-      transform?: (value: any) => any;
-    }> = [
-      { key: 'timestamp', transform: (v) => new Date(v) },
-      { key: 'location', transform: toJsonValue },
-      { key: 'description' },
-      { key: 'tags', transform: toJsonValue },
-      { key: 'emotion' },
-      { key: 'status' },
-      { key: 'storyLineId' },
-      { key: 'ifReencounter' },
-      { key: 'conversationStarter' },
-      { key: 'backgroundMusic' },
-      { key: 'weather', transform: toJsonValue },
-      { key: 'isPinned' },
-    ];
-
-    for (const { key, transform } of fieldMappings) {
-      if (data[key] !== undefined) {
-        updateData[key] = transform ? transform(data[key]) : data[key];
-      }
+    if (data.timestamp !== undefined) updateData.timestamp = new Date(data.timestamp);
+    if (data.location !== undefined) updateData.location = toJsonValue(data.location);
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.tags !== undefined) updateData.tags = toJsonValue(data.tags);
+    if (data.emotion !== undefined) updateData.emotion = data.emotion;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.storyLineId !== undefined) updateData.storyLineId = data.storyLineId;
+    if (data.ifReencounter !== undefined) updateData.ifReencounter = data.ifReencounter;
+    if (data.conversationStarter !== undefined) updateData.conversationStarter = data.conversationStarter;
+    if (data.backgroundMusic !== undefined) updateData.backgroundMusic = data.backgroundMusic;
+    if (data.weather !== undefined) updateData.weather = toJsonValue(data.weather);
+    if (data.isPinned !== undefined) updateData.isPinned = data.isPinned;
+    if (data.deletedAt !== undefined) {
+      updateData.deletedAt = data.deletedAt == null ? null : new Date(data.deletedAt);
     }
 
-    return updateData;
+    return this.prisma.record.update({
+      where: { id },
+      data: updateData,
+    });
+  }
+  
+  async delete(id: string, deletedAt: Date): Promise<void> {
+    await this.prisma.record.update({
+      where: { id },
+      data: {
+        deletedAt,
+        updatedAt: deletedAt,
+      },
+    });
   }
 }

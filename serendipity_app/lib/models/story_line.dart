@@ -38,6 +38,9 @@ class StoryLine {
   @HiveField(6)
   final String? userId;
 
+  @HiveField(7)
+  final DateTime? deletedAt;
+
   const StoryLine({
     required this.id,
     required this.name,
@@ -46,6 +49,7 @@ class StoryLine {
     required this.updatedAt,
     this.isPinned = false,
     this.userId,
+    this.deletedAt,
   }) : assert(id != '', 'ID cannot be empty'),
        assert(name != '', 'Name cannot be empty');
 
@@ -61,6 +65,9 @@ class StoryLine {
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       isPinned: json['isPinned'] as bool? ?? false,
       userId: json['userId'] as String?,
+      deletedAt: json['deletedAt'] != null
+          ? DateTime.parse(json['deletedAt'] as String)
+          : null,
     );
   }
 
@@ -74,6 +81,7 @@ class StoryLine {
       'updatedAt': updatedAt.toIso8601String(),
       'isPinned': isPinned,
       'userId': userId,
+      'deletedAt': deletedAt?.toIso8601String(),
     };
   }
 
@@ -86,6 +94,7 @@ class StoryLine {
     DateTime? updatedAt,
     bool? isPinned,
     String? Function()? userId,
+    DateTime? Function()? deletedAt,
   }) {
     return StoryLine(
       id: id ?? this.id,
@@ -95,6 +104,7 @@ class StoryLine {
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
       userId: userId != null ? userId() : this.userId,
+      deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
     );
   }
 
@@ -115,7 +125,8 @@ class StoryLine {
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
         other.isPinned == isPinned &&
-        other.userId == userId;
+        other.userId == userId &&
+        other.deletedAt == deletedAt;
   }
 
   @override
@@ -126,7 +137,8 @@ class StoryLine {
         createdAt.hashCode ^
         updatedAt.hashCode ^
         isPinned.hashCode ^
-        userId.hashCode;
+        userId.hashCode ^
+        deletedAt.hashCode;
   }
 }
 

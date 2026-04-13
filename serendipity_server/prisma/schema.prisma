@@ -53,12 +53,14 @@ model Record {
   isPinned                      Boolean                       @default(false) @map("is_pinned")
   createdAt                     DateTime                      @map("created_at")
   updatedAt                     DateTime                      @map("updated_at")
+  deletedAt                     DateTime?                     @map("deleted_at")
   anniversaryReminderDispatches AnniversaryReminderDispatch[]
   storyLine                     StoryLine?                    @relation(fields: [storyLineId], references: [id])
   user                          User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([updatedAt])
+  @@index([deletedAt])
   @@index([storyLineId])
   @@index([timestamp])
   @@index([userId, updatedAt])
@@ -66,18 +68,20 @@ model Record {
 }
 
 model StoryLine {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  name      String   @db.VarChar(255)
-  recordIds Json     @default("[]") @map("record_ids")
-  isPinned  Boolean  @default(false) @map("is_pinned")
-  createdAt DateTime @map("created_at")
-  updatedAt DateTime @map("updated_at")
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  name      String    @db.VarChar(255)
+  recordIds Json      @default("[]") @map("record_ids")
+  isPinned  Boolean   @default(false) @map("is_pinned")
+  createdAt DateTime  @map("created_at")
+  updatedAt DateTime  @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
   records   Record[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([updatedAt])
+  @@index([deletedAt])
   @@index([userId, updatedAt])
   @@map("story_lines")
 }

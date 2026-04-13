@@ -82,19 +82,18 @@ void main() {
       );
     });
 
-    test('Fail Fast - 已解锁必须有解锁时间', () {
-      expect(
-        () => Achievement(
-          id: 'test',
-          name: '测试',
-          description: '描述',
-          icon: '🎉',
-          category: AchievementCategory.beginner,
-          unlocked: true,
-          // 缺少 unlockedAt
-        ),
-        throwsA(isA<AssertionError>()),
+    test('Fail Fast - 已解锁允许缺少解锁时间（当前模型语义）', () {
+      final achievement = Achievement(
+        id: 'test',
+        name: '测试',
+        description: '描述',
+        icon: '🎉',
+        category: AchievementCategory.beginner,
+        unlocked: true,
       );
+
+      expect(achievement.unlocked, true);
+      expect(achievement.unlockedAt, isNull);
     });
 
     test('Fail Fast - 进度不能超过目标', () {

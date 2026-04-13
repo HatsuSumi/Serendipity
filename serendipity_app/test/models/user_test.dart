@@ -37,6 +37,7 @@ void main() {
 
       final user = User(
         id: 'user123',
+        email: 'test@example.com',
         authProvider: AuthProvider.email,
         isEmailVerified: false,
         isPhoneVerified: false,
@@ -44,7 +45,7 @@ void main() {
         updatedAt: now,
       );
 
-      expect(user.email, isNull);
+      expect(user.email, 'test@example.com');
       expect(user.phoneNumber, isNull);
       expect(user.displayName, isNull);
       expect(user.avatarUrl, isNull);
@@ -87,6 +88,7 @@ void main() {
 
       final user = User(
         id: 'user123',
+        phoneNumber: '+86 138 0000 0000',
         authProvider: AuthProvider.phone,
         isEmailVerified: false,
         isPhoneVerified: false,
@@ -97,11 +99,11 @@ void main() {
       final json = user.toJson();
 
       expect(json['email'], isNull);
-      expect(json['phoneNumber'], isNull);
+      expect(json['phoneNumber'], '+86 138 0000 0000');
       expect(json['displayName'], isNull);
       expect(json['avatarUrl'], isNull);
       expect(json['lastLoginAt'], isNull);
-      expect(json['authProvider'], 'apple');
+      expect(json['authProvider'], 'phone');
     });
 
     test('fromJson 转换（完整信息）', () {
@@ -135,7 +137,7 @@ void main() {
     test('fromJson 转换（最小信息）', () {
       final json = {
         'id': 'user123',
-        'email': null,
+        'email': 'test@example.com',
         'phoneNumber': null,
         'displayName': null,
         'avatarUrl': null,
@@ -149,7 +151,7 @@ void main() {
 
       final user = User.fromJson(json);
 
-      expect(user.email, isNull);
+      expect(user.email, 'test@example.com');
       expect(user.phoneNumber, isNull);
       expect(user.displayName, isNull);
       expect(user.avatarUrl, isNull);
@@ -251,6 +253,7 @@ void main() {
 
       final user = User(
         id: 'user123',
+        email: 'test@example.com',
         displayName: '张三',
         authProvider: AuthProvider.email,
         isEmailVerified: true,
@@ -270,25 +273,27 @@ void main() {
       final now = DateTime.now();
 
       final providers = [
-        AuthProvider.email,
-        AuthProvider.phone,
+        (AuthProvider.email, 'test@example.com', null),
+        (AuthProvider.phone, null, '+86 138 0000 0000'),
       ];
 
       for (final provider in providers) {
         final user = User(
           id: 'user123',
-          authProvider: provider,
+          email: provider.$2,
+          phoneNumber: provider.$3,
+          authProvider: provider.$1,
           isEmailVerified: false,
           isPhoneVerified: false,
           createdAt: now,
           updatedAt: now,
         );
 
-        expect(user.authProvider, provider);
+        expect(user.authProvider, provider.$1);
 
         final json = user.toJson();
         final restored = User.fromJson(json);
-        expect(restored.authProvider, provider);
+        expect(restored.authProvider, provider.$1);
       }
     });
   });

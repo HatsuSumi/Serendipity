@@ -64,6 +64,7 @@ describe('StoryLineService', () => {
         name: 'new',
         recordIds: ['r1'],
         isPinned: true,
+        deletedAt: null,
         createdAt: now,
         updatedAt: now,
       } as any);
@@ -85,6 +86,7 @@ describe('StoryLineService', () => {
           recordIds: ['r1'],
           isPinned: true,
           updatedAt: now,
+          deletedAt: undefined,
         }
       );
       expect(result.name).toBe('new');

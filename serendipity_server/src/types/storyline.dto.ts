@@ -8,6 +8,7 @@ export interface CreateStoryLineDto {
   isPinned: boolean;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 // 批量上传故事线请求
@@ -21,6 +22,7 @@ export interface UpdateStoryLineDto {
   recordIds?: string[];
   isPinned?: boolean;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 // 下载故事线查询参数
@@ -39,6 +41,7 @@ export interface StoryLineResponseDto {
   isPinned: boolean;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 // 批量上传响应

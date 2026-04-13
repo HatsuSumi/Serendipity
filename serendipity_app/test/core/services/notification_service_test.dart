@@ -249,6 +249,7 @@ void main() {
       );
       addTearDown(container.dispose);
 
+      container.read(userSettingsProvider);
       await Future<void>.delayed(Duration.zero);
 
       expect(notificationService.permissionRequestCount, 0);

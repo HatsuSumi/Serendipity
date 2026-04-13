@@ -35,6 +35,7 @@ export interface CreateRecordDto {
   isPinned: boolean;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 // 批量上传记录请求
@@ -57,6 +58,7 @@ export interface UpdateRecordDto {
   weather?: string[];
   isPinned?: boolean;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 // 下载记录查询参数
@@ -84,6 +86,7 @@ export interface RecordResponseDto {
   isPinned: boolean;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 // 批量上传响应

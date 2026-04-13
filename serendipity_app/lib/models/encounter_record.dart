@@ -185,6 +185,8 @@ class EncounterRecord {
   final bool isPinned; // 是否置顶
   @HiveField(15)
   final String? ownerId; // 数据归属用户ID，null 表示离线创建未绑定账号
+  @HiveField(16)
+  final DateTime? deletedAt; // 软删除墓碑时间
 
   EncounterRecord({
     required this.id,
@@ -203,6 +205,7 @@ class EncounterRecord {
     required this.updatedAt,
     this.isPinned = false,
     this.ownerId,
+    this.deletedAt,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
        assert(description == null || description.length <= 500, 
          'Description must be at most 500 characters, got ${description.length}'),
@@ -244,6 +247,9 @@ class EncounterRecord {
     }
     if (ownerId != null) {
       json['ownerId'] = ownerId;
+    }
+    if (deletedAt != null) {
+      json['deletedAt'] = deletedAt!.toIso8601String();
     }
     
     return json;
@@ -297,6 +303,9 @@ class EncounterRecord {
       updatedAt: DateTime.parse(requireString(json, 'updatedAt')),
       isPinned: optionalBool(json, 'isPinned') ?? false,
       ownerId: optionalString(json, 'ownerId'),
+      deletedAt: json['deletedAt'] != null
+          ? DateTime.parse(requireString(json, 'deletedAt'))
+          : null,
     );
   }
 
@@ -335,6 +344,7 @@ class EncounterRecord {
     DateTime? updatedAt,
     bool? isPinned,
     String? Function()? ownerId,
+    DateTime? Function()? deletedAt,
   }) {
     return EncounterRecord(
       id: id ?? this.id,
@@ -353,6 +363,7 @@ class EncounterRecord {
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
       ownerId: ownerId != null ? ownerId() : this.ownerId,
+      deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
     );
   }
 }

@@ -51,7 +51,7 @@ describe('RecordRepository', () => {
   });
 
   describe('findById', () => {
-    it('应该根据 ID 查找记录', async () => {
+    it('应该根据 ID 查找未删除记录', async () => {
       const mockRecord = {
         id: 'record-id',
         userId: 'user-id',
@@ -61,6 +61,7 @@ describe('RecordRepository', () => {
         status: 'active',
         weather: [],
         isPinned: false,
+        deletedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -70,6 +71,26 @@ describe('RecordRepository', () => {
       const result = await recordRepository.findById('record-id', 'user-id');
 
       expect(result).toEqual(mockRecord);
+      expect(prismaMock.record.findFirst).toHaveBeenCalledWith({
+        where: { id: 'record-id', userId: 'user-id', deletedAt: null },
+      });
+    });
+  });
+
+  describe('delete', () => {
+    it('应该将记录墓碑化而不是物理删除', async () => {
+      const deletedAt = new Date('2026-04-13T10:00:00.000Z');
+      prismaMock.record.update.mockResolvedValue({} as any);
+
+      await recordRepository.delete('record-id', deletedAt);
+
+      expect(prismaMock.record.update).toHaveBeenCalledWith({
+        where: { id: 'record-id' },
+        data: {
+          deletedAt,
+          updatedAt: deletedAt,
+        },
+      });
     });
   });
 });
