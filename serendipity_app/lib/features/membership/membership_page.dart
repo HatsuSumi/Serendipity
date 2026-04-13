@@ -134,7 +134,10 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
             ),
             _MembershipBenefitRow(title: '故事线', detail: '免费版最多 3 条，会员无限制'),
             _MembershipBenefitRow(title: '主题', detail: '解锁朦胧、深夜、温暖、秋日主题'),
-            _MembershipBenefitRow(title: '同步', detail: '免费版单设备，会员多设备同步'),
+            _MembershipBenefitRow(
+              title: '同步',
+              detail: '免费版仅保留当前设备业务数据视角，不自动下载其他设备的记录/故事线；会员支持多设备业务数据同步',
+            ),
             _MembershipBenefitRow(title: '导出', detail: '故事线详情页支持导出故事线为图文卡片'),
             _MembershipBenefitRow(
               title: '提醒',

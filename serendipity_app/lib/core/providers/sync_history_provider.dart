@@ -21,6 +21,11 @@ final syncHistoriesProvider = Provider<List<SyncHistory>>((ref) {
   ref.watch(syncCompletedProvider);
 
   final storage = ref.watch(storageServiceProvider);
-  return storage.getAllSyncHistories();
+  final currentUser = ref.watch(authProvider).valueOrNull;
+  if (currentUser == null) {
+    return const [];
+  }
+
+  return storage.getSyncHistoriesByUser(currentUser.id);
 });
 
