@@ -111,7 +111,12 @@ export class CheckInService implements ICheckInService {
       throw new Error('userId is required');
     }
 
-    await this.checkInRepository.deleteById(checkInId, userId);
+    const existingCheckIn = await this.checkInRepository.findActiveById(checkInId);
+    if (!existingCheckIn || existingCheckIn.userId !== userId) {
+      throw new AppError('CheckIn not found', ErrorCode.NOT_FOUND);
+    }
+
+    await this.checkInRepository.deleteById(checkInId, new Date());
   }
 
   private calculateConsecutiveDays(checkIns: CheckIn[], today: Date): number {

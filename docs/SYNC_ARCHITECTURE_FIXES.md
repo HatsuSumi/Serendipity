@@ -290,38 +290,22 @@ final result = await syncService.syncAllData(
 
 ---
 
-## 🚨 已知限制（非问题）
+## 🚨 历史限制说明（当前已解决）
 
-### 增量同步的删除操作无法跨设备同步
+以下内容仅保留为历史背景，当前代码已不再适用：
 
-**优先级**：⚡ 中  
-**状态**：✅ 已处理（通过全量同步）  
-**原因**：这是增量同步的设计限制，不是 bug
+### 删除同步
 
-**现状**：
-- ✅ 全量同步时会删除本地孤立记录（已实现）
-- ⚠️ 增量同步无法感知删除（设计限制）
-- ✅ 用户可通过手动同步触发全量同步
+当前已经不是“只能靠全量同步兜底”的状态：
+- `Record`
+- `StoryLine`
+- `CheckIn`
 
-**代码位置**：`lib/core/services/sync_service.dart` - `_downloadRemoteData()` 方法（第 700-750 行）
+这三条链路都已具备服务端墓碑删除与客户端增量消费能力，因此增量同步可以传播删除。
 
-```dart
-// ✅ 已实现
-if (isFullSync) {
-  final remoteRecordIds = remoteRecords.map((r) => r.id).toSet();
-  final localRecords = _storageService.getRecordsByUser(user.id);
-  for (final local in localRecords) {
-    if (!remoteRecordIds.contains(local.id)) {
-      await _storageService.deleteRecord(local.id);
-    }
-  }
-}
-```
+### `StoryLine.isPinned`
 
-**未来优化**（可选）：
-- 方案 A：添加删除标记（推荐）
-- 方案 B：定期全量同步（每 7 天）
-- 方案 C：添加删除日志表
+当前也已具备完整云端链路，不再是本地独占字段。
 
 ---
 

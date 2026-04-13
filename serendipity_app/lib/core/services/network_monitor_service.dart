@@ -190,24 +190,24 @@ class NetworkMonitorService {
   /// 调用者：startMonitoring() 的 ref.listen(authCompletedProvider)
   /// 
   /// 同步策略：
-  /// - 注册：skipDownload: true（新用户无云端数据）
-  /// - 登录（免费版）：skipDownload: true（数据不迁移到新设备）
-  /// - 登录（会员版）：skipDownload: false（数据跟随账号，双向同步）
+  /// - 注册：skipFullSyncCleanup: true（首次同步时不按云端缺失清理本地，避免误删当前设备数据）
+  /// - 登录（免费版）：skipFullSyncCleanup: true（仍可拉取云端数据，但不做全量对齐清理）
+  /// - 登录（会员版）：skipFullSyncCleanup: false（数据跟随账号，按正常同步策略执行）
   void _onAuthCompleted(WidgetRef ref, AuthCompletedEvent event) {
     if (event.isRegister) {
-      // 注册：只上传，不下载
-      _triggerSync(ref, event.user, SyncSource.register, skipDownload: true);
+      // 注册：上传本地数据，并拉取云端数据，但不按云端缺失清理本地
+      _triggerSync(ref, event.user, SyncSource.register, skipFullSyncCleanup: true);
       return;
     }
 
-    // 登录：根据会员状态决定是否下载
+    // 登录：根据会员状态决定是否跳过全量对齐清理
     final membershipAsync = ref.read(membershipProvider);
     final isPremium = membershipAsync.whenOrNull(data: (info) => info.isPremium) ?? false;
     _triggerSync(
       ref,
       event.user,
       SyncSource.login,
-      skipDownload: !isPremium, // 免费版不下载，会员版双向同步
+      skipFullSyncCleanup: !isPremium, // 免费版跳过全量对齐清理，会员版按正常同步策略执行
     );
   }
   
@@ -225,14 +225,14 @@ class NetworkMonitorService {
     WidgetRef ref,
     User user,
     SyncSource source, {
-    bool skipDownload = false,
+    bool skipFullSyncCleanup = false,
   }) async {
     try {
       final orchestrator = ref.read(syncOrchestratorProvider);
       
       // 获取上次同步时间，失败时使用 null（全量同步）
       DateTime? lastSyncTime;
-      if (!skipDownload) {
+      if (!skipFullSyncCleanup) {
         try {
           lastSyncTime = await ref.read(syncServiceProvider).getLastSyncTime(user.id);
         } catch (e) {
@@ -249,7 +249,7 @@ class NetworkMonitorService {
         user,
         source: source,
         lastSyncTime: lastSyncTime,
-        skipDownload: skipDownload,
+        skipFullSyncCleanup: skipFullSyncCleanup,
       );
     } catch (e) {
       // 同步失败不影响用户体验，但记录日志便于调试

@@ -38,6 +38,7 @@ describe('PushTokenService', () => {
     mockCheckInRepository = {
       create: jest.fn(),
       findById: jest.fn(),
+      findActiveById: jest.fn(),
       findByUserId: jest.fn(),
       findByUserAndDate: jest.fn(),
       deleteById: jest.fn(),

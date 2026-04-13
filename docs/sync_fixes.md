@@ -237,12 +237,15 @@ void dispose() {
 
 ---
 
-## Known Limitations (not fixed)
+## Known Limitations (historical, now resolved)
 
-| Issue | Level | Note |
-|-------|-------|------|
-| `StoryLine.isPinned` not synced to cloud | LOW | Server schema has no `isPinned` field. Pin state is local-only. `EncounterRecord.isPinned` is synced — inconsistent. Decide whether to add to schema. |
-| Incremental sync cannot propagate deletes | MED | Requires server-side deletion tombstone table. Full sync is the current fallback. |
+The following note is kept only as historical context. The current codebase has already implemented server-side tombstones for records, story lines, and check-ins, so incremental sync can propagate deletions.
+
+| Issue | Current Status | Note |
+|-------|----------------|------|
+| `StoryLine.isPinned` not synced to cloud | Resolved | `isPinned` now has a complete client/server sync chain. |
+| Incremental sync cannot propagate deletes | Resolved | Server-side tombstones are implemented; incremental sync now consumes tombstone deletions. |
+|
 
 ---
 

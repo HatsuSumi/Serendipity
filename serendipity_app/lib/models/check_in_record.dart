@@ -29,6 +29,9 @@ class CheckInRecord {
   @HiveField(5)
   final DateTime updatedAt; // 更新时间（用于同步冲突解决）
 
+  @HiveField(6)
+  final DateTime? deletedAt; // 删除时间（墓碑同步）
+
   CheckInRecord({
     required this.id,
     required this.date,
@@ -36,6 +39,7 @@ class CheckInRecord {
     this.userId,
     required this.createdAt,
     required this.updatedAt,
+    this.deletedAt,
   }) : assert(id.isNotEmpty, 'CheckIn ID cannot be empty');
 
   /// 创建签到记录（自动生成ID和时间）
@@ -65,6 +69,7 @@ class CheckInRecord {
       userId: userId,
       createdAt: now,
       updatedAt: now,
+      deletedAt: null,
     );
   }
 
@@ -81,6 +86,7 @@ class CheckInRecord {
       'userId': userId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
     };
   }
 
@@ -100,6 +106,9 @@ class CheckInRecord {
       userId: json['userId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      deletedAt: json['deletedAt'] != null
+          ? DateTime.parse(json['deletedAt'] as String)
+          : null,
     );
   }
 
@@ -114,6 +123,7 @@ class CheckInRecord {
     String? Function()? userId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? Function()? deletedAt,
   }) {
     return CheckInRecord(
       id: id ?? this.id,
@@ -122,6 +132,7 @@ class CheckInRecord {
       userId: userId != null ? userId() : this.userId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
     );
   }
 

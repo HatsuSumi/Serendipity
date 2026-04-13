@@ -128,6 +128,7 @@ export class CheckInController {
       checkedAt: checkIn.checkedAt.toISOString(),
       createdAt: checkIn.createdAt.toISOString(),
       updatedAt: checkIn.updatedAt.toISOString(),
+      deletedAt: checkIn.deletedAt?.toISOString(),
     };
   }
 }

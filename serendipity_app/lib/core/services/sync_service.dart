@@ -403,17 +403,19 @@ class SyncService {
   /// 
   /// 同步策略：
   /// 1. 上传本地有变化的数据（updatedAt > lastSyncTime）
-  /// 2. 下载云端有变化的数据（updatedAt > lastSyncTime）
-  ///    - 注册（lastSyncTime == null）：跳过下载，新用户云端确实没数据
-  ///    - 登录/启动/手动（lastSyncTime != null）：增量下载，支持多设备同步
-  /// 3. 合并数据（最后更新时间优先）
+  /// 2. 下载云端变化：
+  ///    - skipFullSyncCleanup == true：执行一次云端全量拉取，但不做“云端缺失即删除本地”的对齐
+  ///      适用于注册后的初始化场景，避免误删当前设备刚产生的本地数据
+  ///    - lastSyncTime == null：执行全量同步，用云端全集对齐本地，并清理云端已不存在的数据
+  ///    - lastSyncTime != null：执行增量同步，下载 updatedAt > lastSyncTime 的变更，包含墓碑删除
+  /// 3. 合并数据（墓碑优先，其次最后更新时间优先）
   /// 4. 同步成就解锁状态（静默）
   /// 5. 保存同步历史记录
   /// 
   /// 参数：
   /// - user：当前用户
-  /// - lastSyncTime：上次同步时间（null 表示全量下载）
-  /// - skipDownload：是否跳过下载（注册场景传 true，其他场景不传）
+  /// - lastSyncTime：上次同步时间（null 表示进入全量同步分支）
+  /// - skipFullSyncCleanup：是否跳过本地对齐删除（注册场景传 true，其他场景不传）
   /// - source：同步来源（默认手动同步）
   /// - onProgress：同步进度回调（可选，用于 UI 展示进度）
   /// 
@@ -425,7 +427,7 @@ class SyncService {
   Future<SyncResult> syncAllData(
     User user, {
     DateTime? lastSyncTime,
-    bool skipDownload = false,
+    bool skipFullSyncCleanup = false,
     SyncSource source = SyncSource.manual,
     void Function(String)? onProgress,
   }) async {
@@ -442,11 +444,11 @@ class SyncService {
       onProgress?.call('正在上传本地数据...');
       final uploadStats = await _uploadLocalData(user, lastSyncTime: lastSyncTime);
       
-      // 2. 下载云端有变化的数据
-      // skipDownload == true（注册场景）：只下载云端数据，不删除本地数据
-      // 其他场景：lastSyncTime == null 全量下载+删除，否则增量下载
+      // 2. 下载云端变化
+      // skipFullSyncCleanup == true（注册初始化场景）：拉取云端全集，但不按“云端缺失”删除本地
+      // 其他场景：lastSyncTime == null 走全量对齐；否则走带墓碑的增量同步
       onProgress?.call('正在下载云端数据...');
-      final downloadStats = skipDownload
+      final downloadStats = skipFullSyncCleanup
           ? await _downloadRemoteData(user, lastSyncTime: null, isFullSync: false)
           : await _downloadRemoteData(user, lastSyncTime: lastSyncTime);
       
@@ -557,7 +559,7 @@ class SyncService {
     };
   }
   
-  /// 下载云端有变化的数据到本地（全量或增量）
+  /// 下载云端数据到本地（全量对齐或增量消费）
   /// 
   /// 调用者：syncAllData()
   /// 
@@ -566,7 +568,9 @@ class SyncService {
   /// - lastSyncTime：上次同步时间
   ///   - null → 全量同步：下载所有数据并与本地对齐
   ///   - 非 null → 增量同步：下载 updatedAt > lastSyncTime 的变更，包含墓碑删除
-  /// - isFullSync：是否强制全量同步（用于注册场景）
+  /// - isFullSync：是否强制执行本地对齐删除
+  ///   - true：把云端结果视为当前全集，清理本地残留
+  ///   - false：仅消费拉下来的数据，不因云端缺失删除本地
   /// 
   /// 返回：下载和合并统计信息
   /// 
@@ -722,8 +726,17 @@ class SyncService {
   ) async {
     int mergedCount = 0;
 
-    // 合并到本地（最后更新时间优先）
+    // 合并到本地（墓碑优先，其次最后更新时间优先）
     for (final remoteCheckIn in remoteCheckIns) {
+      if (remoteCheckIn.deletedAt != null) {
+        final localCheckIn = _storageService.getCheckIn(remoteCheckIn.id);
+        if (localCheckIn != null) {
+          await _storageService.deleteCheckIn(remoteCheckIn.id);
+          mergedCount++;
+        }
+        continue;
+      }
+
       final localCheckIn = _storageService.getCheckIn(remoteCheckIn.id);
       if (localCheckIn == null ||
           remoteCheckIn.updatedAt.isAfter(localCheckIn.updatedAt)) {

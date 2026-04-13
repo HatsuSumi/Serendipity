@@ -36,7 +36,7 @@ class SyncOrchestrator {
   /// - user：当前用户
   /// - source：同步来源
   /// - lastSyncTime：上次同步时间（null 表示全量同步）
-  /// - skipDownload：是否跳过下载（注册场景）
+  /// - skipFullSyncCleanup：是否跳过全量同步中的本地对齐清理
   /// - onProgress：同步进度回调
   /// 
   /// 返回：同步结果
@@ -58,7 +58,7 @@ class SyncOrchestrator {
     User user, {
     required SyncSource source,
     DateTime? lastSyncTime,
-    bool skipDownload = false,
+    bool skipFullSyncCleanup = false,
     void Function(String)? onProgress,
   }) async {
     // Fail Fast：参数验证
@@ -114,7 +114,7 @@ class SyncOrchestrator {
           final result = await syncService.syncAllData(
             user,
             lastSyncTime: lastSyncTime,
-            skipDownload: skipDownload,
+            skipFullSyncCleanup: skipFullSyncCleanup,
             source: source,
             onProgress: onProgress,
           );

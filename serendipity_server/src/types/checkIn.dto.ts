@@ -19,6 +19,7 @@ export interface CheckInResponseDto {
   checkedAt: string; // ISO 8601 格式
   createdAt: string; // ISO 8601 格式
   updatedAt: string; // ISO 8601 格式
+  deletedAt?: string; // ISO 8601 格式
 }
 
 /**

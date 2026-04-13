@@ -33,6 +33,13 @@ export interface ICheckInRepository {
   findById(id: string): Promise<CheckIn | null>;
 
   /**
+   * 根据 ID 查找未删除签到记录
+   *
+   * 调用者：CheckInService.deleteCheckIn()
+   */
+  findActiveById(id: string): Promise<CheckIn | null>;
+
+  /**
    * 获取用户所有签到记录（支持增量同步）
    *
    * 调用者：CheckInService.getCheckIns()
@@ -47,11 +54,11 @@ export interface ICheckInRepository {
   findByUserAndDate(userId: string, date: Date): Promise<CheckIn | null>;
 
   /**
-   * 删除签到记录
+   * 删除签到记录（墓碑化）
    *
    * 调用者：CheckInService.deleteCheckIn()
    */
-  deleteById(id: string, userId: string): Promise<void>;
+  deleteById(id: string, deletedAt: Date): Promise<void>;
 }
 
 /**
@@ -103,6 +110,16 @@ export class CheckInRepository implements ICheckInRepository {
     });
   }
 
+  async findActiveById(id: string): Promise<CheckIn | null> {
+    if (!id || id.trim() === '') {
+      throw new Error('CheckIn id is required');
+    }
+
+    return this.prisma.checkIn.findFirst({
+      where: { id, deletedAt: null },
+    });
+  }
+
   async findByUserId(userId: string, lastSyncTime?: Date): Promise<CheckIn[]> {
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
@@ -125,31 +142,29 @@ export class CheckInRepository implements ICheckInRepository {
       throw new Error('Invalid date');
     }
 
-    return this.prisma.checkIn.findUnique({
+    return this.prisma.checkIn.findFirst({
       where: {
-        userId_date: {
-          userId,
-          date,
-        },
+        userId,
+        date,
+        deletedAt: null,
       },
     });
   }
 
-  async deleteById(id: string, userId: string): Promise<void> {
+  async deleteById(id: string, deletedAt: Date): Promise<void> {
     if (!id || id.trim() === '') {
       throw new Error('CheckIn id is required');
     }
-    if (!userId || userId.trim() === '') {
-      throw new Error('userId is required');
+    if (!(deletedAt instanceof Date) || Number.isNaN(deletedAt.getTime())) {
+      throw new Error('Invalid deletedAt');
     }
 
-    const checkIn = await this.findById(id);
-    if (!checkIn || checkIn.userId !== userId) {
-      throw new Error('CheckIn not found');
-    }
-
-    await this.prisma.checkIn.delete({
+    await this.prisma.checkIn.update({
       where: { id },
+      data: {
+        deletedAt,
+        updatedAt: deletedAt,
+      },
     });
   }
 }
