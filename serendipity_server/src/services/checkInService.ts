@@ -82,9 +82,9 @@ export class CheckInService implements ICheckInService {
       throw new Error('Invalid month');
     }
 
-    const canDownloadBusinessData =
-      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
-    if (!canDownloadBusinessData) {
+    const canDownloadCoreContent =
+      await this.syncAccessPolicyService.canDownloadCoreContent(userId);
+    if (!canDownloadCoreContent) {
       return {
         hasCheckedInToday: false,
         consecutiveDays: 0,
@@ -117,9 +117,9 @@ export class CheckInService implements ICheckInService {
       throw new Error('userId is required');
     }
 
-    const canDownloadBusinessData =
-      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
-    if (!canDownloadBusinessData) {
+    const canDownloadCoreContent =
+      await this.syncAccessPolicyService.canDownloadCoreContent(userId);
+    if (!canDownloadCoreContent) {
       return [];
     }
 

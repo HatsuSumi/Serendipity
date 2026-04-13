@@ -20,7 +20,7 @@ describe('StoryLineService', () => {
       delete: jest.fn(),
     };
     mockSyncAccessPolicyService = {
-      canDownloadBusinessData: jest.fn(),
+      canDownloadCoreContent: jest.fn(),
     };
 
     storyLineService = new StoryLineService(
@@ -133,11 +133,11 @@ describe('StoryLineService', () => {
 
   describe('getStoryLines', () => {
     it('免费版用户下载故事线时应该返回空结果，不拉取业务主数据', async () => {
-      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(false);
+      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(false);
 
       const result = await storyLineService.getStoryLines('user-free');
 
-      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-free');
+      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-free');
       expect(mockStoryLineRepository.findByUserId).not.toHaveBeenCalled();
       expect(result).toMatchObject({
         storyLines: [],
@@ -148,7 +148,7 @@ describe('StoryLineService', () => {
 
     it('会员用户下载故事线时应该返回该用户的同步数据', async () => {
       const now = new Date('2026-04-12T12:00:00.000Z');
-      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
+      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
       mockStoryLineRepository.findByUserId.mockResolvedValue({
         storylines: [
           {
@@ -167,7 +167,7 @@ describe('StoryLineService', () => {
 
       const result = await storyLineService.getStoryLines('user-premium');
 
-      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-premium');
+      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-premium');
       expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
         'user-premium',
         undefined,

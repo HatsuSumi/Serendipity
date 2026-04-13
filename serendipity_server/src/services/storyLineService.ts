@@ -190,9 +190,9 @@ export class StoryLineService implements IStoryLineService {
   ): Promise<GetStoryLinesResponseDto> {
     FailFastValidator.validateNonEmptyString(userId, 'userId');
 
-    const canDownloadBusinessData =
-      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
-    if (!canDownloadBusinessData) {
+    const canDownloadCoreContent =
+      await this.syncAccessPolicyService.canDownloadCoreContent(userId);
+    if (!canDownloadCoreContent) {
       return {
         storyLines: [],
         total: 0,

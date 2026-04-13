@@ -225,11 +225,9 @@ export const initializeContainer = (): Container => {
     favoriteRepository,
     communityPostRepository,
     recordRepository,
-    syncAccessPolicyService,
   );
   const statisticsService = new StatisticsService(
     statisticsRepository,
-    syncAccessPolicyService,
   );
 
   container.register(TYPES.VerificationService, verificationService);

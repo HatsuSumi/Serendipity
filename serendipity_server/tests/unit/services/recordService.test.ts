@@ -43,7 +43,7 @@ describe('RecordService', () => {
     };
 
     mockSyncAccessPolicyService = {
-      canDownloadBusinessData: jest.fn(),
+      canDownloadCoreContent: jest.fn(),
     };
 
     recordService = new RecordService(
@@ -54,11 +54,11 @@ describe('RecordService', () => {
 
   describe('getRecords', () => {
     it('免费版用户下载记录时应该返回空结果，不拉取业务主数据', async () => {
-      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(false);
+      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(false);
 
       const result = await recordService.getRecords('user-free');
 
-      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-free');
+      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-free');
       expect(mockRecordRepository.findByUserId).not.toHaveBeenCalled();
       expect(result).toMatchObject({
         records: [],
@@ -68,7 +68,7 @@ describe('RecordService', () => {
     });
 
     it('会员用户下载记录时应该返回该用户的同步数据', async () => {
-      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
+      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
       mockRecordRepository.findByUserId.mockResolvedValue({
         records: [createMockRecord()],
         total: 1,
@@ -76,7 +76,7 @@ describe('RecordService', () => {
 
       const result = await recordService.getRecords('user-premium');
 
-      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-premium');
+      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-premium');
       expect(mockRecordRepository.findByUserId).toHaveBeenCalledWith(
         'user-premium',
         undefined,
@@ -90,14 +90,14 @@ describe('RecordService', () => {
 
   describe('filterRecords', () => {
     it('免费版用户筛选记录时应该返回空结果，不拉取业务主数据', async () => {
-      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(false);
+      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(false);
 
       const result = await recordService.filterRecords('user-free', {
         limit: 20,
         offset: 0,
       });
 
-      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-free');
+      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-free');
       expect(mockRecordRepository.findByFilters).not.toHaveBeenCalled();
       expect(result).toMatchObject({
         records: [],
@@ -107,7 +107,7 @@ describe('RecordService', () => {
     });
 
     it('会员用户筛选记录时应该返回筛选结果', async () => {
-      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
+      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
       mockRecordRepository.findByFilters.mockResolvedValue({
         records: [createMockRecord()],
         total: 1,
@@ -120,7 +120,7 @@ describe('RecordService', () => {
         offset: 0,
       });
 
-      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-premium');
+      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-premium');
       expect(mockRecordRepository.findByFilters).toHaveBeenCalledWith(
         'user-premium',
         expect.objectContaining({

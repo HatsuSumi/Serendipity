@@ -1,5 +1,4 @@
 import { IStatisticsRepository, StatisticsOverviewRaw } from '../repositories/statisticsRepository';
-import { ISyncAccessPolicyService } from './syncAccessPolicyService';
 
 // ---------------------------------------------------------------------------
 // DTOs
@@ -75,13 +74,12 @@ export interface IStatisticsService {
  *
  * 职责：
  * - 从 StatisticsRepository 获取原始聚合数据
- * - 基于同步访问策略决定是否允许下载账号级业务统计
  * - 计算派生字段（成功率、百分比、未关联数）
  * - 映射为客户端约定的 DTO
  *
  * 设计原则：
  * - 单一职责：只负责 DTO 映射与派生计算，不做数据库操作
- * - 统一策略：账号级业务统计下载权限与业务主数据同步策略保持一致
+ * - 统计结果属于派生展示数据，不与核心内容主资产迁移规则混用
  * - Fail Fast：userId 为空时立即抛出
  * - 不可变输入：不修改 Repository 返回的原始数据
  */
@@ -95,10 +93,8 @@ export class StatisticsService implements IStatisticsService {
 
   constructor(
     private statisticsRepository: IStatisticsRepository,
-    private syncAccessPolicyService: ISyncAccessPolicyService,
   ) {
     if (!statisticsRepository) throw new Error('StatisticsRepository is required');
-    if (!syncAccessPolicyService) throw new Error('SyncAccessPolicyService is required');
   }
 
   async getOverview(userId: string): Promise<StatisticsOverviewDto> {
@@ -106,53 +102,13 @@ export class StatisticsService implements IStatisticsService {
       throw new Error('userId is required');
     }
 
-    const canDownloadBusinessData =
-      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
-    if (!canDownloadBusinessData) {
-      return this._buildEmptyOverviewDto();
-    }
-
     const raw = await this.statisticsRepository.getOverviewRaw(userId);
     return this._mapToDto(raw);
   }
 
   // ---------------------------------------------------------------------------
-  // Private: DTO factories / mapping
+  // Private: mapping
   // ---------------------------------------------------------------------------
-
-  private _buildEmptyOverviewDto(): StatisticsOverviewDto {
-    return {
-      registeredAt: new Date(0).toISOString(),
-      totalRecords: 0,
-      pinnedRecordCount: 0,
-      linkedRecordCount: 0,
-      unlinkedRecordCount: 0,
-      linkedRecordPercentage: 0,
-      unlinkedRecordPercentage: 0,
-      statusCounts: {
-        missed: 0,
-        avoid: 0,
-        reencounter: 0,
-        met: 0,
-        reunion: 0,
-        farewell: 0,
-        lost: 0,
-      },
-      successRate: 0,
-      storyLineCount: 0,
-      pinnedStoryLineCount: 0,
-      totalCheckInDays: 0,
-      totalCheckInStartDate: null,
-      totalCheckInEndDate: null,
-      longestCheckInStreakDays: 0,
-      longestCheckInStreakStartDate: null,
-      longestCheckInStreakEndDate: null,
-      favoritedRecordCount: 0,
-      favoritedPostCount: 0,
-      sourceVersion: StatisticsService.DTO_VERSION,
-      computedAt: new Date().toISOString(),
-    };
-  }
 
   private _mapToDto(raw: StatisticsOverviewRaw): StatisticsOverviewDto {
     const total = raw.totalRecords;

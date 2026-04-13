@@ -196,9 +196,9 @@ export class RecordService implements IRecordService {
     // Fail Fast: 立即验证参数
     FailFastValidator.validateNonEmptyString(userId, 'userId');
 
-    const canDownloadBusinessData =
-      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
-    if (!canDownloadBusinessData) {
+    const canDownloadCoreContent =
+      await this.syncAccessPolicyService.canDownloadCoreContent(userId);
+    if (!canDownloadCoreContent) {
       return {
         records: [],
         total: 0,
@@ -327,9 +327,9 @@ export class RecordService implements IRecordService {
       throw new AppError('offset cannot be negative', ErrorCode.VALIDATION_ERROR);
     }
 
-    const canDownloadBusinessData =
-      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
-    if (!canDownloadBusinessData) {
+    const canDownloadCoreContent =
+      await this.syncAccessPolicyService.canDownloadCoreContent(userId);
+    if (!canDownloadCoreContent) {
       return {
         records: [],
         total: 0,
