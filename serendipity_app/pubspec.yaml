@@ -81,10 +81,10 @@ dependencies:
   image_gallery_saver: ^2.0.3
   
   # 图片选择（头像上传）
-  image_picker: ^1.1.2
+  photo_manager: ^3.9.0
 
   # 图片裁剪（头像裁剪）
-  image_cropper: ^9.1.0
+  image_cropper: ^12.2.0
 
 dev_dependencies:
   flutter_test:

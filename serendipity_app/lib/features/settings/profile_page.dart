@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
 import '../../core/providers/auth_provider.dart';
@@ -15,6 +14,7 @@ import '../../core/utils/date_time_helper.dart';
 import '../../models/enums.dart';
 import '../../models/user.dart';
 import '../../core/config/app_config.dart';
+import '../avatar/avatar_picker_page.dart';
 import '../about/about_page.dart';
 import '../achievement/achievements_page.dart';
 import '../check_in/check_in_page.dart';
@@ -480,17 +480,20 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  /// 处理头像点击：弹出选择来源，选图 → 裁剪 → 上传
+  /// 处理头像点击：进入应用内图片选择页，选图 → 裁剪 → 上传
   Future<void> _handleAvatarTap(BuildContext context, WidgetRef ref) async {
     final userActions = ref.read(userActionsProvider.notifier);
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
+    final selectedAsset = await NavigationHelper.pushWithTransition<File>(
+      context,
+      ref,
+      const AvatarPickerPage(),
+    );
+    if (selectedAsset == null) return;
     if (!context.mounted) return;
 
     final colorScheme = Theme.of(context).colorScheme;
     final croppedFile = await ImageCropper().cropImage(
-      sourcePath: picked.path,
+      sourcePath: selectedAsset.path,
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: '裁剪头像',
