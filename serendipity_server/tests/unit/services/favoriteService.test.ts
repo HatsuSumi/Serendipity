@@ -1,4 +1,5 @@
 import { FavoriteService } from '../../../src/services/favoriteService';
+import { ISyncAccessPolicyService } from '../../../src/services/syncAccessPolicyService';
 import {
   FavoritePostSnapshotDto,
   FavoriteRecordSnapshotDto,
@@ -58,6 +59,7 @@ describe('FavoriteService', () => {
   let mockFavoriteRepository: jest.Mocked<IFavoriteRepository>;
   let mockCommunityPostRepository: jest.Mocked<ICommunityPostRepository>;
   let mockRecordRepository: jest.Mocked<IRecordRepository>;
+  let mockSyncAccessPolicyService: jest.Mocked<ISyncAccessPolicyService>;
 
   beforeEach(() => {
     mockFavoriteRepository = {
@@ -93,10 +95,15 @@ describe('FavoriteService', () => {
       delete: jest.fn(),
     };
 
+    mockSyncAccessPolicyService = {
+      canDownloadBusinessData: jest.fn(),
+    };
+
     favoriteService = new FavoriteService(
       mockFavoriteRepository,
       mockCommunityPostRepository,
       mockRecordRepository,
+      mockSyncAccessPolicyService,
     );
   });
 
@@ -168,7 +175,18 @@ describe('FavoriteService', () => {
     );
   });
 
+  it('获取收藏记录时免费版用户应该返回空结果，不拉取业务主数据', async () => {
+    mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(false);
+
+    const result = await favoriteService.getFavoritedRecords('test-user-id');
+
+    expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('test-user-id');
+    expect(mockFavoriteRepository.getFavoritedRecordIds).not.toHaveBeenCalled();
+    expect(result).toEqual({ records: [], deletedRecords: [], deletedRecordIds: [] });
+  });
+
   it('获取收藏记录时应该返回已删除记录的云端快照', async () => {
+    mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
     const deletedSnapshot: FavoriteRecordSnapshotDto = {
       id: 'deleted-record',
       ownerId: createMockUser().id,

@@ -1,3 +1,4 @@
+import { ISyncAccessPolicyService } from './syncAccessPolicyService';
 import { StoryLine } from '@prisma/client';
 import { IStoryLineRepository } from '../repositories/storyLineRepository';
 import {
@@ -50,7 +51,10 @@ export interface IStoryLineService {
  * 负责故事线相关的业务逻辑处理
  */
 export class StoryLineService implements IStoryLineService {
-  constructor(private storyLineRepository: IStoryLineRepository) {}
+  constructor(
+    private storyLineRepository: IStoryLineRepository,
+    private syncAccessPolicyService: ISyncAccessPolicyService
+  ) {}
 
   /**
    * 创建新故事线
@@ -185,6 +189,17 @@ export class StoryLineService implements IStoryLineService {
     offset: number = 0
   ): Promise<GetStoryLinesResponseDto> {
     FailFastValidator.validateNonEmptyString(userId, 'userId');
+
+    const canDownloadBusinessData =
+      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
+    if (!canDownloadBusinessData) {
+      return {
+        storyLines: [],
+        total: 0,
+        hasMore: false,
+        syncTime: new Date(),
+      };
+    }
 
     const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;
 

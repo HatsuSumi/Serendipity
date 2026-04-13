@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import winston from 'winston';
+import { SyncAccessPolicyService } from '../services/syncAccessPolicyService';
 import { JwtService } from '../services/jwtService';
 import { AuthService } from '../services/authService';
 import { VerificationService } from '../services/verificationService';
@@ -189,6 +190,7 @@ export const initializeContainer = (): Container => {
   container.register(TYPES.StatisticsRepository, statisticsRepository);
 
   const verificationService = new VerificationService(verificationCodeRepository);
+  const syncAccessPolicyService = new SyncAccessPolicyService(membershipRepository);
   const authService = new AuthService(
     userRepository,
     refreshTokenRepository,
@@ -196,8 +198,14 @@ export const initializeContainer = (): Container => {
     jwtService,
     passwordHasher,
   );
-  const recordService = new RecordService(recordRepository);
-  const storyLineService = new StoryLineService(storyLineRepository);
+  const recordService = new RecordService(
+    recordRepository,
+    syncAccessPolicyService,
+  );
+  const storyLineService = new StoryLineService(
+    storyLineRepository,
+    syncAccessPolicyService,
+  );
   const communityPostService = new CommunityPostService(communityPostRepository);
   const userService = new UserService(userRepository, userSettingsRepository, membershipRepository);
   const checkInService = new CheckInService(checkInRepository, userTimezoneResolver);
@@ -209,10 +217,19 @@ export const initializeContainer = (): Container => {
     reminderPushSender,
   );
   const achievementUnlockService = new AchievementUnlockService(achievementUnlockRepository);
-  const favoriteService = new FavoriteService(favoriteRepository, communityPostRepository, recordRepository);
-  const statisticsService = new StatisticsService(statisticsRepository);
+  const favoriteService = new FavoriteService(
+    favoriteRepository,
+    communityPostRepository,
+    recordRepository,
+    syncAccessPolicyService,
+  );
+  const statisticsService = new StatisticsService(
+    statisticsRepository,
+    syncAccessPolicyService,
+  );
 
   container.register(TYPES.VerificationService, verificationService);
+  container.register(TYPES.SyncAccessPolicyService, syncAccessPolicyService);
   container.register(TYPES.AuthService, authService);
   container.register(TYPES.RecordService, recordService);
   container.register(TYPES.StoryLineService, storyLineService);

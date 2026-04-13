@@ -14,6 +14,7 @@ export const TYPES = {
   JwtService:                    Symbol.for('jwtService'),
   PasswordHasher:                Symbol.for('passwordHasher'),
   VerificationService:           Symbol.for('verificationService'),
+  SyncAccessPolicyService:       Symbol.for('syncAccessPolicyService'),
 
   // Repositories
   UserRepository:                Symbol.for('userRepository'),

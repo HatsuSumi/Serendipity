@@ -1,3 +1,4 @@
+import { ISyncAccessPolicyService } from './syncAccessPolicyService';
 import { Record } from '@prisma/client';
 import { IRecordRepository } from '../repositories/recordRepository';
 import {
@@ -119,7 +120,10 @@ export interface IRecordService {
  * 负责记录相关的业务逻辑处理
  */
 export class RecordService implements IRecordService {
-  constructor(private recordRepository: IRecordRepository) {}
+  constructor(
+    private recordRepository: IRecordRepository,
+    private syncAccessPolicyService: ISyncAccessPolicyService
+  ) {}
 
   /**
    * 创建新记录
@@ -191,6 +195,17 @@ export class RecordService implements IRecordService {
   ): Promise<GetRecordsResponseDto> {
     // Fail Fast: 立即验证参数
     FailFastValidator.validateNonEmptyString(userId, 'userId');
+
+    const canDownloadBusinessData =
+      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
+    if (!canDownloadBusinessData) {
+      return {
+        records: [],
+        total: 0,
+        hasMore: false,
+        syncTime: new Date(),
+      };
+    }
 
     const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;
 
@@ -310,6 +325,17 @@ export class RecordService implements IRecordService {
     }
     if (filters.offset < 0) {
       throw new AppError('offset cannot be negative', ErrorCode.VALIDATION_ERROR);
+    }
+
+    const canDownloadBusinessData =
+      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
+    if (!canDownloadBusinessData) {
+      return {
+        records: [],
+        total: 0,
+        hasMore: false,
+        syncTime: new Date(),
+      };
     }
 
     // 解析日期参数

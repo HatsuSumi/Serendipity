@@ -1,3 +1,4 @@
+import { ISyncAccessPolicyService } from './syncAccessPolicyService';
 import { CommunityPost, Record } from '@prisma/client';
 import {
   FavoritePostRow,
@@ -32,6 +33,7 @@ export class FavoriteService implements IFavoriteService {
     private favoriteRepository: IFavoriteRepository,
     private communityPostRepository: ICommunityPostRepository,
     private recordRepository: IRecordRepository,
+    private syncAccessPolicyService: ISyncAccessPolicyService,
   ) {}
 
   async favoritePost(userId: string, postId: string): Promise<void> {
@@ -99,6 +101,12 @@ export class FavoriteService implements IFavoriteService {
 
   async getFavoritedRecords(userId: string): Promise<FavoritedRecordsResponseDto> {
     if (!userId) throw new AppError('userId is required', ErrorCode.VALIDATION_ERROR);
+
+    const canDownloadBusinessData =
+      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
+    if (!canDownloadBusinessData) {
+      return { records: [], deletedRecords: [], deletedRecordIds: [] };
+    }
 
     const favoriteRows = await this.favoriteRepository.getFavoritedRecordIds(userId);
     if (favoriteRows.length === 0) {

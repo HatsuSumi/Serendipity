@@ -1,10 +1,13 @@
 import { StoryLineService } from '../../../src/services/storyLineService';
+import { ISyncAccessPolicyService } from '../../../src/services/syncAccessPolicyService';
 import { IStoryLineRepository } from '../../../src/repositories/storyLineRepository';
 import { ErrorCode } from '../../../src/types/errors';
 
 describe('StoryLineService', () => {
   let storyLineService: StoryLineService;
   let mockStoryLineRepository: jest.Mocked<IStoryLineRepository>;
+
+  let mockSyncAccessPolicyService: jest.Mocked<ISyncAccessPolicyService>;
 
   beforeEach(() => {
     mockStoryLineRepository = {
@@ -16,8 +19,14 @@ describe('StoryLineService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
+    mockSyncAccessPolicyService = {
+      canDownloadBusinessData: jest.fn(),
+    };
 
-    storyLineService = new StoryLineService(mockStoryLineRepository);
+    storyLineService = new StoryLineService(
+      mockStoryLineRepository,
+      mockSyncAccessPolicyService
+    );
   });
 
   describe('createStoryLine', () => {
@@ -122,39 +131,53 @@ describe('StoryLineService', () => {
     });
   });
 
-  describe('batchCreateStoryLines', () => {
-    it('批量中存在其他用户的同 ID 故事线时应该抛出 conflict', async () => {
-      const now = new Date('2026-04-12T12:00:00.000Z');
-      mockStoryLineRepository.findByIdGlobal.mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        userId: 'user-a',
-        name: 'existing',
-        recordIds: [],
-        isPinned: false,
-        createdAt: now,
-        updatedAt: now,
-      } as any);
+  describe('getStoryLines', () => {
+    it('免费版用户下载故事线时应该返回空结果，不拉取业务主数据', async () => {
+      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(false);
 
-      await expect(
-        storyLineService.batchCreateStoryLines('user-b', {
-          storyLines: [
-            {
-              id: '550e8400-e29b-41d4-a716-446655440000',
-              name: 'overwrite',
-              recordIds: [],
-              isPinned: false,
-              createdAt: now,
-              updatedAt: now,
-            },
-          ],
-        })
-      ).rejects.toMatchObject({
-        code: ErrorCode.CONFLICT,
+      const result = await storyLineService.getStoryLines('user-free');
+
+      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-free');
+      expect(mockStoryLineRepository.findByUserId).not.toHaveBeenCalled();
+      expect(result).toMatchObject({
+        storyLines: [],
+        total: 0,
+        hasMore: false,
+      });
+    });
+
+    it('会员用户下载故事线时应该返回该用户的同步数据', async () => {
+      const now = new Date('2026-04-12T12:00:00.000Z');
+      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
+      mockStoryLineRepository.findByUserId.mockResolvedValue({
+        storylines: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            userId: 'user-premium',
+            name: 'premium storyline',
+            recordIds: ['r1'],
+            isPinned: false,
+            createdAt: now,
+            updatedAt: now,
+            deletedAt: null,
+          } as any,
+        ],
+        total: 1,
       });
 
-      expect(mockStoryLineRepository.batchCreate).not.toHaveBeenCalled();
-      expect(mockStoryLineRepository.update).not.toHaveBeenCalled();
+      const result = await storyLineService.getStoryLines('user-premium');
+
+      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-premium');
+      expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
+        'user-premium',
+        undefined,
+        100,
+        0
+      );
+      expect(result.storyLines).toHaveLength(1);
+      expect(result.storyLines[0].userId).toBe('user-premium');
     });
   });
+
 });
 
