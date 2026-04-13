@@ -1,12 +1,14 @@
 import { CheckInService } from '../../../src/services/checkInService';
 import { ICheckInRepository } from '../../../src/repositories/checkInRepository';
 import { IUserTimezoneResolver } from '../../../src/services/userTimezoneResolver';
+import { ISyncAccessPolicyService } from '../../../src/services/syncAccessPolicyService';
 import { ErrorCode } from '../../../src/types/errors';
 
 describe('CheckInService', () => {
   let checkInService: CheckInService;
   let mockCheckInRepository: jest.Mocked<ICheckInRepository>;
   let mockUserTimezoneResolver: jest.Mocked<IUserTimezoneResolver>;
+  let mockSyncAccessPolicyService: jest.Mocked<ISyncAccessPolicyService>;
 
   beforeEach(() => {
     mockCheckInRepository = {
@@ -22,9 +24,14 @@ describe('CheckInService', () => {
       resolveTimezone: jest.fn(),
     };
 
+    mockSyncAccessPolicyService = {
+      canDownloadBusinessData: jest.fn(),
+    };
+
     checkInService = new CheckInService(
       mockCheckInRepository,
       mockUserTimezoneResolver,
+      mockSyncAccessPolicyService,
     );
   });
 
@@ -33,6 +40,7 @@ describe('CheckInService', () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2026-04-01T16:30:00.000Z'));
       mockUserTimezoneResolver.resolveTimezone.mockResolvedValue('Asia/Shanghai');
+      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
       mockCheckInRepository.findByUserAndDate.mockResolvedValue(null);
       mockCheckInRepository.create.mockImplementation(async (_userId, data) => ({
         id: data.id,
@@ -55,6 +63,7 @@ describe('CheckInService', () => {
 
     it('当天已签到时应该返回冲突错误', async () => {
       mockUserTimezoneResolver.resolveTimezone.mockResolvedValue(undefined);
+      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
       mockCheckInRepository.findByUserAndDate.mockResolvedValue({ id: 'exists' } as any);
 
       await expect(checkInService.createTodayCheckIn('user-1')).rejects.toMatchObject({
@@ -64,10 +73,28 @@ describe('CheckInService', () => {
   });
 
   describe('getCheckInStatus', () => {
+    it('免费版用户获取签到状态时应该返回空结果，不拉取签到业务数据', async () => {
+      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(false);
+
+      const result = await checkInService.getCheckInStatus('user-free', 2026, 4);
+
+      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-free');
+      expect(mockCheckInRepository.findByUserId).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        hasCheckedInToday: false,
+        consecutiveDays: 0,
+        totalDays: 0,
+        currentMonthDays: 0,
+        recentCheckIns: [],
+        checkedInDatesInMonth: [],
+      });
+    });
+
     it('应该按用户时区判断今日签到与目标月份数据', async () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2026-04-01T16:30:00.000Z'));
       mockUserTimezoneResolver.resolveTimezone.mockResolvedValue('Asia/Shanghai');
+      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
       mockCheckInRepository.findByUserId.mockResolvedValue([
         {
           id: 'today',
@@ -105,6 +132,44 @@ describe('CheckInService', () => {
         '2026-04-01T00:00:00.000Z',
       ]);
       jest.useRealTimers();
+    });
+  });
+
+  describe('getCheckIns', () => {
+    it('免费版用户下载签到记录时应该返回空结果，不拉取签到业务数据', async () => {
+      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(false);
+
+      const result = await checkInService.getCheckIns('user-free');
+
+      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-free');
+      expect(mockCheckInRepository.findByUserId).not.toHaveBeenCalled();
+      expect(result).toEqual([]);
+    });
+
+    it('会员用户下载签到记录时应该返回该用户的同步数据', async () => {
+      const checkIns = [
+        {
+          id: 'check-in-1',
+          userId: 'user-premium',
+          date: new Date('2026-04-02T00:00:00.000Z'),
+          checkedAt: new Date('2026-04-01T16:30:00.000Z'),
+          createdAt: new Date('2026-04-01T16:30:00.000Z'),
+          updatedAt: new Date('2026-04-01T16:30:00.000Z'),
+          deletedAt: null,
+        },
+      ] as any;
+
+      mockSyncAccessPolicyService.canDownloadBusinessData.mockResolvedValue(true);
+      mockCheckInRepository.findByUserId.mockResolvedValue(checkIns);
+
+      const result = await checkInService.getCheckIns('user-premium', '2026-04-01T00:00:00.000Z');
+
+      expect(mockSyncAccessPolicyService.canDownloadBusinessData).toHaveBeenCalledWith('user-premium');
+      expect(mockCheckInRepository.findByUserId).toHaveBeenCalledWith(
+        'user-premium',
+        new Date('2026-04-01T00:00:00.000Z'),
+      );
+      expect(result).toEqual(checkIns);
     });
   });
 });

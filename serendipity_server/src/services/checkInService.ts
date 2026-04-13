@@ -4,6 +4,7 @@ import { ICheckInRepository } from '../repositories/checkInRepository';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
 import { IUserTimezoneResolver } from './userTimezoneResolver';
+import { ISyncAccessPolicyService } from './syncAccessPolicyService';
 
 export interface CheckInStatus {
   hasCheckedInToday: boolean;
@@ -36,12 +37,16 @@ export class CheckInService implements ICheckInService {
   constructor(
     private checkInRepository: ICheckInRepository,
     private userTimezoneResolver: IUserTimezoneResolver,
+    private syncAccessPolicyService: ISyncAccessPolicyService,
   ) {
     if (!checkInRepository) {
       throw new Error('CheckInRepository is required');
     }
     if (!userTimezoneResolver) {
       throw new Error('UserTimezoneResolver is required');
+    }
+    if (!syncAccessPolicyService) {
+      throw new Error('SyncAccessPolicyService is required');
     }
   }
 
@@ -77,6 +82,19 @@ export class CheckInService implements ICheckInService {
       throw new Error('Invalid month');
     }
 
+    const canDownloadBusinessData =
+      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
+    if (!canDownloadBusinessData) {
+      return {
+        hasCheckedInToday: false,
+        consecutiveDays: 0,
+        totalDays: 0,
+        currentMonthDays: 0,
+        recentCheckIns: [],
+        checkedInDatesInMonth: [],
+      };
+    }
+
     const timezone = await this.getUserTimezone(userId);
     const allCheckIns = await this.checkInRepository.findByUserId(userId);
     const today = this.getDateOnlyForTimezone(new Date(), timezone);
@@ -97,6 +115,12 @@ export class CheckInService implements ICheckInService {
   async getCheckIns(userId: string, lastSyncTime?: string): Promise<CheckIn[]> {
     if (!userId || userId.trim() === '') {
       throw new Error('userId is required');
+    }
+
+    const canDownloadBusinessData =
+      await this.syncAccessPolicyService.canDownloadBusinessData(userId);
+    if (!canDownloadBusinessData) {
+      return [];
     }
 
     const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;

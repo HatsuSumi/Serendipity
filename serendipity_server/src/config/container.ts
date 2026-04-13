@@ -208,7 +208,11 @@ export const initializeContainer = (): Container => {
   );
   const communityPostService = new CommunityPostService(communityPostRepository);
   const userService = new UserService(userRepository, userSettingsRepository, membershipRepository);
-  const checkInService = new CheckInService(checkInRepository, userTimezoneResolver);
+  const checkInService = new CheckInService(
+    checkInRepository,
+    userTimezoneResolver,
+    syncAccessPolicyService,
+  );
   const reminderPushSender = new ReminderPushSender();
   const pushTokenService = new PushTokenService(
     pushTokenRepository,
