@@ -213,7 +213,7 @@ class WelcomePage extends ConsumerWidget {
   /// - 用户体验优先：清晰说明离线使用和登录的区别
   Widget _buildHintText(ThemeData theme) {
     return Text(
-      '离线使用时数据仅保存在本地\n登录后可同步到云端',
+      '离线使用时数据仅保存在本地\n登录后可同步账号数据，会员支持多设备记录与故事线同步',
       textAlign: TextAlign.center,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
