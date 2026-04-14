@@ -84,7 +84,7 @@ class _AboutPageState extends ConsumerState<AboutPage> {
                   ),
                   AboutEntryCard(
                     icon: Icons.error_outline,
-                    title: '查看更多设计决策',
+                    title: '查看更多设计决策与常见问题',
                     subtitle: '为什么产品这样设计？',
                     onTap: () {
                       NavigationHelper.pushWithTransition(
