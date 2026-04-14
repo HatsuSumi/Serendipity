@@ -55,13 +55,65 @@ describe('RecordService', () => {
   });
 
   describe('getRecords', () => {
-    it('免费版用户下载记录时应该返回空结果，不拉取业务主数据', async () => {
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(false);
+    it('免费版用户下载记录时应该只拉取当前设备范围内的同步数据', async () => {
+      const now = new Date('2026-04-12T12:00:00.000Z');
+      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
+        userId: 'user-free',
+        sourceDeviceId: 'device-free-1',
+      });
+      mockRecordRepository.findByUserId.mockResolvedValue({
+        records: [
+          {
+            ...createMockRecord(),
+            userId: 'user-free',
+            sourceDeviceId: 'device-free-1',
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+        total: 1,
+      });
 
-      const result = await recordService.getRecords('user-free');
+      const result = await recordService.getRecords('user-free', undefined, 'device-free-1');
 
-      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-free');
-      expect(mockRecordRepository.findByUserId).not.toHaveBeenCalled();
+      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
+        'user-free',
+        'device-free-1'
+      );
+      expect(mockRecordRepository.findByUserId).toHaveBeenCalledWith(
+        { userId: 'user-free', sourceDeviceId: 'device-free-1' },
+        undefined,
+        100,
+        0,
+      );
+      expect(result.records).toHaveLength(1);
+      expect(result.records[0].ownerId).toBe('user-free');
+      expect(result.records[0].sourceDeviceId).toBe('device-free-1');
+    });
+
+    it('免费版用户增量下载记录时应该保留设备范围和 lastSyncTime', async () => {
+      const lastSyncTime = '2026-04-10T00:00:00.000Z';
+      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
+        userId: 'user-free',
+        sourceDeviceId: 'device-free-2',
+      });
+      mockRecordRepository.findByUserId.mockResolvedValue({
+        records: [],
+        total: 0,
+      });
+
+      const result = await recordService.getRecords('user-free', lastSyncTime, 'device-free-2', 50, 10);
+
+      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
+        'user-free',
+        'device-free-2'
+      );
+      expect(mockRecordRepository.findByUserId).toHaveBeenCalledWith(
+        { userId: 'user-free', sourceDeviceId: 'device-free-2' },
+        new Date(lastSyncTime),
+        50,
+        10,
+      );
       expect(result).toMatchObject({
         records: [],
         total: 0,

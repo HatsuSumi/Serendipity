@@ -349,7 +349,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'device-a',
           ownerId: userId,
           description: 'Created on Device A',
         );
@@ -363,7 +363,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'device-b',
           ownerId: userId,
           description: 'Created on Device B',
         );
@@ -377,6 +377,56 @@ void main() {
           userRecords.map((r) => r.id),
           containsAll(['device_a_record_1', 'device_b_record_1']),
         );
+        expect(
+          userRecords.where((r) => r.sourceDeviceId == 'device-a').map((r) => r.id),
+          contains('device_a_record_1'),
+        );
+        expect(
+          userRecords.where((r) => r.sourceDeviceId == 'device-b').map((r) => r.id),
+          contains('device_b_record_1'),
+        );
+      });
+
+      test('should preserve sourceDeviceId on records created from different devices', () async {
+        const userId = 'user_1';
+
+        await recordRepository.saveRecord(
+          EncounterRecord(
+            id: 'record_from_device_a',
+            timestamp: DateTime.now(),
+            location: Location(latitude: 39.9, longitude: 116.4),
+            tags: [],
+            status: EncounterStatus.missed,
+            weather: [],
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            sourceDeviceId: 'device-a',
+            ownerId: userId,
+          ),
+        );
+        await recordRepository.saveRecord(
+          EncounterRecord(
+            id: 'record_from_device_b',
+            timestamp: DateTime.now(),
+            location: Location(latitude: 39.9, longitude: 116.4),
+            tags: [],
+            status: EncounterStatus.missed,
+            weather: [],
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            sourceDeviceId: 'device-b',
+            ownerId: userId,
+          ),
+        );
+
+        final records = recordRepository.getRecordsByUser(userId);
+        final deviceARecords = records.where((r) => r.sourceDeviceId == 'device-a').toList();
+        final deviceBRecords = records.where((r) => r.sourceDeviceId == 'device-b').toList();
+
+        expect(deviceARecords, hasLength(1));
+        expect(deviceARecords.single.id, equals('record_from_device_a'));
+        expect(deviceBRecords, hasLength(1));
+        expect(deviceBRecords.single.id, equals('record_from_device_b'));
       });
 
       test('should not mix data between different users on same device', () async {
@@ -392,7 +442,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'shared-device',
           ownerId: userA,
         );
 
@@ -405,7 +455,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'shared-device',
           ownerId: userB,
         );
 
@@ -430,7 +480,7 @@ void main() {
           recordIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'device-a',
           userId: userId,
         );
 
@@ -440,7 +490,7 @@ void main() {
           recordIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'device-b',
           userId: userId,
         );
 
@@ -452,6 +502,14 @@ void main() {
         expect(
           userStoryLines.map((s) => s.id),
           containsAll(['story_a_1', 'story_b_1']),
+        );
+        expect(
+          userStoryLines.where((s) => s.sourceDeviceId == 'device-a').map((s) => s.id),
+          contains('story_a_1'),
+        );
+        expect(
+          userStoryLines.where((s) => s.sourceDeviceId == 'device-b').map((s) => s.id),
+          contains('story_b_1'),
         );
       });
     });
@@ -470,7 +528,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'device-a',
           ownerId: userId,
           description: 'Initial',
         );
@@ -479,19 +537,49 @@ void main() {
 
         final deviceAUpdate = initialRecord.copyWith(
           description: () => 'Updated by Device A',
+          sourceDeviceId: 'device-a',
         );
         await recordRepository.updateRecord(deviceAUpdate);
 
         var record = recordRepository.getRecord(recordId);
         expect(record?.description, equals('Updated by Device A'));
+        expect(record?.sourceDeviceId, equals('device-a'));
 
         final deviceBUpdate = record!.copyWith(
           description: () => 'Updated by Device B',
+          sourceDeviceId: 'device-b',
         );
         await recordRepository.updateRecord(deviceBUpdate);
 
         record = recordRepository.getRecord(recordId);
         expect(record?.description, equals('Updated by Device B'));
+        expect(record?.sourceDeviceId, equals('device-b'));
+      });
+
+      test('should preserve story line sourceDeviceId across different devices', () async {
+        const userId = 'user_1';
+        final storyLine = StoryLine(
+          id: 'shared_storyline_1',
+          name: 'Shared StoryLine',
+          recordIds: ['record-1'],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          sourceDeviceId: 'device-a',
+          userId: userId,
+        );
+
+        await storyLineRepository.saveStoryLine(storyLine);
+
+        final updatedOnDeviceB = storyLine.copyWith(
+          name: 'Updated on Device B',
+          updatedAt: DateTime.now(),
+          sourceDeviceId: 'device-b',
+        );
+        await storyLineRepository.updateStoryLine(updatedOnDeviceB);
+
+        final stored = storyLineRepository.getStoryLine('shared_storyline_1');
+        expect(stored?.name, equals('Updated on Device B'));
+        expect(stored?.sourceDeviceId, equals('device-b'));
       });
 
       test('should maintain user isolation during concurrent updates', () async {
@@ -507,7 +595,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'device-a',
           ownerId: userA,
           description: 'A Original',
         );
@@ -521,7 +609,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'device-b',
           ownerId: userB,
           description: 'B Original',
         );
@@ -561,7 +649,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'device-test',
           ownerId: null,
           description: 'Created offline',
         );
@@ -585,11 +673,11 @@ void main() {
         expect(offlineRecordsAfterSync, isEmpty);
       });
 
-      test('should not leak offline records to other users', () async {
-        const userA = 'user_a';
+      test('should keep offline record sourceDeviceId after binding to user account', () async {
+        const userId = 'user_1';
 
         final offlineRecord = EncounterRecord(
-          id: 'offline_record_1',
+          id: 'offline_record_with_device',
           timestamp: DateTime.now(),
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
@@ -597,18 +685,21 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
+          sourceDeviceId: 'offline-device-a',
           ownerId: null,
         );
 
         await recordRepository.saveRecord(offlineRecord);
 
-        final userARecords = recordRepository.getRecordsByUser(userA);
-        expect(userARecords, isEmpty);
+        await recordRepository.updateRecord(
+          offlineRecord.copyWith(ownerId: () => userId),
+        );
 
-        final offlineRecords = recordRepository.getRecordsByUser(null);
-        expect(offlineRecords, hasLength(1));
+        final boundRecord = recordRepository.getRecord('offline_record_with_device');
+        expect(boundRecord?.ownerId, equals(userId));
+        expect(boundRecord?.sourceDeviceId, equals('offline-device-a'));
       });
+
     });
   });
 }
