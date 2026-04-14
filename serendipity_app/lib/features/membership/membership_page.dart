@@ -134,10 +134,6 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
             ),
             _MembershipBenefitRow(title: '故事线', detail: '免费版最多 3 条，会员无限制'),
             _MembershipBenefitRow(title: '主题', detail: '解锁朦胧、深夜、温暖、秋日主题'),
-            _MembershipBenefitRow(
-              title: '多设备同步',
-              detail: '免费版仅在当前设备保留记录、故事线数据，换设备后不会自动同步；签到记录、用户设置、会员状态、成就状态、自己发布的帖子、帖子收藏、记录收藏，以及统计图表、词云、趋势分析等派生展示结果不受影响，会同步到新设备',
-            ),
             _MembershipBenefitRow(title: '导出', detail: '故事线详情页支持导出故事线为图文卡片'),
             _MembershipBenefitRow(
               title: '提醒',

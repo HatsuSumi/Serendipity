@@ -65,7 +65,6 @@ export interface UpdateRecordDto {
 // 下载记录查询参数
 export interface GetRecordsQueryDto {
   lastSyncTime?: string;
-  deviceId?: string;
   limit?: number;
   offset?: number;
 }

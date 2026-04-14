@@ -1,13 +1,10 @@
 import { StoryLineService } from '../../../src/services/storyLineService';
-import { ISyncAccessPolicyService } from '../../../src/services/syncAccessPolicyService';
 import { IStoryLineRepository } from '../../../src/repositories/storyLineRepository';
 import { ErrorCode } from '../../../src/types/errors';
 
 describe('StoryLineService', () => {
   let storyLineService: StoryLineService;
   let mockStoryLineRepository: jest.Mocked<IStoryLineRepository>;
-
-  let mockSyncAccessPolicyService: jest.Mocked<ISyncAccessPolicyService>;
 
   beforeEach(() => {
     mockStoryLineRepository = {
@@ -19,14 +16,8 @@ describe('StoryLineService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
-    mockSyncAccessPolicyService = {
-      canDownloadCoreContent: jest.fn(),
-      buildCoreContentScope: jest.fn(),
-    };
-
     storyLineService = new StoryLineService(
       mockStoryLineRepository,
-      mockSyncAccessPolicyService
     );
   });
 
@@ -140,12 +131,8 @@ describe('StoryLineService', () => {
   });
 
   describe('getStoryLines', () => {
-    it('免费版用户下载故事线时应该只拉取当前设备范围内的数据', async () => {
+    it('用户下载故事线时应该返回该账号范围内的数据', async () => {
       const now = new Date('2026-04-12T12:00:00.000Z');
-      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
-        userId: 'user-free',
-        sourceDeviceId: 'device-free-1',
-      });
       mockStoryLineRepository.findByUserId.mockResolvedValue({
         storylines: [
           {
@@ -163,14 +150,10 @@ describe('StoryLineService', () => {
         total: 1,
       });
 
-      const result = await storyLineService.getStoryLines('user-free', undefined, 'device-free-1');
+      const result = await storyLineService.getStoryLines('user-free');
 
-      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
-        'user-free',
-        'device-free-1'
-      );
       expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
-        { userId: 'user-free', sourceDeviceId: 'device-free-1' },
+        { userId: 'user-free' },
         undefined,
         100,
         0
@@ -180,25 +163,17 @@ describe('StoryLineService', () => {
       expect(result.storyLines[0].sourceDeviceId).toBe('device-free-1');
     });
 
-    it('免费版用户增量下载故事线时应该保留设备范围和 lastSyncTime', async () => {
+    it('用户增量下载故事线时应该保留账号范围和 lastSyncTime', async () => {
       const lastSyncTime = '2026-04-10T00:00:00.000Z';
-      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
-        userId: 'user-free',
-        sourceDeviceId: 'device-free-2',
-      });
       mockStoryLineRepository.findByUserId.mockResolvedValue({
         storylines: [],
         total: 0,
       });
 
-      const result = await storyLineService.getStoryLines('user-free', lastSyncTime, 'device-free-2', 50, 10);
+      const result = await storyLineService.getStoryLines('user-free', lastSyncTime, 50, 10);
 
-      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
-        'user-free',
-        'device-free-2'
-      );
       expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
-        { userId: 'user-free', sourceDeviceId: 'device-free-2' },
+        { userId: 'user-free' },
         new Date(lastSyncTime),
         50,
         10
@@ -212,9 +187,6 @@ describe('StoryLineService', () => {
 
     it('会员用户下载故事线时应该返回该用户的同步数据', async () => {
       const now = new Date('2026-04-12T12:00:00.000Z');
-      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
-        userId: 'user-premium',
-      });
       mockStoryLineRepository.findByUserId.mockResolvedValue({
         storylines: [
           {
@@ -231,12 +203,8 @@ describe('StoryLineService', () => {
         total: 1,
       });
 
-      const result = await storyLineService.getStoryLines('user-premium', undefined, 'device-1');
+      const result = await storyLineService.getStoryLines('user-premium');
 
-      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
-        'user-premium',
-        'device-1'
-      );
       expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
         { userId: 'user-premium' },
         undefined,

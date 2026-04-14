@@ -19,7 +19,7 @@ describe('StatisticsService', () => {
   });
 
   describe('getOverview', () => {
-    it('获取统计总览时应该返回空结果，不拉取账号级业务统计', async () => {
+    it('获取统计总览时应该返回空结果', async () => {
       const registeredAt = new Date(0);
       mockStatisticsRepository.getOverviewRaw.mockResolvedValue({
         registeredAt,
@@ -75,7 +75,7 @@ describe('StatisticsService', () => {
       expect(typeof result.computedAt).toBe('string');
     });
 
-    it('会员用户获取统计总览时应该返回账号全局聚合结果', async () => {
+    it('用户获取统计总览时应该返回账号全局聚合结果', async () => {
       const registeredAt = new Date('2026-04-10T08:00:00.000Z');
       const checkInStartDate = new Date('2026-04-01T00:00:00.000Z');
       const checkInEndDate = new Date('2026-04-12T00:00:00.000Z');

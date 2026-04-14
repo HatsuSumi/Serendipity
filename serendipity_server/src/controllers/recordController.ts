@@ -50,14 +50,12 @@ export class RecordController {
     try {
       const userId = req.user!.userId;
       const lastSyncTime = getQueryAsString(req.query.lastSyncTime);
-      const deviceId = getQueryAsString(req.query.deviceId);
       const limit = getQueryAsInt(req.query.limit);
       const offset = getQueryAsInt(req.query.offset);
       
       const result = await this.recordService.getRecords(
         userId,
         lastSyncTime,
-        deviceId,
         limit,
         offset
       );

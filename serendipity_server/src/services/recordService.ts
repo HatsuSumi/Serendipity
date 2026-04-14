@@ -1,4 +1,3 @@
-import { ISyncAccessPolicyService } from './syncAccessPolicyService';
 import { Record } from '@prisma/client';
 import { IRecordRepository } from '../repositories/recordRepository';
 import {
@@ -47,7 +46,6 @@ export interface IRecordService {
    * 获取记录列表（支持增量同步）
    * @param userId - 用户 ID
    * @param lastSyncTime - 最后同步时间（可选）
-   * @param deviceId - 当前设备 ID
    * @param limit - 每页数量（默认 100）
    * @param offset - 偏移量（默认 0）
    * @returns 记录列表和分页信息
@@ -56,7 +54,6 @@ export interface IRecordService {
   getRecords(
     userId: string,
     lastSyncTime?: string,
-    deviceId?: string,
     limit?: number,
     offset?: number
   ): Promise<GetRecordsResponseDto>;
@@ -124,7 +121,6 @@ export interface IRecordService {
 export class RecordService implements IRecordService {
   constructor(
     private recordRepository: IRecordRepository,
-    private syncAccessPolicyService: ISyncAccessPolicyService
   ) {}
 
   /**
@@ -192,17 +188,13 @@ export class RecordService implements IRecordService {
   async getRecords(
     userId: string,
     lastSyncTime?: string,
-    deviceId?: string,
     limit: number = 100,
     offset: number = 0
   ): Promise<GetRecordsResponseDto> {
     // Fail Fast: 立即验证参数
     FailFastValidator.validateNonEmptyString(userId, 'userId');
-    if (!deviceId) {
-      throw new AppError('deviceId is required', ErrorCode.VALIDATION_ERROR);
-    }
 
-    const scope = await this.syncAccessPolicyService.buildCoreContentScope(userId, deviceId);
+    const scope = { userId };
     const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;
 
     const { records, total } = await this.recordRepository.findByUserId(
@@ -323,18 +315,7 @@ export class RecordService implements IRecordService {
       throw new AppError('offset cannot be negative', ErrorCode.VALIDATION_ERROR);
     }
 
-    const canDownloadCoreContent =
-      await this.syncAccessPolicyService.canDownloadCoreContent(userId);
-    if (!canDownloadCoreContent) {
-      return {
-        records: [],
-        total: 0,
-        hasMore: false,
-        syncTime: new Date(),
-      };
-    }
-
-    // 解析日期参数
+    // 调用 Repository 执行筛选
     const startDate = filters.startDate ? new Date(filters.startDate) : undefined;
     const endDate = filters.endDate ? new Date(filters.endDate) : undefined;
 

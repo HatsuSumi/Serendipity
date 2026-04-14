@@ -29,7 +29,6 @@ export interface UpdateStoryLineDto {
 // 下载故事线查询参数
 export interface GetStoryLinesQueryDto {
   lastSyncTime?: string;
-  deviceId?: string;
   limit?: number;
   offset?: number;
 }

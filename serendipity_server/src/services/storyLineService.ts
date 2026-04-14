@@ -1,4 +1,3 @@
-import { ISyncAccessPolicyService } from './syncAccessPolicyService';
 import { StoryLine } from '@prisma/client';
 import { IStoryLineRepository } from '../repositories/storyLineRepository';
 import {
@@ -33,7 +32,6 @@ export interface IStoryLineService {
   getStoryLines(
     userId: string,
     lastSyncTime?: string,
-    deviceId?: string,
     limit?: number,
     offset?: number
   ): Promise<GetStoryLinesResponseDto>;
@@ -54,7 +52,6 @@ export interface IStoryLineService {
 export class StoryLineService implements IStoryLineService {
   constructor(
     private storyLineRepository: IStoryLineRepository,
-    private syncAccessPolicyService: ISyncAccessPolicyService
   ) {}
 
   /**
@@ -186,16 +183,12 @@ export class StoryLineService implements IStoryLineService {
   async getStoryLines(
     userId: string,
     lastSyncTime?: string,
-    deviceId?: string,
     limit: number = 100,
     offset: number = 0
   ): Promise<GetStoryLinesResponseDto> {
     FailFastValidator.validateNonEmptyString(userId, 'userId');
-    if (!deviceId) {
-      throw new AppError('deviceId is required', ErrorCode.VALIDATION_ERROR);
-    }
 
-    const scope = await this.syncAccessPolicyService.buildCoreContentScope(userId, deviceId);
+    const scope = { userId };
     const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;
 
     const { storylines, total } =

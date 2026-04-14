@@ -40,7 +40,7 @@ export interface IRecordRepository {
    * @returns 记录列表和总数
    */
   findByUserId(
-    scope: { userId: string; sourceDeviceId?: string },
+    scope: { userId: string },
     lastSyncTime?: Date,
     limit?: number,
     offset?: number
@@ -225,14 +225,13 @@ export class RecordRepository implements IRecordRepository {
   }
 
   async findByUserId(
-    scope: { userId: string; sourceDeviceId?: string },
+    scope: { userId: string },
     lastSyncTime?: Date,
     limit: number = 100,
     offset: number = 0
   ): Promise<{ records: Record[]; total: number }> {
     const where = {
       userId: scope.userId,
-      ...(scope.sourceDeviceId && { sourceDeviceId: scope.sourceDeviceId }),
       ...(lastSyncTime && { updatedAt: { gt: lastSyncTime } }),
     };
 
