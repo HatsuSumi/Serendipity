@@ -101,7 +101,6 @@ describe('StoryLineService', () => {
           recordIds: ['r1'],
           isPinned: true,
           updatedAt: now,
-          sourceDeviceId: 'device-test',
           deletedAt: undefined,
         }
       );
@@ -141,13 +140,69 @@ describe('StoryLineService', () => {
   });
 
   describe('getStoryLines', () => {
-    it('免费版用户下载故事线时应该返回空结果，不拉取业务主数据', async () => {
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(false);
+    it('免费版用户下载故事线时应该只拉取当前设备范围内的数据', async () => {
+      const now = new Date('2026-04-12T12:00:00.000Z');
+      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
+        userId: 'user-free',
+        sourceDeviceId: 'device-free-1',
+      });
+      mockStoryLineRepository.findByUserId.mockResolvedValue({
+        storylines: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            userId: 'user-free',
+            name: 'free storyline on current device',
+            recordIds: ['r1'],
+            isPinned: false,
+            createdAt: now,
+            updatedAt: now,
+            deletedAt: null,
+            sourceDeviceId: 'device-free-1',
+          } as any,
+        ],
+        total: 1,
+      });
 
-      const result = await storyLineService.getStoryLines('user-free');
+      const result = await storyLineService.getStoryLines('user-free', undefined, 'device-free-1');
 
-      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-free');
-      expect(mockStoryLineRepository.findByUserId).not.toHaveBeenCalled();
+      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
+        'user-free',
+        'device-free-1'
+      );
+      expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
+        { userId: 'user-free', sourceDeviceId: 'device-free-1' },
+        undefined,
+        100,
+        0
+      );
+      expect(result.storyLines).toHaveLength(1);
+      expect(result.storyLines[0].userId).toBe('user-free');
+      expect(result.storyLines[0].sourceDeviceId).toBe('device-free-1');
+    });
+
+    it('免费版用户增量下载故事线时应该保留设备范围和 lastSyncTime', async () => {
+      const lastSyncTime = '2026-04-10T00:00:00.000Z';
+      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
+        userId: 'user-free',
+        sourceDeviceId: 'device-free-2',
+      });
+      mockStoryLineRepository.findByUserId.mockResolvedValue({
+        storylines: [],
+        total: 0,
+      });
+
+      const result = await storyLineService.getStoryLines('user-free', lastSyncTime, 'device-free-2', 50, 10);
+
+      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
+        'user-free',
+        'device-free-2'
+      );
+      expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
+        { userId: 'user-free', sourceDeviceId: 'device-free-2' },
+        new Date(lastSyncTime),
+        50,
+        10
+      );
       expect(result).toMatchObject({
         storyLines: [],
         total: 0,

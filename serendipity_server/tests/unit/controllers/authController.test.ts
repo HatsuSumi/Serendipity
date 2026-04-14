@@ -193,7 +193,7 @@ describe('AuthController', () => {
 
       await authController.refreshToken(req, res, next);
 
-      expect(mockAuthService.refreshToken).toHaveBeenCalledWith('refresh-token');
+      expect(mockAuthService.refreshToken).toHaveBeenCalledWith('refresh-token', undefined);
       expect(res.json).toHaveBeenCalled();
       expect(next).not.toHaveBeenCalled();
     });

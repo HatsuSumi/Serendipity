@@ -1,14 +1,12 @@
 import { CheckInService } from '../../../src/services/checkInService';
 import { ICheckInRepository } from '../../../src/repositories/checkInRepository';
 import { IUserTimezoneResolver } from '../../../src/services/userTimezoneResolver';
-import { ISyncAccessPolicyService } from '../../../src/services/syncAccessPolicyService';
 import { ErrorCode } from '../../../src/types/errors';
 
 describe('CheckInService', () => {
   let checkInService: CheckInService;
   let mockCheckInRepository: jest.Mocked<ICheckInRepository>;
   let mockUserTimezoneResolver: jest.Mocked<IUserTimezoneResolver>;
-  let mockSyncAccessPolicyService: jest.Mocked<ISyncAccessPolicyService>;
 
   beforeEach(() => {
     mockCheckInRepository = {
@@ -22,11 +20,6 @@ describe('CheckInService', () => {
 
     mockUserTimezoneResolver = {
       resolveTimezone: jest.fn(),
-    };
-
-      mockSyncAccessPolicyService = {
-      canDownloadCoreContent: jest.fn(),
-      buildCoreContentScope: jest.fn(),
     };
 
     checkInService = new CheckInService(
@@ -71,13 +64,13 @@ describe('CheckInService', () => {
   });
 
   describe('getCheckInStatus', () => {
-    it('免费版用户获取签到状态时应该返回空结果，不拉取签到业务数据', async () => {
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(false);
+    it('无签到记录时应该返回空状态结果', async () => {
+      mockUserTimezoneResolver.resolveTimezone.mockResolvedValue(undefined);
+      mockCheckInRepository.findByUserId.mockResolvedValue([]);
 
       const result = await checkInService.getCheckInStatus('user-free', 2026, 4);
 
-      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-free');
-      expect(mockCheckInRepository.findByUserId).not.toHaveBeenCalled();
+      expect(mockCheckInRepository.findByUserId).toHaveBeenCalledWith('user-free');
       expect(result).toEqual({
         hasCheckedInToday: false,
         consecutiveDays: 0,
@@ -133,17 +126,16 @@ describe('CheckInService', () => {
   });
 
   describe('getCheckIns', () => {
-    it('免费版用户下载签到记录时应该返回空结果，不拉取签到业务数据', async () => {
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(false);
+    it('未传 lastSyncTime 时应该按全量同步查询', async () => {
+      mockCheckInRepository.findByUserId.mockResolvedValue([]);
 
-      const result = await checkInService.getCheckIns('user-free');
+      const result = await checkInService.getCheckIns('user-all');
 
-      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-free');
-      expect(mockCheckInRepository.findByUserId).not.toHaveBeenCalled();
+      expect(mockCheckInRepository.findByUserId).toHaveBeenCalledWith('user-all', undefined);
       expect(result).toEqual([]);
     });
 
-    it('会员用户下载签到记录时应该返回该用户的同步数据', async () => {
+    it('下载签到记录时应该返回仓储同步数据', async () => {
       const checkIns = [
         {
           id: 'check-in-1',
@@ -156,12 +148,10 @@ describe('CheckInService', () => {
         },
       ] as any;
 
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
       mockCheckInRepository.findByUserId.mockResolvedValue(checkIns);
 
       const result = await checkInService.getCheckIns('user-premium', '2026-04-01T00:00:00.000Z');
 
-      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-premium');
       expect(mockCheckInRepository.findByUserId).toHaveBeenCalledWith(
         'user-premium',
         new Date('2026-04-01T00:00:00.000Z'),
