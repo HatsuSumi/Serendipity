@@ -211,7 +211,6 @@ export const initializeContainer = (): Container => {
   const checkInService = new CheckInService(
     checkInRepository,
     userTimezoneResolver,
-    syncAccessPolicyService,
   );
   const reminderPushSender = new ReminderPushSender();
   const pushTokenService = new PushTokenService(
