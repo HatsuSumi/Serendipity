@@ -125,14 +125,15 @@ class EncounterRecordAdapter extends TypeAdapter<EncounterRecord> {
       updatedAt: fields[13] as DateTime,
       isPinned: fields[14] as bool,
       ownerId: fields[15] as String?,
-      deletedAt: fields[16] as DateTime?,
+      sourceDeviceId: fields[16] as String,
+      deletedAt: fields[17] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, EncounterRecord obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -166,6 +167,8 @@ class EncounterRecordAdapter extends TypeAdapter<EncounterRecord> {
       ..writeByte(15)
       ..write(obj.ownerId)
       ..writeByte(16)
+      ..write(obj.sourceDeviceId)
+      ..writeByte(17)
       ..write(obj.deletedAt);
   }
 

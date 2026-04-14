@@ -82,6 +82,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       );
 
       // 保存记录
@@ -116,6 +117,7 @@ void main() {
           status: EncounterStatus.missed,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+          sourceDeviceId: 'device-test',
         );
         await storageService.saveRecord(record);
       }
@@ -138,6 +140,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       ));
       await storageService.saveRecord(EncounterRecord(
         id: 'test-2',
@@ -147,6 +150,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       ));
       await storageService.saveRecord(EncounterRecord(
         id: 'test-3',
@@ -156,6 +160,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       ));
 
       // 获取排序后的记录
@@ -178,6 +183,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       );
       await storageService.saveRecord(record);
 
@@ -202,6 +208,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       );
       await storageService.saveRecord(record);
 
@@ -215,6 +222,7 @@ void main() {
         status: EncounterStatus.reencounter,
         createdAt: record.createdAt,
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       );
       await storageService.updateRecord(updatedRecord);
 
@@ -235,6 +243,7 @@ void main() {
         storyLineId: 'story-001',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       ));
       await storageService.saveRecord(EncounterRecord(
         id: 'test-2',
@@ -245,6 +254,7 @@ void main() {
         storyLineId: 'story-001',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       ));
       await storageService.saveRecord(EncounterRecord(
         id: 'test-3',
@@ -255,6 +265,7 @@ void main() {
         storyLineId: 'story-002',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       ));
 
       // 获取特定故事线的记录
@@ -275,6 +286,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       ));
       await storageService.saveRecord(EncounterRecord(
         id: 'test-2',
@@ -285,6 +297,7 @@ void main() {
         storyLineId: 'story-001',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
       ));
 
       // 获取未关联故事线的记录

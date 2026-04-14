@@ -18,6 +18,7 @@ export interface AuthUserDto {
 export interface RegisterEmailDto {
   email: string;
   password: string;
+  deviceId: string;
   verificationCode?: string;
 }
 
@@ -25,6 +26,7 @@ export interface RegisterEmailDto {
 export interface RegisterPhoneDto {
   phoneNumber: string;
   password: string;
+  deviceId: string;
   verificationCode?: string;
 }
 
@@ -32,12 +34,14 @@ export interface RegisterPhoneDto {
 export interface LoginEmailDto {
   email: string;
   password: string;
+  deviceId: string;
 }
 
 // 手机号登录请求
 export interface LoginPhoneDto {
   phoneNumber: string;
   password: string;
+  deviceId: string;
 }
 
 // 发送验证码请求
@@ -63,6 +67,7 @@ export interface GenerateRecoveryKeyResponseDto {
 // 刷新 Token 请求
 export interface RefreshTokenDto {
   refreshToken: string;
+  deviceId: string;
 }
 
 // 修改密码请求

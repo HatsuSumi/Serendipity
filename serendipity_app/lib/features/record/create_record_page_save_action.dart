@@ -46,6 +46,8 @@ extension _CreateRecordPageSaveAction on _CreateRecordPageState {
       final authState = ref.read(authProvider);
       final currentUser = authState.value;
       final ownerId = currentUser?.id;
+      final sourceDeviceId = widget.recordToEdit?.sourceDeviceId ??
+          await ref.read(deviceIdentityServiceProvider).getOrCreateDeviceId();
 
       final record = EncounterRecord(
         id: widget.recordToEdit?.id ?? const Uuid().v4(),
@@ -87,6 +89,7 @@ extension _CreateRecordPageSaveAction on _CreateRecordPageState {
         createdAt: widget.recordToEdit?.createdAt ?? now,
         updatedAt: now,
         ownerId: widget.recordToEdit?.ownerId ?? ownerId,
+        sourceDeviceId: sourceDeviceId,
       );
 
       if (widget.isEditMode) {

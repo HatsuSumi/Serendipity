@@ -42,6 +42,10 @@ const tagsValidation = [
 // 创建记录验证
 export const createRecordValidation = [
   body('id').isUUID().withMessage('ID必须是有效的UUID'),
+  body('sourceDeviceId')
+    .isString()
+    .notEmpty()
+    .withMessage('来源设备ID不能为空'),
   body('timestamp').isISO8601().withMessage('时间戳必须是有效的日期'),
   ...locationValidation,
   body('description')
@@ -83,6 +87,10 @@ export const createRecordValidation = [
 export const batchCreateRecordsValidation = [
   body('records').isArray().withMessage('记录必须是数组'),
   body('records.*.id').isUUID().withMessage('ID必须是有效的UUID'),
+  body('records.*.sourceDeviceId')
+    .isString()
+    .notEmpty()
+    .withMessage('来源设备ID不能为空'),
   body('records.*.timestamp')
     .isISO8601()
     .withMessage('时间戳必须是有效的日期'),
@@ -138,6 +146,11 @@ export const getRecordsQueryValidation = [
     .optional()
     .isISO8601()
     .withMessage('最后同步时间必须是有效的日期'),
+  query('deviceId')
+    .optional()
+    .isString()
+    .notEmpty()
+    .withMessage('设备ID不能为空'),
   query('limit')
     .optional()
     .isInt({ min: 1, max: 1000 })

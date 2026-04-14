@@ -64,6 +64,7 @@ describe('FavoriteController', () => {
       records: [
         {
           id: 'record-1',
+          sourceDeviceId: 'device-test',
           ownerId: 'test-user-id',
           timestamp: '2026-04-12T09:00:00.000Z',
           location: { placeName: '科技园' },
@@ -78,6 +79,7 @@ describe('FavoriteController', () => {
       deletedRecords: [
         {
           id: 'deleted-record',
+          sourceDeviceId: 'device-test',
           ownerId: 'test-user-id',
           timestamp: '2026-04-12T10:00:00.000Z',
           location: { placeName: '科技园' },

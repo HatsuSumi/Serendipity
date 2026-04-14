@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import '../config/server_config.dart';
+import '../services/device_identity_service.dart';
 import '../services/i_storage_service.dart';
 
 /// HTTP 客户端服务
@@ -17,6 +18,7 @@ import '../services/i_storage_service.dart';
 /// 遵循单一职责原则（SRP）：只负责 HTTP 通信
 class HttpClientService {
   final IStorageService _storage;
+  final DeviceIdentityService _deviceIdentityService;
   final http.Client _client;
   
   // Token 存储键
@@ -40,12 +42,17 @@ class HttpClientService {
   
   HttpClientService({
     required IStorageService storage,
+    required DeviceIdentityService deviceIdentityService,
     http.Client? client,
   })  : _storage = storage,
+        _deviceIdentityService = deviceIdentityService,
         _client = client ?? http.Client();
   
-  // ==================== Token 管理 ====================
-  
+  /// 获取当前设备 ID
+  Future<String> getDeviceId() async {
+    return _deviceIdentityService.getOrCreateDeviceId();
+  }
+
   /// 保存 Token
   Future<void> saveTokens({
     required String accessToken,
@@ -113,9 +120,13 @@ class HttpClientService {
       throw Exception('未找到 Refresh Token');
     }
     
+    final deviceId = await getDeviceId();
     final response = await post(
       ServerConfig.authRefreshToken,
-      body: {'refreshToken': refreshToken},
+      body: {
+        'refreshToken': refreshToken,
+        'deviceId': deviceId,
+      },
       skipAuth: true, // 刷新 Token 时不需要 Access Token
     );
     

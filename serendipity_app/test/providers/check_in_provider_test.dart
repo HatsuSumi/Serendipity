@@ -8,6 +8,7 @@ import 'package:serendipity_app/core/providers/check_in_provider.dart';
 import 'package:serendipity_app/core/repositories/achievement_repository.dart';
 import 'package:serendipity_app/core/repositories/i_auth_repository.dart';
 import 'package:serendipity_app/core/repositories/i_remote_data_repository.dart';
+import 'package:serendipity_app/core/services/device_identity_service.dart';
 import 'package:serendipity_app/core/services/http_client_service.dart';
 import 'package:serendipity_app/core/services/i_storage_service.dart';
 import 'package:serendipity_app/core/services/sync_service.dart';
@@ -182,7 +183,11 @@ void main() {
         overrides: [
           storageServiceProvider.overrideWithValue(storageService),
           httpClientServiceProvider.overrideWithValue(
-            HttpClientService(storage: storageService, client: http.Client()),
+            HttpClientService(
+              storage: storageService,
+              deviceIdentityService: DeviceIdentityService(storage: storageService),
+              client: http.Client(),
+            ),
           ),
           authRepositoryProvider.overrideWithValue(FakeAuthRepository(user)),
           syncServiceProvider.overrideWithValue(

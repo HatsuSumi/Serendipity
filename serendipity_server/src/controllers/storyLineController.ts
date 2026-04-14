@@ -53,12 +53,14 @@ export class StoryLineController {
     try {
       const userId = req.user!.userId;
       const lastSyncTime = getQueryAsString(req.query.lastSyncTime);
+      const deviceId = getQueryAsString(req.query.deviceId);
       const limit = getQueryAsInt(req.query.limit);
       const offset = getQueryAsInt(req.query.offset);
       
       const result = await this.storyLineService.getStoryLines(
         userId,
         lastSyncTime,
+        deviceId,
         limit,
         offset
       );

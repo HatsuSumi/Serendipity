@@ -2,6 +2,7 @@ import '../../models/user.dart';
 import '../../models/register_result.dart';
 import '../../models/enums.dart';
 import 'i_auth_repository.dart';
+import '../services/device_identity_service.dart';
 import '../services/http_client_service.dart';
 import '../config/server_config.dart';
 
@@ -10,10 +11,14 @@ import '../config/server_config.dart';
 /// 使用自建 Node.js 后端，支持邮箱、手机号等多种认证方式。
 class CustomServerAuthRepository implements IAuthRepository {
   final HttpClientService _httpClient;
+  final DeviceIdentityService _deviceIdentityService;
   User? _currentUser;
   
-  CustomServerAuthRepository({required HttpClientService httpClient})
-      : _httpClient = httpClient;
+  CustomServerAuthRepository({
+    required HttpClientService httpClient,
+    required DeviceIdentityService deviceIdentityService,
+  })  : _httpClient = httpClient,
+        _deviceIdentityService = deviceIdentityService;
   
   @override
   Future<User?> get currentUser async {
@@ -68,6 +73,10 @@ class CustomServerAuthRepository implements IAuthRepository {
       expiresAt: DateTime.parse(tokens['expiresAt'] as String),
     );
   }
+
+  Future<String> _getDeviceId() async {
+    return _deviceIdentityService.getOrCreateDeviceId();
+  }
   
   @override
   Future<User> signInWithEmail(String email, String password) async {
@@ -80,11 +89,13 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
     
     try {
+      final deviceId = await _getDeviceId();
       final response = await _httpClient.post(
         ServerConfig.authLogin,
         body: {
           'email': email,
           'password': password,
+          'deviceId': deviceId,
         },
         skipAuth: true,
       );
@@ -113,11 +124,13 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
     
     try {
+      final deviceId = await _getDeviceId();
       final response = await _httpClient.post(
         ServerConfig.authRegister,
         body: {
           'email': email,
           'password': password,
+          'deviceId': deviceId,
         },
         skipAuth: true,
       );
@@ -153,11 +166,13 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
     
     try {
+      final deviceId = await _getDeviceId();
       final response = await _httpClient.post(
         ServerConfig.authLoginPhone,
         body: {
           'phoneNumber': phoneNumber,
           'password': password,
+          'deviceId': deviceId,
         },
         skipAuth: true,
       );
@@ -190,11 +205,13 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
     
     try {
+      final deviceId = await _getDeviceId();
       final response = await _httpClient.post(
         ServerConfig.authLoginCode,
         body: {
           'phoneNumber': phoneNumber,
           'code': verificationCode,
+          'deviceId': deviceId,
         },
         skipAuth: true,
       );
@@ -250,11 +267,13 @@ class CustomServerAuthRepository implements IAuthRepository {
     }
     
     try {
+      final deviceId = await _getDeviceId();
       final response = await _httpClient.post(
         ServerConfig.authRegisterPhone,
         body: {
           'phoneNumber': phoneNumber,
           'password': password,
+          'deviceId': deviceId,
         },
         skipAuth: true,
       );

@@ -32,6 +32,7 @@ void main() {
         weather: [Weather.sunny],
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 1),
+        sourceDeviceId: 'device-test',
       );
     });
 

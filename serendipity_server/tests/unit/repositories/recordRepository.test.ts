@@ -34,6 +34,7 @@ describe('RecordRepository', () => {
 
       const result = await recordRepository.create('user-id', {
         id: 'record-id',
+        sourceDeviceId: 'device-test',
         timestamp: new Date(),
         location: {},
         description: 'Test',

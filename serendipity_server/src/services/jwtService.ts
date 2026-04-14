@@ -3,6 +3,7 @@ import { config } from '../config';
 
 export interface JwtPayload {
   userId: string;
+  deviceId: string;
   email?: string;
   phone?: string;
 }

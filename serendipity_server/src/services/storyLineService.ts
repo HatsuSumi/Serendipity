@@ -33,6 +33,7 @@ export interface IStoryLineService {
   getStoryLines(
     userId: string,
     lastSyncTime?: string,
+    deviceId?: string,
     limit?: number,
     offset?: number
   ): Promise<GetStoryLinesResponseDto>;
@@ -185,27 +186,21 @@ export class StoryLineService implements IStoryLineService {
   async getStoryLines(
     userId: string,
     lastSyncTime?: string,
+    deviceId?: string,
     limit: number = 100,
     offset: number = 0
   ): Promise<GetStoryLinesResponseDto> {
     FailFastValidator.validateNonEmptyString(userId, 'userId');
-
-    const canDownloadCoreContent =
-      await this.syncAccessPolicyService.canDownloadCoreContent(userId);
-    if (!canDownloadCoreContent) {
-      return {
-        storyLines: [],
-        total: 0,
-        hasMore: false,
-        syncTime: new Date(),
-      };
+    if (!deviceId) {
+      throw new AppError('deviceId is required', ErrorCode.VALIDATION_ERROR);
     }
 
+    const scope = await this.syncAccessPolicyService.buildCoreContentScope(userId, deviceId);
     const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;
 
     const { storylines, total } =
       await this.storyLineRepository.findByUserId(
-        userId,
+        scope,
         lastSyncDate,
         limit,
         offset
@@ -273,6 +268,7 @@ export class StoryLineService implements IStoryLineService {
     return {
       id: storyline.id,
       userId: storyline.userId,
+      sourceDeviceId: storyline.sourceDeviceId,
       name: storyline.name,
       recordIds: fromJsonValue<string[]>(storyline.recordIds),
       isPinned: storyline.isPinned,

@@ -21,6 +21,7 @@ export interface TagWithNoteDto {
 // 创建记录请求
 export interface CreateRecordDto {
   id: string;
+  sourceDeviceId: string;
   timestamp: Date;
   location: LocationDto;
   description?: string;
@@ -64,6 +65,7 @@ export interface UpdateRecordDto {
 // 下载记录查询参数
 export interface GetRecordsQueryDto {
   lastSyncTime?: string;
+  deviceId?: string;
   limit?: number;
   offset?: number;
 }
@@ -72,6 +74,7 @@ export interface GetRecordsQueryDto {
 export interface RecordResponseDto {
   id: string;
   ownerId: string;
+  sourceDeviceId: string;
   timestamp: string;
   location: LocationDto;
   description?: string;

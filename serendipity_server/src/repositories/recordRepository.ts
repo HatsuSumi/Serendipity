@@ -40,7 +40,7 @@ export interface IRecordRepository {
    * @returns 记录列表和总数
    */
   findByUserId(
-    userId: string,
+    scope: { userId: string; sourceDeviceId?: string },
     lastSyncTime?: Date,
     limit?: number,
     offset?: number
@@ -128,6 +128,7 @@ export class RecordRepository implements IRecordRepository {
     return this.prisma.record.upsert({
       where: { id: data.id },
       update: {
+        sourceDeviceId: data.sourceDeviceId,
         timestamp: new Date(data.timestamp),
         location: toJsonValue(data.location),
         description: data.description,
@@ -146,6 +147,7 @@ export class RecordRepository implements IRecordRepository {
       create: {
         id: data.id,
         userId,
+        sourceDeviceId: data.sourceDeviceId,
         timestamp: new Date(data.timestamp),
         location: toJsonValue(data.location),
         description: data.description,
@@ -175,6 +177,7 @@ export class RecordRepository implements IRecordRepository {
         this.prisma.record.upsert({
           where: { id: data.id },
           update: {
+            sourceDeviceId: data.sourceDeviceId,
             timestamp: new Date(data.timestamp),
             location: toJsonValue(data.location),
             description: data.description,
@@ -193,6 +196,7 @@ export class RecordRepository implements IRecordRepository {
           create: {
             id: data.id,
             userId,
+            sourceDeviceId: data.sourceDeviceId,
             timestamp: new Date(data.timestamp),
             location: toJsonValue(data.location),
             description: data.description,
@@ -221,13 +225,14 @@ export class RecordRepository implements IRecordRepository {
   }
 
   async findByUserId(
-    userId: string,
+    scope: { userId: string; sourceDeviceId?: string },
     lastSyncTime?: Date,
     limit: number = 100,
     offset: number = 0
   ): Promise<{ records: Record[]; total: number }> {
     const where = {
-      userId,
+      userId: scope.userId,
+      ...(scope.sourceDeviceId && { sourceDeviceId: scope.sourceDeviceId }),
       ...(lastSyncTime && { updatedAt: { gt: lastSyncTime } }),
     };
 

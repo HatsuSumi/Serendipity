@@ -21,6 +21,7 @@ describe('StoryLineService', () => {
     };
     mockSyncAccessPolicyService = {
       canDownloadCoreContent: jest.fn(),
+      buildCoreContentScope: jest.fn(),
     };
 
     storyLineService = new StoryLineService(
@@ -41,6 +42,7 @@ describe('StoryLineService', () => {
         isPinned: false,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       } as any);
 
       const result = await storyLineService.createStoryLine('user-a', {
@@ -50,6 +52,7 @@ describe('StoryLineService', () => {
         isPinned: false,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       });
 
       expect(mockStoryLineRepository.create).toHaveBeenCalledWith('user-a', expect.any(Object));
@@ -66,6 +69,7 @@ describe('StoryLineService', () => {
         isPinned: false,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       } as any);
       mockStoryLineRepository.update.mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440000',
@@ -76,6 +80,7 @@ describe('StoryLineService', () => {
         deletedAt: null,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       } as any);
 
       const result = await storyLineService.createStoryLine('user-a', {
@@ -85,6 +90,7 @@ describe('StoryLineService', () => {
         isPinned: true,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       });
 
       expect(mockStoryLineRepository.create).not.toHaveBeenCalled();
@@ -95,6 +101,7 @@ describe('StoryLineService', () => {
           recordIds: ['r1'],
           isPinned: true,
           updatedAt: now,
+          sourceDeviceId: 'device-test',
           deletedAt: undefined,
         }
       );
@@ -111,6 +118,7 @@ describe('StoryLineService', () => {
         isPinned: false,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       } as any);
 
       await expect(
@@ -121,6 +129,7 @@ describe('StoryLineService', () => {
           isPinned: false,
           createdAt: now,
           updatedAt: now,
+          sourceDeviceId: 'device-test',
         })
       ).rejects.toMatchObject({
         code: ErrorCode.CONFLICT,
@@ -148,7 +157,9 @@ describe('StoryLineService', () => {
 
     it('会员用户下载故事线时应该返回该用户的同步数据', async () => {
       const now = new Date('2026-04-12T12:00:00.000Z');
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
+      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
+        userId: 'user-premium',
+      });
       mockStoryLineRepository.findByUserId.mockResolvedValue({
         storylines: [
           {
@@ -165,11 +176,14 @@ describe('StoryLineService', () => {
         total: 1,
       });
 
-      const result = await storyLineService.getStoryLines('user-premium');
+      const result = await storyLineService.getStoryLines('user-premium', undefined, 'device-1');
 
-      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-premium');
-      expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
+      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
         'user-premium',
+        'device-1'
+      );
+      expect(mockStoryLineRepository.findByUserId).toHaveBeenCalledWith(
+        { userId: 'user-premium' },
         undefined,
         100,
         0

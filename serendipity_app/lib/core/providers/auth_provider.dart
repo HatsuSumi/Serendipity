@@ -4,6 +4,7 @@ import '../repositories/i_auth_repository.dart';
 import '../repositories/test_auth_repository.dart';
 import '../repositories/custom_server_auth_repository.dart';
 import '../services/http_client_service.dart';
+import '../services/device_identity_service.dart';
 import '../services/i_storage_service.dart';
 import '../services/push_token_sync_service.dart';
 import '../config/app_config.dart';
@@ -22,7 +23,16 @@ final storageServiceProvider = Provider<IStorageService>((ref) {
 /// HTTP 客户端服务 Provider
 final httpClientServiceProvider = Provider<HttpClientService>((ref) {
   final storage = ref.watch(storageServiceProvider);
-  return HttpClientService(storage: storage);
+  final deviceIdentityService = ref.watch(deviceIdentityServiceProvider);
+  return HttpClientService(
+    storage: storage,
+    deviceIdentityService: deviceIdentityService,
+  );
+});
+
+final deviceIdentityServiceProvider = Provider<DeviceIdentityService>((ref) {
+  final storage = ref.watch(storageServiceProvider);
+  return DeviceIdentityService(storage: storage);
 });
 
 /// 认证仓储 Provider
@@ -40,7 +50,11 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
     
     case ServerType.customServer:
       final httpClient = ref.watch(httpClientServiceProvider);
-      return CustomServerAuthRepository(httpClient: httpClient);
+      final deviceIdentityService = ref.watch(deviceIdentityServiceProvider);
+      return CustomServerAuthRepository(
+        httpClient: httpClient,
+        deviceIdentityService: deviceIdentityService,
+      );
   }
 });
 

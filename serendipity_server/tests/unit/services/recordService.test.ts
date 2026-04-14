@@ -12,6 +12,7 @@ describe('RecordService', () => {
     return {
       id: '550e8400-e29b-41d4-a716-446655440000',
       userId: 'user-premium',
+      sourceDeviceId: 'device-test',
       timestamp: now,
       location: { province: 'Guangdong', city: 'Shenzhen' },
       description: 'record',
@@ -44,6 +45,7 @@ describe('RecordService', () => {
 
     mockSyncAccessPolicyService = {
       canDownloadCoreContent: jest.fn(),
+      buildCoreContentScope: jest.fn(),
     };
 
     recordService = new RecordService(
@@ -68,17 +70,22 @@ describe('RecordService', () => {
     });
 
     it('会员用户下载记录时应该返回该用户的同步数据', async () => {
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
+      mockSyncAccessPolicyService.buildCoreContentScope.mockResolvedValue({
+        userId: 'user-premium',
+      });
       mockRecordRepository.findByUserId.mockResolvedValue({
         records: [createMockRecord()],
         total: 1,
       });
 
-      const result = await recordService.getRecords('user-premium');
+      const result = await recordService.getRecords('user-premium', undefined, 'device-1');
 
-      expect(mockSyncAccessPolicyService.canDownloadCoreContent).toHaveBeenCalledWith('user-premium');
-      expect(mockRecordRepository.findByUserId).toHaveBeenCalledWith(
+      expect(mockSyncAccessPolicyService.buildCoreContentScope).toHaveBeenCalledWith(
         'user-premium',
+        'device-1'
+      );
+      expect(mockRecordRepository.findByUserId).toHaveBeenCalledWith(
+        { userId: 'user-premium' },
         undefined,
         100,
         0,

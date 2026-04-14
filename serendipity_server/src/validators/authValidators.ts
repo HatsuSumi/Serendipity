@@ -8,6 +8,10 @@ export const registerEmailValidation = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('密码长度必须至少6位'),
+  body('deviceId')
+    .isString()
+    .notEmpty()
+    .withMessage('设备ID不能为空'),
 ];
 
 // 手机号注册验证规则
@@ -18,6 +22,10 @@ export const registerPhoneValidation = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('密码长度必须至少6位'),
+  body('deviceId')
+    .isString()
+    .notEmpty()
+    .withMessage('设备ID不能为空'),
 ];
 
 // 邮箱登录验证规则
@@ -28,6 +36,10 @@ export const loginEmailValidation = [
   body('password')
     .notEmpty()
     .withMessage('密码不能为空'),
+  body('deviceId')
+    .isString()
+    .notEmpty()
+    .withMessage('设备ID不能为空'),
 ];
 
 // 手机号登录验证规则
@@ -38,6 +50,10 @@ export const loginPhoneValidation = [
   body('password')
     .notEmpty()
     .withMessage('密码不能为空'),
+  body('deviceId')
+    .isString()
+    .notEmpty()
+    .withMessage('设备ID不能为空'),
 ];
 
 // 发送验证码验证规则
@@ -71,6 +87,10 @@ export const refreshTokenValidation = [
   body('refreshToken')
     .notEmpty()
     .withMessage('刷新令牌不能为空'),
+  body('deviceId')
+    .isString()
+    .notEmpty()
+    .withMessage('设备ID不能为空'),
 ];
 
 // 修改密码验证规则

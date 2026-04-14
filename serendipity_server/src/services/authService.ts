@@ -39,7 +39,7 @@ export interface IAuthService {
   changeEmail(userId: string, data: ChangeEmailDto): Promise<AuthResponseDto['user']>;
   changePhone(userId: string, data: ChangePhoneDto): Promise<AuthResponseDto['user']>;
   getMe(userId: string): Promise<UserMeDto>;
-  refreshToken(refreshToken: string): Promise<AuthResponseDto>;
+  refreshToken(refreshToken: string, deviceId: string): Promise<AuthResponseDto>;
   logout(userId: string): Promise<void>;
   generateRecoveryKey(userId: string): Promise<GenerateRecoveryKeyResponseDto>;
   getRecoveryKey(userId: string): Promise<string | null>;
@@ -67,7 +67,7 @@ export class AuthService implements IAuthService {
    */
   async registerEmail(data: RegisterEmailDto): Promise<AuthResponseDto> {
     // Fail Fast：参数验证
-    this.validateRegisterData(data.email, data.password);
+    this.validateRegisterData(data.email, data.password, data.deviceId);
 
     // 检查邮箱是否已存在
     const existingUser = await this.userRepository.findByEmail(data.email);
@@ -90,7 +90,7 @@ export class AuthService implements IAuthService {
     await this.userRepository.updateRecoveryKey(user.id, recoveryKey);
 
     // 生成 Token 并附带恢复密钥
-    return this.generateAuthResponseWithRecoveryKey(user, recoveryKey);
+    return this.generateAuthResponseWithRecoveryKey(user, recoveryKey, data.deviceId);
   }
 
   /**
@@ -101,7 +101,7 @@ export class AuthService implements IAuthService {
    */
   async registerPhonePassword(data: RegisterPhoneDto): Promise<AuthResponseDto> {
     // Fail Fast：参数验证
-    this.validateRegisterData(data.phoneNumber, data.password);
+    this.validateRegisterData(data.phoneNumber, data.password, data.deviceId);
 
     // 检查手机号是否已存在
     const existingUser = await this.userRepository.findByPhone(data.phoneNumber);
@@ -127,7 +127,7 @@ export class AuthService implements IAuthService {
     await this.userRepository.updateRecoveryKey(user.id, recoveryKey);
 
     // 生成 Token 并附带恢复密钥
-    return this.generateAuthResponseWithRecoveryKey(user, recoveryKey);
+    return this.generateAuthResponseWithRecoveryKey(user, recoveryKey, data.deviceId);
   }
 
   /**
@@ -138,7 +138,7 @@ export class AuthService implements IAuthService {
    */
   async registerPhone(data: RegisterPhoneDto): Promise<AuthResponseDto> {
     // Fail Fast：参数验证
-    this.validateRegisterData(data.phoneNumber, data.password);
+    this.validateRegisterData(data.phoneNumber, data.password, data.deviceId);
 
     // 检查手机号是否已存在
     const existingUser = await this.userRepository.findByPhone(data.phoneNumber);
@@ -164,7 +164,7 @@ export class AuthService implements IAuthService {
     await this.userRepository.updateRecoveryKey(user.id, recoveryKey);
 
     // 生成 Token 并附带恢复密钥
-    return this.generateAuthResponseWithRecoveryKey(user, recoveryKey);
+    return this.generateAuthResponseWithRecoveryKey(user, recoveryKey, data.deviceId);
   }
 
   /**
@@ -175,7 +175,7 @@ export class AuthService implements IAuthService {
    */
   async loginEmail(data: LoginEmailDto): Promise<AuthResponseDto> {
     // Fail Fast：参数验证
-    this.validateLoginData(data.email, data.password);
+    this.validateLoginData(data.email, data.password, data.deviceId);
 
     // 查找用户并验证密码
     const user = await this.userRepository.findByEmail(data.email);
@@ -185,7 +185,7 @@ export class AuthService implements IAuthService {
     await this.userRepository.updateLastLogin(validatedUser.id);
 
     // 生成 Token
-    return this.generateAuthResponse(validatedUser);
+    return this.generateAuthResponse(validatedUser, data.deviceId);
   }
 
   /**
@@ -196,7 +196,7 @@ export class AuthService implements IAuthService {
    */
   async loginPhonePassword(data: LoginPhoneDto): Promise<AuthResponseDto> {
     // Fail Fast：参数验证
-    this.validateLoginData(data.phoneNumber, data.password);
+    this.validateLoginData(data.phoneNumber, data.password, data.deviceId);
 
     // 查找用户并验证密码
     const user = await this.userRepository.findByPhone(data.phoneNumber);
@@ -206,7 +206,7 @@ export class AuthService implements IAuthService {
     await this.userRepository.updateLastLogin(validatedUser.id);
 
     // 生成 Token
-    return this.generateAuthResponse(validatedUser);
+    return this.generateAuthResponse(validatedUser, data.deviceId);
   }
 
   /**
@@ -217,7 +217,7 @@ export class AuthService implements IAuthService {
    */
   async loginPhone(data: LoginPhoneDto): Promise<AuthResponseDto> {
     // Fail Fast：参数验证
-    this.validateLoginData(data.phoneNumber, data.password);
+    this.validateLoginData(data.phoneNumber, data.password, data.deviceId);
 
     // 查找用户并验证密码
     const user = await this.userRepository.findByPhone(data.phoneNumber);
@@ -227,7 +227,7 @@ export class AuthService implements IAuthService {
     await this.userRepository.updateLastLogin(validatedUser.id);
 
     // 生成 Token
-    return this.generateAuthResponse(validatedUser);
+    return this.generateAuthResponse(validatedUser, data.deviceId);
   }
 
   /**
@@ -466,15 +466,18 @@ export class AuthService implements IAuthService {
    * @returns 新的认证响应（用户信息、新 Token）
    * @throws {AppError} 刷新令牌无效或已过期
    */
-  async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
+  async refreshToken(refreshToken: string, deviceId: string): Promise<AuthResponseDto> {
     // Fail Fast：参数验证
     if (!refreshToken) {
       throw new AppError('刷新令牌不能为空', ErrorCode.INVALID_TOKEN);
     }
+    if (!deviceId) {
+      throw new AppError('设备ID不能为空', ErrorCode.INVALID_TOKEN);
+    }
 
     // 查找刷新令牌
     const tokenRecord =
-      await this.refreshTokenRepository.findByToken(refreshToken);
+      await this.refreshTokenRepository.findByTokenAndDeviceId(refreshToken, deviceId);
 
     if (!tokenRecord) {
       throw new AppError('刷新令牌无效', ErrorCode.INVALID_TOKEN);
@@ -497,7 +500,7 @@ export class AuthService implements IAuthService {
     await this.refreshTokenRepository.deleteByToken(refreshToken);
 
     // 生成新的 Token
-    return this.generateAuthResponse(user);
+    return this.generateAuthResponse(user, deviceId);
   }
 
   /**
@@ -614,9 +617,10 @@ export class AuthService implements IAuthService {
    * @param user - 用户对象
    * @returns 认证响应（用户信息、Token）
    */
-  private async generateAuthResponse(user: User): Promise<AuthResponseDto> {
+  private async generateAuthResponse(user: User, deviceId: string): Promise<AuthResponseDto> {
     const payload: JwtPayload = {
       userId: user.id,
+      deviceId,
       email: user.email || undefined,
       phone: user.phoneNumber || undefined,
     };
@@ -627,7 +631,7 @@ export class AuthService implements IAuthService {
     const expiresAt = new Date(
       Date.now() + AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
     );
-    await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt);
+    await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt, deviceId);
 
     // 所有版本：踢旧设备（保留刚创建的最新 Token，删除其余）
     // 免费版和会员版都只允许单设备在线，区别在于数据是否迁移（由客户端同步策略决定）
@@ -657,10 +661,12 @@ export class AuthService implements IAuthService {
    */
   private async generateAuthResponseWithRecoveryKey(
     user: User,
-    recoveryKey: string
+    recoveryKey: string,
+    deviceId: string
   ): Promise<AuthResponseDto> {
     const payload: JwtPayload = {
       userId: user.id,
+      deviceId,
       email: user.email || undefined,
       phone: user.phoneNumber || undefined,
     };
@@ -672,7 +678,7 @@ export class AuthService implements IAuthService {
     const expiresAt = new Date(
       Date.now() + AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
     );
-    await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt);
+    await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt, deviceId);
 
     return {
       user: toAuthUserDto(user),
@@ -746,12 +752,15 @@ export class AuthService implements IAuthService {
    * @param password - 密码
    * @throws {AppError} 参数为空或密码长度不足
    */
-  private validateRegisterData(identifier: string, password: string): void {
+  private validateRegisterData(identifier: string, password: string, deviceId: string): void {
     if (!identifier) {
       throw new AppError('邮箱或手机号不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
     if (!password || password.length < 6) {
       throw new AppError('密码长度必须至少 6 位', ErrorCode.INVALID_CREDENTIALS);
+    }
+    if (!deviceId) {
+      throw new AppError('设备ID不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
   }
 
@@ -761,12 +770,15 @@ export class AuthService implements IAuthService {
    * @param password - 密码
    * @throws {AppError} 参数为空
    */
-  private validateLoginData(identifier: string, password: string): void {
+  private validateLoginData(identifier: string, password: string, deviceId: string): void {
     if (!identifier) {
       throw new AppError('邮箱或手机号不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
     if (!password) {
       throw new AppError('密码不能为空', ErrorCode.INVALID_CREDENTIALS);
+    }
+    if (!deviceId) {
+      throw new AppError('设备ID不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
   }
 }

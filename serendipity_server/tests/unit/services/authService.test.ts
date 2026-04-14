@@ -36,6 +36,7 @@ describe('AuthService', () => {
     mockRefreshTokenRepository = {
       create: jest.fn(),
       findByToken: jest.fn(),
+      findByTokenAndDeviceId: jest.fn(),
       deleteByToken: jest.fn(),
       deleteByUserId: jest.fn(),
       deleteExpired: jest.fn(),
@@ -67,6 +68,7 @@ describe('AuthService', () => {
       const registerData = {
         email: 'test@example.com',
         password: 'password123',
+        deviceId: 'device-test',
       };
 
       const mockUser = createMockUser({
@@ -103,6 +105,7 @@ describe('AuthService', () => {
       const registerData = {
         email: 'existing@example.com',
         password: 'password123',
+        deviceId: 'device-test',
       };
 
       mockUserRepository.findByEmail.mockResolvedValue(createMockUser());
@@ -119,6 +122,7 @@ describe('AuthService', () => {
       const loginData = {
         email: 'test@example.com',
         password: 'password123',
+        deviceId: 'device-test',
       };
 
       const mockUser = createMockUser();
@@ -149,6 +153,7 @@ describe('AuthService', () => {
       const loginData = {
         email: 'nonexistent@example.com',
         password: 'password123',
+        deviceId: 'device-test',
       };
 
       mockUserRepository.findByEmail.mockResolvedValue(null);
@@ -163,6 +168,7 @@ describe('AuthService', () => {
       const loginData = {
         email: 'test@example.com',
         password: 'wrong-password',
+        deviceId: 'device-test',
       };
 
       const mockUser = createMockUser();
@@ -329,6 +335,7 @@ describe('AuthService', () => {
   describe('refreshToken', () => {
     it('应该成功刷新 Token', async () => {
       const refreshToken = 'valid-refresh-token';
+      const deviceId = 'device-test';
       const mockUser = createMockUser();
       const mockTokenRecord = {
         id: 'token-id',
@@ -338,12 +345,12 @@ describe('AuthService', () => {
         createdAt: new Date(),
       };
 
-      mockRefreshTokenRepository.findByToken.mockResolvedValue(mockTokenRecord);
+      mockRefreshTokenRepository.findByTokenAndDeviceId.mockResolvedValue(mockTokenRecord as any);
       mockUserRepository.findById.mockResolvedValue(mockUser);
       mockRefreshTokenRepository.deleteByToken.mockResolvedValue(undefined as any);
       mockRefreshTokenRepository.create.mockResolvedValue({} as any);
 
-      const result = await authService.refreshToken(refreshToken);
+      const result = await authService.refreshToken(refreshToken, deviceId);
 
       expect(result.tokens.accessToken).toBe('access-token');
       expect(result.tokens.refreshToken).toBe('refresh-token');
@@ -352,17 +359,19 @@ describe('AuthService', () => {
 
     it('无效的 Refresh Token 应该抛出错误', async () => {
       const refreshToken = 'invalid-refresh-token';
+      const deviceId = 'device-test';
 
-      mockRefreshTokenRepository.findByToken.mockResolvedValue(null);
+      mockRefreshTokenRepository.findByTokenAndDeviceId.mockResolvedValue(null);
 
-      await expect(authService.refreshToken(refreshToken)).rejects.toThrow(AppError);
-      await expect(authService.refreshToken(refreshToken)).rejects.toMatchObject({
+      await expect(authService.refreshToken(refreshToken, deviceId)).rejects.toThrow(AppError);
+      await expect(authService.refreshToken(refreshToken, deviceId)).rejects.toMatchObject({
         code: ErrorCode.INVALID_TOKEN,
       });
     });
 
     it('过期的 Refresh Token 应该抛出错误', async () => {
       const refreshToken = 'expired-refresh-token';
+      const deviceId = 'device-test';
       const mockTokenRecord = {
         id: 'token-id',
         userId: 'user-id',
@@ -371,11 +380,11 @@ describe('AuthService', () => {
         createdAt: new Date(),
       };
 
-      mockRefreshTokenRepository.findByToken.mockResolvedValue(mockTokenRecord);
+      mockRefreshTokenRepository.findByTokenAndDeviceId.mockResolvedValue(mockTokenRecord as any);
       mockRefreshTokenRepository.deleteByToken.mockResolvedValue(undefined as any);
 
-      await expect(authService.refreshToken(refreshToken)).rejects.toThrow(AppError);
-      await expect(authService.refreshToken(refreshToken)).rejects.toMatchObject({
+      await expect(authService.refreshToken(refreshToken, deviceId)).rejects.toThrow(AppError);
+      await expect(authService.refreshToken(refreshToken, deviceId)).rejects.toMatchObject({
         code: ErrorCode.TOKEN_EXPIRED,
       });
     });

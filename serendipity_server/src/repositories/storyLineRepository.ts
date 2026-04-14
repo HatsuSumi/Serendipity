@@ -19,7 +19,7 @@ export interface IStoryLineRepository {
   findById(id: string, userId: string): Promise<StoryLine | null>;
 
   findByUserId(
-    userId: string,
+    scope: { userId: string; sourceDeviceId?: string },
     lastSyncTime?: Date,
     limit?: number,
     offset?: number
@@ -42,6 +42,7 @@ export class StoryLineRepository implements IStoryLineRepository {
       data: {
         id: data.id,
         userId,
+        sourceDeviceId: data.sourceDeviceId,
         name: data.name,
         recordIds: toJsonValue(data.recordIds),
         isPinned: data.isPinned,
@@ -59,6 +60,7 @@ export class StoryLineRepository implements IStoryLineRepository {
           data: {
             id: data.id,
             userId,
+            sourceDeviceId: data.sourceDeviceId,
             name: data.name,
             recordIds: toJsonValue(data.recordIds),
             isPinned: data.isPinned,
@@ -84,13 +86,14 @@ export class StoryLineRepository implements IStoryLineRepository {
   }
 
   async findByUserId(
-    userId: string,
+    scope: { userId: string; sourceDeviceId?: string },
     lastSyncTime?: Date,
     limit: number = 100,
     offset: number = 0
   ): Promise<{ storylines: StoryLine[]; total: number }> {
     const where = {
-      userId,
+      userId: scope.userId,
+      ...(scope.sourceDeviceId && { sourceDeviceId: scope.sourceDeviceId }),
       ...(lastSyncTime && { updatedAt: { gt: lastSyncTime } }),
     };
 

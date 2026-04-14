@@ -24,14 +24,14 @@ describe('CheckInService', () => {
       resolveTimezone: jest.fn(),
     };
 
-    mockSyncAccessPolicyService = {
+      mockSyncAccessPolicyService = {
       canDownloadCoreContent: jest.fn(),
+      buildCoreContentScope: jest.fn(),
     };
 
     checkInService = new CheckInService(
       mockCheckInRepository,
       mockUserTimezoneResolver,
-      mockSyncAccessPolicyService,
     );
   });
 
@@ -40,7 +40,6 @@ describe('CheckInService', () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2026-04-01T16:30:00.000Z'));
       mockUserTimezoneResolver.resolveTimezone.mockResolvedValue('Asia/Shanghai');
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
       mockCheckInRepository.findByUserAndDate.mockResolvedValue(null);
       mockCheckInRepository.create.mockImplementation(async (_userId, data) => ({
         id: data.id,
@@ -63,7 +62,6 @@ describe('CheckInService', () => {
 
     it('当天已签到时应该返回冲突错误', async () => {
       mockUserTimezoneResolver.resolveTimezone.mockResolvedValue(undefined);
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
       mockCheckInRepository.findByUserAndDate.mockResolvedValue({ id: 'exists' } as any);
 
       await expect(checkInService.createTodayCheckIn('user-1')).rejects.toMatchObject({
@@ -94,7 +92,6 @@ describe('CheckInService', () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2026-04-01T16:30:00.000Z'));
       mockUserTimezoneResolver.resolveTimezone.mockResolvedValue('Asia/Shanghai');
-      mockSyncAccessPolicyService.canDownloadCoreContent.mockResolvedValue(true);
       mockCheckInRepository.findByUserId.mockResolvedValue([
         {
           id: 'today',

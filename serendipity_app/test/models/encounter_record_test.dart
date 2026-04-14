@@ -137,6 +137,7 @@ void main() {
         weather: [Weather.sunny],
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       );
 
       expect(record.id, 'record_1');
@@ -158,6 +159,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       );
 
       expect(record.id, 'record_1');
@@ -185,6 +187,7 @@ void main() {
         status: EncounterStatus.missed,
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       );
 
       final json = record.toJson();
@@ -223,6 +226,7 @@ void main() {
         'weather': ['1'],
         'createdAt': '2026-02-11T18:30:00.000',
         'updatedAt': '2026-02-11T18:30:00.000',
+        'sourceDeviceId': 'device-test',
       };
 
       final record = EncounterRecord.fromJson(json);
@@ -262,6 +266,7 @@ void main() {
         weather: [Weather.sunny],
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       );
 
       final json = original.toJson();
@@ -287,6 +292,7 @@ void main() {
         conversationStarter: '她掉了一本书，我帮她捡起来',
         createdAt: now,
         updatedAt: now,
+        sourceDeviceId: 'device-test',
       );
 
       expect(record.status, EncounterStatus.met);

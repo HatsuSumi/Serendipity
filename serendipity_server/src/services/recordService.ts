@@ -47,6 +47,7 @@ export interface IRecordService {
    * 获取记录列表（支持增量同步）
    * @param userId - 用户 ID
    * @param lastSyncTime - 最后同步时间（可选）
+   * @param deviceId - 当前设备 ID
    * @param limit - 每页数量（默认 100）
    * @param offset - 偏移量（默认 0）
    * @returns 记录列表和分页信息
@@ -55,6 +56,7 @@ export interface IRecordService {
   getRecords(
     userId: string,
     lastSyncTime?: string,
+    deviceId?: string,
     limit?: number,
     offset?: number
   ): Promise<GetRecordsResponseDto>;
@@ -190,27 +192,21 @@ export class RecordService implements IRecordService {
   async getRecords(
     userId: string,
     lastSyncTime?: string,
+    deviceId?: string,
     limit: number = 100,
     offset: number = 0
   ): Promise<GetRecordsResponseDto> {
     // Fail Fast: 立即验证参数
     FailFastValidator.validateNonEmptyString(userId, 'userId');
-
-    const canDownloadCoreContent =
-      await this.syncAccessPolicyService.canDownloadCoreContent(userId);
-    if (!canDownloadCoreContent) {
-      return {
-        records: [],
-        total: 0,
-        hasMore: false,
-        syncTime: new Date(),
-      };
+    if (!deviceId) {
+      throw new AppError('deviceId is required', ErrorCode.VALIDATION_ERROR);
     }
 
+    const scope = await this.syncAccessPolicyService.buildCoreContentScope(userId, deviceId);
     const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : undefined;
 
     const { records, total } = await this.recordRepository.findByUserId(
-      userId,
+      scope,
       lastSyncDate,
       limit,
       offset
@@ -421,6 +417,7 @@ export class RecordService implements IRecordService {
     return {
       id: record.id,
       ownerId: record.userId,
+      sourceDeviceId: record.sourceDeviceId,
       timestamp: record.timestamp.toISOString(),
       location: fromJsonValue<LocationDto>(record.location),
       description: record.description || undefined,

@@ -349,6 +349,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: userId,
           description: 'Created on Device A',
         );
@@ -362,6 +363,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: userId,
           description: 'Created on Device B',
         );
@@ -390,6 +392,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: userA,
         );
 
@@ -402,6 +405,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: userB,
         );
 
@@ -426,6 +430,7 @@ void main() {
           recordIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           userId: userId,
         );
 
@@ -435,6 +440,7 @@ void main() {
           recordIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           userId: userId,
         );
 
@@ -464,6 +470,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: userId,
           description: 'Initial',
         );
@@ -500,6 +507,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: userA,
           description: 'A Original',
         );
@@ -513,6 +521,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: userB,
           description: 'B Original',
         );
@@ -552,6 +561,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: null,
           description: 'Created offline',
         );
@@ -587,6 +597,7 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+        sourceDeviceId: 'device-test',
           ownerId: null,
         );
 

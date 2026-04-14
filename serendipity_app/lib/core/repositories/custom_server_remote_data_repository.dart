@@ -40,10 +40,13 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     var offset = 0;
     var hasMore = true;
 
+    final deviceId = await _httpClient.getDeviceId();
+
     while (hasMore) {
       final queryParams = <String, String>{
         'limit': _syncPageSize.toString(),
         'offset': offset.toString(),
+        'deviceId': deviceId,
       };
       if (lastSyncTime != null) {
         queryParams['lastSyncTime'] = lastSyncTime.toIso8601String();
@@ -399,7 +402,12 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     }
     
     try {
-      final response = await _httpClient.get(ServerConfig.storylines);
+      final response = await _httpClient.get(
+        ServerConfig.storylines,
+        queryParams: {
+          'deviceId': await _httpClient.getDeviceId(),
+        },
+      );
       final data = response['data'] as Map<String, dynamic>;
       final storylinesJson = data['storyLines'] as List;
       
@@ -423,6 +431,7 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
         ServerConfig.storylines,
         queryParams: {
           'lastSyncTime': lastSyncTime.toIso8601String(),
+          'deviceId': await _httpClient.getDeviceId(),
         },
       );
       final data = response['data'] as Map<String, dynamic>;

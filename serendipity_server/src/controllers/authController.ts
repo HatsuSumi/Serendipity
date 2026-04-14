@@ -149,7 +149,7 @@ export class AuthController {
   ): Promise<void> => {
     try {
       const data: RefreshTokenDto = req.body;
-      const result = await this.authService.refreshToken(data.refreshToken);
+      const result = await this.authService.refreshToken(data.refreshToken, data.deviceId);
       sendSuccess(res, result);
     } catch (error) {
       next(error);
