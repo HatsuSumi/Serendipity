@@ -2,7 +2,7 @@ import { PrismaClient, RefreshToken } from '@prisma/client';
 
 // 刷新令牌仓储接口
 export interface IRefreshTokenRepository {
-  create(userId: string, token: string, expiresAt: Date, deviceId: string): Promise<RefreshToken>;
+  createOrReplace(userId: string, token: string, expiresAt: Date, deviceId: string): Promise<RefreshToken>;
   findByToken(token: string): Promise<RefreshToken | null>;
   findByTokenAndDeviceId(token: string, deviceId: string): Promise<RefreshToken | null>;
   deleteByToken(token: string): Promise<void>;
@@ -19,14 +19,25 @@ export interface IRefreshTokenRepository {
 export class RefreshTokenRepository implements IRefreshTokenRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async create(
+  async createOrReplace(
     userId: string,
     token: string,
     expiresAt: Date,
     deviceId: string
   ): Promise<RefreshToken> {
-    return this.prisma.refreshToken.create({
-      data: {
+    return this.prisma.refreshToken.upsert({
+      where: {
+        userId_deviceId: {
+          userId,
+          deviceId,
+        },
+      },
+      update: {
+        token,
+        expiresAt,
+        createdAt: new Date(),
+      },
+      create: {
         userId,
         token,
         expiresAt,

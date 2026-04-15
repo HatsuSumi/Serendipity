@@ -631,7 +631,7 @@ export class AuthService implements IAuthService {
     const expiresAt = new Date(
       Date.now() + AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
     );
-    await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt, deviceId);
+    await this.refreshTokenRepository.createOrReplace(user.id, refreshToken, expiresAt, deviceId);
 
     // 所有版本：踢旧设备（保留刚创建的最新 Token，删除其余）
     // 免费版和会员版都只允许单设备在线，区别在于数据是否迁移（由客户端同步策略决定）
@@ -678,7 +678,7 @@ export class AuthService implements IAuthService {
     const expiresAt = new Date(
       Date.now() + AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
     );
-    await this.refreshTokenRepository.create(user.id, refreshToken, expiresAt, deviceId);
+    await this.refreshTokenRepository.createOrReplace(user.id, refreshToken, expiresAt, deviceId);
 
     return {
       user: toAuthUserDto(user),
