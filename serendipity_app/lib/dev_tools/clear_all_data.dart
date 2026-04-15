@@ -35,6 +35,15 @@ Future<void> clearAllData() async {
     
     await Hive.deleteBoxFromDisk('sync_histories');
     print('✅ 已删除 sync_histories box');
+
+    await Hive.deleteBoxFromDisk('favorited_record_snapshots');
+    print('✅ 已删除 favorited_record_snapshots box');
+
+    await Hive.deleteBoxFromDisk('favorited_post_snapshots');
+    print('✅ 已删除 favorited_post_snapshots box');
+
+    await Hive.deleteBoxFromDisk('memberships');
+    print('✅ 已删除 memberships box');
     
     print('🎉 所有数据已清空！');
   } catch (e) {

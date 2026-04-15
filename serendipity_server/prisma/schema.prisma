@@ -141,7 +141,7 @@ model Membership {
 model RefreshToken {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  token     String   @unique @db.VarChar(255)
+  token     String   @unique @db.Text
   deviceId  String   @map("device_id") @db.VarChar(128)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")

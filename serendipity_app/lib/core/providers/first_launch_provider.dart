@@ -56,14 +56,17 @@ class FirstLaunchNotifier extends AsyncNotifier<bool> {
   /// 重置首次启动标记（仅用于测试）
   /// 
   /// 调用者：测试代码
+  /// 
+  /// 注意：
+  /// - 这里只负责把标记恢复为“首次启动”状态
+  /// - 不能调用 _checkAndMarkFirstLaunch()，否则会立即再次消费该标记
   Future<void> reset() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_key, true);
       
-      // 刷新状态
-      state = const AsyncValue.loading();
-      state = await AsyncValue.guard(() => _checkAndMarkFirstLaunch());
+      // 直接更新内存状态，等待下次应用启动时再消费首次启动标记
+      state = const AsyncValue.data(true);
     } catch (e) {
       // Fail Fast：重置失败时立即抛异常
       throw StateError('Failed to reset first launch flag: $e');
