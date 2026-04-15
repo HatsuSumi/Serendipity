@@ -6,6 +6,7 @@ import '../../../core/providers/sync_status_provider.dart';
 import '../../../core/providers/records_provider.dart';
 import '../../../core/providers/story_lines_provider.dart';
 import '../../../core/providers/check_in_provider.dart';
+import '../../../core/services/sync_result.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/auth_error_helper.dart';

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/i_storage_service.dart';
-import '../services/sync_service.dart';
+import '../services/sync_result.dart';
 import 'auth_provider.dart';
 
 /// 同步状态

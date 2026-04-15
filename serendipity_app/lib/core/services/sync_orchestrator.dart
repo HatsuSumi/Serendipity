@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
 import '../providers/records_provider.dart';
+import 'sync_result.dart';
 import 'sync_service.dart';
 
 /// 同步编排器
