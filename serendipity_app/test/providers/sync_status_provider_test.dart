@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:serendipity_app/core/providers/sync_status_provider.dart';
 import 'package:serendipity_app/core/providers/auth_provider.dart';
-import 'package:serendipity_app/core/services/sync_service.dart';
+import 'package:serendipity_app/core/services/sync_result.dart';
 import 'package:serendipity_app/core/services/i_storage_service.dart';
 import 'package:serendipity_app/models/encounter_record.dart';
 import 'package:serendipity_app/models/story_line.dart';

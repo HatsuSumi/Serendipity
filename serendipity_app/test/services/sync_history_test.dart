@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:serendipity_app/models/sync_history.dart';
-import 'package:serendipity_app/core/services/sync_service.dart';
+import 'package:serendipity_app/core/services/sync_result.dart';
 
 void main() {
   group('SyncHistory Model Tests', () {

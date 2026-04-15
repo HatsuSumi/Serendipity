@@ -1,6 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
-import '../core/services/sync_service.dart';
+import '../core/services/sync_result.dart';
 
 part 'sync_history.g.dart';
 
