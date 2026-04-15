@@ -2,6 +2,31 @@ import { PrismaClient, Record, Prisma } from '@prisma/client';
 import { CreateRecordDto, UpdateRecordDto } from '../types/record.dto';
 import { toJsonValue } from '../utils/prisma-json';
 
+const recordSyncSelect = {
+  id: true,
+  userId: true,
+  sourceDeviceId: true,
+  timestamp: true,
+  location: true,
+  description: true,
+  tags: true,
+  emotion: true,
+  status: true,
+  storyLineId: true,
+  ifReencounter: true,
+  conversationStarter: true,
+  backgroundMusic: true,
+  weather: true,
+  isPinned: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+} satisfies Prisma.RecordSelect;
+
+type RecordSyncRow = Prisma.RecordGetPayload<{
+  select: typeof recordSyncSelect;
+}>;
+
 /**
  * Record Repository 接口
  * 负责记录数据的持久化操作
@@ -44,7 +69,7 @@ export interface IRecordRepository {
     lastSyncTime?: Date,
     limit?: number,
     offset?: number
-  ): Promise<{ records: Record[]; total: number }>;
+  ): Promise<{ records: RecordSyncRow[]; total: number }>;
   
   /**
    * 筛选记录（支持多条件组合）
@@ -229,7 +254,7 @@ export class RecordRepository implements IRecordRepository {
     lastSyncTime?: Date,
     limit: number = 100,
     offset: number = 0
-  ): Promise<{ records: Record[]; total: number }> {
+  ): Promise<{ records: RecordSyncRow[]; total: number }> {
     const where = {
       userId: scope.userId,
       ...(lastSyncTime && { updatedAt: { gt: lastSyncTime } }),
@@ -238,6 +263,7 @@ export class RecordRepository implements IRecordRepository {
     const [records, total] = await Promise.all([
       this.prisma.record.findMany({
         where,
+        select: recordSyncSelect,
         orderBy: { updatedAt: 'desc' },
         take: limit,
         skip: offset,

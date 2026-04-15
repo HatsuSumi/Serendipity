@@ -125,7 +125,8 @@ class EncounterRecordAdapter extends TypeAdapter<EncounterRecord> {
       updatedAt: fields[13] as DateTime,
       isPinned: fields[14] as bool,
       ownerId: fields[15] as String?,
-      sourceDeviceId: fields[16] as String,
+      sourceDeviceId:
+          (fields[16] as String?) ?? EncounterRecord.legacySourceDeviceId,
       deletedAt: fields[17] as DateTime?,
     );
   }

@@ -3,7 +3,6 @@ import {
   AnniversaryReminderDispatch,
   CheckInReminderDispatch,
   PushToken,
-  Record,
 } from '@prisma/client';
 import { ReminderDispatchStatus } from '../services/reminderPushSender';
 
@@ -47,6 +46,11 @@ interface ReminderNotificationsConfig {
   checkInReminderTime?: string;
 }
 
+interface AnniversaryReminderRecord {
+  id: string;
+  timestamp: Date;
+}
+
 export interface AnniversaryReminderCandidate {
   userId: string;
   pushTokenId: string;
@@ -54,7 +58,7 @@ export interface AnniversaryReminderCandidate {
   platform: string;
   timezone: string;
   reminderDate: Date;
-  record: Record;
+  record: AnniversaryReminderRecord;
 }
 
 export interface IPushTokenRepository {
@@ -335,6 +339,10 @@ export class PushTokenRepository implements IPushTokenRepository {
               where: {
                 status: 'met',
                 timestamp: { lt: now },
+              },
+              select: {
+                id: true,
+                timestamp: true,
               },
               orderBy: { timestamp: 'asc' },
             },

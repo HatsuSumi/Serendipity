@@ -153,6 +153,8 @@ class Location {
 /// 记录
 @HiveType(typeId: 2)
 class EncounterRecord {
+  static const String legacySourceDeviceId = 'legacy-local-device';
+
   @HiveField(0)
   final String id;
   @HiveField(1)

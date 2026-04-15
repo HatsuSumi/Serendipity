@@ -5,6 +5,22 @@ import {
 } from '../types/storyline.dto';
 import { toJsonValue } from '../utils/prisma-json';
 
+const storyLineSyncSelect = {
+  id: true,
+  userId: true,
+  sourceDeviceId: true,
+  name: true,
+  recordIds: true,
+  isPinned: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+} satisfies Prisma.StoryLineSelect;
+
+type StoryLineSyncRow = Prisma.StoryLineGetPayload<{
+  select: typeof storyLineSyncSelect;
+}>;
+
 /**
  * StoryLine Repository 接口
  * 负责故事线数据的持久化操作
@@ -23,7 +39,7 @@ export interface IStoryLineRepository {
     lastSyncTime?: Date,
     limit?: number,
     offset?: number
-  ): Promise<{ storylines: StoryLine[]; total: number }>;
+  ): Promise<{ storylines: StoryLineSyncRow[]; total: number }>;
 
   update(id: string, data: UpdateStoryLineDto): Promise<StoryLine>;
 
@@ -90,7 +106,7 @@ export class StoryLineRepository implements IStoryLineRepository {
     lastSyncTime?: Date,
     limit: number = 100,
     offset: number = 0
-  ): Promise<{ storylines: StoryLine[]; total: number }> {
+  ): Promise<{ storylines: StoryLineSyncRow[]; total: number }> {
     const where = {
       userId: scope.userId,
       ...(lastSyncTime && { updatedAt: { gt: lastSyncTime } }),
@@ -99,6 +115,7 @@ export class StoryLineRepository implements IStoryLineRepository {
     const [storylines, total] = await Promise.all([
       this.prisma.storyLine.findMany({
         where,
+        select: storyLineSyncSelect,  
         orderBy: { updatedAt: 'desc' },
         take: limit,
         skip: offset,
