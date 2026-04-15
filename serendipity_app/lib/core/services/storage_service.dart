@@ -678,6 +678,13 @@ class StorageService implements IStorageService {
       await deleteCheckIn(checkIn.id);
     }
 
+    // 删除成就数据
+    await _achievementsBoxOrThrow.clear();
+
+    // 删除收藏快照
+    await _favoritedRecordSnapshotsBoxOrThrow.clear();
+    await _favoritedPostSnapshotsBoxOrThrow.clear();
+
     // 删除会员信息
     await deleteMembership(userId);
 
