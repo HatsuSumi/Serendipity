@@ -25,7 +25,7 @@ import 'sync_service.dart';
 /// - AuthNotifier：登录、注册成功后
 class SyncOrchestrator {
   /// 同步进行中的 Completer，防止并发同步
-  Completer<void>? _syncCompleter;
+  Completer<SyncResult>? _syncCompleter;
   
   /// 检查是否有同步在进行中
   bool get isSyncing => _syncCompleter != null && !_syncCompleter!.isCompleted;
@@ -72,33 +72,11 @@ class SyncOrchestrator {
       if (kDebugMode) {
         print('同步已在进行中，等待完成...');
       }
-      try {
-        await _syncCompleter!.future;
-      } catch (e) {
-        // 前一个同步失败，不传播异常
-        // 调用者应该通过 syncCompletedProvider 信号来刷新数据
-        if (kDebugMode) {
-          print('前一个同步失败，本次调用返回空结果: $e');
-        }
-      }
-      // 返回一个空的结果（因为我们不知道前一个同步的结果）
-      // 调用者应该通过 syncCompletedProvider 信号来刷新数据
-      return SyncResult(
-        uploadedRecords: 0,
-        uploadedStoryLines: 0,
-        uploadedCheckIns: 0,
-        downloadedRecords: 0,
-        downloadedStoryLines: 0,
-        downloadedCheckIns: 0,
-        mergedRecords: 0,
-        mergedStoryLines: 0,
-        mergedCheckIns: 0,
-        syncedAchievements: 0,
-      );
+      return _syncCompleter!.future;
     }
     
     // 创建新的 Completer
-    _syncCompleter = Completer<void>();
+    _syncCompleter = Completer<SyncResult>();
     
     try {
       const maxRetries = 3;
@@ -123,7 +101,7 @@ class SyncOrchestrator {
           // 同步成功，通知所有监听者
           _notifySyncCompleted(ref);
           
-          _syncCompleter!.complete();
+          _syncCompleter!.complete(result);
           return result;
         } catch (e, stackTrace) {
           final isLastAttempt = attempt == maxRetries - 1;

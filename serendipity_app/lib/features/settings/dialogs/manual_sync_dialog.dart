@@ -6,6 +6,7 @@ import '../../../core/providers/sync_status_provider.dart';
 import '../../../core/providers/records_provider.dart';
 import '../../../core/providers/story_lines_provider.dart';
 import '../../../core/providers/check_in_provider.dart';
+import '../../../core/services/sync_orchestrator.dart';
 import '../../../core/services/sync_result.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/utils/dialog_helper.dart';
@@ -59,8 +60,10 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
       // 从 SyncService 读取持久化的上次同步时间，自动判断全量/增量
       final syncService = ref.read(syncServiceProvider);
       final lastSyncTime = await syncService.getLastSyncTime(user.id);
+      final syncOrchestrator = ref.read(syncOrchestratorProvider);
 
-      final result = await syncService.syncAllData(
+      final result = await syncOrchestrator.sync(
+        ref,
         user,
         lastSyncTime: lastSyncTime,
         source: SyncSource.manual,
@@ -83,9 +86,6 @@ class _ManualSyncDialogState extends ConsumerState<ManualSyncDialog> {
 
       // 更新 UI 状态（增量时间已由 SyncService 持久化，此处只更新手动同步时间）
       ref.read(syncStatusProvider.notifier).syncSuccess(result);
-
-      // 触发同步完成信号，让 syncHistoriesProvider 等自动刷新
-      ref.read(syncCompletedProvider.notifier).state++;
 
       ref.invalidate(recordsProvider);
       ref.invalidate(storyLinesProvider);
