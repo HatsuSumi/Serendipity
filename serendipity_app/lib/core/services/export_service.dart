@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 class _DebugPaintSnapshot {
   final bool baselinesEnabled;
@@ -120,11 +120,24 @@ class ExportService {
   }) async {
     if (kIsWeb) return false;
 
-    final result = await ImageGallerySaver.saveImage(
-      bytes,
-      name: '${name}_${DateTime.now().millisecondsSinceEpoch}',
+    final permissionState = await PhotoManager.requestPermissionExtend(
+      requestOption: const PermissionRequestOption(
+        iosAccessLevel: IosAccessLevel.addOnly,
+        androidPermission: AndroidPermission(
+          type: RequestType.image,
+          mediaLocation: false,
+        ),
+      ),
     );
-    return result['isSuccess'] == true;
+    if (!permissionState.isAuth) return false;
+
+    final filename = '${name}_${DateTime.now().millisecondsSinceEpoch}.png';
+    final asset = await PhotoManager.editor.saveImage(
+      bytes,
+      filename: filename,
+      title: filename,
+    );
+    return asset.id.isNotEmpty;
   }
 }
 

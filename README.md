@@ -45,8 +45,8 @@ Serendipity/
 
 ### 文件统计
 
-- **总文件数**：634 个
-  - Dart文件：241 个
+- **总文件数**：643 个
+  - Dart文件：250 个
   - TypeScript文件：121 个
   - Markdown文档：117 个
   - 其他文件：70 个
@@ -70,9 +70,9 @@ Serendipity/
 
 ### 代码规模
 
-- **代码总行数**：89,936 行（不含空行、注释）
-  - Dart：45,066 行（50.1%）
-  - JSON：27,707 行（30.8%）
+- **代码总行数**：90,136 行（不含空行、注释）
+  - Dart：45,278 行（50.2%）
+  - JSON：27,707 行（30.7%）
   - TypeScript：12,325 行（13.7%）
   - JavaScript：3,333 行（3.7%）
   - C++：442 行（0.5%）
@@ -80,19 +80,19 @@ Serendipity/
   - C：105 行（0.1%）
   - XML：103 行（0.1%）
   - Kotlin：90 行（0.1%）
-  - ObjC：77 行（0.1%）
-  - Java：76 行（0.1%）
   - Swift：73 行（0.1%）
-  - YAML：71 行（0.1%）
+  - Java：71 行（0.1%）
+  - ObjC：71 行（0.1%）
   - PowerShell：70 行（0.1%）
+  - YAML：70 行（0.1%）
   - Batch：64 行（0.1%）
   - HTML：19 行（0.0%）
   - Python：18 行（0.0%）
   - INI：12 行（0.0%）
   - TOML：1 行（0.0%）
 
-- **字符总数**：3,013,807 字符（不含注释）
-  - Dart：1,486,878 字符（49.3%）
+- **字符总数**：3,015,419 字符（不含注释）
+  - Dart：1,489,048 字符（49.4%）
   - JSON：670,002 字符（22.2%）
   - TypeScript：406,613 字符（13.5%）
   - JavaScript：390,766 字符（13.0%）
@@ -101,11 +101,11 @@ Serendipity/
   - C：3,231 字符（0.1%）
   - XML：4,900 字符（0.2%）
   - Kotlin：2,534 字符（0.1%）
-  - ObjC：3,266 字符（0.1%）
-  - Java：3,826 字符（0.1%）
   - Swift：2,559 字符（0.1%）
-  - YAML：1,524 字符（0.1%）
+  - Java：3,564 字符（0.1%）
+  - ObjC：2,999 字符（0.1%）
   - PowerShell：1,922 字符（0.1%）
+  - YAML：1,495 字符（0.0%）
   - Batch：2,107 字符（0.1%）
   - HTML：657 字符（0.0%）
   - Python：750 字符（0.0%）
@@ -165,7 +165,7 @@ Serendipity/
 - flutter_local_notifications（本地通知）
 - fl_chart（图表）
 - confetti（粒子特效）
-- screenshot + image_gallery_saver（导出截图）
+- photo_manager（导出截图、相册保存）
 - 架构模式：Feature-first + Repository Pattern + Provider Pattern
 
 ### 后端
