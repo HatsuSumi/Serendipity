@@ -157,7 +157,6 @@ export class FavoriteService implements IFavoriteService {
     return {
       id: record.id,
       ownerId: record.userId,
-      sourceDeviceId: record.sourceDeviceId,
       timestamp: record.timestamp.toISOString(),
       location: fromJsonValue<LocationDto>(record.location),
       description: record.description ?? undefined,

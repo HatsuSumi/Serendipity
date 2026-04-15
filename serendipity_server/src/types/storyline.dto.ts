@@ -3,7 +3,6 @@
 // 创建故事线请求
 export interface CreateStoryLineDto {
   id: string;
-  sourceDeviceId: string;
   name: string;
   recordIds: string[];
   isPinned: boolean;
@@ -37,7 +36,6 @@ export interface GetStoryLinesQueryDto {
 export interface StoryLineResponseDto {
   id: string;
   userId: string;
-  sourceDeviceId: string;
   name: string;
   recordIds: string[];
   isPinned: boolean;

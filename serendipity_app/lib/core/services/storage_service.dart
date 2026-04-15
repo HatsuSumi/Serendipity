@@ -12,10 +12,6 @@ import 'i_storage_service.dart';
 /// 本地存储服务（Hive 实现）
 /// 使用 Hive 进行数据持久化
 class StorageService implements IStorageService {
-  static const String _legacySourceDeviceId = EncounterRecord.legacySourceDeviceId;
-  static const String _deviceScopeMigrationVersionKey = 'device_scope_migration_version';
-  static const int _deviceScopeMigrationVersion = 1;
-
   // Box 名称常量
   static const String _recordsBoxName = 'records';
   static const String _settingsBoxName = 'settings';
@@ -119,8 +115,6 @@ class StorageService implements IStorageService {
     _favoritedRecordSnapshotsBox = await Hive.openBox<EncounterRecord>(_favoritedRecordSnapshotsBoxName);
     _favoritedPostSnapshotsBox = await Hive.openBox<String>(_favoritedPostSnapshotsBoxName);
     _membershipsBox = await Hive.openBox<String>(_membershipsBoxName);
-
-    await _migrateLegacyDeviceScopedData();
   }
   
   /// 关闭所有 Box
@@ -135,46 +129,6 @@ class StorageService implements IStorageService {
     await _favoritedRecordSnapshotsBox?.close();
     await _favoritedPostSnapshotsBox?.close();
     await _membershipsBox?.close();
-  }
-
-  Future<void> _migrateLegacyDeviceScopedData() async {
-    final settingsBox = _settingsBoxOrThrow;
-    final migratedVersion = settingsBox.get(_deviceScopeMigrationVersionKey) as int?;
-    if (migratedVersion == _deviceScopeMigrationVersion) {
-      return;
-    }
-
-    final migratedRecords = _recordsBoxOrThrow.values
-        .where((record) => record.sourceDeviceId == _legacySourceDeviceId)
-        .map(
-          (record) => record.copyWith(sourceDeviceId: _legacySourceDeviceId),
-        )
-        .toList();
-    for (final record in migratedRecords) {
-      await _recordsBoxOrThrow.put(record.id, record);
-    }
-
-    final migratedFavoritedRecordSnapshots = _favoritedRecordSnapshotsBoxOrThrow.values
-        .where((record) => record.sourceDeviceId == _legacySourceDeviceId)
-        .map(
-          (record) => record.copyWith(sourceDeviceId: _legacySourceDeviceId),
-        )
-        .toList();
-    for (final record in migratedFavoritedRecordSnapshots) {
-      await _favoritedRecordSnapshotsBoxOrThrow.put(record.id, record);
-    }
-
-    final migratedStoryLines = _storyLinesBoxOrThrow.values
-        .where((storyLine) => (storyLine.sourceDeviceId ?? '').isEmpty)
-        .map(
-          (storyLine) => storyLine.copyWith(sourceDeviceId: _legacySourceDeviceId),
-        )
-        .toList();
-    for (final storyLine in migratedStoryLines) {
-      await _storyLinesBoxOrThrow.put(storyLine.id, storyLine);
-    }
-
-    await settingsBox.put(_deviceScopeMigrationVersionKey, _deviceScopeMigrationVersion);
   }
   
   // ==================== 记录相关操作 ====================

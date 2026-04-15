@@ -39,7 +39,6 @@ model User {
 model Record {
   id                            String                        @id @default(uuid())
   userId                        String                        @map("user_id")
-  sourceDeviceId                String                        @map("source_device_id") @db.VarChar(128)
   timestamp                     DateTime
   location                      Json
   description                   String?
@@ -60,12 +59,10 @@ model Record {
   user                          User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([sourceDeviceId])
   @@index([updatedAt])
   @@index([deletedAt])
   @@index([storyLineId])
   @@index([timestamp])
-  @@index([userId, sourceDeviceId, updatedAt])
   @@index([userId, updatedAt])
   @@map("records")
 }
@@ -73,7 +70,6 @@ model Record {
 model StoryLine {
   id             String    @id @default(uuid())
   userId         String    @map("user_id")
-  sourceDeviceId String    @map("source_device_id") @db.VarChar(128)
   name           String    @db.VarChar(255)
   recordIds Json      @default("[]") @map("record_ids")
   isPinned  Boolean   @default(false) @map("is_pinned")
@@ -84,10 +80,8 @@ model StoryLine {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([sourceDeviceId])
   @@index([updatedAt])
   @@index([deletedAt])
-  @@index([userId, sourceDeviceId, updatedAt])
   @@index([userId, updatedAt])
   @@map("story_lines")
 }

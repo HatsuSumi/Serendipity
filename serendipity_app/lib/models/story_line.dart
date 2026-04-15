@@ -39,9 +39,6 @@ class StoryLine {
   final String? userId;
 
   @HiveField(7)
-  final String? sourceDeviceId;
-
-  @HiveField(8)
   final DateTime? deletedAt;
 
   const StoryLine({
@@ -52,7 +49,6 @@ class StoryLine {
     required this.updatedAt,
     this.isPinned = false,
     this.userId,
-    this.sourceDeviceId,
     this.deletedAt,
   }) : assert(id != '', 'ID cannot be empty'),
        assert(name != '', 'Name cannot be empty');
@@ -69,7 +65,6 @@ class StoryLine {
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       isPinned: json['isPinned'] as bool? ?? false,
       userId: json['userId'] as String?,
-      sourceDeviceId: json['sourceDeviceId'] as String?,
       deletedAt: json['deletedAt'] != null
           ? DateTime.parse(json['deletedAt'] as String)
           : null,
@@ -86,7 +81,6 @@ class StoryLine {
       'updatedAt': updatedAt.toIso8601String(),
       'isPinned': isPinned,
       'userId': userId,
-      'sourceDeviceId': sourceDeviceId,
       'deletedAt': deletedAt?.toIso8601String(),
     };
   }
@@ -100,7 +94,6 @@ class StoryLine {
     DateTime? updatedAt,
     bool? isPinned,
     String? Function()? userId,
-    String? sourceDeviceId,
     DateTime? Function()? deletedAt,
   }) {
     return StoryLine(
@@ -111,7 +104,6 @@ class StoryLine {
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
       userId: userId != null ? userId() : this.userId,
-      sourceDeviceId: sourceDeviceId ?? this.sourceDeviceId,
       deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
     );
   }
@@ -119,7 +111,7 @@ class StoryLine {
   @override
   String toString() {
     return 'StoryLine(id: $id, name: $name, recordCount: ${recordIds.length}, '
-        'createdAt: $createdAt, updatedAt: $updatedAt, sourceDeviceId: $sourceDeviceId)';
+        'createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -134,7 +126,6 @@ class StoryLine {
         other.updatedAt == updatedAt &&
         other.isPinned == isPinned &&
         other.userId == userId &&
-        other.sourceDeviceId == sourceDeviceId &&
         other.deletedAt == deletedAt;
   }
 
@@ -147,7 +138,6 @@ class StoryLine {
         updatedAt.hashCode ^
         isPinned.hashCode ^
         userId.hashCode ^
-        sourceDeviceId.hashCode ^
         deletedAt.hashCode;
   }
 }

@@ -8,7 +8,6 @@ import { toJsonValue } from '../utils/prisma-json';
 const storyLineSyncSelect = {
   id: true,
   userId: true,
-  sourceDeviceId: true,
   name: true,
   recordIds: true,
   isPinned: true,
@@ -58,7 +57,6 @@ export class StoryLineRepository implements IStoryLineRepository {
       data: {
         id: data.id,
         userId,
-        sourceDeviceId: data.sourceDeviceId,
         name: data.name,
         recordIds: toJsonValue(data.recordIds),
         isPinned: data.isPinned,
@@ -76,7 +74,6 @@ export class StoryLineRepository implements IStoryLineRepository {
           data: {
             id: data.id,
             userId,
-            sourceDeviceId: data.sourceDeviceId,
             name: data.name,
             recordIds: toJsonValue(data.recordIds),
             isPinned: data.isPinned,

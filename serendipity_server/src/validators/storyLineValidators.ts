@@ -3,10 +3,6 @@ import { body, query } from 'express-validator';
 // 创建故事线验证
 export const createStoryLineValidation = [
   body('id').isUUID().withMessage('ID必须是有效的UUID'),
-  body('sourceDeviceId')
-    .isString()
-    .notEmpty()
-    .withMessage('来源设备ID不能为空'),
   body('name')
     .isString()
     .notEmpty()
@@ -28,10 +24,6 @@ export const createStoryLineValidation = [
 export const batchCreateStoryLinesValidation = [
   body('storyLines').isArray().withMessage('故事线必须是数组'),
   body('storyLines.*.id').isUUID().withMessage('ID必须是有效的UUID'),
-  body('storyLines.*.sourceDeviceId')
-    .isString()
-    .notEmpty()
-    .withMessage('来源设备ID不能为空'),
   body('storyLines.*.name')
     .isString()
     .notEmpty()

@@ -27,7 +27,6 @@ describe('StoryLineRepository', () => {
 
       const result = await storyLineRepository.create('user-id', {
         id: 'storyline-id',
-        sourceDeviceId: 'device-test',
         name: 'Test StoryLine',
         recordIds: [],
         isPinned: true,
@@ -54,7 +53,6 @@ describe('StoryLineRepository', () => {
       await storyLineRepository.batchCreate('user-b', [
         {
           id: 'storyline-1',
-          sourceDeviceId: 'device-test',
           name: 'storyline-1',
           recordIds: [],
           isPinned: false,
@@ -63,7 +61,6 @@ describe('StoryLineRepository', () => {
         },
         {
           id: 'storyline-2',
-          sourceDeviceId: 'device-test',
           name: 'storyline-2',
           recordIds: [],
           isPinned: true,

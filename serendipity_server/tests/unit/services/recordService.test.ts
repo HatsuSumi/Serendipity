@@ -10,7 +10,6 @@ describe('RecordService', () => {
     return {
       id: '550e8400-e29b-41d4-a716-446655440000',
       userId: 'user-premium',
-      sourceDeviceId: 'device-test',
       timestamp: now,
       location: { province: 'Guangdong', city: 'Shenzhen' },
       description: 'record',
@@ -54,7 +53,6 @@ describe('RecordService', () => {
           {
             ...createMockRecord(),
             userId: 'user-free',
-            sourceDeviceId: 'device-free-1',
             createdAt: now,
             updatedAt: now,
           },
@@ -72,7 +70,6 @@ describe('RecordService', () => {
       );
       expect(result.records).toHaveLength(1);
       expect(result.records[0].ownerId).toBe('user-free');
-      expect(result.records[0].sourceDeviceId).toBe('device-free-1');
     });
 
     it('用户增量下载记录时应该保留账号范围和 lastSyncTime', async () => {

@@ -153,8 +153,6 @@ class Location {
 /// 记录
 @HiveType(typeId: 2)
 class EncounterRecord {
-  static const String legacySourceDeviceId = 'legacy-local-device';
-
   @HiveField(0)
   final String id;
   @HiveField(1)
@@ -188,8 +186,6 @@ class EncounterRecord {
   @HiveField(15)
   final String? ownerId; // 数据归属用户ID，null 表示离线创建未绑定账号
   @HiveField(16)
-  final String sourceDeviceId;
-  @HiveField(17)
   final DateTime? deletedAt; // 软删除墓碑时间
 
   EncounterRecord({
@@ -209,7 +205,6 @@ class EncounterRecord {
     required this.updatedAt,
     this.isPinned = false,
     this.ownerId,
-    required this.sourceDeviceId,
     this.deletedAt,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
        assert(description == null || description.length <= 500, 
@@ -221,7 +216,6 @@ class EncounterRecord {
     // 构建基础 JSON
     final json = <String, dynamic>{
       'id': id,
-      'sourceDeviceId': sourceDeviceId,
       'timestamp': timestamp.toIso8601String(),
       'location': location.toJson(),
       'tags': tags.map((t) => t.toJson()).toList(),
@@ -309,7 +303,6 @@ class EncounterRecord {
       updatedAt: DateTime.parse(requireString(json, 'updatedAt')),
       isPinned: optionalBool(json, 'isPinned') ?? false,
       ownerId: optionalString(json, 'ownerId'),
-      sourceDeviceId: requireString(json, 'sourceDeviceId'),
       deletedAt: json['deletedAt'] != null
           ? DateTime.parse(requireString(json, 'deletedAt'))
           : null,
@@ -351,7 +344,6 @@ class EncounterRecord {
     DateTime? updatedAt,
     bool? isPinned,
     String? Function()? ownerId,
-    String? sourceDeviceId,
     DateTime? Function()? deletedAt,
   }) {
     return EncounterRecord(
@@ -371,7 +363,6 @@ class EncounterRecord {
       updatedAt: updatedAt ?? this.updatedAt,
       isPinned: isPinned ?? this.isPinned,
       ownerId: ownerId != null ? ownerId() : this.ownerId,
-      sourceDeviceId: sourceDeviceId ?? this.sourceDeviceId,
       deletedAt: deletedAt != null ? deletedAt() : this.deletedAt,
     );
   }

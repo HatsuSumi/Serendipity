@@ -24,15 +24,14 @@ class StoryLineAdapter extends TypeAdapter<StoryLine> {
       updatedAt: fields[4] as DateTime,
       isPinned: fields[5] as bool,
       userId: fields[6] as String?,
-      sourceDeviceId: fields[7] as String?,
-      deletedAt: fields[8] as DateTime?,
+      deletedAt: fields[7] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, StoryLine obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -48,8 +47,6 @@ class StoryLineAdapter extends TypeAdapter<StoryLine> {
       ..writeByte(6)
       ..write(obj.userId)
       ..writeByte(7)
-      ..write(obj.sourceDeviceId)
-      ..writeByte(8)
       ..write(obj.deletedAt);
   }
 

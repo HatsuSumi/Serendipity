@@ -35,7 +35,6 @@ const createMockCommunityPost = (overrides?: Partial<CommunityPost>): CommunityP
 const createMockRecord = (overrides?: Partial<Record>): Record => ({
   id: 'record-1',
   userId: 'test-user-id',
-  sourceDeviceId: 'device-test',
   timestamp: new Date('2026-04-12T10:00:00.000Z'),
   location: toJsonValue({ address: '深圳市南山区科技园', placeName: '科技园', city: '深圳市', area: '南山区' }) as Prisma.JsonValue,
   description: 'record desc',
@@ -173,7 +172,6 @@ describe('FavoriteService', () => {
     const deletedSnapshot: FavoriteRecordSnapshotDto = {
       id: 'deleted-record',
       ownerId: createMockUser().id,
-      sourceDeviceId: 'device-test',
       timestamp: '2026-04-12T10:00:00.000Z',
       location: { address: '深圳市南山区科技园', placeName: '科技园' },
       description: 'record desc',

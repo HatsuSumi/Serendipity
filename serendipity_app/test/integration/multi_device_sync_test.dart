@@ -337,10 +337,10 @@ void main() {
     });
 
     group('Device A and Device B Sync Scenario', () {
-      test('should isolate data between two devices of the same user', () async {
+      test('should keep records created by the same user isolated and complete', () async {
         const userId = 'user_1';
 
-        final deviceARecord = EncounterRecord(
+        final recordA = EncounterRecord(
           id: 'device_a_record_1',
           timestamp: DateTime.now(),
           location: Location(latitude: 39.9, longitude: 116.4),
@@ -349,12 +349,11 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-a',
           ownerId: userId,
-          description: 'Created on Device A',
+          description: 'Created on A path',
         );
 
-        final deviceBRecord = EncounterRecord(
+        final recordB = EncounterRecord(
           id: 'device_b_record_1',
           timestamp: DateTime.now(),
           location: Location(latitude: 39.9, longitude: 116.4),
@@ -363,13 +362,12 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-b',
           ownerId: userId,
-          description: 'Created on Device B',
+          description: 'Created on B path',
         );
 
-        await recordRepository.saveRecord(deviceARecord);
-        await recordRepository.saveRecord(deviceBRecord);
+        await recordRepository.saveRecord(recordA);
+        await recordRepository.saveRecord(recordB);
 
         final userRecords = recordRepository.getRecordsByUser(userId);
         expect(userRecords, hasLength(2));
@@ -377,17 +375,9 @@ void main() {
           userRecords.map((r) => r.id),
           containsAll(['device_a_record_1', 'device_b_record_1']),
         );
-        expect(
-          userRecords.where((r) => r.sourceDeviceId == 'device-a').map((r) => r.id),
-          contains('device_a_record_1'),
-        );
-        expect(
-          userRecords.where((r) => r.sourceDeviceId == 'device-b').map((r) => r.id),
-          contains('device_b_record_1'),
-        );
       });
 
-      test('should preserve sourceDeviceId on records created from different devices', () async {
+      test('should keep multiple records for the same user', () async {
         const userId = 'user_1';
 
         await recordRepository.saveRecord(
@@ -400,7 +390,6 @@ void main() {
             weather: [],
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
-            sourceDeviceId: 'device-a',
             ownerId: userId,
           ),
         );
@@ -414,19 +403,17 @@ void main() {
             weather: [],
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
-            sourceDeviceId: 'device-b',
             ownerId: userId,
           ),
         );
 
         final records = recordRepository.getRecordsByUser(userId);
-        final deviceARecords = records.where((r) => r.sourceDeviceId == 'device-a').toList();
-        final deviceBRecords = records.where((r) => r.sourceDeviceId == 'device-b').toList();
 
-        expect(deviceARecords, hasLength(1));
-        expect(deviceARecords.single.id, equals('record_from_device_a'));
-        expect(deviceBRecords, hasLength(1));
-        expect(deviceBRecords.single.id, equals('record_from_device_b'));
+        expect(records, hasLength(2));
+        expect(
+          records.map((r) => r.id),
+          containsAll(['record_from_device_a', 'record_from_device_b']),
+        );
       });
 
       test('should not mix data between different users on same device', () async {
@@ -442,7 +429,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'shared-device',
           ownerId: userA,
         );
 
@@ -455,7 +441,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'shared-device',
           ownerId: userB,
         );
 
@@ -471,7 +456,7 @@ void main() {
         expect(recordsB[0].ownerId, equals(userB));
       });
 
-      test('should handle story line isolation across devices', () async {
+      test('should keep story lines for the same user', () async {
         const userId = 'user_1';
 
         final storyLineA = StoryLine(
@@ -480,7 +465,6 @@ void main() {
           recordIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-a',
           userId: userId,
         );
 
@@ -490,7 +474,6 @@ void main() {
           recordIds: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-b',
           userId: userId,
         );
 
@@ -503,19 +486,11 @@ void main() {
           userStoryLines.map((s) => s.id),
           containsAll(['story_a_1', 'story_b_1']),
         );
-        expect(
-          userStoryLines.where((s) => s.sourceDeviceId == 'device-a').map((s) => s.id),
-          contains('story_a_1'),
-        );
-        expect(
-          userStoryLines.where((s) => s.sourceDeviceId == 'device-b').map((s) => s.id),
-          contains('story_b_1'),
-        );
       });
     });
 
     group('Sync Conflict Resolution', () {
-      test('should handle record updates from multiple devices', () async {
+      test('should keep latest record update', () async {
         const userId = 'user_1';
         const recordId = 'shared_record_1';
 
@@ -528,35 +503,30 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-a',
           ownerId: userId,
           description: 'Initial',
         );
 
         await recordRepository.saveRecord(initialRecord);
 
-        final deviceAUpdate = initialRecord.copyWith(
+        final updatedRecord = initialRecord.copyWith(
           description: () => 'Updated by Device A',
-          sourceDeviceId: 'device-a',
         );
-        await recordRepository.updateRecord(deviceAUpdate);
+        await recordRepository.updateRecord(updatedRecord);
 
         var record = recordRepository.getRecord(recordId);
         expect(record?.description, equals('Updated by Device A'));
-        expect(record?.sourceDeviceId, equals('device-a'));
 
-        final deviceBUpdate = record!.copyWith(
+        final latestUpdate = record!.copyWith(
           description: () => 'Updated by Device B',
-          sourceDeviceId: 'device-b',
         );
-        await recordRepository.updateRecord(deviceBUpdate);
+        await recordRepository.updateRecord(latestUpdate);
 
         record = recordRepository.getRecord(recordId);
         expect(record?.description, equals('Updated by Device B'));
-        expect(record?.sourceDeviceId, equals('device-b'));
       });
 
-      test('should preserve story line sourceDeviceId across different devices', () async {
+      test('should preserve story line updates across saves', () async {
         const userId = 'user_1';
         final storyLine = StoryLine(
           id: 'shared_storyline_1',
@@ -564,22 +534,19 @@ void main() {
           recordIds: ['record-1'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-a',
           userId: userId,
         );
 
         await storyLineRepository.saveStoryLine(storyLine);
 
-        final updatedOnDeviceB = storyLine.copyWith(
+        final updatedStoryLine = storyLine.copyWith(
           name: 'Updated on Device B',
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-b',
         );
-        await storyLineRepository.updateStoryLine(updatedOnDeviceB);
+        await storyLineRepository.updateStoryLine(updatedStoryLine);
 
         final stored = storyLineRepository.getStoryLine('shared_storyline_1');
         expect(stored?.name, equals('Updated on Device B'));
-        expect(stored?.sourceDeviceId, equals('device-b'));
       });
 
       test('should maintain user isolation during concurrent updates', () async {
@@ -595,7 +562,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-a',
           ownerId: userA,
           description: 'A Original',
         );
@@ -609,7 +575,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-b',
           ownerId: userB,
           description: 'B Original',
         );
@@ -649,7 +614,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'device-test',
           ownerId: null,
           description: 'Created offline',
         );
@@ -673,7 +637,7 @@ void main() {
         expect(offlineRecordsAfterSync, isEmpty);
       });
 
-      test('should keep offline record sourceDeviceId after binding to user account', () async {
+      test('should bind offline record to user account', () async {
         const userId = 'user_1';
 
         final offlineRecord = EncounterRecord(
@@ -685,7 +649,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-          sourceDeviceId: 'offline-device-a',
           ownerId: null,
         );
 
@@ -697,7 +660,6 @@ void main() {
 
         final boundRecord = recordRepository.getRecord('offline_record_with_device');
         expect(boundRecord?.ownerId, equals(userId));
-        expect(boundRecord?.sourceDeviceId, equals('offline-device-a'));
       });
 
     });

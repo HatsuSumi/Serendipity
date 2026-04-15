@@ -5,7 +5,6 @@ import { toJsonValue } from '../utils/prisma-json';
 const recordSyncSelect = {
   id: true,
   userId: true,
-  sourceDeviceId: true,
   timestamp: true,
   location: true,
   description: true,
@@ -153,7 +152,6 @@ export class RecordRepository implements IRecordRepository {
     return this.prisma.record.upsert({
       where: { id: data.id },
       update: {
-        sourceDeviceId: data.sourceDeviceId,
         timestamp: new Date(data.timestamp),
         location: toJsonValue(data.location),
         description: data.description,
@@ -172,7 +170,6 @@ export class RecordRepository implements IRecordRepository {
       create: {
         id: data.id,
         userId,
-        sourceDeviceId: data.sourceDeviceId,
         timestamp: new Date(data.timestamp),
         location: toJsonValue(data.location),
         description: data.description,
@@ -202,7 +199,6 @@ export class RecordRepository implements IRecordRepository {
         this.prisma.record.upsert({
           where: { id: data.id },
           update: {
-            sourceDeviceId: data.sourceDeviceId,
             timestamp: new Date(data.timestamp),
             location: toJsonValue(data.location),
             description: data.description,
@@ -221,7 +217,6 @@ export class RecordRepository implements IRecordRepository {
           create: {
             id: data.id,
             userId,
-            sourceDeviceId: data.sourceDeviceId,
             timestamp: new Date(data.timestamp),
             location: toJsonValue(data.location),
             description: data.description,

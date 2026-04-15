@@ -360,7 +360,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
           ownerId: userA,
         );
 
@@ -373,7 +372,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
           ownerId: userB,
         );
 
@@ -405,7 +403,6 @@ void main() {
                 weather: [],
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
                 ownerId: userA,
               ),
             ),
@@ -424,7 +421,6 @@ void main() {
                 weather: [],
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
                 ownerId: userB,
               ),
             ),
@@ -461,7 +457,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
           ownerId: userA,
           description: 'Original A',
         );
@@ -475,7 +470,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
           ownerId: userB,
           description: 'Original B',
         );
@@ -509,7 +503,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
           ownerId: userA,
         );
 
@@ -522,7 +515,6 @@ void main() {
           weather: [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
           ownerId: null,
         );
 
@@ -559,7 +551,6 @@ void main() {
               weather: [],
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
               ownerId: userA,
             ),
           );
@@ -576,7 +567,6 @@ void main() {
               weather: [],
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
-        sourceDeviceId: 'device-test',
               ownerId: userB,
             ),
           );

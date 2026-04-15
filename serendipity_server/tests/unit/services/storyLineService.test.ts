@@ -31,10 +31,10 @@ describe('StoryLineService', () => {
         name: 'new storyline',
         recordIds: [],
         isPinned: false,
+        deletedAt: null,
         createdAt: now,
         updatedAt: now,
-        sourceDeviceId: 'device-test',
-      } as any);
+      });
 
       const result = await storyLineService.createStoryLine('user-a', {
         id: '550e8400-e29b-41d4-a716-446655440000',
@@ -43,7 +43,6 @@ describe('StoryLineService', () => {
         isPinned: false,
         createdAt: now,
         updatedAt: now,
-        sourceDeviceId: 'device-test',
       });
 
       expect(mockStoryLineRepository.create).toHaveBeenCalledWith('user-a', expect.any(Object));
@@ -60,7 +59,6 @@ describe('StoryLineService', () => {
         isPinned: false,
         createdAt: now,
         updatedAt: now,
-        sourceDeviceId: 'device-test',
       } as any);
       mockStoryLineRepository.update.mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440000',
@@ -71,7 +69,6 @@ describe('StoryLineService', () => {
         deletedAt: null,
         createdAt: now,
         updatedAt: now,
-        sourceDeviceId: 'device-test',
       } as any);
 
       const result = await storyLineService.createStoryLine('user-a', {
@@ -81,7 +78,6 @@ describe('StoryLineService', () => {
         isPinned: true,
         createdAt: now,
         updatedAt: now,
-        sourceDeviceId: 'device-test',
       });
 
       expect(mockStoryLineRepository.create).not.toHaveBeenCalled();
@@ -108,7 +104,6 @@ describe('StoryLineService', () => {
         isPinned: false,
         createdAt: now,
         updatedAt: now,
-        sourceDeviceId: 'device-test',
       } as any);
 
       await expect(
@@ -119,7 +114,6 @@ describe('StoryLineService', () => {
           isPinned: false,
           createdAt: now,
           updatedAt: now,
-          sourceDeviceId: 'device-test',
         })
       ).rejects.toMatchObject({
         code: ErrorCode.CONFLICT,
@@ -144,7 +138,6 @@ describe('StoryLineService', () => {
             createdAt: now,
             updatedAt: now,
             deletedAt: null,
-            sourceDeviceId: 'device-free-1',
           } as any,
         ],
         total: 1,
@@ -160,7 +153,6 @@ describe('StoryLineService', () => {
       );
       expect(result.storyLines).toHaveLength(1);
       expect(result.storyLines[0].userId).toBe('user-free');
-      expect(result.storyLines[0].sourceDeviceId).toBe('device-free-1');
     });
 
     it('用户增量下载故事线时应该保留账号范围和 lastSyncTime', async () => {

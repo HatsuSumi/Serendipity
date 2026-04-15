@@ -261,7 +261,6 @@ export class StoryLineService implements IStoryLineService {
     return {
       id: storyline.id,
       userId: storyline.userId,
-      sourceDeviceId: storyline.sourceDeviceId,
       name: storyline.name,
       recordIds: fromJsonValue<string[]>(storyline.recordIds),
       isPinned: storyline.isPinned,
