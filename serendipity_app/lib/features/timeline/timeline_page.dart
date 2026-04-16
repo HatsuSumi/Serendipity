@@ -26,6 +26,7 @@ import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import '../record/widgets/record_export_card.dart';
 import '../story_line/link_to_story_line_dialog.dart';
+import '../story_line/story_line_detail_page.dart';
 import '../community/dialogs/publish_warning_dialog.dart';
 import '../check_in/widgets/check_in_card.dart';
 import 'record_filter_dialog.dart';

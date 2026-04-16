@@ -23,6 +23,15 @@ extension _TimelinePageNavigationActionsSection on _TimelinePageState {
     );
   }
 
+  /// 导航到故事线详情页面
+  void _navigateToStoryLineDetail(BuildContext context, WidgetRef ref, String storyLineId) {
+    NavigationHelper.pushWithTransition(
+      context,
+      ref,
+      StoryLineDetailPage(storyLineId: storyLineId),
+    );
+  }
+
   /// 显示关联到故事线对话框
   void _showLinkToStoryLineDialog(BuildContext context, WidgetRef ref, EncounterRecord record) {
     DialogHelper.show(

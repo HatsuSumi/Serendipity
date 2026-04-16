@@ -91,33 +91,49 @@ extension _TimelinePageRecordCardSection on _TimelinePageState {
   }
 
   /// 构建故事线信息组件
-  Widget _buildStoryLineInfo(BuildContext context, WidgetRef ref, String storyLineId) {
+  Widget _buildStoryLineInfo(
+    BuildContext context,
+    WidgetRef ref,
+    String storyLineId,
+  ) {
     final storyLinesAsync = ref.watch(storyLinesProvider);
 
     return storyLinesAsync.when(
       data: (storyLines) {
         try {
           final storyLine = storyLines.firstWhere((sl) => sl.id == storyLineId);
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.auto_stories,
-                size: 12,
-                color: _colorScheme.primary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                _isMasked ? _maskText(storyLine.name) : storyLine.name,
-                style: _textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
-                  color: _colorScheme.primary,
-                  fontWeight: FontWeight.w500,
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _navigateToStoryLineDetail(context, ref, storyLineId),
+              borderRadius: BorderRadius.circular(999),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_stories,
+                      size: 12,
+                      color: _colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _isMasked ? _maskText(storyLine.name) : storyLine.name,
+                        style: _textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
+                          color: _colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
+            ),
           );
         } catch (e) {
           return const SizedBox.shrink();
