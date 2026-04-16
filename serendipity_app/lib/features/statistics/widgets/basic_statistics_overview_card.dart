@@ -23,7 +23,7 @@ class BasicStatisticsOverviewCard extends StatelessWidget {
       children: [
         _SummaryWideTile(
           icon: Icons.schedule_rounded,
-          label: '账号注册时间',
+          label: '账号创建时间',
           value: _formatDateTime(overview.registeredAt) ?? '未登录',
           colorScheme: colorScheme,
         ),
@@ -158,7 +158,9 @@ class BasicStatisticsOverviewCard extends StatelessWidget {
       return null;
     }
 
-    return '${_dateFormatter.format(startDate)}-${_dateFormatter.format(endDate)}';
+    final localStartDate = startDate.toLocal();
+    final localEndDate = endDate.toLocal();
+    return '${_dateFormatter.format(localStartDate)}-${_dateFormatter.format(localEndDate)}';
   }
 
   String? _formatDateTime(DateTime? dateTime) {
@@ -166,7 +168,7 @@ class BasicStatisticsOverviewCard extends StatelessWidget {
       return null;
     }
 
-    return _dateTimeFormatter.format(dateTime);
+    return _dateTimeFormatter.format(dateTime.toLocal());
   }
 }
 

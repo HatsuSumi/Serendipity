@@ -533,6 +533,12 @@ class CustomServerAuthRepository implements IAuthRepository {
       throw ArgumentError('更新时间不能为空');
     }
 
+    final createdAt = DateTime.parse(createdAtStr);
+    final updatedAt = DateTime.parse(updatedAtStr);
+    final lastLoginAt = data['lastLoginAt'] != null
+        ? DateTime.parse(data['lastLoginAt'] as String)
+        : null;
+
     return User(
       id: id,
       email: data['email'] as String?,
@@ -542,11 +548,9 @@ class CustomServerAuthRepository implements IAuthRepository {
       authProvider: _parseAuthProvider(data['authProvider'] as String?),
       isEmailVerified: data['isEmailVerified'] as bool,
       isPhoneVerified: data['isPhoneVerified'] as bool,
-      lastLoginAt: data['lastLoginAt'] != null
-          ? DateTime.parse(data['lastLoginAt'] as String)
-          : null,
-      createdAt: DateTime.parse(createdAtStr),
-      updatedAt: DateTime.parse(updatedAtStr),
+      lastLoginAt: lastLoginAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
   
