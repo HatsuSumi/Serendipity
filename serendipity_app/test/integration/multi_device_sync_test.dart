@@ -343,6 +343,8 @@ void main() {
         final recordA = EncounterRecord(
           id: 'device_a_record_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,
@@ -356,6 +358,8 @@ void main() {
         final recordB = EncounterRecord(
           id: 'device_b_record_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,
@@ -384,6 +388,8 @@ void main() {
           EncounterRecord(
             id: 'record_from_device_a',
             timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
             location: Location(latitude: 39.9, longitude: 116.4),
             tags: [],
             status: EncounterStatus.missed,
@@ -397,6 +403,8 @@ void main() {
           EncounterRecord(
             id: 'record_from_device_b',
             timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
             location: Location(latitude: 39.9, longitude: 116.4),
             tags: [],
             status: EncounterStatus.missed,
@@ -423,6 +431,8 @@ void main() {
         final userARecord = EncounterRecord(
           id: 'user_a_record_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,
@@ -435,6 +445,8 @@ void main() {
         final userBRecord = EncounterRecord(
           id: 'user_b_record_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,
@@ -497,6 +509,8 @@ void main() {
         final initialRecord = EncounterRecord(
           id: recordId,
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,
@@ -556,6 +570,8 @@ void main() {
         final recordA = EncounterRecord(
           id: 'record_a_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,
@@ -569,6 +585,8 @@ void main() {
         final recordB = EncounterRecord(
           id: 'record_b_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,
@@ -608,6 +626,8 @@ void main() {
         final offlineRecord = EncounterRecord(
           id: 'offline_record_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,
@@ -643,6 +663,8 @@ void main() {
         final offlineRecord = EncounterRecord(
           id: 'offline_record_with_device',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 39.9, longitude: 116.4),
           tags: [],
           status: EncounterStatus.missed,

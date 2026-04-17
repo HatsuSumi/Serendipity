@@ -399,6 +399,8 @@ export class RecordService implements IRecordService {
       id: record.id,
       ownerId: record.userId,
       timestamp: record.timestamp.toISOString(),
+      anniversaryMonth: record.anniversaryMonth,
+      anniversaryDay: record.anniversaryDay,
       location: fromJsonValue<LocationDto>(record.location),
       description: record.description || undefined,
       tags: fromJsonValue<TagWithNoteDto[]>(record.tags),

@@ -43,6 +43,12 @@ const tagsValidation = [
 export const createRecordValidation = [
   body('id').isUUID().withMessage('ID必须是有效的UUID'),
   body('timestamp').isISO8601().withMessage('时间戳必须是有效的日期'),
+  body('anniversaryMonth')
+    .isInt({ min: 1, max: 12 })
+    .withMessage('周年月份必须是1到12之间的整数'),
+  body('anniversaryDay')
+    .isInt({ min: 1, max: 31 })
+    .withMessage('周年日期必须是1到31之间的整数'),
   ...locationValidation,
   body('description')
     .optional()
@@ -86,6 +92,12 @@ export const batchCreateRecordsValidation = [
   body('records.*.timestamp')
     .isISO8601()
     .withMessage('时间戳必须是有效的日期'),
+  body('records.*.anniversaryMonth')
+    .isInt({ min: 1, max: 12 })
+    .withMessage('周年月份必须是1到12之间的整数'),
+  body('records.*.anniversaryDay')
+    .isInt({ min: 1, max: 31 })
+    .withMessage('周年日期必须是1到31之间的整数'),
   body('records.*.status')
     .isString()
     .notEmpty()
@@ -98,6 +110,14 @@ export const updateRecordValidation = [
     .optional()
     .isISO8601()
     .withMessage('时间戳必须是有效的日期'),
+  body('anniversaryMonth')
+    .optional()
+    .isInt({ min: 1, max: 12 })
+    .withMessage('周年月份必须是1到12之间的整数'),
+  body('anniversaryDay')
+    .optional()
+    .isInt({ min: 1, max: 31 })
+    .withMessage('周年日期必须是1到31之间的整数'),
   body('location').optional().isObject().withMessage('位置必须是对象'),
   body('description')
     .optional()

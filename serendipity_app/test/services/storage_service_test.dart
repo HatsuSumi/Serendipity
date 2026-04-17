@@ -66,6 +66,8 @@ void main() {
       final record = EncounterRecord(
         id: 'test-001',
         timestamp: DateTime.now(),
+        anniversaryMonth: DateTime.now().month,
+        anniversaryDay: DateTime.now().day,
         location: Location(
           latitude: 39.9087,
           longitude: 116.3975,
@@ -108,6 +110,8 @@ void main() {
         final record = EncounterRecord(
           id: 'test-$i',
           timestamp: DateTime.now().subtract(Duration(days: i)),
+          anniversaryMonth: DateTime.now().subtract(Duration(days: i)).month,
+          anniversaryDay: DateTime.now().subtract(Duration(days: i)).day,
           location: Location(
             latitude: 39.9087,
             longitude: 116.3975,
@@ -133,6 +137,8 @@ void main() {
       await storageService.saveRecord(EncounterRecord(
         id: 'test-1',
         timestamp: now.subtract(const Duration(days: 2)),
+        anniversaryMonth: now.subtract(const Duration(days: 2)).month,
+        anniversaryDay: now.subtract(const Duration(days: 2)).day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,
@@ -142,6 +148,8 @@ void main() {
       await storageService.saveRecord(EncounterRecord(
         id: 'test-2',
         timestamp: now.subtract(const Duration(days: 1)),
+        anniversaryMonth: now.subtract(const Duration(days: 1)).month,
+        anniversaryDay: now.subtract(const Duration(days: 1)).day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,
@@ -151,6 +159,8 @@ void main() {
       await storageService.saveRecord(EncounterRecord(
         id: 'test-3',
         timestamp: now,
+        anniversaryMonth: now.month,
+        anniversaryDay: now.day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,
@@ -173,6 +183,8 @@ void main() {
       final record = EncounterRecord(
         id: 'test-delete',
         timestamp: DateTime.now(),
+        anniversaryMonth: DateTime.now().month,
+        anniversaryDay: DateTime.now().day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,
@@ -196,6 +208,8 @@ void main() {
       final record = EncounterRecord(
         id: 'test-update',
         timestamp: DateTime.now(),
+        anniversaryMonth: DateTime.now().month,
+        anniversaryDay: DateTime.now().day,
         location: Location(),
         description: '原始描述',
         tags: [],
@@ -209,6 +223,8 @@ void main() {
       final updatedRecord = EncounterRecord(
         id: 'test-update',
         timestamp: record.timestamp,
+        anniversaryMonth: record.anniversaryMonth,
+        anniversaryDay: record.anniversaryDay,
         location: record.location,
         description: '更新后的描述',
         tags: [],
@@ -229,6 +245,8 @@ void main() {
       await storageService.saveRecord(EncounterRecord(
         id: 'test-1',
         timestamp: DateTime.now(),
+        anniversaryMonth: DateTime.now().month,
+        anniversaryDay: DateTime.now().day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,
@@ -239,6 +257,8 @@ void main() {
       await storageService.saveRecord(EncounterRecord(
         id: 'test-2',
         timestamp: DateTime.now(),
+        anniversaryMonth: DateTime.now().month,
+        anniversaryDay: DateTime.now().day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,
@@ -249,6 +269,8 @@ void main() {
       await storageService.saveRecord(EncounterRecord(
         id: 'test-3',
         timestamp: DateTime.now(),
+        anniversaryMonth: DateTime.now().month,
+        anniversaryDay: DateTime.now().day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,
@@ -270,6 +292,8 @@ void main() {
       await storageService.saveRecord(EncounterRecord(
         id: 'test-1',
         timestamp: DateTime.now(),
+        anniversaryMonth: DateTime.now().month,
+        anniversaryDay: DateTime.now().day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,
@@ -279,6 +303,8 @@ void main() {
       await storageService.saveRecord(EncounterRecord(
         id: 'test-2',
         timestamp: DateTime.now(),
+        anniversaryMonth: DateTime.now().month,
+        anniversaryDay: DateTime.now().day,
         location: Location(),
         tags: [],
         status: EncounterStatus.missed,

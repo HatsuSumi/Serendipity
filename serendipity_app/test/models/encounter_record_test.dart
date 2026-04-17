@@ -119,6 +119,8 @@ void main() {
       final record = EncounterRecord(
         id: 'record_1',
         timestamp: now,
+        anniversaryMonth: now.month,
+        anniversaryDay: now.day,
         location: Location(
           latitude: 39.9087,
           longitude: 116.3975,
@@ -153,6 +155,8 @@ void main() {
       final record = EncounterRecord(
         id: 'record_1',
         timestamp: now,
+        anniversaryMonth: now.month,
+        anniversaryDay: now.day,
         location: Location(latitude: 39.9087, longitude: 116.3975),
         tags: [],
         status: EncounterStatus.missed,
@@ -172,6 +176,8 @@ void main() {
       final record = EncounterRecord(
         id: 'record_1',
         timestamp: now,
+        anniversaryMonth: now.month,
+        anniversaryDay: now.day,
         location: Location(
           latitude: 39.9087,
           longitude: 116.3975,
@@ -202,6 +208,8 @@ void main() {
       final json = {
         'id': 'record_1',
         'timestamp': '2026-02-11T18:30:00.000',
+        'anniversaryMonth': 2,
+        'anniversaryDay': 11,
         'location': {
           'latitude': 39.9087,
           'longitude': 116.3975,
@@ -244,6 +252,8 @@ void main() {
       final original = EncounterRecord(
         id: 'record_1',
         timestamp: now,
+        anniversaryMonth: now.month,
+        anniversaryDay: now.day,
         location: Location(
           latitude: 39.9087,
           longitude: 116.3975,
@@ -281,6 +291,8 @@ void main() {
       final record = EncounterRecord(
         id: 'record_1',
         timestamp: now,
+        anniversaryMonth: now.month,
+        anniversaryDay: now.day,
         location: Location(latitude: 39.9087, longitude: 116.3975),
         tags: [],
         status: EncounterStatus.met,

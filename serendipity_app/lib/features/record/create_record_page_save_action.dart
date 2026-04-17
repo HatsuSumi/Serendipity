@@ -50,6 +50,8 @@ extension _CreateRecordPageSaveAction on _CreateRecordPageState {
       final record = EncounterRecord(
         id: widget.recordToEdit?.id ?? const Uuid().v4(),
         timestamp: _selectedTime,
+        anniversaryMonth: _selectedTime.month,
+        anniversaryDay: _selectedTime.day,
         location: widget.isEditMode
             ? widget.recordToEdit!.location.copyWith(
                 latitude: () => _ignoreGPS

@@ -6,6 +6,8 @@ const recordSyncSelect = {
   id: true,
   userId: true,
   timestamp: true,
+  anniversaryMonth: true,
+  anniversaryDay: true,
   location: true,
   description: true,
   tags: true,
@@ -153,6 +155,8 @@ export class RecordRepository implements IRecordRepository {
       where: { id: data.id },
       update: {
         timestamp: new Date(data.timestamp),
+        anniversaryMonth: data.anniversaryMonth,
+        anniversaryDay: data.anniversaryDay,
         location: toJsonValue(data.location),
         description: data.description,
         tags: toJsonValue(data.tags),
@@ -171,6 +175,8 @@ export class RecordRepository implements IRecordRepository {
         id: data.id,
         userId,
         timestamp: new Date(data.timestamp),
+        anniversaryMonth: data.anniversaryMonth,
+        anniversaryDay: data.anniversaryDay,
         location: toJsonValue(data.location),
         description: data.description,
         tags: toJsonValue(data.tags),
@@ -200,6 +206,8 @@ export class RecordRepository implements IRecordRepository {
           where: { id: data.id },
           update: {
             timestamp: new Date(data.timestamp),
+            anniversaryMonth: data.anniversaryMonth,
+            anniversaryDay: data.anniversaryDay,
             location: toJsonValue(data.location),
             description: data.description,
             tags: toJsonValue(data.tags),
@@ -218,6 +226,8 @@ export class RecordRepository implements IRecordRepository {
             id: data.id,
             userId,
             timestamp: new Date(data.timestamp),
+            anniversaryMonth: data.anniversaryMonth,
+            anniversaryDay: data.anniversaryDay,
             location: toJsonValue(data.location),
             description: data.description,
             tags: toJsonValue(data.tags),
@@ -416,6 +426,8 @@ export class RecordRepository implements IRecordRepository {
         id,
         user_id as "userId",
         timestamp,
+        anniversary_month as "anniversaryMonth",
+        anniversary_day as "anniversaryDay",
         location,
         description,
         tags,
@@ -473,6 +485,8 @@ export class RecordRepository implements IRecordRepository {
     };
 
     if (data.timestamp !== undefined) updateData.timestamp = new Date(data.timestamp);
+    if (data.anniversaryMonth !== undefined) updateData.anniversaryMonth = data.anniversaryMonth;
+    if (data.anniversaryDay !== undefined) updateData.anniversaryDay = data.anniversaryDay;
     if (data.location !== undefined) updateData.location = toJsonValue(data.location);
     if (data.description !== undefined) updateData.description = data.description;
     if (data.tags !== undefined) updateData.tags = toJsonValue(data.tags);

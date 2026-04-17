@@ -40,6 +40,8 @@ model Record {
   id                            String                        @id @default(uuid())
   userId                        String                        @map("user_id")
   timestamp                     DateTime
+  anniversaryMonth              Int                           @map("anniversary_month")
+  anniversaryDay                Int                           @map("anniversary_day")
   location                      Json
   description                   String?
   tags                          Json                          @default("[]")

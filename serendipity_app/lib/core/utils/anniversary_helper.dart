@@ -40,11 +40,14 @@ class AnniversaryHelper {
 
       final ts = record.timestamp;
 
+      if (record.anniversaryMonth != todayMonth || record.anniversaryDay != todayDay) {
+        return false;
+      }
+
       // 不包括当年本身（必须是过去的年份）
       if (ts.year >= todayYear) return false;
 
-      // 月日相同即为周年
-      return ts.month == todayMonth && ts.day == todayDay;
+      return true;
     }).toList();
   }
 

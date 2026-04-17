@@ -157,6 +157,10 @@ class EncounterRecord {
   final String id;
   @HiveField(1)
   final DateTime timestamp;
+  @HiveField(17)
+  final int anniversaryMonth;
+  @HiveField(18)
+  final int anniversaryDay;
   @HiveField(2)
   final Location location;
   @HiveField(3)
@@ -191,6 +195,8 @@ class EncounterRecord {
   EncounterRecord({
     required this.id,
     required this.timestamp,
+    required this.anniversaryMonth,
+    required this.anniversaryDay,
     required this.location,
     this.description,
     required this.tags,
@@ -207,6 +213,10 @@ class EncounterRecord {
     this.ownerId,
     this.deletedAt,
   }) : assert(id.isNotEmpty, 'ID cannot be empty'),
+       assert(anniversaryMonth >= 1 && anniversaryMonth <= 12,
+         'AnniversaryMonth must be between 1 and 12, got $anniversaryMonth'),
+       assert(anniversaryDay >= 1 && anniversaryDay <= 31,
+         'AnniversaryDay must be between 1 and 31, got $anniversaryDay'),
        assert(description == null || description.length <= 500, 
          'Description must be at most 500 characters, got ${description.length}'),
        assert(conversationStarter == null || conversationStarter.length <= 500, 
@@ -217,6 +227,8 @@ class EncounterRecord {
     final json = <String, dynamic>{
       'id': id,
       'timestamp': timestamp.toIso8601String(),
+      'anniversaryMonth': anniversaryMonth,
+      'anniversaryDay': anniversaryDay,
       'location': location.toJson(),
       'tags': tags.map((t) => t.toJson()).toList(),
       'status': status.name,
@@ -256,9 +268,13 @@ class EncounterRecord {
   }
 
   factory EncounterRecord.fromJson(Map<String, dynamic> json) {
+    final timestamp = DateTime.parse(requireString(json, 'timestamp'));
+
     return EncounterRecord(
       id: requireString(json, 'id'),
-      timestamp: DateTime.parse(requireString(json, 'timestamp')),
+      timestamp: timestamp,
+      anniversaryMonth: requireInt(json, 'anniversaryMonth'),
+      anniversaryDay: requireInt(json, 'anniversaryDay'),
       location: Location.fromJson(json['location'] as Map<String, dynamic>),
       description: optionalString(json, 'description'),
       tags: (json['tags'] as List)
@@ -330,6 +346,8 @@ class EncounterRecord {
   EncounterRecord copyWith({
     String? id,
     DateTime? timestamp,
+    int? anniversaryMonth,
+    int? anniversaryDay,
     Location? location,
     String? Function()? description,
     List<TagWithNote>? tags,
@@ -349,6 +367,8 @@ class EncounterRecord {
     return EncounterRecord(
       id: id ?? this.id,
       timestamp: timestamp ?? this.timestamp,
+      anniversaryMonth: anniversaryMonth ?? this.anniversaryMonth,
+      anniversaryDay: anniversaryDay ?? this.anniversaryDay,
       location: location ?? this.location,
       description: description != null ? description() : this.description,
       tags: tags ?? this.tags,

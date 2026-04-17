@@ -111,6 +111,8 @@ class EncounterRecordAdapter extends TypeAdapter<EncounterRecord> {
     return EncounterRecord(
       id: fields[0] as String,
       timestamp: fields[1] as DateTime,
+      anniversaryMonth: fields[17] as int,
+      anniversaryDay: fields[18] as int,
       location: fields[2] as Location,
       description: fields[3] as String?,
       tags: (fields[4] as List).cast<TagWithNote>(),
@@ -132,11 +134,15 @@ class EncounterRecordAdapter extends TypeAdapter<EncounterRecord> {
   @override
   void write(BinaryWriter writer, EncounterRecord obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.timestamp)
+      ..writeByte(17)
+      ..write(obj.anniversaryMonth)
+      ..writeByte(18)
+      ..write(obj.anniversaryDay)
       ..writeByte(2)
       ..write(obj.location)
       ..writeByte(3)

@@ -341,6 +341,8 @@ void main() {
         final recordA1 = EncounterRecord(
           id: 'record_a_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 0, longitude: 0),
           tags: [],
           status: EncounterStatus.missed,
@@ -353,6 +355,8 @@ void main() {
         final recordA2 = EncounterRecord(
           id: 'record_a_2',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 0, longitude: 0),
           tags: [],
           status: EncounterStatus.missed,
@@ -365,6 +369,8 @@ void main() {
         final recordB1 = EncounterRecord(
           id: 'record_b_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 0, longitude: 0),
           tags: [],
           status: EncounterStatus.missed,
@@ -394,6 +400,8 @@ void main() {
           final record = EncounterRecord(
             id: 'record_a_$i',
             timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
             location: Location(latitude: 0, longitude: 0),
             tags: [],
             status: EncounterStatus.missed,
@@ -408,6 +416,8 @@ void main() {
         final recordB = EncounterRecord(
           id: 'record_b_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 0, longitude: 0),
           tags: [],
           status: EncounterStatus.missed,
@@ -441,6 +451,8 @@ void main() {
         final offlineRecord = EncounterRecord(
           id: 'offline_record',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 0, longitude: 0),
           tags: [],
           status: EncounterStatus.missed,
@@ -467,6 +479,8 @@ void main() {
         final recordA = EncounterRecord(
           id: 'record_a_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 0, longitude: 0),
           tags: [],
           status: EncounterStatus.missed,
@@ -479,6 +493,8 @@ void main() {
         final recordB = EncounterRecord(
           id: 'record_b_1',
           timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
           location: Location(latitude: 0, longitude: 0),
           tags: [],
           status: EncounterStatus.missed,
@@ -508,6 +524,8 @@ void main() {
           records.add(EncounterRecord(
             id: 'record_a_$i',
             timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
             location: Location(latitude: 0, longitude: 0),
             tags: [],
             status: EncounterStatus.missed,
@@ -522,6 +540,8 @@ void main() {
           records.add(EncounterRecord(
             id: 'record_b_$i',
             timestamp: DateTime.now(),
+          anniversaryMonth: DateTime.now().month,
+          anniversaryDay: DateTime.now().day,
             location: Location(latitude: 0, longitude: 0),
             tags: [],
             status: EncounterStatus.missed,

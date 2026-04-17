@@ -42,6 +42,28 @@ double? optionalDouble(Map<String, dynamic> json, String key) {
   return value.toDouble();
 }
 
+/// Extract required int field
+int requireInt(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) {
+    throw FormatException('Missing required field: $key');
+  }
+  if (value is! num) {
+    throw FormatException('Field "$key" must be num, got ${value.runtimeType}');
+  }
+  return value.toInt();
+}
+
+/// Extract optional int field
+int? optionalInt(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! num) {
+    throw FormatException('Field "$key" must be num or null, got ${value.runtimeType}');
+  }
+  return value.toInt();
+}
+
 /// Extract required bool field
 bool requireBool(Map<String, dynamic> json, String key) {
   final value = json[key];

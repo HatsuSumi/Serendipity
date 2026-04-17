@@ -22,6 +22,8 @@ export interface TagWithNoteDto {
 export interface CreateRecordDto {
   id: string;
   timestamp: Date;
+  anniversaryMonth: number;
+  anniversaryDay: number;
   location: LocationDto;
   description?: string;
   tags: TagWithNoteDto[];
@@ -46,6 +48,8 @@ export interface BatchCreateRecordsDto {
 // 更新记录请求
 export interface UpdateRecordDto {
   timestamp?: Date;
+  anniversaryMonth?: number;
+  anniversaryDay?: number;
   location?: LocationDto;
   description?: string;
   tags?: TagWithNoteDto[];
@@ -73,6 +77,8 @@ export interface RecordResponseDto {
   id: string;
   ownerId: string;
   timestamp: string;
+  anniversaryMonth: number;
+  anniversaryDay: number;
   location: LocationDto;
   description?: string;
   tags: TagWithNoteDto[];

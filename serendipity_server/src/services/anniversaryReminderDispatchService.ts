@@ -148,10 +148,9 @@ export class AnniversaryReminderDispatchService {
     now: Date,
   ): boolean {
     const localizedNow = this.schedulingSupport.getLocalizedNow(now, candidate.timezone);
-    const localizedTimestamp = this.schedulingSupport.getLocalizedNow(candidate.record.timestamp, candidate.timezone);
 
-    return localizedTimestamp.getUTCMonth() === localizedNow.getUTCMonth()
-      && localizedTimestamp.getUTCDate() === localizedNow.getUTCDate();
+    return candidate.record.anniversaryMonth === localizedNow.getUTCMonth() + 1
+      && candidate.record.anniversaryDay === localizedNow.getUTCDate();
   }
 
   private async finalizeAnniversaryDispatch(

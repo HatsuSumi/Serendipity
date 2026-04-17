@@ -49,6 +49,8 @@ interface ReminderNotificationsConfig {
 interface AnniversaryReminderRecord {
   id: string;
   timestamp: Date;
+  anniversaryMonth: number;
+  anniversaryDay: number;
 }
 
 export interface AnniversaryReminderCandidate {
@@ -343,6 +345,8 @@ export class PushTokenRepository implements IPushTokenRepository {
               select: {
                 id: true,
                 timestamp: true,
+                anniversaryMonth: true,
+                anniversaryDay: true,
               },
               orderBy: { timestamp: 'asc' },
             },

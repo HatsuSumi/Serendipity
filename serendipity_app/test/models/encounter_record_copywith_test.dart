@@ -12,6 +12,8 @@ void main() {
       originalRecord = EncounterRecord(
         id: 'test-id',
         timestamp: DateTime(2024, 1, 1),
+        anniversaryMonth: 1,
+        anniversaryDay: 1,
         location: Location(
           latitude: 39.9,
           longitude: 116.4,
