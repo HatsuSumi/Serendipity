@@ -90,9 +90,9 @@ extension _CreateRecordPageSaveAction on _CreateRecordPageState {
       );
 
       if (widget.isEditMode) {
-        await ref.read(recordsProvider.notifier).updateRecord(record);
+        await ref.read(recordsCommandProvider.notifier).updateRecord(record);
       } else {
-        await ref.read(recordsProvider.notifier).saveRecord(record);
+        await ref.read(recordsCommandProvider.notifier).saveRecord(record);
       }
 
       if (_publishToCommunity && mounted) {

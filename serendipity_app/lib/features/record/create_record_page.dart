@@ -6,6 +6,7 @@ import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/location_provider.dart';
 import '../../core/providers/community_provider.dart';
+import '../../core/providers/records_command_provider.dart';
 import '../../core/providers/auth_provider.dart';
 
 import '../../core/utils/message_helper.dart';

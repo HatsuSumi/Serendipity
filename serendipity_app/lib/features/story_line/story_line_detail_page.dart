@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/story_line.dart';
 import '../../models/encounter_record.dart';
 import '../../core/providers/records_provider.dart';
+import '../../core/providers/records_command_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/membership_provider.dart';
 import '../../core/theme/status_color_extension.dart';
@@ -468,7 +469,7 @@ class StoryLineDetailPage extends ConsumerWidget {
               Navigator.of(context).pop();
               await AsyncActionHelper.execute(
                 context,
-                action: () => ref.read(recordsProvider.notifier).deleteRecord(record.id),
+                action: () => ref.read(recordsCommandProvider.notifier).deleteRecord(record.id),
                 successMessage: '记录已删除',
                 errorMessagePrefix: '删除失败',
               );

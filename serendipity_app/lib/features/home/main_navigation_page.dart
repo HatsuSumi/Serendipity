@@ -5,6 +5,7 @@ import '../../core/providers/records_provider.dart';
 import '../../core/providers/message_provider.dart';
 import '../../core/providers/achievement_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/records_command_provider.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/widgets/achievement_unlocked_dialog.dart';
@@ -226,14 +227,14 @@ class _MainNavigationPageState extends ConsumerState<MainNavigationPage> {
                     );
                     
                     // 检测成就
-                    await ref.read(recordsProvider.notifier).checkAchievementsForRecord(latestRecord);
+                    await ref.read(recordsCommandProvider.notifier).checkAchievementsForRecord(latestRecord);
                   }
                 } else if (result is EncounterRecord && mounted) {
                   // 编辑模式返回了更新后的记录
                   ref.invalidate(recordsProvider);
                   
                   // 页面已关闭，检测成就
-                  await ref.read(recordsProvider.notifier).checkAchievementsForRecord(result);
+                  await ref.read(recordsCommandProvider.notifier).checkAchievementsForRecord(result);
                 }
               },
               icon: const Icon(Icons.add),

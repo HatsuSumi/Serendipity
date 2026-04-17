@@ -85,7 +85,7 @@ extension _TimelinePagePublishDeleteActionsSection on _TimelinePageState {
 
     if (confirmed == true && context.mounted) {
       try {
-        await ref.read(recordsProvider.notifier).deleteRecord(record.id);
+        await ref.read(recordsCommandProvider.notifier).deleteRecord(record.id);
         if (context.mounted) {
           MessageHelper.showSuccess(context, '记录已删除');
         }

@@ -47,7 +47,7 @@ extension _TimelinePageActionsSection on _TimelinePageState {
   /// 切换置顶状态
   void _togglePinRecord(BuildContext context, WidgetRef ref, EncounterRecord record) async {
     try {
-      await ref.read(recordsProvider.notifier).togglePin(record.id);
+      await ref.read(recordsCommandProvider.notifier).togglePin(record.id);
       if (context.mounted) {
         MessageHelper.showSuccess(
           context,

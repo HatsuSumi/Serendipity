@@ -5,6 +5,7 @@ import '../../models/encounter_record.dart';
 import '../../models/story_line.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/providers/page_transition_provider.dart';
+import '../../core/providers/records_command_provider.dart';
 import '../../core/providers/records_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/utils/async_action_helper.dart';
@@ -222,7 +223,7 @@ class RecordDetailController {
 
   Future<void> deleteRecord(BuildContext context, EncounterRecord record) async {
     try {
-      await ref.read(recordsProvider.notifier).deleteRecord(record.id);
+      await ref.read(recordsCommandProvider.notifier).deleteRecord(record.id);
       if (!isMounted()) return;
       ref.invalidate(recordsProvider);
       if (!context.mounted) return;
