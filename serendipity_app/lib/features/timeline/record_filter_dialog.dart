@@ -217,7 +217,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                maxLines: 1,
+                maxLines: 2,
               ),
             ),
 
@@ -233,7 +233,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                maxLines: 1,
+                maxLines: 2,
               ),
             ),
 
@@ -249,7 +249,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                maxLines: 1,
+                maxLines: 2,
               ),
             ),
 
@@ -265,7 +265,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                maxLines: 1,
+                maxLines: 2,
               ),
             ),
 
@@ -281,7 +281,7 @@ class _RecordFilterDialogState extends ConsumerState<RecordFilterDialog> {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                maxLines: 1,
+                maxLines: 2,
               ),
             ),
           ],
