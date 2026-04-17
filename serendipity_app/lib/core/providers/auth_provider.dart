@@ -1,62 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/register_result.dart';
 import '../../models/user.dart';
 import '../repositories/i_auth_repository.dart';
-import '../repositories/test_auth_repository.dart';
-import '../repositories/custom_server_auth_repository.dart';
-import '../services/http_client_service.dart';
-import '../services/device_identity_service.dart';
-import '../services/i_storage_service.dart';
-import '../services/push_token_sync_service.dart';
-import '../config/app_config.dart';
-import 'records_provider.dart';
-import 'story_lines_provider.dart';
-import 'check_in_provider.dart';
-import 'achievement_provider.dart';
-import 'community_provider.dart';
+import 'auth_dependencies_provider.dart';
+import 'auth_session_coordinator.dart';
 import 'message_provider.dart';
 
-/// 存储服务 Provider
-final storageServiceProvider = Provider<IStorageService>((ref) {
-  throw UnimplementedError('storageServiceProvider must be overridden in main.dart');
-});
-
-/// HTTP 客户端服务 Provider
-final httpClientServiceProvider = Provider<HttpClientService>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final deviceIdentityService = ref.watch(deviceIdentityServiceProvider);
-  return HttpClientService(
-    storage: storage,
-    deviceIdentityService: deviceIdentityService,
-  );
-});
-
-final deviceIdentityServiceProvider = Provider<DeviceIdentityService>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  return DeviceIdentityService(storage: storage);
-});
-
-/// 认证仓储 Provider
-/// 
-/// 依赖抽象接口 IAuthRepository，不依赖具体实现。
-/// 遵循依赖倒置原则（DIP）：切换后端只需修改 AppConfig.serverType。
-/// 
-/// 后端选择：
-/// - ServerType.test：使用 TestAuthRepository（测试模式）
-/// - ServerType.customServer：使用 CustomServerAuthRepository（自建服务器）
-final authRepositoryProvider = Provider<IAuthRepository>((ref) {
-  switch (AppConfig.serverType) {
-    case ServerType.test:
-      return TestAuthRepository();
-    
-    case ServerType.customServer:
-      final httpClient = ref.watch(httpClientServiceProvider);
-      final deviceIdentityService = ref.watch(deviceIdentityServiceProvider);
-      return CustomServerAuthRepository(
-        httpClient: httpClient,
-        deviceIdentityService: deviceIdentityService,
-      );
-  }
-});
+export 'auth_dependencies_provider.dart';
+export 'auth_events_provider.dart';
 
 /// 用户认证状态管理
 /// 
@@ -70,10 +21,16 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
 /// - main.dart：监听认证状态变化，决定显示欢迎页还是主页
 class AuthNotifier extends StreamNotifier<User?> {
   late IAuthRepository _repository;
+  late AuthSessionCoordinator _sessionCoordinator;
 
   @override
   Stream<User?> build() {
     _repository = ref.read(authRepositoryProvider);
+    _sessionCoordinator = AuthSessionCoordinator(
+      ref: ref,
+      repository: _repository,
+      setState: (nextState) => state = nextState,
+    );
     
     // 注入强制登出回调：Token 过期且刷新失败时（被其他设备踢下线），
     // 通过 messageProvider 发送跨页面消息，主页面监听后显示提示。
@@ -90,53 +47,6 @@ class AuthNotifier extends StreamNotifier<User?> {
     return _repository.authStateChanges;
   }
   
-  /// 触发数据同步
-  /// 
-  /// 调用时机：用户登录/注册成功后
-  /// 
-  /// 设计说明：
-  /// - 不直接调用 SyncService（违反分层约束）
-  /// - 通过信号驱动，让 NetworkMonitorService 负责实际同步
-  /// - AuthNotifier 只负责认证，不负责同步业务逻辑
-  /// - 使用 Future.microtask 确保信号在当前事件循环后发送
-  /// 
-  /// 同步策略由 NetworkMonitorService 决定：
-  /// - 注册：SyncSource.register，跳过下载
-  /// - 登录：SyncSource.login，读取上次同步时间
-  void _triggerSync(User user, {bool isRegister = false}) {
-    // 不 await，直接发送信号（异步）
-    // 使用 Future.microtask 确保信号在当前事件循环后发送，避免竞态条件
-    Future.microtask(() {
-      ref.read(authCompletedProvider.notifier).emit(AuthCompletedEvent(
-        user: user,
-        isRegister: isRegister,
-      ));
-    });
-  }
-  
-  /// 刷新所有数据 Provider（清除内存缓存）
-  /// 
-  /// 调用时机：
-  /// - 清空本地数据后
-  /// - 数据同步完成后
-  /// 
-  /// 作用：强制 Provider 重新从存储加载数据
-  /// 
-  /// 设计说明：
-  /// - 所有数据 Provider（recordsProvider、storyLinesProvider、checkInProvider）
-  ///   都是 AsyncNotifier，在 build() 里 watch(syncCompletedProvider)
-  /// - invalidate 后，Provider 重建，自动以新 userId 加载数据
-  /// - 无需显式调用 refresh()，架构完全信号驱动
-  void _invalidateDataProviders() {
-    ref.invalidate(recordsProvider);
-    ref.invalidate(storyLinesProvider);
-    ref.invalidate(checkInProvider);
-    ref.invalidate(achievementsProvider);
-    // 社区列表携带 isOwner 字段，用户切换时必须重新以新身份加载
-    // 否则登出后匿名刷新的结果（isOwner=false）会在重新登录后持续显示
-    ref.invalidate(communityProvider);
-    ref.invalidate(myPostsProvider);
-  }
 
   /// 获取当前用户快照
   ///
@@ -150,6 +60,63 @@ class AuthNotifier extends StreamNotifier<User?> {
     }
 
     return await future;
+  }
+
+  Future<void> _runAuthAction(
+    Future<User> Function() action, {
+    required bool isRegister,
+  }) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final user = await action();
+      state = AsyncValue.data(user);
+      await _sessionCoordinator.completeAuthSuccess(
+        user,
+        isRegister: isRegister,
+      );
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<String?> _runRegisterAuthAction(
+    Future<RegisterResult> Function() action,
+  ) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final result = await action();
+      state = AsyncValue.data(result.user);
+      await _sessionCoordinator.completeAuthSuccess(
+        result.user,
+        isRegister: true,
+      );
+      return result.recoveryKey;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow;
+    }
+  }
+
+  Future<void> _runProfileUpdateAction(Future<void> Function() action) async {
+    await action();
+    final user = await _repository.currentUser;
+    state = AsyncValue.data(user);
+  }
+
+  void _requireNotEmpty(String value, String message) {
+    if (value.isEmpty) {
+      throw ArgumentError(message);
+    }
+  }
+
+  void _requirePhoneNumberWithCountryCode(String phoneNumber) {
+    _requireNotEmpty(phoneNumber, '手机号不能为空');
+    if (!phoneNumber.startsWith('+')) {
+      throw ArgumentError('手机号格式错误：缺少国家代码');
+    }
   }
 
   /// 邮箱登录
@@ -168,32 +135,13 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 登录失败立即抛异常
   Future<void> signInWithEmail(String email, String password) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
-    if (email.isEmpty) {
-      throw ArgumentError('邮箱不能为空');
-    }
-    if (password.isEmpty) {
-      throw ArgumentError('密码不能为空');
-    }
+    _requireNotEmpty(email, '邮箱不能为空');
+    _requireNotEmpty(password, '密码不能为空');
 
-    state = const AsyncValue.loading();
-    
-    try {
-      // 1. 调用 AuthRepository 登录
-      final user = await _repository.signInWithEmail(email, password);
-      state = AsyncValue.data(user);
-      
-      // 2. 绑定离线数据到当前用户
-      await _bindOfflineDataIfNeeded(user.id);
-      
-      // 3. 刷新所有数据 Provider
-      _invalidateDataProviders();
-      
-      // 4. 登录成功后触发数据同步
-      _triggerSync(user);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      rethrow; // 重新抛出异常，让调用者可以捕获
-    }
+    await _runAuthAction(
+      () => _repository.signInWithEmail(email, password),
+      isRegister: false,
+    );
   }
 
   /// 邮箱注册
@@ -214,34 +162,12 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 注册失败立即抛异常
   Future<String?> signUpWithEmail(String email, String password) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
-    if (email.isEmpty) {
-      throw ArgumentError('邮箱不能为空');
-    }
-    if (password.isEmpty) {
-      throw ArgumentError('密码不能为空');
-    }
+    _requireNotEmpty(email, '邮箱不能为空');
+    _requireNotEmpty(password, '密码不能为空');
 
-    state = const AsyncValue.loading();
-    
-    try {
-      // 1. 调用 AuthRepository 注册
-      final result = await _repository.signUpWithEmail(email, password);
-      state = AsyncValue.data(result.user);
-      
-      // 2. 绑定离线数据到新账号
-      await _bindOfflineDataIfNeeded(result.user.id);
-      
-      // 3. 刷新所有数据 Provider
-      _invalidateDataProviders();
-      
-      // 4. 注册成功后触发数据同步
-      _triggerSync(result.user, isRegister: true);
-      
-      return result.recoveryKey; // 返回恢复密钥
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      rethrow; // 重新抛出异常，让调用者可以捕获
-    }
+    return await _runRegisterAuthAction(
+      () => _repository.signUpWithEmail(email, password),
+    );
   }
 
   /// 发送手机验证码
@@ -257,14 +183,7 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 发送失败立即抛异常
   Future<String> sendPhoneVerificationCode(String phoneNumber) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空和格式）
-    if (phoneNumber.isEmpty) {
-      throw ArgumentError('手机号不能为空');
-    }
-    // 注意：phoneNumber 已经在页面层拼接了国家代码（如 +8613800138000）
-    // 这里只需要验证格式是否正确
-    if (!phoneNumber.startsWith('+')) {
-      throw ArgumentError('手机号格式错误：缺少国家代码');
-    }
+    _requirePhoneNumberWithCountryCode(phoneNumber);
 
     return await _repository.sendPhoneVerificationCode(phoneNumber);
   }
@@ -288,32 +207,13 @@ class AuthNotifier extends StreamNotifier<User?> {
     String password,
   ) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
-    if (phoneNumber.isEmpty) {
-      throw ArgumentError('手机号不能为空');
-    }
-    if (password.isEmpty) {
-      throw ArgumentError('密码不能为空');
-    }
+    _requireNotEmpty(phoneNumber, '手机号不能为空');
+    _requireNotEmpty(password, '密码不能为空');
 
-    state = const AsyncValue.loading();
-    
-    try {
-      // 1. 调用 AuthRepository 登录
-      final user = await _repository.signInWithPhonePassword(phoneNumber, password);
-      state = AsyncValue.data(user);
-      
-      // 2. 绑定离线数据到当前用户
-      await _bindOfflineDataIfNeeded(user.id);
-      
-      // 3. 刷新所有数据 Provider
-      _invalidateDataProviders();
-      
-      // 4. 登录成功后触发数据同步
-      _triggerSync(user);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      rethrow; // 重新抛出异常，让调用者可以捕获
-    }
+    await _runAuthAction(
+      () => _repository.signInWithPhonePassword(phoneNumber, password),
+      isRegister: false,
+    );
   }
 
   /// 手机号登录（验证码方式）
@@ -337,39 +237,18 @@ class AuthNotifier extends StreamNotifier<User?> {
     String verificationId,
   ) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
-    if (phoneNumber.isEmpty) {
-      throw ArgumentError('手机号不能为空');
-    }
-    if (verificationCode.isEmpty) {
-      throw ArgumentError('验证码不能为空');
-    }
-    if (verificationId.isEmpty) {
-      throw ArgumentError('验证 ID 不能为空');
-    }
+    _requireNotEmpty(phoneNumber, '手机号不能为空');
+    _requireNotEmpty(verificationCode, '验证码不能为空');
+    _requireNotEmpty(verificationId, '验证 ID 不能为空');
 
-    state = const AsyncValue.loading();
-    
-    try {
-      // 1. 调用 AuthRepository 登录
-      final user = await _repository.signInWithPhone(
+    await _runAuthAction(
+      () => _repository.signInWithPhone(
         phoneNumber,
         verificationCode,
         verificationId,
-      );
-      state = AsyncValue.data(user);
-      
-      // 2. 绑定离线数据到当前用户
-      await _bindOfflineDataIfNeeded(user.id);
-      
-      // 3. 刷新所有数据 Provider
-      _invalidateDataProviders();
-      
-      // 4. 登录成功后触发数据同步
-      _triggerSync(user);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      rethrow; // 重新抛出异常，让调用者可以捕获
-    }
+      ),
+      isRegister: false,
+    );
   }
 
   /// 手机号密码注册
@@ -393,34 +272,12 @@ class AuthNotifier extends StreamNotifier<User?> {
     String password,
   ) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
-    if (phoneNumber.isEmpty) {
-      throw ArgumentError('手机号不能为空');
-    }
-    if (password.isEmpty) {
-      throw ArgumentError('密码不能为空');
-    }
+    _requireNotEmpty(phoneNumber, '手机号不能为空');
+    _requireNotEmpty(password, '密码不能为空');
 
-    state = const AsyncValue.loading();
-    
-    try {
-      // 1. 调用 AuthRepository 注册
-      final result = await _repository.signUpWithPhonePassword(phoneNumber, password);
-      state = AsyncValue.data(result.user);
-      
-      // 2. 绑定离线数据到新账号
-      await _bindOfflineDataIfNeeded(result.user.id);
-      
-      // 3. 刷新所有数据 Provider
-      _invalidateDataProviders();
-      
-      // 4. 注册成功后触发数据同步
-      _triggerSync(result.user, isRegister: true);
-      
-      return result.recoveryKey; // 返回恢复密钥
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      rethrow; // 重新抛出异常，让调用者可以捕获
-    }
+    return await _runRegisterAuthAction(
+      () => _repository.signUpWithPhonePassword(phoneNumber, password),
+    );
   }
 
   /// 手机号注册（验证码方式）
@@ -446,41 +303,17 @@ class AuthNotifier extends StreamNotifier<User?> {
     String verificationId,
   ) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
-    if (phoneNumber.isEmpty) {
-      throw ArgumentError('手机号不能为空');
-    }
-    if (verificationCode.isEmpty) {
-      throw ArgumentError('验证码不能为空');
-    }
-    if (verificationId.isEmpty) {
-      throw ArgumentError('验证 ID 不能为空');
-    }
+    _requireNotEmpty(phoneNumber, '手机号不能为空');
+    _requireNotEmpty(verificationCode, '验证码不能为空');
+    _requireNotEmpty(verificationId, '验证 ID 不能为空');
 
-    state = const AsyncValue.loading();
-    
-    try {
-      // 1. 调用 AuthRepository 注册
-      final result = await _repository.signUpWithPhone(
+    return await _runRegisterAuthAction(
+      () => _repository.signUpWithPhone(
         phoneNumber,
         verificationCode,
         verificationId,
-      );
-      state = AsyncValue.data(result.user);
-      
-      // 2. 绑定离线数据到新账号
-      await _bindOfflineDataIfNeeded(result.user.id);
-      
-      // 3. 刷新所有数据 Provider
-      _invalidateDataProviders();
-      
-      // 4. 注册成功后触发数据同步
-      _triggerSync(result.user, isRegister: true);
-      
-      return result.recoveryKey; // 返回恢复密钥
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      rethrow; // 重新抛出异常，让调用者可以捕获
-    }
+      ),
+    );
   }
 
   /// 登出
@@ -502,52 +335,7 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// Fail Fast：登出失败立即抛异常
   Future<void> signOut() async {
     state = const AsyncValue.loading();
-    
-    try {
-      ref.read(pushTokenSignOutInProgressProvider.notifier).state = true;
-
-      final pushTokenRemoteService = ref.read(pushTokenRemoteServiceProvider);
-      await pushTokenRemoteService.unregisterCurrentToken(null);
-
-      // 1. 调用 AuthRepository 登出（清除 Token）
-      await _repository.signOut();
-      
-      // 2. 清空认证数据（只清空 Token 等认证信息）
-      // 保留所有业务数据，支持多用户离线使用
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.clearAuthData();
-
-      // 3. 先更新认证状态，避免依赖 authProvider 的数据 Provider
-      // 在 token 已清除但仍拿到旧用户时发起受保护请求。
-      state = const AsyncValue.data(null);
-      
-      // 4. 刷新所有数据 Provider
-      _invalidateDataProviders();
-    } catch (e, stack) {
-      ref.read(pushTokenSignOutInProgressProvider.notifier).state = false;
-      state = AsyncValue.error(e, stack);
-      rethrow; // 重新抛出异常，让调用者可以捕获
-    }
-  }
-  
-  /// 绑定离线数据到指定用户（如果有离线数据）
-  /// 
-  /// 调用时机：首次登录/注册时
-  /// 
-  /// 策略：自动绑定所有离线数据，不询问用户
-  /// 
-  /// Fail Fast：
-  /// - userId 为空：抛出 ArgumentError
-  Future<void> _bindOfflineDataIfNeeded(String userId) async {
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    final storageService = ref.read(storageServiceProvider);
-    
-    // 直接绑定离线数据（不询问用户）
-    // 如果没有离线数据，bindOfflineDataToUser 会自动跳过
-    await storageService.bindOfflineDataToUser(userId);
+    await _sessionCoordinator.signOut();
   }
   
   /// 发送密码重置邮件
@@ -560,15 +348,9 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 新密码格式错误立即抛异常
   Future<void> resetPassword(String email, String recoveryKey, String newPassword) async {
     // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
-    if (email.isEmpty) {
-      throw ArgumentError('邮箱不能为空');
-    }
-    if (recoveryKey.isEmpty) {
-      throw ArgumentError('恢复密钥不能为空');
-    }
-    if (newPassword.isEmpty) {
-      throw ArgumentError('新密码不能为空');
-    }
+    _requireNotEmpty(email, '邮箱不能为空');
+    _requireNotEmpty(recoveryKey, '恢复密钥不能为空');
+    _requireNotEmpty(newPassword, '新密码不能为空');
     
     await _repository.resetPassword(email, recoveryKey, newPassword);
   }
@@ -608,30 +390,7 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 密码错误立即抛异常
   /// - 用户未登录立即抛异常
   Future<void> deleteAccount(String password) async {
-    if (password.isEmpty) {
-      throw ArgumentError('密码不能为空');
-    }
-
-    // 先获取当前用户 ID，再注销（注销后 _currentUser 会被清空）
-    final currentUser = await _repository.currentUser;
-    ref.read(pushTokenSignOutInProgressProvider.notifier).state = true;
-
-    try {
-      final pushTokenRemoteService = ref.read(pushTokenRemoteServiceProvider);
-      await pushTokenRemoteService.unregisterCurrentToken(null);
-      await _repository.deleteAccount(password);
-    } catch (e) {
-      ref.read(pushTokenSignOutInProgressProvider.notifier).state = false;
-      rethrow;
-    }
-
-    if (currentUser != null) {
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.deleteUserData(currentUser.id);
-    }
-
-    state = const AsyncValue.data(null);
-    _invalidateDataProviders();
+    await _sessionCoordinator.deleteAccount(password);
   }
 
   /// 直接更新当前用户 state
@@ -647,12 +406,8 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 用户未登录立即抛异常
   Future<void> updatePassword(String currentPassword, String newPassword) async {
     // Fail Fast：参数验证
-    if (currentPassword.isEmpty) {
-      throw ArgumentError('当前密码不能为空');
-    }
-    if (newPassword.isEmpty) {
-      throw ArgumentError('新密码不能为空');
-    }
+    _requireNotEmpty(currentPassword, '当前密码不能为空');
+    _requireNotEmpty(newPassword, '新密码不能为空');
     
     await _repository.updatePassword(currentPassword, newPassword);
   }
@@ -669,18 +424,12 @@ class AuthNotifier extends StreamNotifier<User?> {
   /// - 用户未登录立即抛异常
   Future<void> updateEmail(String newEmail, String password) async {
     // Fail Fast：参数验证
-    if (newEmail.isEmpty) {
-      throw ArgumentError('新邮箱不能为空');
-    }
-    if (password.isEmpty) {
-      throw ArgumentError('密码不能为空');
-    }
-    
-    await _repository.updateEmail(newEmail, password);
-    
-    // Repository 已经更新了 _currentUser，直接获取即可
-    final user = await _repository.currentUser;
-    state = AsyncValue.data(user);
+    _requireNotEmpty(newEmail, '新邮箱不能为空');
+    _requireNotEmpty(password, '密码不能为空');
+
+    await _runProfileUpdateAction(
+      () => _repository.updateEmail(newEmail, password),
+    );
   }
   
   /// 更换手机号
@@ -698,21 +447,15 @@ class AuthNotifier extends StreamNotifier<User?> {
     String password,
   ) async {
     // Fail Fast：参数验证
-    if (newPhoneNumber.isEmpty) {
-      throw ArgumentError('新手机号不能为空');
-    }
-    if (password.isEmpty) {
-      throw ArgumentError('密码不能为空');
-    }
-    
-    await _repository.updatePhoneNumber(
-      newPhoneNumber,
-      password,
+    _requireNotEmpty(newPhoneNumber, '新手机号不能为空');
+    _requireNotEmpty(password, '密码不能为空');
+
+    await _runProfileUpdateAction(
+      () => _repository.updatePhoneNumber(
+        newPhoneNumber,
+        password,
+      ),
     );
-    
-    // Repository 已经更新了 _currentUser，直接获取即可
-    final user = await _repository.currentUser;
-    state = AsyncValue.data(user);
   }
 }
 
@@ -721,38 +464,4 @@ final authProvider = StreamNotifierProvider<AuthNotifier, User?>(
   () => AuthNotifier(),
 );
 
-/// 认证完成信号（用于触发同步）
-/// 
-/// 设计说明：
-/// - AuthNotifier 登录/注册成功后发送此信号
-/// - NetworkMonitorService 监听此信号，触发实际同步
-/// - 这样可以保持分层约束：UI 层不直接调用 SyncService
-class AuthCompletedEvent {
-  final User user;
-  final bool isRegister;
-  
-  AuthCompletedEvent({
-    required this.user,
-    required this.isRegister,
-  });
-}
-
-/// 认证完成事件通知器
-/// 
-/// 使用 StateNotifierProvider 而不是 StateProvider，原因：
-/// - StateNotifier 提供更好的事件语义
-/// - 可以在 build 方法中初始化为 null，避免信号丢失
-/// - 支持更复杂的状态转换逻辑
-class AuthCompletedNotifier extends StateNotifier<AuthCompletedEvent?> {
-  AuthCompletedNotifier() : super(null);
-  
-  /// 发送认证完成事件
-  void emit(AuthCompletedEvent event) {
-    state = event;
-  }
-}
-
-final authCompletedProvider = StateNotifierProvider<AuthCompletedNotifier, AuthCompletedEvent?>((ref) {
-  return AuthCompletedNotifier();
-});
 
