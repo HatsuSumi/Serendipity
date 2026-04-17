@@ -34,7 +34,7 @@ describe('AuthService', () => {
     };
 
     mockRefreshTokenRepository = {
-      create: jest.fn(),
+      createOrReplace: jest.fn(),
       findByToken: jest.fn(),
       findByTokenAndDeviceId: jest.fn(),
       deleteByToken: jest.fn(),
@@ -79,7 +79,7 @@ describe('AuthService', () => {
       mockPasswordHasher.hash.mockResolvedValue('hashed-password');
       mockUserRepository.create.mockResolvedValue(mockUser);
       mockUserRepository.updateRecoveryKey.mockResolvedValue(mockUser);
-      mockRefreshTokenRepository.create.mockResolvedValue({} as any);
+      mockRefreshTokenRepository.createOrReplace.mockResolvedValue({} as any);
 
       const result = await authService.registerEmail(registerData);
 
@@ -130,7 +130,7 @@ describe('AuthService', () => {
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
       mockPasswordHasher.compare.mockResolvedValue(true);
       mockUserRepository.updateLastLogin.mockResolvedValue(mockUser);
-      mockRefreshTokenRepository.create.mockResolvedValue({} as any);
+      mockRefreshTokenRepository.createOrReplace.mockResolvedValue({} as any);
 
       const result = await authService.loginEmail(loginData);
 
@@ -348,7 +348,7 @@ describe('AuthService', () => {
       mockRefreshTokenRepository.findByTokenAndDeviceId.mockResolvedValue(mockTokenRecord as any);
       mockUserRepository.findById.mockResolvedValue(mockUser);
       mockRefreshTokenRepository.deleteByToken.mockResolvedValue(undefined as any);
-      mockRefreshTokenRepository.create.mockResolvedValue({} as any);
+      mockRefreshTokenRepository.createOrReplace.mockResolvedValue({} as any);
 
       const result = await authService.refreshToken(refreshToken, deviceId);
 
