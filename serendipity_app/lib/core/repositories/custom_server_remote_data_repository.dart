@@ -7,216 +7,70 @@ import '../../models/user_settings.dart';
 import '../../models/membership.dart';
 import '../../models/push_token_registration.dart';
 import 'i_remote_data_repository.dart';
-import '../services/http_client_service.dart';
-import '../config/server_config.dart';
-import '../utils/address_helper.dart';
 import '../providers/favorites_provider.dart' show FavoritedPostsResult, FavoritedRecordsResult;
+import '../services/http_client_service.dart';
+import 'custom_server_remote_achievement_repository.dart';
+import 'custom_server_remote_check_in_repository.dart';
+import 'custom_server_remote_community_repository.dart';
+import 'custom_server_remote_membership_repository.dart';
+import 'custom_server_remote_push_repository.dart';
+import 'custom_server_remote_records_repository.dart';
+import 'custom_server_remote_story_lines_repository.dart';
+import 'custom_server_remote_user_settings_repository.dart';
 
 /// 自建服务器远程数据仓库实现
 /// 
 /// 使用自建 Node.js 后端，支持记录、故事线、社区帖子的 CRUD 操作。
 class CustomServerRemoteDataRepository implements IRemoteDataRepository {
-  final HttpClientService _httpClient;
-  static const int _syncPageSize = 100;
+  final CustomServerRemoteRecordsRepository _recordsRepository;
+  final CustomServerRemoteStoryLinesRepository _storyLinesRepository;
+  final CustomServerRemoteCommunityRepository _communityRepository;
+  final CustomServerRemoteCheckInRepository _checkInRepository;
+  final CustomServerRemoteAchievementRepository _achievementRepository;
+  final CustomServerRemoteUserSettingsRepository _userSettingsRepository;
+  final CustomServerRemoteMembershipRepository _membershipRepository;
+  final CustomServerRemotePushRepository _pushRepository;
   
   CustomServerRemoteDataRepository({required HttpClientService httpClient})
-      : _httpClient = httpClient;
-
-  Map<String, dynamic> _toStoryLineServerDto(StoryLine storyLine) {
-    final json = storyLine.toJson();
-    json.remove('userId');
-    return json;
-  }
-
-  Future<List<EncounterRecord>> _downloadRecordsPaged(
-    String userId, {
-    DateTime? lastSyncTime,
-  }) async {
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-
-    final allRecords = <EncounterRecord>[];
-    var offset = 0;
-    var hasMore = true;
-
-    while (hasMore) {
-      final queryParams = <String, String>{
-        'limit': _syncPageSize.toString(),
-        'offset': offset.toString(),
-      };
-      if (lastSyncTime != null) {
-        queryParams['lastSyncTime'] = lastSyncTime.toIso8601String();
-      }
-
-      final response = await _httpClient.get(
-        ServerConfig.records,
-        queryParams: queryParams,
-      );
-      final data = response['data'] as Map<String, dynamic>;
-      final recordsJson = data['records'] as List;
-      final pageRecords = recordsJson
-          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
-          .toList();
-
-      allRecords.addAll(pageRecords);
-      hasMore = data['hasMore'] as bool? ?? false;
-      offset += pageRecords.length;
-
-      if (pageRecords.isEmpty) {
-        break;
-      }
-    }
-
-    return allRecords;
-  }
+      : _recordsRepository = CustomServerRemoteRecordsRepository(httpClient: httpClient),
+        _storyLinesRepository = CustomServerRemoteStoryLinesRepository(httpClient: httpClient),
+        _communityRepository = CustomServerRemoteCommunityRepository(httpClient: httpClient),
+        _checkInRepository = CustomServerRemoteCheckInRepository(httpClient: httpClient),
+        _achievementRepository = CustomServerRemoteAchievementRepository(httpClient: httpClient),
+        _userSettingsRepository = CustomServerRemoteUserSettingsRepository(httpClient: httpClient),
+        _membershipRepository = CustomServerRemoteMembershipRepository(httpClient: httpClient),
+        _pushRepository = CustomServerRemotePushRepository(httpClient: httpClient);
   
   // ==================== 记录相关操作 ====================
   
   @override
-  Future<void> uploadRecord(String userId, EncounterRecord record) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      // 提取地区信息并填充到 location
-      final recordJson = record.toJson();
-      final location = recordJson['location'] as Map<String, dynamic>;
-      final region = AddressHelper.extractRegion(location['address'] as String?);
-      
-      if (region.province != null) {
-        location['province'] = region.province;
-      }
-      if (region.city != null) {
-        location['city'] = region.city;
-      }
-      if (region.area != null) {
-        location['area'] = region.area;
-      }
-      
-      await _httpClient.post(
-        ServerConfig.records,
-        body: recordJson,
-      );
-    } on HttpException catch (e) {
-      throw Exception('上传记录失败：${e.message}');
-    }
+  Future<void> uploadRecord(String userId, EncounterRecord record) {
+    return _recordsRepository.uploadRecord(userId, record);
   }
   
   @override
-  Future<void> updateRecord(String userId, EncounterRecord record) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      // 提取地区信息并填充到 location
-      final recordJson = record.toJson();
-      final location = recordJson['location'] as Map<String, dynamic>;
-      final region = AddressHelper.extractRegion(location['address'] as String?);
-      
-      if (region.province != null) {
-        location['province'] = region.province;
-      }
-      if (region.city != null) {
-        location['city'] = region.city;
-      }
-      if (region.area != null) {
-        location['area'] = region.area;
-      }
-      
-      // 使用 PUT API 进行增量更新
-      // 只传输完整数据（后端会根据 UpdateRecordDto 只更新传入的字段）
-      await _httpClient.put(
-        ServerConfig.recordById(record.id),
-        body: recordJson,
-      );
-    } on HttpException catch (e) {
-      throw Exception('更新记录失败：${e.message}');
-    }
+  Future<void> updateRecord(String userId, EncounterRecord record) {
+    return _recordsRepository.updateRecord(userId, record);
   }
   
   @override
-  Future<void> uploadRecords(String userId, List<EncounterRecord> records) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    if (records.isEmpty) {
-      return; // 允许空列表
-    }
-    
-    try {
-      // 提取地区信息并填充到每条记录的 location
-      final recordsJson = records.map((r) {
-        final recordJson = r.toJson();
-        final location = recordJson['location'] as Map<String, dynamic>;
-        final region = AddressHelper.extractRegion(location['address'] as String?);
-        
-        if (region.province != null) {
-          location['province'] = region.province;
-        }
-        if (region.city != null) {
-          location['city'] = region.city;
-        }
-        if (region.area != null) {
-          location['area'] = region.area;
-        }
-        
-        return recordJson;
-      }).toList();
-      
-      await _httpClient.post(
-        ServerConfig.recordsBatch,
-        body: {
-          'records': recordsJson,
-        },
-      );
-    } on HttpException catch (e) {
-      throw Exception('批量上传记录失败：${e.message}');
-    }
+  Future<void> uploadRecords(String userId, List<EncounterRecord> records) {
+    return _recordsRepository.uploadRecords(userId, records);
   }
   
   @override
-  Future<List<EncounterRecord>> downloadRecords(String userId) async {
-    try {
-      return await _downloadRecordsPaged(userId);
-    } on HttpException catch (e) {
-      throw Exception('下载记录失败：${e.message}');
-    }
+  Future<List<EncounterRecord>> downloadRecords(String userId) {
+    return _recordsRepository.downloadRecords(userId);
   }
   
   @override
-  Future<List<EncounterRecord>> downloadRecordsSince(String userId, DateTime lastSyncTime) async {
-    try {
-      return await _downloadRecordsPaged(
-        userId,
-        lastSyncTime: lastSyncTime,
-      );
-    } on HttpException catch (e) {
-      throw Exception('下载增量记录失败：${e.message}');
-    }
+  Future<List<EncounterRecord>> downloadRecordsSince(String userId, DateTime lastSyncTime) {
+    return _recordsRepository.downloadRecordsSince(userId, lastSyncTime);
   }
   
   @override
-  Future<void> deleteRecord(String userId, String recordId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    if (recordId.isEmpty) {
-      throw ArgumentError('记录 ID 不能为空');
-    }
-    
-    try {
-      await _httpClient.delete(ServerConfig.recordById(recordId));
-    } on HttpException catch (e) {
-      throw Exception('删除记录失败：${e.message}');
-    }
+  Future<void> deleteRecord(String userId, String recordId) {
+    return _recordsRepository.deleteRecord(userId, recordId);
   }
 
   @override
@@ -242,376 +96,100 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     String sortOrder = 'desc',
     int limit = 20,
     int offset = 0,
-  }) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    if (limit <= 0) {
-      throw ArgumentError('limit 必须大于 0');
-    }
-    if (offset < 0) {
-      throw ArgumentError('offset 不能为负数');
-    }
-    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-      throw ArgumentError('开始日期不能晚于结束日期');
-    }
-
-    try {
-      final queryParams = <String, String>{
-        'limit': limit.toString(),
-        'offset': offset.toString(),
-        'sortBy': sortBy,
-        'sortOrder': sortOrder,
-      };
-
-      if (startDate != null) {
-        queryParams['startDate'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        queryParams['endDate'] = endDate.toIso8601String();
-      }
-      if (province != null && province.isNotEmpty) {
-        queryParams['province'] = province;
-      }
-      if (city != null && city.isNotEmpty) {
-        queryParams['city'] = city;
-      }
-      if (area != null && area.isNotEmpty) {
-        queryParams['area'] = area;
-      }
-      if (placeNameKeywords != null && placeNameKeywords.isNotEmpty) {
-        queryParams['placeNameKeywords'] = placeNameKeywords.join(',');
-      }
-      if (descriptionKeywords != null && descriptionKeywords.isNotEmpty) {
-        queryParams['descriptionKeywords'] = descriptionKeywords.join(',');
-      }
-      if (ifReencounterKeywords != null && ifReencounterKeywords.isNotEmpty) {
-        queryParams['ifReencounterKeywords'] = ifReencounterKeywords.join(',');
-      }
-      if (conversationStarterKeywords != null && conversationStarterKeywords.isNotEmpty) {
-        queryParams['conversationStarterKeywords'] = conversationStarterKeywords.join(',');
-      }
-      if (backgroundMusicKeywords != null && backgroundMusicKeywords.isNotEmpty) {
-        queryParams['backgroundMusicKeywords'] = backgroundMusicKeywords.join(',');
-      }
-      if (placeTypes != null && placeTypes.isNotEmpty) {
-        queryParams['placeTypes'] = placeTypes.join(',');
-      }
-      if (tags != null && tags.isNotEmpty) {
-        queryParams['tags'] = tags.join(',');
-      }
-      if (statuses != null && statuses.isNotEmpty) {
-        queryParams['statuses'] = statuses.join(',');
-      }
-      if (emotionIntensities != null && emotionIntensities.isNotEmpty) {
-        queryParams['emotionIntensities'] = emotionIntensities.join(',');
-      }
-      if (weathers != null && weathers.isNotEmpty) {
-        queryParams['weathers'] = weathers.join(',');
-      }
-      if (tagMatchMode == 'wholeWord') {
-        queryParams['tagMatchMode'] = tagMatchMode;
-      }
-
-      final response = await _httpClient.get(
-        '${ServerConfig.records}/filter',
-        queryParams: queryParams,
-      );
-
-      final data = response['data'] as Map<String, dynamic>;
-      final recordsJson = data['records'] as List;
-
-      return recordsJson
-          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('筛选记录失败：${e.message}');
-    }
+  }) {
+    return _recordsRepository.filterRecords(
+      userId: userId,
+      startDate: startDate,
+      endDate: endDate,
+      province: province,
+      city: city,
+      area: area,
+      placeNameKeywords: placeNameKeywords,
+      descriptionKeywords: descriptionKeywords,
+      ifReencounterKeywords: ifReencounterKeywords,
+      conversationStarterKeywords: conversationStarterKeywords,
+      backgroundMusicKeywords: backgroundMusicKeywords,
+      placeTypes: placeTypes,
+      tags: tags,
+      statuses: statuses,
+      emotionIntensities: emotionIntensities,
+      weathers: weathers,
+      tagMatchMode: tagMatchMode,
+      sortBy: sortBy,
+      sortOrder: sortOrder,
+      limit: limit,
+      offset: offset,
+    );
   }
   
   // ==================== 故事线相关操作 ====================
   
   @override
-  Future<void> uploadStoryLine(String userId, StoryLine storyLine) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      await _httpClient.post(
-        ServerConfig.storylines,
-        body: _toStoryLineServerDto(storyLine),
-      );
-    } on HttpException catch (e) {
-      throw Exception('上传故事线失败：${e.message}');
-    }
+  Future<void> uploadStoryLine(String userId, StoryLine storyLine) {
+    return _storyLinesRepository.uploadStoryLine(userId, storyLine);
   }
   
   @override
-  Future<void> updateStoryLine(String userId, StoryLine storyLine) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      // 使用 PUT API 进行增量更新
-      // 只传输完整数据（后端会根据 UpdateStoryLineDto 只更新传入的字段）
-      await _httpClient.put(
-        ServerConfig.storylineById(storyLine.id),
-        body: _toStoryLineServerDto(storyLine),
-      );
-    } on HttpException catch (e) {
-      throw Exception('更新故事线失败：${e.message}');
-    }
+  Future<void> updateStoryLine(String userId, StoryLine storyLine) {
+    return _storyLinesRepository.updateStoryLine(userId, storyLine);
   }
   
   @override
-  Future<void> uploadStoryLines(String userId, List<StoryLine> storyLines) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    if (storyLines.isEmpty) {
-      return; // 允许空列表
-    }
-    
-    try {
-      await _httpClient.post(
-        ServerConfig.storylinesBatch,
-        body: {
-          'storyLines': storyLines.map(_toStoryLineServerDto).toList(),
-        },
-      );
-    } on HttpException catch (e) {
-      throw Exception('批量上传故事线失败：${e.message}');
-    }
+  Future<void> uploadStoryLines(String userId, List<StoryLine> storyLines) {
+    return _storyLinesRepository.uploadStoryLines(userId, storyLines);
   }
   
   @override
-  Future<List<StoryLine>> downloadStoryLines(String userId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      final response = await _httpClient.get(
-        ServerConfig.storylines,
-      );
-      final data = response['data'] as Map<String, dynamic>;
-      final storylinesJson = data['storyLines'] as List;
-      
-      return storylinesJson
-          .map((json) => StoryLine.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('下载故事线失败：${e.message}');
-    }
+  Future<List<StoryLine>> downloadStoryLines(String userId) {
+    return _storyLinesRepository.downloadStoryLines(userId);
   }
   
   @override
-  Future<List<StoryLine>> downloadStoryLinesSince(String userId, DateTime lastSyncTime) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      final response = await _httpClient.get(
-        ServerConfig.storylines,
-        queryParams: {
-          'lastSyncTime': lastSyncTime.toIso8601String(),
-        },
-      );
-      final data = response['data'] as Map<String, dynamic>;
-      final storylinesJson = data['storyLines'] as List;
-      
-      return storylinesJson
-          .map((json) => StoryLine.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('下载增量故事线失败：${e.message}');
-    }
+  Future<List<StoryLine>> downloadStoryLinesSince(String userId, DateTime lastSyncTime) {
+    return _storyLinesRepository.downloadStoryLinesSince(userId, lastSyncTime);
   }
   
   @override
-  Future<void> deleteStoryLine(String userId, String storyLineId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    if (storyLineId.isEmpty) {
-      throw ArgumentError('故事线 ID 不能为空');
-    }
-    
-    try {
-      await _httpClient.delete(ServerConfig.storylineById(storyLineId));
-    } on HttpException catch (e) {
-      throw Exception('删除故事线失败：${e.message}');
-    }
+  Future<void> deleteStoryLine(String userId, String storyLineId) {
+    return _storyLinesRepository.deleteStoryLine(userId, storyLineId);
   }
   
   // ==================== 社区相关操作 ====================
   
   @override
-  Future<bool> saveCommunityPost(CommunityPost post, {bool forceReplace = false}) async {
-    try {
-      final body = post.toJson();
-      body['forceReplace'] = forceReplace;
-      
-      final response = await _httpClient.post(
-        ServerConfig.communityPosts,
-        body: body,
-      );
-      
-      // 从响应中获取 replaced 字段
-      final data = response['data'] as Map<String, dynamic>;
-      return data['replaced'] as bool? ?? false;
-    } on HttpException catch (e) {
-      // 如果是 CONFLICT 错误，说明记录内容未变化或需要用户确认
-      if (e.errorCode == 'CONFLICT') {
-        throw Exception(e.message);
-      }
-      throw Exception('发布社区帖子失败：${e.message}');
-    }
+  Future<bool> saveCommunityPost(CommunityPost post, {bool forceReplace = false}) {
+    return _communityRepository.saveCommunityPost(post, forceReplace: forceReplace);
   }
 
   @override
-  Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) async {
-    // Fail Fast：参数验证
-    if (records.isEmpty) {
-      throw ArgumentError('records 不能为空');
-    }
-    
-    try {
-      final body = {
-        'records': records.map((record) {
-          return {
-            'recordId': record.id,
-            'timestamp': record.timestamp.toIso8601String(),
-            'address': record.location.address,
-            'placeName': record.location.placeName,
-            'placeType': record.location.placeType?.value,
-            'province': AddressHelper.extractRegion(record.location.address ?? '').province,
-            'city': AddressHelper.extractRegion(record.location.address ?? '').city,
-            'area': AddressHelper.extractRegion(record.location.address ?? '').area,
-            'description': record.description,
-            'tags': record.tags.map((t) => {'tag': t.tag, 'note': t.note}).toList(),
-            'status': record.status.name,
-          };
-        }).toList(),
-      };
-      
-      final response = await _httpClient.post(
-        '${ServerConfig.communityPosts}/check-status',
-        body: body,
-      );
-      
-      final data = response['data'] as Map<String, dynamic>;
-      final statuses = data['statuses'] as List;
-      
-      final result = <String, String>{};
-      for (final item in statuses) {
-        final recordId = item['recordId'] as String;
-        final status = item['status'] as String;
-        result[recordId] = status;
-      }
-      
-      return result;
-    } on HttpException catch (e) {
-      throw Exception('检查发布状态失败：${e.message}');
-    }
+  Future<Map<String, String>> checkPublishStatus(List<EncounterRecord> records) {
+    return _communityRepository.checkPublishStatus(records);
   }
   
   @override
   Future<List<CommunityPost>> getCommunityPosts({
     int limit = 20,
     DateTime? lastTimestamp,
-  }) async {
-    // Fail Fast：参数验证
-    if (limit <= 0) {
-      throw ArgumentError('limit 必须大于 0');
-    }
-    
-    try {
-      final queryParams = <String, String>{
-        'limit': limit.toString(),
-      };
-      
-      if (lastTimestamp != null) {
-        queryParams['lastTimestamp'] = lastTimestamp.toIso8601String();
-      }
-      
-      final response = await _httpClient.get(
-        ServerConfig.communityPosts,
-        queryParams: queryParams,
-        skipAuth: false, // 公开接口：有 token 时带上（服务端识别 isOwner），无 token 时自动跳过
-      );
-      
-      final data = response['data'] as Map<String, dynamic>;
-      final postsJson = data['posts'] as List;
-      
-      return postsJson
-          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('获取社区帖子失败：${e.message}');
-    }
+  }) {
+    return _communityRepository.getCommunityPosts(
+      limit: limit,
+      lastTimestamp: lastTimestamp,
+    );
   }
   
   @override
-  Future<List<CommunityPost>> getMyCommunityPosts(String userId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      final response = await _httpClient.get(ServerConfig.communityMyPosts);
-      final data = response['data'] as Map<String, dynamic>;
-      final postsJson = data['posts'] as List;
-      
-      return postsJson
-          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('获取我的社区帖子失败：${e.message}');
-    }
+  Future<List<CommunityPost>> getMyCommunityPosts(String userId) {
+    return _communityRepository.getMyCommunityPosts(userId);
   }
   
   @override
-  Future<void> deleteCommunityPost(String postId, String userId) async {
-    // Fail Fast：参数验证
-    if (postId.isEmpty) {
-      throw ArgumentError('帖子 ID 不能为空');
-    }
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      await _httpClient.delete(ServerConfig.communityPostById(postId));
-    } on HttpException catch (e) {
-      throw Exception('删除社区帖子失败：${e.message}');
-    }
+  Future<void> deleteCommunityPost(String postId, String userId) {
+    return _communityRepository.deleteCommunityPost(postId, userId);
   }
 
   @override
-  Future<void> deleteCommunityPostByRecordId(String recordId) async {
-    // Fail Fast：参数验证
-    if (recordId.isEmpty) {
-      throw ArgumentError('记录 ID 不能为空');
-    }
-    
-    try {
-      await _httpClient.delete(ServerConfig.communityPostByRecordId(recordId));
-    } on HttpException catch (e) {
-      throw Exception('按记录删除社区帖子失败：${e.message}');
-    }
+  Future<void> deleteCommunityPostByRecordId(String recordId) {
+    return _communityRepository.deleteCommunityPostByRecordId(recordId);
   }
   
   @override
@@ -628,90 +206,28 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     List<String>? statuses,
     String tagMatchMode = 'contains',
     int limit = 20,
-  }) async {
-    // Fail Fast：参数验证
-    if (limit <= 0) {
-      throw ArgumentError('limit 必须大于 0');
-    }
-    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-      throw ArgumentError('错过时间开始日期不能晚于结束日期');
-    }
-    if (publishStartDate != null && publishEndDate != null && publishStartDate.isAfter(publishEndDate)) {
-      throw ArgumentError('发布时间开始日期不能晚于结束日期');
-    }
-    
-    try {
-      final queryParams = <String, String>{
-        'limit': limit.toString(),
-      };
-      
-      if (startDate != null) {
-        queryParams['startDate'] = startDate.toIso8601String();
-      }
-      if (endDate != null) {
-        queryParams['endDate'] = endDate.toIso8601String();
-      }
-      if (publishStartDate != null) {
-        queryParams['publishStartDate'] = publishStartDate.toIso8601String();
-      }
-      if (publishEndDate != null) {
-        queryParams['publishEndDate'] = publishEndDate.toIso8601String();
-      }
-      if (province != null && province.isNotEmpty) {
-        queryParams['province'] = province;
-      }
-      if (city != null && city.isNotEmpty) {
-        queryParams['city'] = city;
-      }
-      if (area != null && area.isNotEmpty) {
-        queryParams['area'] = area;
-      }
-      if (placeTypes != null && placeTypes.isNotEmpty) {
-        queryParams['placeTypes'] = placeTypes.join(',');
-      }
-      if (tags != null && tags.isNotEmpty) {
-        queryParams['tags'] = tags.join(',');
-      }
-      if (tagMatchMode == 'wholeWord') {
-        queryParams['tagMatchMode'] = tagMatchMode;
-      }
-      if (statuses != null && statuses.isNotEmpty) {
-        queryParams['statuses'] = statuses.join(',');
-      }
-      
-      final response = await _httpClient.get(
-        ServerConfig.communityPosts,
-        queryParams: queryParams,
-        skipAuth: false, // 公开接口：有 token 时带上（服务端识别 isOwner），无 token 时自动跳过
-      );
-      
-      final data = response['data'] as Map<String, dynamic>;
-      final postsJson = data['posts'] as List;
-      
-      return postsJson
-          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('筛选社区帖子失败：${e.message}');
-    }
+  }) {
+    return _communityRepository.filterCommunityPosts(
+      startDate: startDate,
+      endDate: endDate,
+      publishStartDate: publishStartDate,
+      publishEndDate: publishEndDate,
+      province: province,
+      city: city,
+      area: area,
+      placeTypes: placeTypes,
+      tags: tags,
+      statuses: statuses,
+      tagMatchMode: tagMatchMode,
+      limit: limit,
+    );
   }
   
   // ==================== 签到相关操作 ====================
   
   @override
-  Future<CheckInRecord> createTodayCheckIn(String userId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      final response = await _httpClient.post(ServerConfig.checkIns);
-      final data = response['data'] as Map<String, dynamic>;
-      return CheckInRecord.fromJson(data);
-    } on HttpException catch (e) {
-      throw Exception('创建签到记录失败：${e.message}');
-    }
+  Future<CheckInRecord> createTodayCheckIn(String userId) {
+    return _checkInRepository.createTodayCheckIn(userId);
   }
 
   @override
@@ -719,393 +235,114 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
     String userId,
     int year,
     int month,
-  ) async {
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-
-    try {
-      final response = await _httpClient.get(
-        ServerConfig.checkInStatus,
-        queryParams: {
-          'year': year.toString(),
-          'month': month.toString(),
-        },
-      );
-      return response['data'] as Map<String, dynamic>;
-    } on HttpException catch (e) {
-      throw Exception('获取签到状态失败：${e.message}');
-    }
+  ) {
+    return _checkInRepository.getCheckInStatus(userId, year, month);
   }
   
   @override
-  Future<List<CheckInRecord>> downloadCheckIns(String userId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      final response = await _httpClient.get(ServerConfig.checkIns);
-      final data = response['data'] as Map<String, dynamic>;
-      final checkInsJson = data['checkIns'] as List;
-      
-      return checkInsJson
-          .map((json) => CheckInRecord.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('下载签到记录失败：${e.message}');
-    }
+  Future<List<CheckInRecord>> downloadCheckIns(String userId) {
+    return _checkInRepository.downloadCheckIns(userId);
   }
   
   @override
-  Future<List<CheckInRecord>> downloadCheckInsSince(String userId, DateTime lastSyncTime) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      final response = await _httpClient.get(
-        ServerConfig.checkIns,
-        queryParams: {
-          'lastSyncTime': lastSyncTime.toIso8601String(),
-        },
-      );
-      final data = response['data'] as Map<String, dynamic>;
-      final checkInsJson = data['checkIns'] as List;
-      
-      return checkInsJson
-          .map((json) => CheckInRecord.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('下载增量签到记录失败：${e.message}');
-    }
+  Future<List<CheckInRecord>> downloadCheckInsSince(String userId, DateTime lastSyncTime) {
+    return _checkInRepository.downloadCheckInsSince(userId, lastSyncTime);
   }
   
   @override
-  Future<void> deleteCheckIn(String userId, String checkInId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    if (checkInId.isEmpty) {
-      throw ArgumentError('签到记录 ID 不能为空');
-    }
-    
-    try {
-      await _httpClient.delete(ServerConfig.checkInById(checkInId));
-    } on HttpException catch (e) {
-      throw Exception('删除签到记录失败：${e.message}');
-    }
+  Future<void> deleteCheckIn(String userId, String checkInId) {
+    return _checkInRepository.deleteCheckIn(userId, checkInId);
   }
   
   // ==================== 成就相关操作 ====================
   
   @override
-  Future<void> uploadAchievementUnlock(AchievementUnlock unlock) async {
-    // Fail Fast：参数验证
-    if (unlock.userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    if (unlock.achievementId.isEmpty) {
-      throw ArgumentError('成就 ID 不能为空');
-    }
-    
-    try {
-      await _httpClient.post(
-        ServerConfig.achievementUnlocks,
-        body: unlock.toJson(),
-      );
-    } on HttpException catch (e) {
-      throw Exception('上传成就解锁记录失败：${e.message}');
-    }
+  Future<void> uploadAchievementUnlock(AchievementUnlock unlock) {
+    return _achievementRepository.uploadAchievementUnlock(unlock);
   }
   
   @override
-  Future<List<AchievementUnlock>> downloadAchievementUnlocks(String userId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      final response = await _httpClient.get(
-        ServerConfig.achievementUnlocks,
-        queryParams: {'userId': userId},
-      );
-      final data = response['data'] as Map<String, dynamic>;
-      final unlocksJson = data['unlocks'] as List;
-      
-      return unlocksJson
-          .map((json) => AchievementUnlock.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } on HttpException catch (e) {
-      throw Exception('下载成就解锁记录失败：${e.message}');
-    }
+  Future<List<AchievementUnlock>> downloadAchievementUnlocks(String userId) {
+    return _achievementRepository.downloadAchievementUnlocks(userId);
   }
   
   // ==================== 用户设置相关操作 ====================
   
   @override
-  Future<UserSettings> uploadSettings(String userId, UserSettings settings) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    if (settings.userId.isEmpty) {
-      throw ArgumentError('用户设置中的用户 ID 不能为空');
-    }
-    if (settings.userId != userId) {
-      throw ArgumentError('用户设置中的用户 ID 与参数不一致');
-    }
-
-    try {
-      final response = await _httpClient.put(
-        ServerConfig.usersSettings,
-        body: settings.toServerDto(),
-      );
-      final data = response['data'] as Map<String, dynamic>;
-      return UserSettings.fromServerDto(data, userId);
-    } on HttpException catch (e) {
-      throw Exception('上传用户设置失败：${e.message}');
-    }
+  Future<UserSettings> uploadSettings(String userId, UserSettings settings) {
+    return _userSettingsRepository.uploadSettings(userId, settings);
   }
   
   @override
-  Future<UserSettings?> downloadSettings(String userId) async {
-    // Fail Fast：参数验证
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    
-    try {
-      final response = await _httpClient.get(ServerConfig.usersSettings);
-      final data = response['data'] as Map<String, dynamic>;
-      
-      // 使用模型的转换方法（单一职责原则）
-      return UserSettings.fromServerDto(data, userId);
-    } on HttpException catch (e) {
-      // 如果是 404，说明用户还没有设置，返回 null
-      if (e.statusCode == 404) {
-        return null;
-      }
-      throw Exception('下载用户设置失败：${e.message}');
-    }
+  Future<UserSettings?> downloadSettings(String userId) {
+    return _userSettingsRepository.downloadSettings(userId);
   }
 
   @override
-  Future<Membership?> downloadMembership(String userId) async {
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-
-    try {
-      final response = await _httpClient.get(ServerConfig.usersMembership);
-      final data = response['data'];
-      if (data == null) {
-        return null;
-      }
-      return Membership.fromJson(data as Map<String, dynamic>);
-    } on HttpException catch (e) {
-      if (e.statusCode == 404) {
-        return null;
-      }
-      throw Exception('下载会员信息失败：${e.message}');
-    }
+  Future<Membership?> downloadMembership(String userId) {
+    return _membershipRepository.downloadMembership(userId);
   }
 
   @override
-  Future<Membership> activateMembership(String userId, double monthlyAmount) async {
-    if (userId.isEmpty) {
-      throw ArgumentError('用户 ID 不能为空');
-    }
-    if (monthlyAmount < 0 || monthlyAmount > 648) {
-      throw ArgumentError('monthlyAmount 必须在 0 到 648 之间');
-    }
-
-    try {
-      final response = await _httpClient.post(
-        ServerConfig.usersMembership,
-        body: {'monthlyAmount': monthlyAmount},
-      );
-      final data = response['data'] as Map<String, dynamic>;
-      return Membership.fromJson(data);
-    } on HttpException catch (e) {
-      throw Exception('开通会员失败：${e.message}');
-    }
+  Future<Membership> activateMembership(String userId, double monthlyAmount) {
+    return _membershipRepository.activateMembership(userId, monthlyAmount);
   }
 
   @override
-  Future<void> registerPushToken(PushTokenRegistration registration) async {
-    if (registration.token.isEmpty) {
-      throw ArgumentError('push token 不能为空');
-    }
-    if (registration.platform.isEmpty) {
-      throw ArgumentError('platform 不能为空');
-    }
-    if (registration.timezone.isEmpty) {
-      throw ArgumentError('timezone 不能为空');
-    }
-
-    try {
-      await _httpClient.post(
-        ServerConfig.pushTokens,
-        body: registration.toJson(),
-      );
-    } on HttpException catch (e) {
-      throw Exception('注册 push token 失败：${e.message}');
-    }
+  Future<void> registerPushToken(PushTokenRegistration registration) {
+    return _pushRepository.registerPushToken(registration);
   }
 
   @override
-  Future<void> unregisterPushToken(String token) async {
-    if (token.isEmpty) {
-      throw ArgumentError('push token 不能为空');
-    }
-
-    try {
-      await _httpClient.delete(
-        ServerConfig.pushTokens,
-        body: {'token': token},
-      );
-    } on HttpException catch (e) {
-      throw Exception('注销 push token 失败：${e.message}');
-    }
+  Future<void> unregisterPushToken(String token) {
+    return _pushRepository.unregisterPushToken(token);
   }
 
   @override
-  Future<RepositoryPushTokenStatus> listPushTokens() async {
-    try {
-      final response = await _httpClient.get(ServerConfig.pushTokens);
-      return RepositoryPushTokenStatus.fromJson(response['data'] as Map<String, dynamic>);
-    } on HttpException catch (e) {
-      throw Exception('获取 push token 注册状态失败：${e.message}');
-    }
+  Future<RepositoryPushTokenStatus> listPushTokens() {
+    return _pushRepository.listPushTokens();
   }
 
   @override
-  Future<RepositoryServerTestPushSummary> sendCheckInReminderTest() async {
-    try {
-      final response = await _httpClient.post(
-        '${ServerConfig.pushTokens}/test/check-in-reminder',
-      );
-      return RepositoryServerTestPushSummary.fromJson(response['data'] as Map<String, dynamic>);
-    } on HttpException catch (e) {
-      throw Exception('发送签到提醒测试推送失败：${e.message}');
-    }
+  Future<RepositoryServerTestPushSummary> sendCheckInReminderTest() {
+    return _pushRepository.sendCheckInReminderTest();
   }
 
   @override
-  Future<RepositoryServerTestPushSummary> sendAnniversaryReminderTest() async {
-    try {
-      final response = await _httpClient.post(
-        '${ServerConfig.pushTokens}/test/anniversary-reminder',
-      );
-      return RepositoryServerTestPushSummary.fromJson(response['data'] as Map<String, dynamic>);
-    } on HttpException catch (e) {
-      throw Exception('发送纪念日提醒测试推送失败：${e.message}');
-    }
+  Future<RepositoryServerTestPushSummary> sendAnniversaryReminderTest() {
+    return _pushRepository.sendAnniversaryReminderTest();
   }
 
   // ==================== 收藏相关操作 ====================
 
   @override
-  Future<void> favoritePost(String userId, String postId) async {
-    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
-    if (postId.isEmpty) throw ArgumentError('帖子 ID 不能为空');
-    try {
-      await _httpClient.post(ServerConfig.favoritePosts, body: {'postId': postId});
-    } on HttpException catch (e) {
-      throw Exception('收藏帖子失败：${e.message}');
-    }
+  Future<void> favoritePost(String userId, String postId) {
+    return _communityRepository.favoritePost(userId, postId);
   }
 
   @override
-  Future<void> unfavoritePost(String userId, String postId) async {
-    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
-    if (postId.isEmpty) throw ArgumentError('帖子 ID 不能为空');
-    try {
-      await _httpClient.delete(ServerConfig.favoritePostById(postId));
-    } on HttpException catch (e) {
-      throw Exception('取消收藏帖子失败：${e.message}');
-    }
+  Future<void> unfavoritePost(String userId, String postId) {
+    return _communityRepository.unfavoritePost(userId, postId);
   }
 
   @override
-  Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) async {
-    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
-    try {
-      final response = await _httpClient.get(ServerConfig.favoritePosts);
-      final data = response['data'] as Map<String, dynamic>;
-      final postsJson = data['posts'] as List;
-      final posts = postsJson
-          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
-          .toList();
-      final deletedPostIds = ((data['deletedPostIds'] as List?) ?? [])
-          .map((e) => e as String)
-          .toSet();
-      final deletedPostsJson = (data['deletedPosts'] as List?) ?? const [];
-      final deletedPosts = deletedPostsJson
-          .map((json) => CommunityPost.fromJson(json as Map<String, dynamic>))
-          .toList();
-      return FavoritedPostsResult(
-        posts: posts,
-        deletedPostIds: deletedPostIds,
-        deletedPosts: deletedPosts,
-      );
-    } on HttpException catch (e) {
-      throw Exception('获取收藏帖子失败：${e.message}');
-    }
+  Future<FavoritedPostsResult> getFavoritedPostsResult(String userId) {
+    return _communityRepository.getFavoritedPostsResult(userId);
   }
 
   @override
-  Future<void> favoriteRecord(String userId, String recordId) async {
-    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
-    if (recordId.isEmpty) throw ArgumentError('记录 ID 不能为空');
-    try {
-      await _httpClient.post(ServerConfig.favoriteRecords, body: {'recordId': recordId});
-    } on HttpException catch (e) {
-      throw Exception('收藏记录失败：${e.message}');
-    }
+  Future<void> favoriteRecord(String userId, String recordId) {
+    return _communityRepository.favoriteRecord(userId, recordId);
   }
 
   @override
-  Future<void> unfavoriteRecord(String userId, String recordId) async {
-    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
-    if (recordId.isEmpty) throw ArgumentError('记录 ID 不能为空');
-    try {
-      await _httpClient.delete(ServerConfig.favoriteRecordById(recordId));
-    } on HttpException catch (e) {
-      throw Exception('取消收藏记录失败：${e.message}');
-    }
+  Future<void> unfavoriteRecord(String userId, String recordId) {
+    return _communityRepository.unfavoriteRecord(userId, recordId);
   }
 
   @override
-  Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) async {
-    if (userId.isEmpty) throw ArgumentError('用户 ID 不能为空');
-    try {
-      final response = await _httpClient.get(ServerConfig.favoriteRecords);
-      final data = response['data'] as Map<String, dynamic>;
-      final recordsJson = data['records'] as List;
-      final records = recordsJson
-          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
-          .toList();
-      final deletedRecordIds = ((data['deletedRecordIds'] as List?) ?? [])
-          .map((e) => e as String)
-          .toSet();
-      final deletedRecordsJson = (data['deletedRecords'] as List?) ?? const [];
-      final deletedRecords = deletedRecordsJson
-          .map((json) => EncounterRecord.fromJson(json as Map<String, dynamic>))
-          .toList();
-      return FavoritedRecordsResult(
-        records: records,
-        deletedRecordIds: deletedRecordIds,
-        deletedRecords: deletedRecords,
-      );
-    } on HttpException catch (e) {
-      throw Exception('获取收藏记录失败：${e.message}');
-    }
+  Future<FavoritedRecordsResult> getFavoritedRecordsResult(String userId) {
+    return _communityRepository.getFavoritedRecordsResult(userId);
   }
 }
 
