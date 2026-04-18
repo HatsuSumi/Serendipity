@@ -341,7 +341,7 @@ final List<AboutSectionContent> designDecisionSections = List.unmodifiable([
     title: '既然技术栈用了 Flutter，为什么目前只有 Android 版？',
     paragraphs: [
       '因为开发者之前做过很多开源免费的项目。',
-      '也正因为一直免费，所以年入 0 元。',
+      '但免费的项目几乎得不到用户赞助，所以年入 0 元。',
       '这意味着当前既无法支付 App Store 每年 99 美元的开发者费用，也无法支付 Google Play 一次性 25 美元的开发者费用。',
       '所以现阶段选择的是直接发布 .apk 的方式。',
       '如果这个项目没人用，也没人赞助（完全自愿），那么未来也不会上架到任何应用商店。',
