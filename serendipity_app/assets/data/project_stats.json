@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-03-24",
+  "generated_at": "2026-04-30",
   "root": "D:\\Serendipity",
   "totals": {
-    "all_files": 566,
-    "code_files": 380,
-    "code_lines": 77676,
-    "code_chars": 2594160,
+    "all_files": 745,
+    "code_files": 558,
+    "code_lines": 92940,
+    "code_chars": 3110628,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -13,37 +13,42 @@
     {
       "key": "Dart",
       "label": "Dart文件",
-      "count": 193
-    },
-    {
-      "key": "Markdown",
-      "label": "Markdown文档",
-      "count": 111
+      "count": 338
     },
     {
       "key": "TypeScript",
       "label": "TypeScript文件",
-      "count": 98
+      "count": 133
+    },
+    {
+      "key": "Markdown",
+      "label": "Markdown文档",
+      "count": 117
     },
     {
       "key": "Other",
       "label": "其他文件",
-      "count": 75
+      "count": 70
     },
     {
       "key": "JavaScript",
       "label": "JavaScript文件",
-      "count": 21
-    },
-    {
-      "key": "SQL",
-      "label": "SQL脚本",
-      "count": 17
+      "count": 20
     },
     {
       "key": "JSON",
       "label": "JSON文件",
+      "count": 12
+    },
+    {
+      "key": "SQL",
+      "label": "SQL脚本",
       "count": 10
+    },
+    {
+      "key": "XML",
+      "label": "XML文件",
+      "count": 8
     },
     {
       "key": "C",
@@ -61,19 +66,14 @@
       "count": 6
     },
     {
-      "key": "XML",
-      "label": "XML文件",
-      "count": 6
+      "key": "INI",
+      "label": "INI/配置文件",
+      "count": 4
     },
     {
       "key": "Kotlin",
       "label": "Kotlin文件",
       "count": 4
-    },
-    {
-      "key": "INI",
-      "label": "INI/配置文件",
-      "count": 3
     },
     {
       "key": "YAML",
@@ -96,6 +96,11 @@
       "count": 1
     },
     {
+      "key": "PowerShell",
+      "label": "PowerShell脚本",
+      "count": 1
+    },
+    {
       "key": "Python",
       "label": "Python脚本",
       "count": 1
@@ -115,37 +120,37 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 37874,
-      "percentage": 48.8
+      "count": 47298,
+      "percentage": 50.9
     },
     {
       "key": "JSON",
       "label": "JSON",
-      "count": 27615,
-      "percentage": 35.5
+      "count": 27708,
+      "percentage": 29.8
     },
     {
       "key": "TypeScript",
       "label": "TypeScript",
-      "count": 7560,
-      "percentage": 9.7
+      "count": 13078,
+      "percentage": 14.1
     },
     {
       "key": "JavaScript",
       "label": "JavaScript",
-      "count": 3382,
-      "percentage": 4.4
+      "count": 3333,
+      "percentage": 3.6
     },
     {
       "key": "C++",
       "label": "C++",
       "count": 442,
-      "percentage": 0.6
+      "percentage": 0.5
     },
     {
       "key": "SQL",
       "label": "SQL",
-      "count": 224,
+      "count": 296,
       "percentage": 0.3
     },
     {
@@ -157,43 +162,49 @@
     {
       "key": "Kotlin",
       "label": "Kotlin",
-      "count": 84,
-      "percentage": 0.1
-    },
-    {
-      "key": "YAML",
-      "label": "YAML",
-      "count": 76,
+      "count": 105,
       "percentage": 0.1
     },
     {
       "key": "XML",
       "label": "XML",
-      "count": 65,
+      "count": 102,
+      "percentage": 0.1
+    },
+    {
+      "key": "Swift",
+      "label": "Swift",
+      "count": 73,
+      "percentage": 0.1
+    },
+    {
+      "key": "Java",
+      "label": "Java",
+      "count": 71,
+      "percentage": 0.1
+    },
+    {
+      "key": "Objective-C",
+      "label": "ObjC",
+      "count": 71,
+      "percentage": 0.1
+    },
+    {
+      "key": "PowerShell",
+      "label": "PowerShell",
+      "count": 70,
+      "percentage": 0.1
+    },
+    {
+      "key": "YAML",
+      "label": "YAML",
+      "count": 70,
       "percentage": 0.1
     },
     {
       "key": "批处理",
       "label": "Batch",
       "count": 64,
-      "percentage": 0.1
-    },
-    {
-      "key": "Swift",
-      "label": "Swift",
-      "count": 63,
-      "percentage": 0.1
-    },
-    {
-      "key": "Java",
-      "label": "Java",
-      "count": 41,
-      "percentage": 0.1
-    },
-    {
-      "key": "Objective-C",
-      "label": "ObjC",
-      "count": 35,
       "percentage": 0.0
     },
     {
@@ -211,7 +222,7 @@
     {
       "key": "INI",
       "label": "INI",
-      "count": 8,
+      "count": 16,
       "percentage": 0.0
     },
     {
@@ -225,37 +236,37 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 1241107,
-      "percentage": 47.8
+      "count": 1554824,
+      "percentage": 50.0
     },
     {
       "key": "JSON",
       "label": "JSON",
-      "count": 667284,
-      "percentage": 25.7
+      "count": 670063,
+      "percentage": 21.5
     },
     {
       "key": "TypeScript",
       "label": "TypeScript",
-      "count": 246296,
-      "percentage": 9.5
+      "count": 434863,
+      "percentage": 14.0
     },
     {
       "key": "JavaScript",
       "label": "JavaScript",
-      "count": 392670,
-      "percentage": 15.1
+      "count": 390766,
+      "percentage": 12.6
     },
     {
       "key": "C++",
       "label": "C++",
       "count": 15306,
-      "percentage": 0.6
+      "percentage": 0.5
     },
     {
       "key": "SQL",
       "label": "SQL",
-      "count": 12209,
+      "count": 16915,
       "percentage": 0.5
     },
     {
@@ -267,43 +278,49 @@
     {
       "key": "Kotlin",
       "label": "Kotlin",
-      "count": 2297,
-      "percentage": 0.1
-    },
-    {
-      "key": "YAML",
-      "label": "YAML",
-      "count": 1580,
+      "count": 3136,
       "percentage": 0.1
     },
     {
       "key": "XML",
       "label": "XML",
-      "count": 2809,
-      "percentage": 0.1
-    },
-    {
-      "key": "批处理",
-      "label": "Batch",
-      "count": 2107,
-      "percentage": 0.1
+      "count": 4857,
+      "percentage": 0.2
     },
     {
       "key": "Swift",
       "label": "Swift",
-      "count": 1980,
+      "count": 2559,
       "percentage": 0.1
     },
     {
       "key": "Java",
       "label": "Java",
-      "count": 1971,
+      "count": 3564,
       "percentage": 0.1
     },
     {
       "key": "Objective-C",
       "label": "ObjC",
-      "count": 1528,
+      "count": 2999,
+      "percentage": 0.1
+    },
+    {
+      "key": "PowerShell",
+      "label": "PowerShell",
+      "count": 1922,
+      "percentage": 0.1
+    },
+    {
+      "key": "YAML",
+      "label": "YAML",
+      "count": 1495,
+      "percentage": 0.0
+    },
+    {
+      "key": "批处理",
+      "label": "Batch",
+      "count": 2107,
       "percentage": 0.1
     },
     {
@@ -321,7 +338,7 @@
     {
       "key": "INI",
       "label": "INI",
-      "count": 355,
+      "count": 591,
       "percentage": 0.0
     },
     {
