@@ -74,7 +74,7 @@ class WelcomePage extends ConsumerWidget {
   Widget _buildHeader(ThemeData theme) {
     return Column(
       children: [
-        // Logo - 使用文字 Logo（临时方案，等待设计）
+        // Logo
         Container(
           width: 120,
           height: 120,
@@ -96,14 +96,12 @@ class WelcomePage extends ConsumerWidget {
               ),
             ],
           ),
-          child: const Center(
-            child: Text(
-              'S',
-              style: TextStyle(
-                fontSize: 64,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: -2,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.cover,
               ),
             ),
           ),
