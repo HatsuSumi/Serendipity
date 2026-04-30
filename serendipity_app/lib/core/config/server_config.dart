@@ -9,10 +9,10 @@ class ServerConfig {
   /// - 手机测试：http://192.168.x.x:3000（电脑局域网 IP）
   /// 
   /// 生产环境：
-  /// - https://api.serendipity.com
+  /// - https://serendipity-api.hatsusumi.com
   static const String baseUrl = String.fromEnvironment(
     'SERVER_BASE_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://serendipity-api.hatsusumi.com',
   );
   
   /// API 版本

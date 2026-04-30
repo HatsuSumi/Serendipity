@@ -29,6 +29,9 @@ function getOptionalIntEnv(key: string, defaultValue: number): number {
 }
 
 const isProduction = process.env.NODE_ENV === 'production';
+const defaultCorsOrigin = isProduction
+  ? 'https://hatsusumi.com'
+  : '*';
 
 export const config = Object.freeze({
   port: parseInt(getOptionalEnv('PORT', '3000'), 10),
@@ -47,7 +50,7 @@ export const config = Object.freeze({
   }),
 
   cors: Object.freeze({
-    origin: getOptionalEnv('CORS_ORIGIN', '*'),
+    origin: getOptionalEnv('CORS_ORIGIN', defaultCorsOrigin),
   }),
 
   payment: Object.freeze({

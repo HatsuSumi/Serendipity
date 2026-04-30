@@ -16,6 +16,7 @@ import Container from './config/container';
  */
 export const createApp = (container: Container): Application => {
   const app: Application = express();
+  app.set('trust proxy', 1);
 
   // 应用中间件
   const middlewareManager = createDefaultMiddlewares();

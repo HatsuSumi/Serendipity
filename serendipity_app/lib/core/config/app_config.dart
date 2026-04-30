@@ -31,16 +31,12 @@ class AppConfig {
   ///   
   /// - true：跳过会员检查，所有会员功能对开发者开放
   /// - false：正常会员权限验证
-  /// 
-  /// ⚠️ 注意：上线前必须设为 false
-  static const bool isDeveloperMode = true;
+  static const bool isDeveloperMode = false;
 
   /// 强制使用本地统计数据源
   ///
   /// - true：即使已登录，统计页也始终从本地 Hive 聚合（调试用）
   /// - false：正常策略——已登录时优先尝试远端，失败后降级本地
-  ///
-  /// ⚠️ 注意：上线前必须设为 false
   static const bool forceLocalStatistics = false;
 }
 
