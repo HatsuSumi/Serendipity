@@ -91,7 +91,7 @@ class PrivacyPolicyPage extends StatelessWidget {
               '使用 Hive 数据库存储在你的设备上\n\n'
               '☁️ 云端存储\n'
               '登录后数据会自动同步到服务器\n'
-              '支持多设备访问（会员功能）\n'
+              '支持多设备访问\n'
               '服务器架构：Node.js + PostgreSQL\n\n'
               '🔒 安全措施\n'
               '密码使用行业标准加密算法\n'

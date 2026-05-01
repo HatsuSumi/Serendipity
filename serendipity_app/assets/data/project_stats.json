@@ -4,8 +4,8 @@
   "totals": {
     "all_files": 741,
     "code_files": 558,
-    "code_lines": 92636,
-    "code_chars": 3106253,
+    "code_lines": 92652,
+    "code_chars": 3106706,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -145,7 +145,7 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 47298,
+      "count": 47308,
       "percentage": 51.1
     },
     {
@@ -197,6 +197,12 @@
       "percentage": 0.1
     },
     {
+      "key": "YAML",
+      "label": "YAML",
+      "count": 76,
+      "percentage": 0.1
+    },
+    {
       "key": "Swift",
       "label": "Swift",
       "count": 73,
@@ -217,12 +223,6 @@
     {
       "key": "PowerShell",
       "label": "PowerShell",
-      "count": 70,
-      "percentage": 0.1
-    },
-    {
-      "key": "YAML",
-      "label": "YAML",
       "count": 70,
       "percentage": 0.1
     },
@@ -261,7 +261,7 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 1554860,
+      "count": 1555173,
       "percentage": 50.1
     },
     {
@@ -313,6 +313,12 @@
       "percentage": 0.2
     },
     {
+      "key": "YAML",
+      "label": "YAML",
+      "count": 1635,
+      "percentage": 0.0
+    },
+    {
       "key": "Swift",
       "label": "Swift",
       "count": 2559,
@@ -335,12 +341,6 @@
       "label": "PowerShell",
       "count": 1922,
       "percentage": 0.1
-    },
-    {
-      "key": "YAML",
-      "label": "YAML",
-      "count": 1495,
-      "percentage": 0.0
     },
     {
       "key": "批处理",
