@@ -176,9 +176,9 @@ const List<AboutSectionContent> _staticAboutPageSections = [
   AboutSectionContent(
     title: '项目说明',
     paragraphs: [
-      '这是一个由一人耗时XX天，在孤独和抑郁的陪伴下完成开发的开源免费项目。',
+      '这是一个由一人耗时70天，在孤独和抑郁的陪伴下完成开发的开源免费项目。',
       '一人包揽产品设计、前端开发、后端开发、架构设计、数据库设计、接口设计、运维部署、测试、维护与文档编写。',
-      'Github仓库：占位链接',
+      'Github仓库：https://github.com/HatsuSumi/Serendipity',
     ],
   ),
 ];
