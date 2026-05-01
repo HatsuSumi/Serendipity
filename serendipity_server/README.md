@@ -26,6 +26,8 @@ Serendipity（错过了么）后端服务器，基于 Node.js + Express + TypeSc
 
 ## 快速开始
 
+> **注意**：以下步骤适用于**本地开发环境**。生产环境（云服务器）直接在系统上安装 PostgreSQL，不使用 Docker。
+
 ### 1. 安装 Docker Desktop
 
 下载并安装 Docker Desktop：
@@ -136,6 +138,8 @@ npm test
 - 当前签到提醒服务端扫描器会在服务启动后自动按间隔运行，也可以通过 `npm run reminder:scan` 手动执行
 
 ## Docker 命令
+
+> **注意**：以下命令仅用于**本地开发环境**。生产环境不使用 Docker。
 
 ```bash
 # 启动服务
