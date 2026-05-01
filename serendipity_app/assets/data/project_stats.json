@@ -2,10 +2,10 @@
   "generated_at": "2026-05-01",
   "root": "D:\\Serendipity",
   "totals": {
-    "all_files": 745,
+    "all_files": 741,
     "code_files": 558,
-    "code_lines": 92957,
-    "code_chars": 3110968,
+    "code_lines": 92636,
+    "code_chars": 3106253,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -28,7 +28,7 @@
     {
       "key": "Other",
       "label": "其他文件",
-      "count": 70
+      "count": 38
     },
     {
       "key": "JavaScript",
@@ -36,9 +36,14 @@
       "count": 20
     },
     {
+      "key": "SourceMap",
+      "label": "Source Map文件",
+      "count": 18
+    },
+    {
       "key": "JSON",
       "label": "JSON文件",
-      "count": 12
+      "count": 11
     },
     {
       "key": "SQL",
@@ -66,9 +71,14 @@
       "count": 6
     },
     {
+      "key": "Text",
+      "label": "文本文件",
+      "count": 6
+    },
+    {
       "key": "INI",
       "label": "INI/配置文件",
-      "count": 4
+      "count": 5
     },
     {
       "key": "Kotlin",
@@ -81,6 +91,11 @@
       "count": 3
     },
     {
+      "key": "CMake",
+      "label": "CMake构建脚本",
+      "count": 2
+    },
+    {
       "key": "HTML",
       "label": "HTML文件",
       "count": 1
@@ -91,6 +106,11 @@
       "count": 1
     },
     {
+      "key": "License",
+      "label": "License文件",
+      "count": 1
+    },
+    {
       "key": "Objective-C",
       "label": "Objective-C文件",
       "count": 1
@@ -98,6 +118,11 @@
     {
       "key": "PowerShell",
       "label": "PowerShell脚本",
+      "count": 1
+    },
+    {
+      "key": "Prisma",
+      "label": "Prisma Schema文件",
       "count": 1
     },
     {
@@ -121,13 +146,13 @@
       "key": "Dart",
       "label": "Dart",
       "count": 47298,
-      "percentage": 50.9
+      "percentage": 51.1
     },
     {
       "key": "JSON",
       "label": "JSON",
-      "count": 27725,
-      "percentage": 29.8
+      "count": 27374,
+      "percentage": 29.5
     },
     {
       "key": "TypeScript",
@@ -205,6 +230,12 @@
       "key": "批处理",
       "label": "Batch",
       "count": 64,
+      "percentage": 0.1
+    },
+    {
+      "key": "INI",
+      "label": "INI",
+      "count": 46,
       "percentage": 0.0
     },
     {
@@ -220,12 +251,6 @@
       "percentage": 0.0
     },
     {
-      "key": "INI",
-      "label": "INI",
-      "count": 16,
-      "percentage": 0.0
-    },
-    {
       "key": "TOML",
       "label": "TOML",
       "count": 1,
@@ -237,13 +262,13 @@
       "key": "Dart",
       "label": "Dart",
       "count": 1554860,
-      "percentage": 50.0
+      "percentage": 50.1
     },
     {
       "key": "JSON",
       "label": "JSON",
-      "count": 670367,
-      "percentage": 21.5
+      "count": 664824,
+      "percentage": 21.4
     },
     {
       "key": "TypeScript",
@@ -324,6 +349,12 @@
       "percentage": 0.1
     },
     {
+      "key": "INI",
+      "label": "INI",
+      "count": 1419,
+      "percentage": 0.0
+    },
+    {
       "key": "HTML",
       "label": "HTML",
       "count": 657,
@@ -333,12 +364,6 @@
       "key": "Python",
       "label": "Python",
       "count": 750,
-      "percentage": 0.0
-    },
-    {
-      "key": "INI",
-      "label": "INI",
-      "count": 591,
       "percentage": 0.0
     },
     {
