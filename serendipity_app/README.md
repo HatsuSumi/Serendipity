@@ -19,8 +19,8 @@ Serendipity 的 Flutter 客户端。
 - **定位与地图相关**：Geolocator、高德地图逆地理编码
 - **通知与推送**：flutter_local_notifications、Firebase Messaging、timezone、flutter_timezone
 - **数据可视化与体验增强**：fl_chart、confetti
-- **媒体与导出**：image_picker、image_cropper、screenshot、image_gallery_saver、path_provider
-- **其他能力**：url_launcher、package_info_plus
+- **媒体与头像**：photo_manager、image_cropper、path_provider
+- **其他能力**：url_launcher、package_info_plus、uuid、intl
 - **架构模式**：Feature-first + Repository Pattern + Provider Pattern
 
 ## 项目结构
