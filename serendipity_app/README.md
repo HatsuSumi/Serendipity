@@ -42,6 +42,7 @@ serendipity_app/
 │   │   ├── about/         # 关于页与设计说明
 │   │   ├── achievement/   # 成就系统
 │   │   ├── auth/          # 登录注册与认证
+│   │   ├── avatar/        # 头像选择与裁剪
 │   │   ├── check_in/      # 签到
 │   │   ├── community/     # 社区/树洞
 │   │   ├── favorites/     # 收藏
