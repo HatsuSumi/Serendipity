@@ -88,6 +88,15 @@ app.*.map.json
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
 *.jks
+*.keystore
+*.cer
+*.p12
+*.pfx
+
+# Environment files
+.env
+.env.*
+!.env.example
 
 # Web related
 lib/generated_plugin_registrant.dart
