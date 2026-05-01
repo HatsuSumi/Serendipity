@@ -61,7 +61,7 @@ from typing import Dict, Iterable, List, Optional, Tuple, Callable
 FILE_TYPE_DEFS: List[Tuple[str, Tuple[str, ...]]] = [
     # Web / Markup / Data
     ("JavaScript", (".js", ".mjs", ".cjs")),
-    ("TypeScript", (".ts", ".tsx", ".mts", ".cts")),
+    ("TypeScript", (".ts", ".tsx", ".mts", ".cts", ".d")),  # 添加 .d (TypeScript definition)
     ("HTML", (".html", ".htm", ".xhtml")),
     ("CSS", (".css",)),
     ("SCSS", (".scss", ".sass")),
@@ -70,8 +70,24 @@ FILE_TYPE_DEFS: List[Tuple[str, Tuple[str, ...]]] = [
     ("YAML", (".yml", ".yaml")),
     ("XML", (".xml", ".xsl", ".xslt", ".svg", ".xaml")),
     ("TOML", (".toml",)),
-    ("INI", (".ini", ".cfg", ".conf", ".editorconfig", ".properties", ".prefs")),
+    ("INI", (".ini", ".cfg", ".conf", ".editorconfig", ".properties", ".prefs",
+             ".eslintrc", ".nycrc", ".babelrc", ".jshintrc", ".jscsrc",  # JS/TS 配置
+             ".npmignore", ".gitignore", ".gitattributes", ".dockerignore",  # 忽略文件
+             ".cursorindexingignore", ".flow", ".lintstagedrc",  # 其他配置
+             ".sample", ".example", ".template", ".env")),  # 模板和环境变量
     ("Markdown", (".md", ".markdown", ".mdown", ".mkd")),
+    ("Text", (".txt",)),  # 纯文本文件
+    # Serialization / Data Formats
+    ("Flatbuffers", (".flat",)),  # Google FlatBuffers
+    ("Protobuf", (".proto", ".pb", ".textproto")),  # Protocol Buffers
+    ("SourceMap", (".map",)),  # JavaScript/TypeScript Source Maps
+    # Database / ORM
+    ("Prisma", (".prisma",)),  # Prisma ORM Schema
+    # Build Systems
+    ("CMake", (".cmake", ".cmake.in")),
+    ("Ninja", (".ninja",)),
+    ("Gyp", (".gyp", ".gypi")),  # Generate Your Projects (Chromium)
+    ("BNF", (".bnf",)),  # Backus-Naur Form (语法定义)
     # C family / compiled
     ("C", (".c", ".h")),
     ("C++", (".cc", ".cpp", ".cxx", ".hpp", ".hh", ".hxx", ".inl", ".inc")),
@@ -84,6 +100,9 @@ FILE_TYPE_DEFS: List[Tuple[str, Tuple[str, ...]]] = [
     ("Rust", (".rs", ".rlib")),
     ("Dart", (".dart",)),
     ("Scala", (".scala", ".sc")),
+    ("Assembly", (".s", ".asm")),  # 汇编语言
+    ("D", (".d",)),  # D 语言 (注意：与 TypeScript .d 冲突，TypeScript 优先)
+    ("Nix", (".nix",)),  # Nix 包管理器配置
     # Script
     ("Python", (".py", ".pyw", ".pyi")),
     ("Ruby", (".rb", ".rake", ".gemspec")),
@@ -128,6 +147,15 @@ FILE_TYPE_LABELS: Dict[str, str] = {
     "TOML": "TOML文件",
     "INI": "INI/配置文件",
     "Markdown": "Markdown文档",
+    "Text": "文本文件",
+    "Flatbuffers": "FlatBuffers文件",
+    "Protobuf": "Protocol Buffers文件",
+    "SourceMap": "Source Map文件",
+    "Prisma": "Prisma Schema文件",
+    "CMake": "CMake构建脚本",
+    "Ninja": "Ninja构建文件",
+    "Gyp": "GYP构建文件",
+    "BNF": "BNF语法定义",
     "C": "C文件",
     "C++": "C++文件",
     "C#": "C#文件",
@@ -139,6 +167,9 @@ FILE_TYPE_LABELS: Dict[str, str] = {
     "Rust": "Rust文件",
     "Dart": "Dart文件",
     "Scala": "Scala文件",
+    "Assembly": "汇编文件",
+    "D": "D语言文件",
+    "Nix": "Nix配置文件",
     "Python": "Python脚本",
     "Ruby": "Ruby脚本",
     "PHP": "PHP脚本",
@@ -167,6 +198,15 @@ CODE_TYPE_LABELS: Dict[str, str] = {
     "CSS": "CSS",
     "SCSS": "SCSS",
     "Less": "Less",
+    "Text": "Text",
+    "Flatbuffers": "FlatBuffers",
+    "Protobuf": "Protobuf",
+    "SourceMap": "SourceMap",
+    "Prisma": "Prisma",
+    "CMake": "CMake",
+    "Ninja": "Ninja",
+    "Gyp": "GYP",
+    "BNF": "BNF",
     "Python": "Python",
     "C": "C",
     "C++": "C++",
@@ -179,6 +219,9 @@ CODE_TYPE_LABELS: Dict[str, str] = {
     "Rust": "Rust",
     "Dart": "Dart",
     "Scala": "Scala",
+    "Assembly": "Assembly",
+    "D": "D",
+    "Nix": "Nix",
     "Ruby": "Ruby",
     "PHP": "PHP",
     "Perl": "Perl",
@@ -265,6 +308,7 @@ DEFAULT_IGNORED_FILES = {
 DEFAULT_IGNORED_PATTERNS = [
     "project_stats_report*.html",  # 排除生成的HTML报告（支持自定义文件名）
     "project_stats*.log",          # 排除生成的日志文件（支持自定义文件名）
+    "project_stats*.json",         # 排除生成的JSON统计文件
     "*_stats_report*.html",        # 其他可能的报告文件名
     "*.log",                       # 排除所有.log文件（用户自定义的日志）
     "*.pyc",
@@ -288,6 +332,9 @@ DEFAULT_IGNORED_PATTERNS = [
     "*.tmp",
     "*.temp",
     "*.cache",
+    "*.stamp",                     # 构建时间戳
+    "*.kotlin_module",             # Kotlin 模块元数据
+    "*.symbols",                   # 符号文件
     "flutter_export_environment.sh",
     "generated_plugin_registrant.*",
     "*.freezed.dart",
@@ -323,6 +370,15 @@ BINARY_EXTS = {
     ".ttf",
     ".otf",
     ".psd",
+    ".jar",      # Java Archive
+    ".aar",      # Android Archive
+    ".wasm",     # WebAssembly Binary
+    ".node",     # Node.js Native Module
+    ".bin",      # Generic Binary
+    ".dex",      # Android Dalvik Executable
+    ".jks",      # Java KeyStore
+    ".cer",      # Certificate
+    ".dill",     # Dart Intermediate Language
 }
 
 ASSET_TYPES: Dict[str, str] = {
@@ -342,6 +398,8 @@ ASSET_TYPES: Dict[str, str] = {
     "game_save": "游戏存档文件",
     "design": "策划/剧本/脑图",
     "mobile_package": "移动端应用包",
+    "ios_resource": "iOS资源文件",
+    "android_resource": "Android资源文件",
     "rom": "游戏ROM/镜像",
     "flash": "Flash文件",
     "video_edit": "视频剪辑工程",
@@ -350,6 +408,7 @@ ASSET_TYPES: Dict[str, str] = {
     "archive": "压缩包",
     "font": "字体文件",
     "backup": "备份文件",
+    "lock_file": "锁文件/依赖锁定",
     "other_asset": "其他资源文件",
 }
 
@@ -415,7 +474,7 @@ AUDIO_MIDDLEWARE_EXTS = {
 }
 
 FONT_EXTS = {".woff", ".woff2", ".ttf", ".otf", ".eot", ".ttc"}
-ARCHIVE_EXTS = {".zip", ".7z", ".rar", ".gz", ".tar", ".bz2", ".xz", ".iso", ".img", ".dmg", ".cab"}
+ARCHIVE_EXTS = {".zip", ".7z", ".rar", ".gz", ".tar", ".bz2", ".xz", ".iso", ".img", ".dmg", ".cab", ".z"}  # 添加 .z
 
 # 游戏常用封包/归档格式
 GAME_ARCHIVE_EXTS = {
@@ -531,6 +590,30 @@ MODEL3D_EXTS = {
     ".ma", ".mb", # Maya
     ".max", # 3ds Max
     ".c4d", # Cinema 4D
+}
+
+# iOS 资源文件
+IOS_RESOURCE_EXTS = {
+    ".plist",           # Property List
+    ".xcconfig",        # Xcode Configuration
+    ".storyboard",      # Interface Builder Storyboard
+    ".xib",             # Interface Builder XIB
+    ".entitlements",    # App Entitlements
+    ".pbxproj",         # Xcode Project
+    ".xcscheme",        # Xcode Scheme
+    ".xcsettings",      # Xcode Settings
+    ".xcworkspacedata", # Xcode Workspace
+}
+
+# Android 资源文件
+ANDROID_RESOURCE_EXTS = {
+    ".iml",             # IntelliJ Module
+    ".ap_",             # Android Package (intermediate)
+}
+
+# 锁文件 / 依赖锁定
+LOCK_FILE_EXTS = {
+    ".lock",            # 通用锁文件 (Gemfile.lock, Cargo.lock, etc.)
 }
 
 LIVE2D_BINARY_EXTS = {".moc3", ".moc"}
@@ -729,6 +812,18 @@ def detect_asset_kind(path: Path) -> Optional[Tuple[str, str]]:
     # 移动端包体
     if ext in MOBILE_PACKAGE_EXTS:
         return ("mobile_package", ext)
+    
+    # iOS 资源文件
+    if ext in IOS_RESOURCE_EXTS:
+        return ("ios_resource", ext)
+    
+    # Android 资源文件
+    if ext in ANDROID_RESOURCE_EXTS:
+        return ("android_resource", ext)
+    
+    # 锁文件
+    if ext in LOCK_FILE_EXTS:
+        return ("lock_file", ext)
     
     # ROMs
     if ext in ROM_EXTS:
