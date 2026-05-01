@@ -231,6 +231,38 @@ flutter run
 flutter run -d chrome
 ```
 
+## 📦 安装说明
+
+由于本应用通过 APK 直接发布（未上架应用商店），安装时会遇到安全警告，这是正常现象。
+
+### 下载地址
+
+前往 [GitHub Releases](https://github.com/HatsuSumi/Serendipity/releases/latest) 下载最新版本 APK。
+
+### 安装步骤
+
+1. 下载 APK 文件
+2. 打开 APK 文件
+3. 如果提示"禁止安装未知应用"：
+   - 点击"设置"
+   - 允许"来自此来源的应用"
+   - 返回继续安装
+4. 如果 Google Play 保护机制提示风险：
+   - 点击"更多详情"
+   - 点击"仍然安装"
+
+### 为什么会有安全警告？
+
+- 本应用未上架 Google Play 或其他应用商店
+- Android 系统对所有非商店来源的应用都会显示警告
+- 这不代表应用本身有问题
+
+### 如何确认安全性？
+
+- 本项目完全开源，代码可在 GitHub 查看
+- 使用 MIT 开源许可证
+- 一人独立开发，无第三方广告或追踪
+
 ## 💎 商业模式
 
 **自愿付费（Pay What You Want）**
@@ -241,6 +273,12 @@ flutter run -d chrome
 ## 📄 许可证
 
 MIT License
+
+## 📧 联系方式
+
+如有任何建议、意见、问题，或是想说句鼓励的话，都欢迎发邮件至：
+
+**hatsusumi-moe@163.com**
 
 ---
 
