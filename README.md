@@ -175,10 +175,14 @@ Serendipity/
 - Flutter 3.x + Dart 3.x（SDK `^3.10.8`）
 - Riverpod 2.x（状态管理，`flutter_riverpod: ^2.6.1`）
 - Hive 2.x（本地存储，TypeAdapter 模式，含代码生成）
+- Geolocator（GPS 定位）
+- HTTP（网络请求，用于高德地图 API）
+- Firebase（推送通知，`firebase_core` + `firebase_messaging`）
 - flutter_local_notifications（本地通知）
-- fl_chart（图表）
-- confetti（粒子特效）
-- photo_manager（导出截图、相册保存）
+- connectivity_plus（网络状态监听）
+- fl_chart（统计图表）
+- confetti（成就解锁粒子特效）
+- photo_manager + image_cropper（头像选择与裁剪）
 - 架构模式：Feature-first + Repository Pattern + Provider Pattern
 
 ### 后端
