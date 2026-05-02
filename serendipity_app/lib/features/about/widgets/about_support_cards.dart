@@ -38,7 +38,7 @@ class AboutStatementCard extends StatelessWidget {
   static const _websiteUrl =
       'https://hatsusumi.github.io/FinalTestamentProofILived/';
   static const _statementPrefix =
-      '我不保证服务永远可用（可能因维护、故障、时间、精力、成本和开发者抑郁症加重等原因中断），开发者目前年入零元，服务器费用都是父母出的，我可不想每次续费都用父母的钱，因此随时会考虑关停所有服务器功能，只保留离线使用功能，因为项目免费开源，免费的项目几乎不会有人主动赞助，所以我年入零元，我的个人网站，个人作品集，遗书：';
+      '我不保证服务永远可用（可能因维护、故障、时间、精力、成本和开发者抑郁症加重等原因中断），开发者目前年入0元，服务器费用都是父母出的，我可不想每次续费都用父母的钱，因此会考虑关停所有服务器功能，只保留离线使用功能，因为我开发过很多免费开源项目，免费的项目几乎不会有人主动赞助，所以我年入0元，我的个人网站，个人作品集，遗书：';
 
   Future<void> _openWebsite(BuildContext context) async {
     final uri = Uri.parse(_websiteUrl);
