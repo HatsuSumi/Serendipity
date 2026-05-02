@@ -74,37 +74,11 @@ class WelcomePage extends ConsumerWidget {
   Widget _buildHeader(ThemeData theme) {
     return Column(
       children: [
-        // Logo
-        Container(
+        Image.asset(
+          'assets/images/logo.png',
           width: 120,
           height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.primary,
-                theme.colorScheme.primary.withValues(alpha: 0.6),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+          fit: BoxFit.contain,
         ),
         
         const SizedBox(height: 32),
@@ -211,7 +185,7 @@ class WelcomePage extends ConsumerWidget {
   /// - 用户体验优先：清晰说明离线使用和登录的区别
   Widget _buildHintText(ThemeData theme) {
     return Text(
-      '离线使用时数据仅保存在本地\n登录后可同步账号数据，会员支持多设备记录与故事线同步',
+      '离线使用时数据仅保存在本地\n登录后可同步账号数据并支持多设备访问',
       textAlign: TextAlign.center,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
