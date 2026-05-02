@@ -73,7 +73,7 @@ class _AboutVersionCardState extends State<AboutVersionCard> {
                 const SizedBox(height: 12),
                 SelectableText(buildNumberText, style: textStyle),
                 const SizedBox(height: 12),
-                SelectableText('最后更新：2026-03-24', style: textStyle),
+                SelectableText('最后更新：2026-05-02', style: textStyle),
               ],
             );
           },
