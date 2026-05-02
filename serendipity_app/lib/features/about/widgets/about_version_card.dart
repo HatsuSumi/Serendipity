@@ -74,6 +74,8 @@ class _AboutVersionCardState extends State<AboutVersionCard> {
                 SelectableText(buildNumberText, style: textStyle),
                 const SizedBox(height: 12),
                 SelectableText('最后更新：2026-05-02', style: textStyle),
+                const SizedBox(height: 12),
+                SelectableText('应用备案号：粤ICP备2026051672号-1A', style: textStyle),
               ],
             );
           },
