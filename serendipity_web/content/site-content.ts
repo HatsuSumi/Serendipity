@@ -135,6 +135,10 @@ export const builderStory = {
     '从产品设计、前端开发、后端开发，到架构设计、数据库设计、接口设计、运维部署、测试、维护与文档编写，几乎所有环节都由一人完成。',
     '如果说一人比不过团队，如果说一人无法开发出接近团队规模的项目，那么至少在这个项目上，我想亲手打破这个规则。如今，我已经做到了。',
   ],
+  website: {
+    label: '我的个人网站，作品集',
+    href: 'https://hatsusumi.github.io/FinalTestamentProofILived/',
+  },
 } as const;
 
 export const downloadTrustItems = [

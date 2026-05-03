@@ -195,6 +195,17 @@ export default function HomePage() {
                 <p key={paragraph}>{paragraph}</p>
               ))}
             </div>
+            <p className={styles.builderStoryLinkRow}>
+              <span>{builderStory.website.label}：</span>
+              <a
+                className={styles.builderStoryLink}
+                href={builderStory.website.href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {builderStory.website.href}
+              </a>
+            </p>
           </div>
         </Container>
       </section>
@@ -205,7 +216,7 @@ export default function HomePage() {
             <SectionHeading
               eyebrow="下载说明"
               title="把安装路径做得清楚，也是官网可信度的一部分。"
-              description="主按钮走官方下载域名，辅助入口保留版本说明页面，既方便安装，也方便核对版本。"
+              description="本产品目前是通过直接安装 .apk 使用的，没有上架到 Google Play，也没有上架到 App Store。原因很现实：开发者支付不起 Google Play 一次性 25 美元的开发者费用，也支付不起 App Store 每年 99 美元的开发者费用。此前开发者做过很多开源免费的项目，但免费项目几乎得不到用户赞助，所以直到现在，开发者的年收入仍然是 0 元。"
             />
             <div className={styles.downloadTrustGrid}>
               {downloadTrustItems.map((item) => (
