@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-01",
+  "generated_at": "2026-05-03",
   "root": "D:\\Serendipity",
   "totals": {
-    "all_files": 741,
-    "code_files": 558,
-    "code_lines": 92652,
-    "code_chars": 3106706,
+    "all_files": 771,
+    "code_files": 587,
+    "code_lines": 99704,
+    "code_chars": 3329702,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -18,12 +18,12 @@
     {
       "key": "TypeScript",
       "label": "TypeScript文件",
-      "count": 133
+      "count": 147
     },
     {
       "key": "Markdown",
       "label": "Markdown文档",
-      "count": 117
+      "count": 118
     },
     {
       "key": "Other",
@@ -33,7 +33,7 @@
     {
       "key": "JavaScript",
       "label": "JavaScript文件",
-      "count": 20
+      "count": 21
     },
     {
       "key": "SourceMap",
@@ -43,7 +43,12 @@
     {
       "key": "JSON",
       "label": "JSON文件",
-      "count": 11
+      "count": 15
+    },
+    {
+      "key": "CSS",
+      "label": "CSS文件",
+      "count": 10
     },
     {
       "key": "SQL",
@@ -145,32 +150,38 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 47308,
-      "percentage": 51.1
+      "count": 47285,
+      "percentage": 47.4
     },
     {
       "key": "JSON",
       "label": "JSON",
-      "count": 27374,
-      "percentage": 29.5
+      "count": 32970,
+      "percentage": 33.1
     },
     {
       "key": "TypeScript",
       "label": "TypeScript",
-      "count": 13078,
-      "percentage": 14.1
+      "count": 13731,
+      "percentage": 13.8
     },
     {
       "key": "JavaScript",
       "label": "JavaScript",
-      "count": 3333,
-      "percentage": 3.6
+      "count": 3348,
+      "percentage": 3.3
+    },
+    {
+      "key": "CSS",
+      "label": "CSS",
+      "count": 812,
+      "percentage": 0.8
     },
     {
       "key": "C++",
       "label": "C++",
       "count": 442,
-      "percentage": 0.5
+      "percentage": 0.4
     },
     {
       "key": "SQL",
@@ -199,7 +210,7 @@
     {
       "key": "YAML",
       "label": "YAML",
-      "count": 76,
+      "count": 75,
       "percentage": 0.1
     },
     {
@@ -261,26 +272,32 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 1555173,
-      "percentage": 50.1
+      "count": 1554517,
+      "percentage": 46.7
     },
     {
       "key": "JSON",
       "label": "JSON",
-      "count": 664824,
-      "percentage": 21.4
+      "count": 853215,
+      "percentage": 25.6
     },
     {
       "key": "TypeScript",
       "label": "TypeScript",
-      "count": 434863,
-      "percentage": 14.0
+      "count": 453949,
+      "percentage": 13.6
     },
     {
       "key": "JavaScript",
       "label": "JavaScript",
-      "count": 390766,
-      "percentage": 12.6
+      "count": 391216,
+      "percentage": 11.8
+    },
+    {
+      "key": "CSS",
+      "label": "CSS",
+      "count": 15722,
+      "percentage": 0.5
     },
     {
       "key": "C++",
@@ -310,12 +327,12 @@
       "key": "XML",
       "label": "XML",
       "count": 4857,
-      "percentage": 0.2
+      "percentage": 0.1
     },
     {
       "key": "YAML",
       "label": "YAML",
-      "count": 1635,
+      "count": 1640,
       "percentage": 0.0
     },
     {
@@ -351,7 +368,7 @@
     {
       "key": "INI",
       "label": "INI",
-      "count": 1419,
+      "count": 1417,
       "percentage": 0.0
     },
     {

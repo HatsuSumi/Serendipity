@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # PostgreSQL 数据库`r
+  # PostgreSQL 数据库
   postgres:
     image: postgres:15
     container_name: serendipity_postgres
@@ -10,16 +8,15 @@ services:
       POSTGRES_PASSWORD: serendipity_dev_password
       POSTGRES_DB: serendipity_db
     ports:
-      - '5432:5432'
+      - '15432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U serendipity']
+      test: ['CMD-SHELL', 'pg_isready -U serendipity -d serendipity_db']
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
   postgres_data:
-

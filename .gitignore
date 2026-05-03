@@ -99,6 +99,9 @@ app.*.map.json
 !.env.example
 
 # Web related
+node_modules/
+**/node_modules/
+.next/
 lib/generated_plugin_registrant.dart
 
 # Exceptions to above rules.

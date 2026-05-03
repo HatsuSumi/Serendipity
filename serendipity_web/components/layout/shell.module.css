@@ -1,0 +1,17 @@
+.shell {
+  min-height: 100vh;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 7rem;
+  padding-bottom: 6rem;
+}
+
+@media (max-width: 768px) {
+  .main {
+    gap: 5rem;
+    padding-bottom: 4rem;
+  }
+}

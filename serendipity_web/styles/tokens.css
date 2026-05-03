@@ -1,0 +1,18 @@
+:root {
+  --font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --color-text-primary: #f8f7ff;
+  --color-text-secondary: rgba(248, 247, 255, 0.74);
+  --color-text-muted: rgba(248, 247, 255, 0.56);
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-surface: rgba(18, 22, 39, 0.72);
+  --color-surface-strong: rgba(23, 28, 49, 0.92);
+  --color-surface-soft: rgba(255, 255, 255, 0.04);
+  --color-accent: #c2b4ff;
+  --color-accent-strong: #e7a6c2;
+  --color-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  --radius-xl: 32px;
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 14px;
+  --container-width: 1200px;
+}

@@ -74,8 +74,8 @@ npm run prisma:migrate
 npm run dev
 ```
 
-服务器默认监听 `http://localhost:3000`。
-健康检查地址：`http://localhost:3000/api/v1/health`
+服务器默认监听 `http://localhost:3001`。
+健康检查地址：`http://localhost:3001/api/v1/health`
 
 ## 常用命令
 
@@ -115,7 +115,7 @@ npm test
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
 | `NODE_ENV` | 运行环境 | `development` |
-| `PORT` | 服务器端口 | `3000` |
+| `PORT` | 服务器端口 | `3001` |
 | `DATABASE_URL` | PostgreSQL 连接字符串 | 无 |
 | `JWT_SECRET` | JWT 密钥 | 开发环境有默认值，生产环境必填 |
 | `JWT_EXPIRES_IN` | Access Token 有效期 | `7d` |
@@ -217,7 +217,3 @@ serendipity_server/
 ## API 文档
 
 详见 `../docs/Custom_Server_API_Design.md`
-
-## 开发进度
-
-详见 `../docs/开发清单_00_总览.md`

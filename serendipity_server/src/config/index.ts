@@ -34,7 +34,7 @@ const defaultCorsOrigin = isProduction
   : '*';
 
 export const config = Object.freeze({
-  port: parseInt(getOptionalEnv('PORT', '3000'), 10),
+  port: parseInt(getOptionalEnv('PORT', '3001'), 10),
   nodeEnv: getOptionalEnv('NODE_ENV', 'development'),
 
   database: Object.freeze({
