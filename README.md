@@ -40,6 +40,14 @@ Serendipity/
 │   ├── tests/                   # 服务端测试
 │   ├── docs/                    # 服务端专项文档
 │   └── package.json             # 服务端依赖与脚本
+├── serendipity_web/             # Next.js 官网与下载落地页
+│   ├── app/                     # App Router 页面入口与路由
+│   ├── components/              # 官网组件
+│   ├── config/                  # 站点配置
+│   ├── content/                 # 官网文案内容
+│   ├── public/                  # 官网静态资源与界面截图
+│   ├── styles/                  # 设计 token 与样式补充
+│   └── package.json             # 官网依赖与脚本
 ├── logs/                        # 根目录日志
 ├── project_stats.py             # 项目规模统计脚本
 └── count_lines.ps1              # 行数统计脚本
