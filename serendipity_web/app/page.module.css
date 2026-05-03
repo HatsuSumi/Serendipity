@@ -102,17 +102,19 @@
 }
 
 .heroVisualFloatTop {
-  top: 0;
-  right: 0;
+  top: -0.2rem;
+  right: -0.35rem;
   width: 38%;
-  z-index: 3;
+  z-index: 4;
+  transform: rotate(7deg) translateY(-0.25rem);
 }
 
 .heroVisualFloatBottom {
-  left: 0;
-  bottom: 0;
+  left: -1rem;
+  bottom: -0.35rem;
   width: 36%;
-  z-index: 1;
+  z-index: 4;
+  transform: rotate(-8deg);
 }
 
 .pillarsSection {

@@ -54,13 +54,13 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   @override
   Future<List<EncounterRecord>> build() async {
     _repository = ref.read(recordRepositoryProvider);
-    
+
     // 监听自动同步完成信号，信号变化时自动重建
     ref.watch(syncCompletedProvider);
-    
+
     // 监听筛选条件变化，自动重新过滤
     final filterCriteria = ref.watch(recordsFilterProvider);
-    
+
     // 筛选条件变化时重置分页状态
     _loadedCount = _kPageSize;
     _hasMore = true;
@@ -75,7 +75,7 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
     // 筛选激活：全量过滤，不分页
     if (filterCriteria.isActive) {
       _hasMore = false;
-      return _applyFilterCriteria(allRecords, filterCriteria);
+      return applyFilterCriteria(allRecords, filterCriteria);
     }
 
     // 无筛选：只返回第一页
@@ -115,8 +115,8 @@ class RecordsNotifier extends AsyncNotifier<List<EncounterRecord>> {
   /// - Fail Fast：条件不合法时直接返回空列表
   /// - 不修改原列表：返回新列表
   ///
-  /// 调用者：build()
-  List<EncounterRecord> _applyFilterCriteria(
+  /// 调用者：build() / recordsCountProvider
+  List<EncounterRecord> applyFilterCriteria(
     List<EncounterRecord> records,
     RecordsFilterCriteria criteria,
   ) {
@@ -296,17 +296,24 @@ final recordsProvider = AsyncNotifierProvider<RecordsNotifier, List<EncounterRec
 
 /// 记录统计 Provider
 /// 
-/// 计算当前用户的记录总数
-/// 
+/// 计算当前用户在当前筛选条件下的记录总数。
+///
 /// 设计说明：
-/// - 依赖 recordsProvider，自动响应数据变化
-/// - 返回异步值，支持 loading/error 状态
-/// - 用于 UI 显示统计信息（如标题中的记录数）
+/// - 直接依赖仓储层与筛选条件，而不是依赖分页后的 recordsProvider
+/// - 无筛选时返回真实总数；有筛选时返回筛选后的总数
+/// - 与列表分页职责分离，避免 UI 标题被“已加载条数”污染
 final recordsCountProvider = FutureProvider<int>((ref) async {
-  final recordsAsync = ref.watch(recordsProvider);
-  return recordsAsync.maybeWhen(
-    data: (records) => records.length,
-    orElse: () => 0,
-  );
-});
+  ref.watch(syncCompletedProvider);
+  final filterCriteria = ref.watch(recordsFilterProvider);
+  final repository = ref.watch(recordRepositoryProvider);
+  final currentUser = await ref.read(authProvider.notifier).currentUser;
+  final userId = currentUser?.id;
+  final allRecords = repository.getRecordsByUser(userId);
 
+  if (!filterCriteria.isActive) {
+    return allRecords.length;
+  }
+
+  final recordsNotifier = ref.read(recordsProvider.notifier);
+  return recordsNotifier.applyFilterCriteria(allRecords, filterCriteria).length;
+});

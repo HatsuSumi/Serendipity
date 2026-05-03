@@ -21,7 +21,31 @@ export const metadata: Metadata = {
   title: '首页',
 };
 
-const placeholderTones = ['violet', 'rose', 'blue', 'violet', 'blue', 'rose'] as const;
+const placeholderTones = ['violet', 'rose', 'blue', 'violet', 'blue', 'rose', 'blue', 'violet', 'rose'] as const;
+
+const screenshotMap = {
+  home: '/screens/home.jpg',
+  createRecord: '/screens/create-record.jpg',
+  storyline: '/screens/storyline.jpg',
+  treehole: '/screens/treehole.jpg',
+  stats: '/screens/stats.jpg',
+  about: '/screens/about.jpg',
+  recordDetail: '/screens/record-detail.jpg',
+  storylineDetail: '/screens/storyline-detail.jpg',
+  membership: '/screens/membership.jpg',
+} as const;
+
+const previewScreenSources = [
+  screenshotMap.home,
+  screenshotMap.createRecord,
+  screenshotMap.storyline,
+  screenshotMap.treehole,
+  screenshotMap.stats,
+  screenshotMap.about,
+  screenshotMap.recordDetail,
+  screenshotMap.storylineDetail,
+  screenshotMap.membership,
+] as const;
 
 export default function HomePage() {
   return (
@@ -59,6 +83,8 @@ export default function HomePage() {
                   title="首页预览"
                   subtitle="从第一次打开开始，界面就保持安静、克制而清晰的节奏。"
                   tone="violet"
+                  imageSrc={screenshotMap.home}
+                  imageAlt="Serendipity 应用首页截图"
                 />
               </div>
               <div className={styles.heroVisualFloatTop}>
@@ -66,6 +92,9 @@ export default function HomePage() {
                   title="记录卡片"
                   subtitle="把一瞬间认真留下。"
                   tone="rose"
+                  variant="floating"
+                  imageSrc={screenshotMap.createRecord}
+                  imageAlt="Serendipity 创建记录页面截图"
                 />
               </div>
               <div className={styles.heroVisualFloatBottom}>
@@ -73,6 +102,9 @@ export default function HomePage() {
                   title="故事线"
                   subtitle="让多次相遇连成上下文。"
                   tone="blue"
+                  variant="floating"
+                  imageSrc={screenshotMap.storyline}
+                  imageAlt="Serendipity 故事线页面截图"
                 />
               </div>
             </div>
@@ -201,6 +233,8 @@ export default function HomePage() {
                 title={item.title}
                 subtitle={item.subtitle}
                 tone={placeholderTones[index]}
+                imageSrc={previewScreenSources[index]}
+                imageAlt={`Serendipity ${item.title} 页面截图`}
               />
             ))}
           </div>

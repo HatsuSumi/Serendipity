@@ -11,35 +11,18 @@ import 'achievement_provider.dart';
 
 /// 故事线记录列表 Provider
 /// 
-/// 根据故事线ID获取该故事线的所有记录
+/// 根据故事线ID获取该故事线的所有记录。
+///
+/// 设计说明：
+/// - 直接依赖故事线仓储，而不是依赖时间轴分页后的 recordsProvider
+/// - 避免故事线详情页被时间轴分页状态污染
+/// - 通过监听 storyLinesProvider / syncCompletedProvider 自动响应关联变化与同步更新
 final storyLineRecordsProvider = Provider.family<List<EncounterRecord>, String>((ref, storyLineId) {
-  final recordsAsync = ref.watch(recordsProvider);
-  final storyLinesAsync = ref.watch(storyLinesProvider);
-  
-  // 如果数据还在加载中，返回空列表
-  if (!recordsAsync.hasValue || !storyLinesAsync.hasValue) {
-    return [];
-  }
-  
-  final allRecords = recordsAsync.value ?? [];
-  final storyLine = storyLinesAsync.value?.firstWhere(
-    (sl) => sl.id == storyLineId,
-    orElse: () => throw StateError('Story line $storyLineId not found'),
-  );
-  
-  if (storyLine == null) {
-    return [];
-  }
-  
-  // 筛选出属于该故事线的记录
-  final records = allRecords.where((record) {
-    return storyLine.recordIds.contains(record.id);
-  }).toList();
-  
-  // 按时间排序
-  records.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-  
-  return records;
+  ref.watch(syncCompletedProvider);
+  ref.watch(storyLinesProvider);
+
+  final repository = ref.watch(storyLineRepositoryProvider);
+  return repository.getRecordsInStoryLine(storyLineId);
 });
 
 /// 故事线列表状态管理

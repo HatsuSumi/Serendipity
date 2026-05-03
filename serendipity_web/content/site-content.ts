@@ -93,6 +93,18 @@ export const screenshotPlaceholders: ScreenshotPlaceholder[] = [
     title: '关于',
     subtitle: '理解它为什么存在。',
   },
+  {
+    title: '记录详情',
+    subtitle: '把一次相遇的细节完整展开。',
+  },
+  {
+    title: '故事线详情',
+    subtitle: '在一条线里回看关系的推进。',
+  },
+  {
+    title: '会员',
+    subtitle: '查看权益、订阅与支持计划，价格完全自定义！',
+  },
 ];
 
 export const experiencePillars = [
