@@ -4,8 +4,8 @@
   "totals": {
     "all_files": 771,
     "code_files": 587,
-    "code_lines": 99704,
-    "code_chars": 3329702,
+    "code_lines": 99850,
+    "code_chars": 3334112,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -150,19 +150,19 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 47285,
+      "count": 47295,
       "percentage": 47.4
     },
     {
       "key": "JSON",
       "label": "JSON",
       "count": 32970,
-      "percentage": 33.1
+      "percentage": 33.0
     },
     {
       "key": "TypeScript",
       "label": "TypeScript",
-      "count": 13731,
+      "count": 13809,
       "percentage": 13.8
     },
     {
@@ -174,8 +174,8 @@
     {
       "key": "CSS",
       "label": "CSS",
-      "count": 812,
-      "percentage": 0.8
+      "count": 870,
+      "percentage": 0.9
     },
     {
       "key": "C++",
@@ -272,8 +272,8 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 1554517,
-      "percentage": 46.7
+      "count": 1554892,
+      "percentage": 46.6
     },
     {
       "key": "JSON",
@@ -284,19 +284,19 @@
     {
       "key": "TypeScript",
       "label": "TypeScript",
-      "count": 453949,
-      "percentage": 13.6
+      "count": 456451,
+      "percentage": 13.7
     },
     {
       "key": "JavaScript",
       "label": "JavaScript",
       "count": 391216,
-      "percentage": 11.8
+      "percentage": 11.7
     },
     {
       "key": "CSS",
       "label": "CSS",
-      "count": 15722,
+      "count": 17255,
       "percentage": 0.5
     },
     {
@@ -333,7 +333,7 @@
       "key": "YAML",
       "label": "YAML",
       "count": 1640,
-      "percentage": 0.0
+      "percentage": 0.1
     },
     {
       "key": "Swift",
