@@ -28,7 +28,11 @@ extension _CreateRecordPageLocationFlowActions on _CreateRecordPageState {
       context: context,
       builder: (dialogContext) => LocationPermissionDialog(
         onOpenSettings: () async {
+          _shouldRefreshLocationOnResume = true;
           final opened = await ref.read(locationProvider.notifier).openSettings();
+          if (!opened) {
+            _shouldRefreshLocationOnResume = false;
+          }
           if (!opened && mounted) {
             if (!mounted) return;
             MessageHelper.showError(context, '无法打开系统设置');

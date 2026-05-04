@@ -69,7 +69,8 @@ class CreateRecordPage extends ConsumerStatefulWidget {
   ConsumerState<CreateRecordPage> createState() => _CreateRecordPageState();
 }
 
-class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
+class _CreateRecordPageState extends ConsumerState<CreateRecordPage>
+    with WidgetsBindingObserver {
   void _updateState(VoidCallback fn) {
     setState(fn);
   }
@@ -104,10 +105,12 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
   List<PlaceHistoryItem> _placeHistory = [];
   
   bool _ignoreGPS = false;
+  bool _shouldRefreshLocationOnResume = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPlaceHistory();
     _initializeFormData();
     
@@ -136,8 +139,23 @@ class _CreateRecordPageState extends ConsumerState<CreateRecordPage> {
     });
   }
 
+  Future<void> _refreshLocationAfterSettingsIfNeeded() async {
+    if (!_shouldRefreshLocationOnResume || !mounted) return;
+
+    _shouldRefreshLocationOnResume = false;
+    await _requestLocation();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshLocationAfterSettingsIfNeeded());
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (widget.isEditMode) {
       _placeNameController.removeListener(_onFormChanged);
       _descriptionController.removeListener(_onFormChanged);

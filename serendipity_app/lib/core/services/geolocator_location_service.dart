@@ -183,7 +183,7 @@ class GeolocatorLocationService implements ILocationService {
   @override
   Future<bool> openSettings() async {
     try {
-      return await Geolocator.openLocationSettings();
+      return await Geolocator.openAppSettings();
     } catch (e) {
       return false;
     }
