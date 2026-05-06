@@ -409,6 +409,7 @@
 @media (max-width: 768px) {
   .hero {
     padding-top: 1.25rem;
+    padding-bottom: 1.5rem;
   }
 
   .heroTitle {
@@ -416,17 +417,22 @@
   }
 
   .heroVisualStack {
-    min-height: 24rem;
-    width: 100%;
+    min-height: 28rem;
+    width: min(100%, 20rem);
+    margin: 0 auto;
   }
 
   .heroVisualMain {
-    inset: 1.75rem 1.35rem 0 1.1rem;
+    inset: 1.75rem 1.1rem 1rem 1.1rem;
   }
 
   .heroVisualFloatTop,
   .heroVisualFloatBottom {
     display: none;
+  }
+
+  .pillarsSection {
+    margin-top: 0;
   }
 
   .pillarsGrid,

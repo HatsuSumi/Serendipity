@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-04",
+  "generated_at": "2026-05-06",
   "root": "D:\\Serendipity",
   "totals": {
     "all_files": 771,
     "code_files": 587,
-    "code_lines": 99869,
-    "code_chars": 3334791,
+    "code_lines": 99887,
+    "code_chars": 3335076,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -146,167 +146,248 @@
       "count": 1
     }
   ],
-  "code_stats": [
+  "code_lines": [
     {
-      "name": "Dart",
-      "files": 338,
-      "lines": 47314,
-      "chars": 1555571,
-      "line_percent": 47.4,
-      "char_percent": 46.6
+      "key": "Dart",
+      "label": "Dart",
+      "count": 47314,
+      "percentage": 47.4
     },
     {
-      "name": "JSON",
-      "files": 15,
-      "lines": 32970,
-      "chars": 853215,
-      "line_percent": 33.0,
-      "char_percent": 25.6
+      "key": "JSON",
+      "label": "JSON",
+      "count": 32970,
+      "percentage": 33.0
     },
     {
-      "name": "TypeScript",
-      "files": 147,
-      "lines": 13809,
-      "chars": 456451,
-      "line_percent": 13.8,
-      "char_percent": 13.7
+      "key": "TypeScript",
+      "label": "TypeScript",
+      "count": 13809,
+      "percentage": 13.8
     },
     {
-      "name": "JavaScript",
-      "files": 21,
-      "lines": 3348,
-      "chars": 391216,
-      "line_percent": 3.3,
-      "char_percent": 11.7
+      "key": "JavaScript",
+      "label": "JavaScript",
+      "count": 3348,
+      "percentage": 3.3
     },
     {
-      "name": "CSS",
-      "files": 10,
-      "lines": 870,
-      "chars": 17255,
-      "line_percent": 0.9,
-      "char_percent": 0.5
+      "key": "CSS",
+      "label": "CSS",
+      "count": 888,
+      "percentage": 0.9
     },
     {
-      "name": "C++",
-      "files": 6,
-      "lines": 442,
-      "chars": 15306,
-      "line_percent": 0.4,
-      "char_percent": 0.5
+      "key": "C++",
+      "label": "C++",
+      "count": 442,
+      "percentage": 0.4
     },
     {
-      "name": "SQL",
-      "files": 10,
-      "lines": 296,
-      "chars": 16915,
-      "line_percent": 0.3,
-      "char_percent": 0.5
+      "key": "SQL",
+      "label": "SQL",
+      "count": 296,
+      "percentage": 0.3
     },
     {
-      "name": "C",
-      "files": 7,
-      "lines": 105,
-      "chars": 3231,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "C",
+      "label": "C",
+      "count": 105,
+      "percentage": 0.1
     },
     {
-      "name": "Kotlin",
-      "files": 4,
-      "lines": 105,
-      "chars": 3136,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "Kotlin",
+      "label": "Kotlin",
+      "count": 105,
+      "percentage": 0.1
     },
     {
-      "name": "XML",
-      "files": 8,
-      "lines": 102,
-      "chars": 4857,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "XML",
+      "label": "XML",
+      "count": 102,
+      "percentage": 0.1
     },
     {
-      "name": "YAML",
-      "files": 3,
-      "lines": 75,
-      "chars": 1640,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "YAML",
+      "label": "YAML",
+      "count": 75,
+      "percentage": 0.1
     },
     {
-      "name": "Swift",
-      "files": 6,
-      "lines": 73,
-      "chars": 2559,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "Swift",
+      "label": "Swift",
+      "count": 73,
+      "percentage": 0.1
     },
     {
-      "name": "Java",
-      "files": 1,
-      "lines": 71,
-      "chars": 3564,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "Java",
+      "label": "Java",
+      "count": 71,
+      "percentage": 0.1
     },
     {
-      "name": "ObjC",
-      "files": 1,
-      "lines": 71,
-      "chars": 2999,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "Objective-C",
+      "label": "ObjC",
+      "count": 71,
+      "percentage": 0.1
     },
     {
-      "name": "PowerShell",
-      "files": 1,
-      "lines": 70,
-      "chars": 1922,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "PowerShell",
+      "label": "PowerShell",
+      "count": 70,
+      "percentage": 0.1
     },
     {
-      "name": "Batch",
-      "files": 1,
-      "lines": 64,
-      "chars": 2107,
-      "line_percent": 0.1,
-      "char_percent": 0.1
+      "key": "批处理",
+      "label": "Batch",
+      "count": 64,
+      "percentage": 0.1
     },
     {
-      "name": "INI",
-      "files": 5,
-      "lines": 46,
-      "chars": 1417,
-      "line_percent": 0.0,
-      "char_percent": 0.0
+      "key": "INI",
+      "label": "INI",
+      "count": 46,
+      "percentage": 0.0
     },
     {
-      "name": "HTML",
-      "files": 1,
-      "lines": 19,
-      "chars": 657,
-      "line_percent": 0.0,
-      "char_percent": 0.0
+      "key": "HTML",
+      "label": "HTML",
+      "count": 19,
+      "percentage": 0.0
     },
     {
-      "name": "Python",
-      "files": 1,
-      "lines": 18,
-      "chars": 750,
-      "line_percent": 0.0,
-      "char_percent": 0.0
+      "key": "Python",
+      "label": "Python",
+      "count": 18,
+      "percentage": 0.0
     },
     {
-      "name": "TOML",
-      "files": 1,
-      "lines": 1,
-      "chars": 23,
-      "line_percent": 0.0,
-      "char_percent": 0.0
+      "key": "TOML",
+      "label": "TOML",
+      "count": 1,
+      "percentage": 0.0
     }
   ],
-  "asset_stats": []
+  "code_chars": [
+    {
+      "key": "Dart",
+      "label": "Dart",
+      "count": 1555571,
+      "percentage": 46.6
+    },
+    {
+      "key": "JSON",
+      "label": "JSON",
+      "count": 853215,
+      "percentage": 25.6
+    },
+    {
+      "key": "TypeScript",
+      "label": "TypeScript",
+      "count": 456451,
+      "percentage": 13.7
+    },
+    {
+      "key": "JavaScript",
+      "label": "JavaScript",
+      "count": 391216,
+      "percentage": 11.7
+    },
+    {
+      "key": "CSS",
+      "label": "CSS",
+      "count": 17540,
+      "percentage": 0.5
+    },
+    {
+      "key": "C++",
+      "label": "C++",
+      "count": 15306,
+      "percentage": 0.5
+    },
+    {
+      "key": "SQL",
+      "label": "SQL",
+      "count": 16915,
+      "percentage": 0.5
+    },
+    {
+      "key": "C",
+      "label": "C",
+      "count": 3231,
+      "percentage": 0.1
+    },
+    {
+      "key": "Kotlin",
+      "label": "Kotlin",
+      "count": 3136,
+      "percentage": 0.1
+    },
+    {
+      "key": "XML",
+      "label": "XML",
+      "count": 4857,
+      "percentage": 0.1
+    },
+    {
+      "key": "YAML",
+      "label": "YAML",
+      "count": 1640,
+      "percentage": 0.1
+    },
+    {
+      "key": "Swift",
+      "label": "Swift",
+      "count": 2559,
+      "percentage": 0.1
+    },
+    {
+      "key": "Java",
+      "label": "Java",
+      "count": 3564,
+      "percentage": 0.1
+    },
+    {
+      "key": "Objective-C",
+      "label": "ObjC",
+      "count": 2999,
+      "percentage": 0.1
+    },
+    {
+      "key": "PowerShell",
+      "label": "PowerShell",
+      "count": 1922,
+      "percentage": 0.1
+    },
+    {
+      "key": "批处理",
+      "label": "Batch",
+      "count": 2107,
+      "percentage": 0.1
+    },
+    {
+      "key": "INI",
+      "label": "INI",
+      "count": 1417,
+      "percentage": 0.0
+    },
+    {
+      "key": "HTML",
+      "label": "HTML",
+      "count": 657,
+      "percentage": 0.0
+    },
+    {
+      "key": "Python",
+      "label": "Python",
+      "count": 750,
+      "percentage": 0.0
+    },
+    {
+      "key": "TOML",
+      "label": "TOML",
+      "count": 23,
+      "percentage": 0.0
+    }
+  ]
 }
