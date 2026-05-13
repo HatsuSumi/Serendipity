@@ -11,9 +11,9 @@ export const siteConfig = {
   secondaryDownloadLabel: '查看最新版本',
   contactEmail: 'hatsusumi-moe@163.com',
   copyright: '© 2026 HatsuSumi. All rights reserved.',
-  icpNumber: '',
+  icpNumber: '粤ICP备2026051672号-2',
   currentVersion: 'v1.0.0',
-  updatedAt: '2026-05-01',
+  updatedAt: '2026-05-13',
 } as const;
 
 export const primaryNavItems = [{ label: '首页', href: '/' }] as const;
