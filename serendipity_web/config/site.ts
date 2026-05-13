@@ -5,7 +5,7 @@ export const siteConfig = {
   tagline: '有些错过，只能被记住。',
   githubUrl: 'https://github.com/HatsuSumi/Serendipity',
   latestReleaseUrl: 'https://github.com/HatsuSumi/Serendipity/releases/latest',
-  primaryDownloadUrl: 'https://download.hatsusumi.com/serendipity/v1.0.0.apk',
+  primaryDownloadUrl: 'https://download.hatsusumi.com/serendipity/Serendipity-v1.0.0.apk',
   primaryDownloadLabel: '一键下载 APK',
   secondaryDownloadUrl: 'https://github.com/HatsuSumi/Serendipity/releases/latest',
   secondaryDownloadLabel: '查看最新版本',
