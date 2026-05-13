@@ -18,7 +18,7 @@ import { siteConfig } from '@/config/site';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
-  title: '首页',
+  title: '错过了么',
 };
 
 const placeholderTones = ['violet', 'rose', 'blue', 'violet', 'blue', 'rose', 'blue', 'violet', 'rose'] as const;
