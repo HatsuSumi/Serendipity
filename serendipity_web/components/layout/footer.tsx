@@ -38,7 +38,14 @@ export function Footer() {
               <span className={styles.metaDivider} aria-hidden="true">
                 ·
               </span>
-              <span>{siteConfig.icpNumber}</span>
+              <a
+                className={styles.metaLink}
+                href="https://beian.miit.gov.cn/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {siteConfig.icpNumber}
+              </a>
             </>
           ) : null}
         </div>
