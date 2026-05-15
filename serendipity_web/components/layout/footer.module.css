@@ -69,6 +69,18 @@
   color: rgba(255, 255, 255, 0.22);
 }
 
+.gonganLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-text-muted);
+  transition: color 160ms ease;
+}
+
+.gonganLink:hover {
+  color: var(--color-text-primary);
+}
+
 @media (max-width: 768px) {
   .inner {
     width: min(calc(100% - 1.25rem), var(--container-width));

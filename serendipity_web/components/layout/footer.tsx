@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import styles from './footer.module.css';
 import { siteConfig } from '@/config/site';
@@ -48,6 +49,17 @@ export function Footer() {
               </a>
             </>
           ) : null}
+        </div>
+        <div className={styles.metaRow}>
+          <a
+            className={styles.gonganLink}
+            href="https://beian.mps.gov.cn/#/query/webSearch?code=44010502004038"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Image src="/images/gongan-badge.png" alt="公安备案图标" width={18} height={18} />
+            <span>粤公网安备44010502004038号</span>
+          </a>
         </div>
       </div>
     </footer>
