@@ -31,6 +31,7 @@ export interface CheckInResponseDto {
 export interface CheckInStatusResponseDto {
   hasCheckedInToday: boolean;
   consecutiveDays: number;
+  displayConsecutiveDays: number;
   totalDays: number;
   currentMonthDays: number;
   recentCheckIns: CheckInResponseDto[];

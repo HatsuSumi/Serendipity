@@ -8,6 +8,7 @@ import { IUserTimezoneResolver } from './userTimezoneResolver';
 export interface CheckInStatus {
   hasCheckedInToday: boolean;
   consecutiveDays: number;
+  displayConsecutiveDays: number;
   totalDays: number;
   currentMonthDays: number;
   recentCheckIns: CheckIn[];
@@ -87,6 +88,7 @@ export class CheckInService implements ICheckInService {
     return {
       hasCheckedInToday: allCheckIns.some((checkIn) => this.isSameDateOnly(checkIn.date, today)),
       consecutiveDays: this.calculateConsecutiveDays(allCheckIns, today),
+      displayConsecutiveDays: this.calculateDisplayConsecutiveDays(allCheckIns, today),
       totalDays: allCheckIns.length,
       currentMonthDays: monthDates.length,
       recentCheckIns: allCheckIns.slice(0, 7),
@@ -147,6 +149,48 @@ export class CheckInService implements ICheckInService {
     }
 
     return consecutiveDays;
+  }
+
+  private calculateDisplayConsecutiveDays(checkIns: CheckIn[], today: Date): number {
+    if (checkIns.length === 0) {
+      return 0;
+    }
+
+    const dateSet = new Set(checkIns.map((checkIn) => this.toDateKey(checkIn.date)));
+    const todayKey = this.toDateKey(today);
+    const yesterday = new Date(Date.UTC(
+      today.getUTCFullYear(),
+      today.getUTCMonth(),
+      today.getUTCDate() - 1,
+    ));
+    const yesterdayKey = this.toDateKey(yesterday);
+
+    let streakEndDate: Date | null = null;
+    if (dateSet.has(todayKey)) {
+      streakEndDate = today;
+    } else if (dateSet.has(yesterdayKey)) {
+      streakEndDate = yesterday;
+    } else {
+      return 0;
+    }
+
+    let streakDays = 1;
+    let currentDate = streakEndDate;
+    while (true) {
+      currentDate = new Date(Date.UTC(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth(),
+        currentDate.getUTCDate() - 1,
+      ));
+
+      if (!dateSet.has(this.toDateKey(currentDate))) {
+        break;
+      }
+
+      streakDays++;
+    }
+
+    return streakDays;
   }
 
   private async getUserTimezone(userId: string): Promise<string | undefined> {

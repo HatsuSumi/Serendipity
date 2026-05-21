@@ -113,6 +113,7 @@ export class CheckInController {
     return {
       hasCheckedInToday: status.hasCheckedInToday,
       consecutiveDays: status.consecutiveDays,
+      displayConsecutiveDays: status.displayConsecutiveDays,
       totalDays: status.totalDays,
       currentMonthDays: status.currentMonthDays,
       recentCheckIns: status.recentCheckIns.map((checkIn) => this.toResponseDto(checkIn)),
