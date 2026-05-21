@@ -37,16 +37,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '同步能力分为两层：',
-            ),
-            const SizedBox(height: 4),
-            _buildInfoText(
-              context,
-              '1. 所有已登录用户都会同步：用户设置、会员状态、成就，以及签到服务端状态',
-            ),
-            _buildInfoText(
-              context,
-              '2. 业务主数据（记录 / 故事线）是否可下载，取决于会员状态',
+              '已登录后，账号下的可同步数据会在当前设备与云端之间进行同步，包括记录、故事线、用户设置、成就、签到状态、收藏以及会员状态等。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(
@@ -56,15 +47,15 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '1. 注册成功后（上传当前设备本地数据，不自动下载业务主数据）',
+              '1. 注册成功后（上传当前设备已有的本地数据，并根据云端状态完成首次同步）',
             ),
             _buildInfoText(
               context,
-              '2. 登录成功后（免费版仅上传业务主数据；会员版执行双向同步）',
+              '2. 登录成功后（自动执行一次同步，拉取并合并账号下的最新数据）',
             ),
             _buildInfoText(
               context,
-              '3. App 启动时（已登录情况下自动检查；会员版可下载业务主数据变更）',
+              '3. App 启动时（已登录情况下自动检查并同步云端变更）',
             ),
             _buildInfoText(
               context,
@@ -86,7 +77,7 @@ class SyncInfoDialog extends StatelessWidget {
             ),
             _buildInfoText(
               context,
-              '免费版不会把其他设备的记录/故事线自动下载到当前设备；会员版支持多设备业务数据同步。',
+              '只要已登录，当前设备就可以同步账号下的记录、故事线等数据；手动同步与自动同步的差异只在触发方式，不在同步权限。',
             ),
             const SizedBox(height: 16),
             _buildInfoText(
@@ -152,11 +143,11 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 4),
             _buildInfoText(
               context,
-              '1. 更换设备后，首次登录时（免费版不会自动拉取旧设备的记录/故事线；会员版会同步账号历史业务数据）',
+              '1. 更换设备后，首次登录时（建议手动同步一次，确保当前设备拉取并对齐账号下的最新数据）',
             ),
             _buildInfoText(
               context,
-              '2. 长时间未使用应用后（可手动确认最新设置、会员状态与业务数据是否已同步）',
+              '2. 长时间未使用应用后（可手动确认最新设置、签到状态以及记录/故事线等数据是否已同步）',
             ),
             _buildInfoText(
               context,
@@ -184,7 +175,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '免费版与会员版的差异不在“是否自动触发同步”，而在“业务主数据是否允许下载到当前设备”。',
+              '自动同步与手动同步的差异不在同步内容，而在触发方式：自动同步会在合适时机自动执行，手动同步则由你主动发起。',
             ),
             const SizedBox(height: 16),
 
@@ -198,7 +189,7 @@ class SyncInfoDialog extends StatelessWidget {
             const SizedBox(height: 8),
             _buildInfoText(
               context,
-              '下载：从云端获取变化的数据到当前设备。用户设置、会员状态、成就与签到服务端状态会正常刷新；记录/故事线是否下载取决于会员权限。',
+              '下载：从云端获取变化的数据到当前设备，包括记录、故事线、用户设置、会员状态、成就、签到状态、收藏等可同步内容。',
             ),
             const SizedBox(height: 8),
             _buildInfoText(

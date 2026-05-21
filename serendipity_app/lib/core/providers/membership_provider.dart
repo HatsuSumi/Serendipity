@@ -159,8 +159,6 @@ class MembershipInfo {
     this.membership,
   });
 
-  bool get canManageMultipleDevices => isPremium || AppConfig.isDeveloperMode;
-
   bool get canUseAdvancedStatistics => isPremium || AppConfig.isDeveloperMode;
 
   bool get canUseAnniversaryReminder => isPremium || AppConfig.isDeveloperMode;
