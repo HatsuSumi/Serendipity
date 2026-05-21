@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:confetti/confetti.dart';
+
 import '../../../core/providers/check_in_provider.dart';
 import '../../../core/providers/user_settings_provider.dart';
-import '../../../core/utils/message_helper.dart';
-import '../../../core/utils/dialog_helper.dart';
-import '../../../core/utils/check_in_badge_helper.dart';
-import '../../../core/utils/navigation_helper.dart';
 import '../../../core/utils/check_in_animation_helper.dart';
+import '../../../core/utils/check_in_badge_helper.dart';
+import '../../../core/utils/dialog_helper.dart';
+import '../../../core/utils/message_helper.dart';
+import '../../../core/utils/navigation_helper.dart';
 import '../check_in_page.dart';
 import 'check_in_button.dart';
 
@@ -19,7 +20,7 @@ import 'check_in_button.dart';
 /// - TimelinePage：显示在页面顶部
 class CheckInCard extends ConsumerStatefulWidget {
   final ConfettiController? confettiController;
-  
+
   const CheckInCard({
     super.key,
     this.confettiController,
@@ -30,6 +31,54 @@ class CheckInCard extends ConsumerStatefulWidget {
 }
 
 class _CheckInCardState extends ConsumerState<CheckInCard> {
+  late final ProviderSubscription<AsyncValue<CheckInState>>
+      _checkInSubscription;
+  bool _hasTriggeredCheckInFeedback = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInSubscription = ref.listenManual<AsyncValue<CheckInState>>(
+      checkInProvider,
+      (previous, next) {
+        final previousState = previous?.valueOrNull;
+        final nextState = next.valueOrNull;
+
+        if (nextState == null) {
+          return;
+        }
+
+        if (!nextState.hasCheckedInToday) {
+          _hasTriggeredCheckInFeedback = false;
+        }
+
+        if (previousState == null) {
+          return;
+        }
+
+        final becameCheckedIn =
+            !previousState.hasCheckedInToday && nextState.hasCheckedInToday;
+
+        if (!becameCheckedIn || _hasTriggeredCheckInFeedback) {
+          return;
+        }
+
+        _hasTriggeredCheckInFeedback = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          _playCheckInSuccessFeedback();
+        });
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _checkInSubscription.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +94,11 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
   }
 
   /// 构建签到卡片
-  Widget _buildCard(BuildContext context, CheckInState checkInState, ColorScheme colorScheme) {
+  Widget _buildCard(
+    BuildContext context,
+    CheckInState checkInState,
+    ColorScheme colorScheme,
+  ) {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -86,7 +139,6 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // 左侧：签到图标和状态
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +173,7 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
                           Text(
                             checkInState.hasCheckedInToday
                                 ? '今天已签到'
-                                : '已连续签到 ${checkInState.consecutiveDays} 天',
+                                : '已连续签到 ${checkInState.displayConsecutiveDays} 天',
                             style: TextStyle(
                               fontSize: 12,
                               color: checkInState.hasCheckedInToday
@@ -131,15 +183,17 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
                           ),
                           if (checkInState.consecutiveDays > 0) ...[
                             const SizedBox(width: 8),
-                            _buildBadgeWidget(checkInState.consecutiveDays, colorScheme),
+                            _buildBadgeWidget(
+                              checkInState.consecutiveDays,
+                              colorScheme,
+                            ),
                           ],
                         ],
                       ),
                     ],
                   ),
                 ),
-                // 右侧：签到按钮
-                _buildCheckInButton(context, ref, checkInState, colorScheme),
+                _buildCheckInButton(checkInState, colorScheme),
               ],
             ),
           ),
@@ -243,12 +297,7 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
     );
   }
 
-  Widget _buildCheckInButton(
-    BuildContext context,
-    WidgetRef ref,
-    CheckInState state,
-    ColorScheme colorScheme,
-  ) {
+  Widget _buildCheckInButton(CheckInState state, ColorScheme colorScheme) {
     if (state.hasCheckedInToday) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -268,65 +317,61 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
 
     return CheckInButton(
       colorScheme: colorScheme,
-      onCheckInSuccess: _handleCheckInSuccess,
     );
   }
-  
-  /// 处理签到成功
-  Future<void> _handleCheckInSuccess() async {
-    // 读取用户设置
+
+  Future<void> _playCheckInSuccessFeedback() async {
     final settings = ref.read(userSettingsProvider);
-    
-    // 触发粒子效果和震动（根据用户设置）
-    if (widget.confettiController != null) {
-      await CheckInAnimationHelper.triggerSuccessFeedback(
-        confettiController: widget.confettiController!,
-        enableVibration: settings.checkInVibrationEnabled,
-        enableConfetti: settings.checkInConfettiEnabled,
-      );
+
+    if (settings.checkInVibrationEnabled) {
+      await CheckInAnimationHelper.triggerHapticFeedback();
     }
-    
-    // 刀子美学：断签恢复时显示专属文案
-    if (mounted && context.mounted) {
-      final checkInState = ref.read(checkInProvider).value;
-      final consecutiveDays = checkInState?.consecutiveDays ?? 0;
-      final totalDays = checkInState?.totalDays ?? 0;
-      // consecutiveDays == 1 且 totalDays > 1：断签后首次恢复
-      if (consecutiveDays == 1 && totalDays > 1) {
-        // 计算断签天数：找最近一次非今天的签到日期
-        final recentCheckIns = checkInState?.recentCheckIns ?? [];
-        int gapDays = 0;
-        if (recentCheckIns.length >= 2) {
-          final today = DateTime.now();
-          final todayDate = DateTime(today.year, today.month, today.day);
-          final lastDate = recentCheckIns[1].date;
-          gapDays = todayDate.difference(lastDate).inDays - 1;
-        }
-        final gapText = gapDays > 0 ? '你消失了 $gapDays 天。\n\n' : '';
-        DialogHelper.show<void>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            content: Text(
-              '$gapText那段时间，\n是发生了什么，\n还是什么都没发生？',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.8,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('没什么'),
-              ),
-            ],
-          ),
-        );
-      } else {
-        MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+    if (settings.checkInConfettiEnabled && widget.confettiController != null) {
+      widget.confettiController!.play();
+    }
+
+    if (!mounted || !context.mounted) {
+      return;
+    }
+
+    final checkInState = ref.read(checkInProvider).value;
+    final consecutiveDays = checkInState?.consecutiveDays ?? 0;
+    final totalDays = checkInState?.totalDays ?? 0;
+
+    if (consecutiveDays == 1 && totalDays > 1) {
+      final recentCheckIns = checkInState?.recentCheckIns ?? [];
+      int gapDays = 0;
+      if (recentCheckIns.length >= 2) {
+        final today = DateTime.now();
+        final todayDate = DateTime(today.year, today.month, today.day);
+        final lastDate = recentCheckIns[1].date;
+        gapDays = todayDate.difference(lastDate).inDays - 1;
       }
+      final gapText = gapDays > 0 ? '你消失了 $gapDays 天。\n\n' : '';
+      DialogHelper.show<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          content: Text(
+            '$gapText那段时间，\n是发生了什么，\n还是什么都没发生？',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.8,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('没什么'),
+            ),
+          ],
+        ),
+      );
+      return;
     }
+
+    MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
   }
 
   Widget _buildBadgeWidget(int consecutiveDays, ColorScheme colorScheme) {
@@ -354,7 +399,7 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
             ),
           ),
         ],
-      ),  
+      ),
     );
   }
 }

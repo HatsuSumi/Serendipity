@@ -7,13 +7,11 @@ import 'check_in_button.dart';
 class CheckInPageHeaderCard extends StatelessWidget {
   final CheckInState state;
   final ColorScheme colorScheme;
-  final VoidCallback onCheckInSuccess;
 
   const CheckInPageHeaderCard({
     super.key,
     required this.state,
     required this.colorScheme,
-    required this.onCheckInSuccess,
   });
 
   @override
@@ -74,7 +72,7 @@ class CheckInPageHeaderCard extends StatelessWidget {
               Text(
                 state.hasCheckedInToday
                     ? '今天也要加油哦 ✨'
-                    : '已连续签到 ${state.consecutiveDays} 天',
+                    : '已连续签到 ${state.displayConsecutiveDays} 天',
                 style: TextStyle(
                   fontSize: 14,
                   color: state.hasCheckedInToday
@@ -95,7 +93,6 @@ class CheckInPageHeaderCard extends StatelessWidget {
             const SizedBox(height: 20),
             CheckInButton(
               colorScheme: colorScheme,
-              onCheckInSuccess: onCheckInSuccess,
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
               fontSize: 16,
               text: '立即签到',
@@ -150,4 +147,3 @@ class _CheckInBadge extends StatelessWidget {
     );
   }
 }
-

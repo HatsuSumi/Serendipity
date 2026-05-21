@@ -80,7 +80,7 @@ class UserSettings {
       checkInReminderTime: const TimeOfDay(hour: 20, minute: 0),
       notificationsUpdatedAt: now,
       checkInVibrationEnabled: true,
-      checkInConfettiEnabled: false,
+      checkInConfettiEnabled: true,
       checkInUpdatedAt: now,
       hidePublishWarning: false,
       hasSeenPublishWarning: false,

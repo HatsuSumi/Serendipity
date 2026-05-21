@@ -22,7 +22,7 @@ class CheckInStatsSection extends StatelessWidget {
             child: _CheckInStatCard(
               icon: Icons.local_fire_department,
               label: '连续签到',
-              value: '${state.consecutiveDays} 天',
+              value: '${state.displayConsecutiveDays} 天',
               colorScheme: colorScheme,
             ),
           ),

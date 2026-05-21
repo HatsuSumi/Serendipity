@@ -28,12 +28,48 @@ class CheckInPage extends ConsumerStatefulWidget {
 class _CheckInPageState extends ConsumerState<CheckInPage> {
   late DateTime _currentMonth;
   ConfettiController? _confettiController;
+  late final ProviderSubscription<AsyncValue<CheckInState>> _checkInSubscription;
+  bool _hasTriggeredCheckInFeedback = false;
   
   @override
   void initState() {
     super.initState();
     _currentMonth = DateTime.now();
     _confettiController = CheckInAnimationHelper.createConfettiController();
+    _checkInSubscription = ref.listenManual<AsyncValue<CheckInState>>(
+      checkInProvider,
+      (previous, next) {
+        final previousState = previous?.valueOrNull;
+        final nextState = next.valueOrNull;
+
+        if (nextState == null) {
+          return;
+        }
+
+        if (!nextState.hasCheckedInToday) {
+          _hasTriggeredCheckInFeedback = false;
+        }
+
+        if (previousState == null) {
+          return;
+        }
+
+        final becameCheckedIn =
+            !previousState.hasCheckedInToday && nextState.hasCheckedInToday;
+
+        if (!becameCheckedIn || _hasTriggeredCheckInFeedback) {
+          return;
+        }
+
+        _hasTriggeredCheckInFeedback = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          _playCheckInSuccessFeedback();
+        });
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(checkInProvider.notifier).refresh(month: _currentMonth);
     });
@@ -41,6 +77,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
   
   @override
   void dispose() {
+    _checkInSubscription.close();
     _confettiController?.dispose();
     super.dispose();
   }
@@ -88,7 +125,6 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
               CheckInPageHeaderCard(
                 state: checkInState,
                 colorScheme: colorScheme,
-                onCheckInSuccess: _handleCheckInSuccess,
               ),
               const SizedBox(height: 16),
               CheckInStatsSection(
@@ -109,10 +145,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
           ),
         ),
         if (_confettiController != null)
-          Positioned(
-            top: 100,
-            left: 0,
-            right: 0,
+          Positioned.fill(
             child: IgnorePointer(
               child: CheckInAnimationHelper.createConfettiWidget(
                 controller: _confettiController!,
@@ -152,16 +185,14 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
     return canGoToNextMonth(_currentMonth, DateTime.now());
   }
 
-  /// 处理签到成功
-  Future<void> _handleCheckInSuccess() async {
+  Future<void> _playCheckInSuccessFeedback() async {
     final settings = ref.read(userSettingsProvider);
 
-    if (_confettiController != null) {
-      await CheckInAnimationHelper.triggerSuccessFeedback(
-        confettiController: _confettiController!,
-        enableVibration: settings.checkInVibrationEnabled,
-        enableConfetti: settings.checkInConfettiEnabled,
-      );
+    if (settings.checkInVibrationEnabled) {
+      await CheckInAnimationHelper.triggerHapticFeedback();
+    }
+    if (settings.checkInConfettiEnabled && _confettiController != null) {
+      _confettiController!.play();
     }
 
     if (mounted && context.mounted) {

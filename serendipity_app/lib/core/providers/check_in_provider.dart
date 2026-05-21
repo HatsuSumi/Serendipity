@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/check_in_record.dart';
+
 import '../../models/achievement_unlock.dart';
+import '../../models/check_in_record.dart';
 import '../../models/remote_check_in_status.dart';
 import '../../models/user.dart';
 import '../repositories/check_in_repository.dart';
 import '../services/sync_service.dart';
-import 'auth_provider.dart';
 import 'achievement_provider.dart';
+import 'auth_provider.dart';
 import 'records_provider.dart';
 import 'user_settings_provider.dart';
 
@@ -19,6 +20,7 @@ final checkInRepositoryProvider = Provider<CheckInRepository>((ref) {
 class CheckInState {
   final bool hasCheckedInToday;
   final int consecutiveDays;
+  final int displayConsecutiveDays;
   final int totalDays;
   final int currentMonthDays;
   final List<CheckInRecord> recentCheckIns;
@@ -29,6 +31,7 @@ class CheckInState {
   CheckInState({
     required this.hasCheckedInToday,
     required this.consecutiveDays,
+    required this.displayConsecutiveDays,
     required this.totalDays,
     required this.currentMonthDays,
     required this.recentCheckIns,
@@ -40,6 +43,7 @@ class CheckInState {
   CheckInState copyWith({
     bool? hasCheckedInToday,
     int? consecutiveDays,
+    int? displayConsecutiveDays,
     int? totalDays,
     int? currentMonthDays,
     List<CheckInRecord>? recentCheckIns,
@@ -50,10 +54,13 @@ class CheckInState {
     return CheckInState(
       hasCheckedInToday: hasCheckedInToday ?? this.hasCheckedInToday,
       consecutiveDays: consecutiveDays ?? this.consecutiveDays,
+      displayConsecutiveDays:
+          displayConsecutiveDays ?? this.displayConsecutiveDays,
       totalDays: totalDays ?? this.totalDays,
       currentMonthDays: currentMonthDays ?? this.currentMonthDays,
       recentCheckIns: recentCheckIns ?? this.recentCheckIns,
-      isRemoteAuthoritative: isRemoteAuthoritative ?? this.isRemoteAuthoritative,
+      isRemoteAuthoritative:
+          isRemoteAuthoritative ?? this.isRemoteAuthoritative,
       checkedInDatesInCurrentMonth:
           checkedInDatesInCurrentMonth ?? this.checkedInDatesInCurrentMonth,
       currentCalendarMonth: currentCalendarMonth ?? this.currentCalendarMonth,
@@ -69,7 +76,6 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
   Future<CheckInState> build() async {
     _repository = ref.read(checkInRepositoryProvider);
 
-    // 监听自动同步完成信号，与 recordsProvider 保持一致
     ref.watch(syncCompletedProvider);
 
     final currentUser = await ref.read(authProvider.notifier).currentUser;
@@ -98,6 +104,8 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     return CheckInState(
       hasCheckedInToday: _repository.hasCheckedInToday(userId: userId),
       consecutiveDays: _repository.calculateConsecutiveDays(userId: userId),
+      displayConsecutiveDays:
+          _repository.calculateReminderStreakDays(userId: userId),
       totalDays: _repository.getTotalCheckInDays(userId: userId),
       currentMonthDays: _repository.getCurrentMonthCheckInDays(userId: userId),
       recentCheckIns: _repository
@@ -145,9 +153,16 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     RemoteCheckInStatus remoteStatus,
     DateTime targetMonth,
   ) {
+    final displayConsecutiveDays = remoteStatus.displayConsecutiveDays > 0
+        ? remoteStatus.displayConsecutiveDays
+        : _calculateDisplayConsecutiveDaysFromRecentCheckIns(
+            remoteStatus.recentCheckIns,
+          );
+
     return CheckInState(
       hasCheckedInToday: remoteStatus.hasCheckedInToday,
       consecutiveDays: remoteStatus.consecutiveDays,
+      displayConsecutiveDays: displayConsecutiveDays,
       totalDays: remoteStatus.totalDays,
       currentMonthDays: remoteStatus.currentMonthDays,
       recentCheckIns: remoteStatus.recentCheckIns,
@@ -155,6 +170,43 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
       checkedInDatesInCurrentMonth: remoteStatus.checkedInDatesInMonth,
       currentCalendarMonth: targetMonth,
     );
+  }
+
+  int _calculateDisplayConsecutiveDaysFromRecentCheckIns(
+    List<CheckInRecord> recentCheckIns,
+  ) {
+    if (recentCheckIns.isEmpty) {
+      return 0;
+    }
+
+    final normalizedDates = recentCheckIns
+        .map((record) => DateTime(record.date.year, record.date.month, record.date.day))
+        .toSet();
+    final now = DateTime.now();
+    final todayDate = DateTime(now.year, now.month, now.day);
+    final yesterdayDate = todayDate.subtract(const Duration(days: 1));
+
+    DateTime? streakEndDate;
+    if (normalizedDates.contains(todayDate)) {
+      streakEndDate = todayDate;
+    } else if (normalizedDates.contains(yesterdayDate)) {
+      streakEndDate = yesterdayDate;
+    } else {
+      return 0;
+    }
+
+    var streakDays = 1;
+    var currentDate = streakEndDate;
+    while (true) {
+      final previousDate = currentDate.subtract(const Duration(days: 1));
+      if (!normalizedDates.contains(previousDate)) {
+        break;
+      }
+      streakDays++;
+      currentDate = previousDate;
+    }
+
+    return streakDays;
   }
 
   /// 刷新签到状态
@@ -171,6 +223,7 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     final authState = ref.read(authProvider);
     final currentUser = authState.value;
     final currentState = state.value;
+
     if (currentState?.hasCheckedInToday ?? false) {
       throw StateError('Already checked in today');
     }
@@ -197,9 +250,7 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
           await _uploadAchievementUnlocks(unlockedAchievements);
         }
       }
-    } catch (e) {
-      // 成就检测失败不影响签到
-    }
+    } catch (_) {}
 
     await refresh();
     await ref.read(notificationServiceProvider).cancelCheckInReminder();
@@ -249,7 +300,7 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
         );
 
         await syncService.uploadAchievementUnlock(unlock);
-      } catch (e) {
+      } catch (_) {
         // 单个成就上传失败不影响其他成就
       }
     }
