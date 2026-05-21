@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-13",
+  "generated_at": "2026-05-21",
   "root": "D:\\Serendipity",
   "totals": {
     "all_files": 771,
     "code_files": 587,
-    "code_lines": 99894,
-    "code_chars": 3335301,
+    "code_lines": 100072,
+    "code_chars": 3340635,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -150,20 +150,20 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 47314,
+      "count": 47431,
       "percentage": 47.4
     },
     {
       "key": "JSON",
       "label": "JSON",
       "count": 32970,
-      "percentage": 33.0
+      "percentage": 32.9
     },
     {
       "key": "TypeScript",
       "label": "TypeScript",
-      "count": 13816,
-      "percentage": 13.8
+      "count": 13867,
+      "percentage": 13.9
     },
     {
       "key": "JavaScript",
@@ -174,7 +174,7 @@
     {
       "key": "CSS",
       "label": "CSS",
-      "count": 888,
+      "count": 898,
       "percentage": 0.9
     },
     {
@@ -272,19 +272,19 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 1555571,
-      "percentage": 46.6
+      "count": 1559053,
+      "percentage": 46.7
     },
     {
       "key": "JSON",
       "label": "JSON",
       "count": 853215,
-      "percentage": 25.6
+      "percentage": 25.5
     },
     {
       "key": "TypeScript",
       "label": "TypeScript",
-      "count": 456676,
+      "count": 458333,
       "percentage": 13.7
     },
     {
@@ -296,7 +296,7 @@
     {
       "key": "CSS",
       "label": "CSS",
-      "count": 17540,
+      "count": 17733,
       "percentage": 0.5
     },
     {
@@ -368,7 +368,7 @@
     {
       "key": "INI",
       "label": "INI",
-      "count": 1417,
+      "count": 1419,
       "percentage": 0.0
     },
     {
