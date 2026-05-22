@@ -28,7 +28,8 @@ logs/
 Thumbs.db
 
 # Prisma
-prisma/migrations/
+# Keep committed Prisma migrations in git for repeatable schema changes.
+# Generated Prisma client output remains ignored via /src/generated/prisma
 
 # 测试覆盖率
 coverage/
