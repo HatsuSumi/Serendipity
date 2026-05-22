@@ -67,6 +67,7 @@ void main() {
       final status = RemoteCheckInStatus(
         hasCheckedInToday: true,
         consecutiveDays: 7,
+        displayConsecutiveDays: 7,
         totalDays: 20,
         currentMonthDays: 2,
         recentCheckIns: [
@@ -91,11 +92,15 @@ void main() {
         status: status,
       );
 
-      final cached = repository.getRemoteStatusCache(userId: userId, month: month);
+      final cached = repository.getRemoteStatusCache(
+        userId: userId,
+        month: month,
+      );
 
       expect(cached, isNotNull);
       expect(cached!.hasCheckedInToday, isTrue);
       expect(cached.consecutiveDays, 7);
+      expect(cached.displayConsecutiveDays, 7);
       expect(cached.recentCheckIns.single.id, 'check-in-1');
       expect(cached.checkedInDatesInMonth.length, 2);
     });
@@ -108,6 +113,7 @@ void main() {
         status: const RemoteCheckInStatus(
           hasCheckedInToday: false,
           consecutiveDays: 1,
+          displayConsecutiveDays: 1,
           totalDays: 1,
           currentMonthDays: 1,
           recentCheckIns: [],
@@ -124,4 +130,3 @@ void main() {
     });
   });
 }
-

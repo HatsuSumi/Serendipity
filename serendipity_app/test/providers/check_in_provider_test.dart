@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:serendipity_app/core/providers/auth_provider.dart';
 import 'package:serendipity_app/core/providers/check_in_provider.dart';
@@ -48,7 +48,8 @@ class InMemoryStorageService implements IStorageService {
 
   @override
   List<CheckInRecord> getCheckInsByUser(String? userId) {
-    final checkIns = _checkIns.values.where((item) => item.userId == userId).toList();
+    final checkIns =
+        _checkIns.values.where((item) => item.userId == userId).toList();
     checkIns.sort((a, b) => b.date.compareTo(a.date));
     return checkIns;
   }
@@ -127,7 +128,11 @@ class FailingCheckInSyncService extends SyncService {
         );
 
   @override
-  Future<RemoteCheckInStatus> getCheckInStatus(User user, int year, int month) async {
+  Future<RemoteCheckInStatus> getCheckInStatus(
+    User user,
+    int year,
+    int month,
+  ) async {
     throw Exception('remote unavailable');
   }
 }
@@ -152,6 +157,7 @@ void main() {
       final cachedStatus = RemoteCheckInStatus(
         hasCheckedInToday: true,
         consecutiveDays: 5,
+        displayConsecutiveDays: 5,
         totalDays: 12,
         currentMonthDays: 3,
         recentCheckIns: [
@@ -173,7 +179,8 @@ void main() {
 
       final month = DateTime.now();
       final normalizedMonth = DateTime(month.year, month.month);
-      final monthKey = '${normalizedMonth.year.toString().padLeft(4, '0')}-${normalizedMonth.month.toString().padLeft(2, '0')}';
+      final monthKey =
+          '${normalizedMonth.year.toString().padLeft(4, '0')}-${normalizedMonth.month.toString().padLeft(2, '0')}';
       await storageService.set(
         'remote_check_in_status_${user.id}_$monthKey',
         cachedStatus.toJson(),
@@ -185,7 +192,8 @@ void main() {
           httpClientServiceProvider.overrideWithValue(
             HttpClientService(
               storage: storageService,
-              deviceIdentityService: DeviceIdentityService(storage: storageService),
+              deviceIdentityService:
+                  DeviceIdentityService(storage: storageService),
               client: http.Client(),
             ),
           ),
@@ -204,11 +212,13 @@ void main() {
       expect(state.isRemoteAuthoritative, isTrue);
       expect(state.hasCheckedInToday, isTrue);
       expect(state.consecutiveDays, 5);
+      expect(state.displayConsecutiveDays, 5);
       expect(state.totalDays, 12);
       expect(state.currentMonthDays, 3);
       expect(state.recentCheckIns.single.id, 'remote-check-in-1');
       expect(
-        state.checkedInDatesInCurrentMonth.map((item) => item.toIso8601String()),
+        state.checkedInDatesInCurrentMonth
+            .map((item) => item.toIso8601String()),
         [
           DateTime(2026, 4, 1).toIso8601String(),
           DateTime(2026, 4, 2).toIso8601String(),
@@ -218,4 +228,3 @@ void main() {
     });
   });
 }
-

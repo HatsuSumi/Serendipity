@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-21",
+  "generated_at": "2026-05-22",
   "root": "D:\\Serendipity",
   "totals": {
     "all_files": 771,
     "code_files": 587,
-    "code_lines": 100072,
-    "code_chars": 3340635,
+    "code_lines": 100088,
+    "code_chars": 3340912,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -150,7 +150,7 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 47431,
+      "count": 47447,
       "percentage": 47.4
     },
     {
@@ -272,7 +272,7 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 1559053,
+      "count": 1559330,
       "percentage": 46.7
     },
     {
