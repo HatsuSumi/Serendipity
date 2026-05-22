@@ -233,9 +233,19 @@ class CustomServerAuthRepository implements IAuthRepository {
   }
   
   @override
-  Future<void> resetPassword(String email, String recoveryKey, String newPassword) async {
-    // Fail Fast：参数验证
-    ValidationHelper.validateEmailForRepository(email);
+  Future<void> resetPassword(
+    String accountType,
+    String account,
+    String recoveryKey,
+    String newPassword,
+  ) async {
+    if (accountType == 'email') {
+      ValidationHelper.validateEmailForRepository(account);
+    } else if (accountType == 'phone') {
+      ValidationHelper.validatePhoneNumberForRepository(account);
+    } else {
+      throw ArgumentError('账号类型不正确');
+    }
     if (recoveryKey.isEmpty) {
       throw ArgumentError('恢复密钥不能为空');
     }
@@ -243,7 +253,8 @@ class CustomServerAuthRepository implements IAuthRepository {
     
     try {
       await _remoteDataSource.resetPassword(
-        email: email,
+        accountType: accountType,
+        account: account,
         recoveryKey: recoveryKey,
         newPassword: newPassword,
       );

@@ -53,7 +53,8 @@ export interface SendVerificationCodeDto {
 
 // 重置密码请求
 export interface ResetPasswordDto {
-  email: string;
+  accountType: 'email' | 'phone';
+  account: string;
   recoveryKey: string;
   newPassword: string;
 }

@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/navigation_helper.dart';
-import '../../core/utils/auth_error_helper.dart';
 import '../../core/utils/phone_helper.dart';
-import '../../core/providers/auth_provider.dart';
-import 'widgets/auth_text_field.dart';
-import 'widgets/auth_button.dart';
-import 'widgets/agreement_notice.dart';
-import 'register_page.dart';
 import 'forgot_password_page.dart';
+import 'register_page.dart';
+import 'widgets/agreement_notice.dart';
+import 'widgets/auth_button.dart';
+import 'widgets/auth_text_field.dart';
 
 /// 登录页
-/// 
+///
 /// 支持邮箱登录和手机号登录，遵循单一职责原则（SRP）和分层约束。
-/// 
+///
 /// 调用者：
 /// - WelcomePage：点击"登录"按钮跳转到此页面
 /// - RegisterPage：点击"已有账号？登录"跳转到此页面
@@ -34,7 +34,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _isEmailLogin = true;
   String _countryCode = '+86';
 
-  
   @override
   void dispose() {
     _emailController.dispose();
@@ -58,37 +57,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
-                
-                // 登录方式切换
                 _buildLoginTypeTabs(),
-                
                 const SizedBox(height: 32),
-                
-                // 登录表单
                 _isEmailLogin ? _buildEmailLoginForm() : _buildPhoneLoginForm(),
-                
                 const SizedBox(height: 24),
-                
-                // 登录按钮
                 AuthButton.primary(
                   text: '登录',
                   onPressed: _handleLogin,
                   isLoading: _isLoading,
                 ),
-                
                 const SizedBox(height: 16),
-                
-                // 忘记密码（仅邮箱登录显示）
-                if (_isEmailLogin) _buildForgotPasswordLink(),
-                
+                _buildForgotPasswordLink(),
                 const SizedBox(height: 16),
-                
-                // 协议提示
                 const AgreementNotice(actionText: '登录'),
-                
                 const SizedBox(height: 32),
-                
-                // 注册链接
                 _buildRegisterLink(),
               ],
             ),
@@ -97,10 +79,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
   }
-  
-  /// 构建登录方式切换标签
-  /// 
-  /// 调用者：build()
+
   Widget _buildLoginTypeTabs() {
     return Row(
       children: [
@@ -130,10 +109,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: _isEmailLogin ? FontWeight.bold : FontWeight.normal,
+                  fontWeight:
+                      _isEmailLogin ? FontWeight.bold : FontWeight.normal,
                   color: _isEmailLogin
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -165,10 +148,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: !_isEmailLogin ? FontWeight.bold : FontWeight.normal,
+                  fontWeight:
+                      !_isEmailLogin ? FontWeight.bold : FontWeight.normal,
                   color: !_isEmailLogin
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -177,10 +164,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ],
     );
   }
-  
-  /// 构建邮箱登录表单
-  /// 
-  /// 调用者：build()
+
   Widget _buildEmailLoginForm() {
     return Column(
       children: [
@@ -202,10 +186,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ],
     );
   }
-  
-  /// 构建手机号登录表单
-  /// 
-  /// 调用者：build()
+
   Widget _buildPhoneLoginForm() {
     return Column(
       children: [
@@ -233,10 +214,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ],
     );
   }
-  
-  /// 构建忘记密码链接
-  /// 
-  /// 调用者：build()
+
   Widget _buildForgotPasswordLink() {
     return Align(
       alignment: Alignment.centerRight,
@@ -246,10 +224,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
   }
-  
-  /// 构建注册链接
-  /// 
-  /// 调用者：build()
+
   Widget _buildRegisterLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -267,39 +242,30 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ],
     );
   }
-  
-  /// 处理登录
-  /// 
-  /// 调用者：登录按钮的 onPressed
+
   Future<void> _handleLogin() async {
-    // Fail Fast：表单验证
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    
+
     if (_isEmailLogin) {
       await _handleEmailLogin();
     } else {
       await _handlePhoneLogin();
     }
   }
-  
-  /// 处理邮箱登录
-  /// 
-  /// 调用者：_handleLogin()
+
   Future<void> _handleEmailLogin() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
-      // 调用 AuthProvider 登录
       await ref.read(authProvider.notifier).signInWithEmail(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-      
-      // 登录成功，跳转到主页并显示消息
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
+
       if (mounted) {
         NavigationHelper.navigateToMainPageWithMessage(
           context,
@@ -308,7 +274,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
       }
     } catch (e) {
-      // 显示错误信息
       if (mounted) {
         MessageHelper.showError(context, AuthErrorHelper.extractErrorMessage(e));
       }
@@ -320,29 +285,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
     }
   }
-  
-  /// 处理手机号登录
-  /// 
-  /// 调用者：_handleLogin()
+
   Future<void> _handlePhoneLogin() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
-      // 拼接完整手机号（国家代码 + 手机号）
       final fullPhoneNumber = PhoneHelper.formatWithCountryCode(
         _countryCode,
         _phoneController.text,
       );
-      
-      // 调用 AuthProvider 登录
+
       await ref.read(authProvider.notifier).signInWithPhonePassword(
-        fullPhoneNumber,
-        _passwordController.text,
-      );
-      
-      // 登录成功，跳转到主页并显示消息
+            fullPhoneNumber,
+            _passwordController.text,
+          );
+
       if (mounted) {
         NavigationHelper.navigateToMainPageWithMessage(
           context,
@@ -351,7 +310,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
       }
     } catch (e) {
-      // 显示错误信息
       if (mounted) {
         MessageHelper.showError(context, AuthErrorHelper.extractErrorMessage(e));
       }
@@ -363,23 +321,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
     }
   }
-  
-  /// 导航到忘记密码页
-  /// 
-  /// 调用者：忘记密码链接的 onPressed
+
   void _navigateToForgotPassword(BuildContext context) {
     NavigationHelper.pushWithTransition(
       context,
       ref,
-      const ForgotPasswordPage(),
+      ForgotPasswordPage(
+        initialAccountType: _isEmailLogin
+            ? ForgotPasswordAccountType.email
+            : ForgotPasswordAccountType.phone,
+        initialCountryCode: _countryCode,
+      ),
     );
   }
-  
-  /// 导航到注册页
-  /// 
-  /// 调用者：注册链接的 onPressed
+
   void _navigateToRegister(BuildContext context) {
-    // 使用 pushReplacementWithTransition 替换当前页面，并应用用户设置的动画
     NavigationHelper.pushReplacementWithTransition(
       context,
       ref,
@@ -387,4 +343,3 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 }
-

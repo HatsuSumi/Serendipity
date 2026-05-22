@@ -338,21 +338,32 @@ class AuthNotifier extends StreamNotifier<User?> {
     await _sessionCoordinator.signOut();
   }
   
-  /// 发送密码重置邮件
+  /// 重置密码
   /// 
-  /// 调用者：ForgotPasswordPage._handleSendResetEmail()
+  /// 调用者：ForgotPasswordPage._handleResetPassword()
   /// 
   /// Fail Fast：
-  /// - 邮箱格式错误立即抛异常
+  /// - accountType 不正确立即抛异常
+  /// - account 格式错误立即抛异常
   /// - 恢复密钥为空立即抛异常
   /// - 新密码格式错误立即抛异常
-  Future<void> resetPassword(String email, String recoveryKey, String newPassword) async {
-    // Fail Fast：参数验证（UI 层已经 trim，这里只验证非空）
-    _requireNotEmpty(email, '邮箱不能为空');
+  Future<void> resetPassword(
+    String accountType,
+    String account,
+    String recoveryKey,
+    String newPassword,
+  ) async {
+    _requireNotEmpty(accountType, '账号类型不能为空');
+    _requireNotEmpty(account, accountType == 'phone' ? '手机号不能为空' : '邮箱不能为空');
     _requireNotEmpty(recoveryKey, '恢复密钥不能为空');
     _requireNotEmpty(newPassword, '新密码不能为空');
-    
-    await _repository.resetPassword(email, recoveryKey, newPassword);
+
+    await _repository.resetPassword(
+      accountType,
+      account,
+      recoveryKey,
+      newPassword,
+    );
   }
   
   /// 生成恢复密钥

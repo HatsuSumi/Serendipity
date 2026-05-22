@@ -46,7 +46,10 @@ describe('AuthRecoveryService', () => {
       compare: jest.fn(),
     };
 
-    authServiceSupport = new AuthServiceSupport(mockUserRepository, mockPasswordHasher);
+    authServiceSupport = new AuthServiceSupport(
+      mockUserRepository,
+      mockPasswordHasher,
+    );
     authRecoveryService = new AuthRecoveryService(
       mockUserRepository,
       mockRefreshTokenRepository,
@@ -65,13 +68,22 @@ describe('AuthRecoveryService', () => {
       mockRefreshTokenRepository.deleteByUserId.mockResolvedValue(1);
 
       await authRecoveryService.resetPassword({
-        email: 'test@example.com',
+        accountType: 'email',
+        account: 'test@example.com',
         recoveryKey: 'xxxx-xxxx-xxxx-xxxx',
         newPassword: 'new-password123',
       });
 
-      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(mockUser.id, 'new-hashed-password');
-      expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(mockUser.id);
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(
+        'test@example.com',
+      );
+      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+        mockUser.id,
+        'new-hashed-password',
+      );
+      expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(
+        mockUser.id,
+      );
     });
 
     it('用户不存在时应该抛出错误', async () => {
@@ -79,7 +91,8 @@ describe('AuthRecoveryService', () => {
 
       await expect(
         authRecoveryService.resetPassword({
-          email: 'missing@example.com',
+          accountType: 'email',
+          account: 'missing@example.com',
           recoveryKey: 'xxxx-xxxx-xxxx-xxxx',
           newPassword: 'new-password123',
         }),
@@ -95,13 +108,45 @@ describe('AuthRecoveryService', () => {
 
       await expect(
         authRecoveryService.resetPassword({
-          email: 'test@example.com',
+          accountType: 'email',
+          account: 'test@example.com',
           recoveryKey: 'wrong-recovery-key',
           newPassword: 'new-password123',
         }),
       ).rejects.toMatchObject({
         code: ErrorCode.INVALID_CREDENTIALS,
       });
+    });
+
+    it('手机号恢复密钥正确时应该成功重置密码', async () => {
+      const mockUser = createMockUser({
+        authProvider: 'phone',
+        phoneNumber: '+8613800138000',
+        recoveryKey: 'phone-recovery-key',
+      });
+
+      mockUserRepository.findByPhone.mockResolvedValue(mockUser);
+      mockPasswordHasher.hash.mockResolvedValue('new-hashed-password');
+      mockUserRepository.updatePassword.mockResolvedValue(mockUser);
+      mockRefreshTokenRepository.deleteByUserId.mockResolvedValue(1);
+
+      await authRecoveryService.resetPassword({
+        accountType: 'phone',
+        account: '+8613800138000',
+        recoveryKey: 'phone-recovery-key',
+        newPassword: 'new-password123',
+      });
+
+      expect(mockUserRepository.findByPhone).toHaveBeenCalledWith(
+        '+8613800138000',
+      );
+      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+        mockUser.id,
+        'new-hashed-password',
+      );
+      expect(mockRefreshTokenRepository.deleteByUserId).toHaveBeenCalledWith(
+        mockUser.id,
+      );
     });
   });
 
@@ -131,16 +176,19 @@ describe('AuthRecoveryService', () => {
 
       mockUserRepository.findById.mockResolvedValue(mockUser);
 
-      await expect(authRecoveryService.getRecoveryKey(mockUser.id)).resolves.toBe('stored-recovery-key');
+      await expect(authRecoveryService.getRecoveryKey(mockUser.id)).resolves.toBe(
+        'stored-recovery-key',
+      );
     });
 
     it('用户不存在时应该抛出错误', async () => {
       mockUserRepository.findById.mockResolvedValue(null);
 
-      await expect(authRecoveryService.getRecoveryKey('missing-user-id')).rejects.toMatchObject({
+      await expect(
+        authRecoveryService.getRecoveryKey('missing-user-id'),
+      ).rejects.toMatchObject({
         code: ErrorCode.USER_NOT_FOUND,
       });
     });
   });
 });
-

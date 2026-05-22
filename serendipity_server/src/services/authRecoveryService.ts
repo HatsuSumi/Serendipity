@@ -31,8 +31,11 @@ export class AuthRecoveryService {
   }
 
   async resetPassword(data: ResetPasswordDto): Promise<void> {
-    if (!data.email) {
-      throw new AppError('邮箱不能为空', ErrorCode.INVALID_CREDENTIALS);
+    if (!data.accountType || !['email', 'phone'].includes(data.accountType)) {
+      throw new AppError('账号类型不正确', ErrorCode.INVALID_CREDENTIALS);
+    }
+    if (!data.account) {
+      throw new AppError(data.accountType === 'email' ? '邮箱不能为空' : '手机号不能为空', ErrorCode.INVALID_CREDENTIALS);
     }
     if (!data.recoveryKey) {
       throw new AppError('恢复密钥不能为空', ErrorCode.INVALID_CREDENTIALS);
@@ -41,15 +44,21 @@ export class AuthRecoveryService {
       throw new AppError('新密码长度必须至少 6 位', ErrorCode.INVALID_CREDENTIALS);
     }
 
-    const user = await this.userRepository.findByEmail(data.email);
+    const user = data.accountType === 'email'
+      ? await this.userRepository.findByEmail(data.account)
+      : await this.userRepository.findByPhone(data.account);
+    const invalidCredentialsMessage = data.accountType === 'email'
+      ? '邮箱或恢复密钥错误'
+      : '手机号或恢复密钥错误';
+
     if (!user) {
-      throw new AppError('邮箱或恢复密钥错误', ErrorCode.INVALID_CREDENTIALS);
+      throw new AppError(invalidCredentialsMessage, ErrorCode.INVALID_CREDENTIALS);
     }
     if (!user.recoveryKey) {
       throw new AppError('该账户未设置恢复密钥', ErrorCode.INVALID_CREDENTIALS);
     }
     if (data.recoveryKey !== user.recoveryKey) {
-      throw new AppError('邮箱或恢复密钥错误', ErrorCode.INVALID_CREDENTIALS);
+      throw new AppError(invalidCredentialsMessage, ErrorCode.INVALID_CREDENTIALS);
     }
 
     const passwordHash = await this.passwordHasher.hash(data.newPassword);

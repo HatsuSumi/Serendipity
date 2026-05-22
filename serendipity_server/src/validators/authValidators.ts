@@ -71,9 +71,29 @@ export const sendVerificationCodeValidation = [
 
 // 重置密码验证规则
 export const resetPasswordValidation = [
-  body('email')
-    .isEmail()
-    .withMessage('邮箱格式不正确'),
+  body('accountType')
+    .isIn(['email', 'phone'])
+    .withMessage('账号类型必须是邮箱或手机号'),
+  body('account')
+    .notEmpty()
+    .withMessage('账号不能为空')
+    .custom((value, { req }) => {
+      if (req.body.accountType === 'email') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          throw new Error('邮箱格式不正确');
+        }
+      }
+
+      if (req.body.accountType === 'phone') {
+        const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+        if (!phoneRegex.test(value)) {
+          throw new Error('手机号格式不正确');
+        }
+      }
+
+      return true;
+    }),
   body('recoveryKey')
     .isLength({ min: 32, max: 64 })
     .withMessage('恢复密钥长度必须在32到64个字符之间'),

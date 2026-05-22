@@ -116,14 +116,16 @@ class CustomServerAuthRemoteDataSource {
   }
 
   Future<void> resetPassword({
-    required String email,
+    required String accountType,
+    required String account,
     required String recoveryKey,
     required String newPassword,
   }) async {
     await _httpClient.post(
       ServerConfig.authResetPassword,
       body: {
-        'email': email,
+        'accountType': accountType,
+        'account': account,
         'recoveryKey': recoveryKey,
         'newPassword': newPassword,
       },
