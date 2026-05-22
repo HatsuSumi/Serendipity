@@ -2,10 +2,10 @@
   "generated_at": "2026-05-22",
   "root": "D:\\Serendipity",
   "totals": {
-    "all_files": 771,
-    "code_files": 587,
-    "code_lines": 100201,
-    "code_chars": 3343987,
+    "all_files": 772,
+    "code_files": 588,
+    "code_lines": 100203,
+    "code_chars": 3344046,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -46,13 +46,13 @@
       "count": 15
     },
     {
-      "key": "CSS",
-      "label": "CSS文件",
-      "count": 10
-    },
-    {
       "key": "SQL",
       "label": "SQL脚本",
+      "count": 11
+    },
+    {
+      "key": "CSS",
+      "label": "CSS文件",
       "count": 10
     },
     {
@@ -186,7 +186,7 @@
     {
       "key": "SQL",
       "label": "SQL",
-      "count": 296,
+      "count": 298,
       "percentage": 0.3
     },
     {
@@ -308,7 +308,7 @@
     {
       "key": "SQL",
       "label": "SQL",
-      "count": 16915,
+      "count": 16974,
       "percentage": 0.5
     },
     {
