@@ -517,10 +517,18 @@ class TestAuthRepository implements IAuthRepository {
   }
   
   @override
-  Future<void> resetPassword(String email, String recoveryKey, String newPassword) async {
+  Future<void> resetPassword(
+    String accountType,
+    String account,
+    String recoveryKey,
+    String newPassword,
+  ) async {
     // Fail Fast：参数验证
-    if (email.isEmpty) {
-      throw ArgumentError('邮箱不能为空');
+    if (accountType != 'email' && accountType != 'phone') {
+      throw ArgumentError('账号类型不正确');
+    }
+    if (account.isEmpty) {
+      throw ArgumentError(accountType == 'phone' ? '手机号不能为空' : '邮箱不能为空');
     }
     if (recoveryKey.isEmpty) {
       throw ArgumentError('恢复密钥不能为空');
@@ -530,22 +538,23 @@ class TestAuthRepository implements IAuthRepository {
     // 模拟网络延迟
     await Future.delayed(const Duration(milliseconds: 500));
     
-    // 检查邮箱是否存在
-    final user = _getUserByEmail(email);
+    // 检查账号是否存在
+    final user = accountType == 'phone'
+        ? _getUserByPhone(account)
+        : _getUserByEmail(account);
     if (user == null) {
-      throw Exception('该邮箱不存在');
+      throw Exception(accountType == 'phone' ? '该手机号不存在' : '该邮箱不存在');
     }
     
     // 测试环境：验证恢复密钥（从 Hive 获取）
     final savedRecoveryKey = _passwordsBox.get('recovery_key_${user.id}') as String?;
     if (savedRecoveryKey == null || savedRecoveryKey != recoveryKey) {
-      throw Exception('邮箱或恢复密钥错误');
+      throw Exception(accountType == 'phone' ? '手机号或恢复密钥错误' : '邮箱或恢复密钥错误');
     }
     
     // 更新密码
     await _savePassword(user.id, newPassword);
   }
-  
   @override
   Future<String> generateRecoveryKey() async {
     // Fail Fast：用户未登录

@@ -4,8 +4,8 @@
   "totals": {
     "all_files": 771,
     "code_files": 587,
-    "code_lines": 100191,
-    "code_chars": 3343664,
+    "code_lines": 100201,
+    "code_chars": 3343987,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -150,7 +150,7 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 47630,
+      "count": 47640,
       "percentage": 47.5
     },
     {
@@ -272,7 +272,7 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 1564921,
+      "count": 1565244,
       "percentage": 46.8
     },
     {
