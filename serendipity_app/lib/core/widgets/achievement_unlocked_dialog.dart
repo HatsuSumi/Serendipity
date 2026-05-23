@@ -121,22 +121,24 @@ class _AchievementUnlockedDialogState
         // 粒子效果
         Positioned(
           top: 0,
-          child: ConfettiWidget(
-            confettiController: _confettiController,
-            blastDirection: pi / 2, // 向下喷射
-            emissionFrequency: 0.05, // 发射频率
-            numberOfParticles: 20, // 粒子数量
-            maxBlastForce: 20, // 最大爆炸力
-            minBlastForce: 10, // 最小爆炸力
-            gravity: 0.3, // 重力
-            colors: const [
-              Colors.green,
-              Colors.blue,
-              Colors.pink,
-              Colors.orange,
-              Colors.purple,
-              Colors.yellow,
-            ],
+          child: IgnorePointer(
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi / 2, // 向下喷射
+              emissionFrequency: 0.05, // 发射频率
+              numberOfParticles: 20, // 粒子数量
+              maxBlastForce: 20, // 最大爆炸力
+              minBlastForce: 10, // 最小爆炸力
+              gravity: 0.3, // 重力
+              colors: const [
+                Colors.green,
+                Colors.blue,
+                Colors.pink,
+                Colors.orange,
+                Colors.purple,
+                Colors.yellow,
+              ],
+            ),
           ),
         ),
       ],

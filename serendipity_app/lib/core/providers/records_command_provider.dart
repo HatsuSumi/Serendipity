@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/encounter_record.dart';
@@ -27,6 +28,7 @@ class RecordsCommandNotifier extends AsyncNotifier<void> {
   /// - 如果用户已登录，保存到本地后自动上传到云端
   /// - 如果用户未登录，只保存到本地（离线模式）
   /// - 云端同步失败不影响本地操作
+  /// - 保存成功后由命令层统一触发成就检测，避免页面返回链路的时序问题
   Future<void> saveRecord(EncounterRecord record) async {
     final repository = ref.read(recordRepositoryProvider);
 
@@ -46,15 +48,18 @@ class RecordsCommandNotifier extends AsyncNotifier<void> {
     }
 
     await ref.read(recordsProvider.notifier).refreshSilently();
+    await _checkAchievementsForSavedRecord(record);
   }
 
-  /// 检测记录的成就解锁（由调用者在页面关闭后手动触发）
-  Future<void> checkAchievementsForRecord(EncounterRecord record) async {
+  Future<void> _checkAchievementsForSavedRecord(EncounterRecord record) async {
     try {
       final currentUser = await ref.read(authProvider.notifier).currentUser;
       if (currentUser == null) {
         return;
       }
+
+      final achievementRepo = ref.read(achievementRepositoryProvider);
+      await achievementRepo.initialize();
 
       final detector = ref.read(achievementDetectorProvider);
       final unlockedAchievements = await detector.checkRecordAchievements(record, currentUser.id);
@@ -69,7 +74,10 @@ class RecordsCommandNotifier extends AsyncNotifier<void> {
         ref.invalidate(achievementsProvider);
         await _uploadAchievementUnlocks(unlockedAchievements);
       }
-    } catch (_) {}
+    } catch (error, stackTrace) {
+      debugPrint('Failed to check record achievements: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   /// 更新记录（自动处理故事线关联变化）
@@ -236,4 +244,3 @@ class RecordsCommandNotifier extends AsyncNotifier<void> {
 final recordsCommandProvider = AsyncNotifierProvider<RecordsCommandNotifier, void>(() {
   return RecordsCommandNotifier();
 });
-
