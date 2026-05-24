@@ -28,40 +28,20 @@ class CheckInPage extends ConsumerStatefulWidget {
 class _CheckInPageState extends ConsumerState<CheckInPage> {
   late DateTime _currentMonth;
   ConfettiController? _confettiController;
-  late final ProviderSubscription<AsyncValue<CheckInState>> _checkInSubscription;
-  bool _hasTriggeredCheckInFeedback = false;
+  late final ProviderSubscription<int> _checkInSuccessSubscription;
   
   @override
   void initState() {
     super.initState();
     _currentMonth = DateTime.now();
     _confettiController = CheckInAnimationHelper.createConfettiController();
-    _checkInSubscription = ref.listenManual<AsyncValue<CheckInState>>(
-      checkInProvider,
+    _checkInSuccessSubscription = ref.listenManual<int>(
+      checkInSuccessEventProvider,
       (previous, next) {
-        final previousState = previous?.valueOrNull;
-        final nextState = next.valueOrNull;
-
-        if (nextState == null) {
+        if (previous == null || next == previous) {
           return;
         }
 
-        if (!nextState.hasCheckedInToday) {
-          _hasTriggeredCheckInFeedback = false;
-        }
-
-        if (previousState == null) {
-          return;
-        }
-
-        final becameCheckedIn =
-            !previousState.hasCheckedInToday && nextState.hasCheckedInToday;
-
-        if (!becameCheckedIn || _hasTriggeredCheckInFeedback) {
-          return;
-        }
-
-        _hasTriggeredCheckInFeedback = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -77,7 +57,7 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
   
   @override
   void dispose() {
-    _checkInSubscription.close();
+    _checkInSuccessSubscription.close();
     _confettiController?.dispose();
     super.dispose();
   }
@@ -200,4 +180,3 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
     }
   }
 }
-

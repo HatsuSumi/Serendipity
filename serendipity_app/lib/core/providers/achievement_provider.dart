@@ -30,6 +30,12 @@ class AchievementsNotifier extends AsyncNotifier<List<Achievement>> {
   @override
   Future<List<Achievement>> build() async {
     _repository = ref.read(achievementRepositoryProvider);
+
+    // 同步完成后自动刷新成就列表，避免跨设备登录后页面仍然停留在旧缓存
+    ref.watch(syncCompletedProvider);
+
+    // 额外监听签到成功事件，确保本地签到触发的成就解锁能及时反映到列表
+    ref.watch(checkInSuccessEventProvider);
     
     // 初始化成就列表
     await _repository.initialize();
@@ -129,4 +135,3 @@ class NewlyUnlockedAchievementsNotifier extends StateNotifier<List<String>> {
 final newlyUnlockedAchievementsProvider = StateNotifierProvider<NewlyUnlockedAchievementsNotifier, List<String>>((ref) {
   return NewlyUnlockedAchievementsNotifier();
 });
-

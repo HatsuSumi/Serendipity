@@ -16,6 +16,9 @@ final checkInRepositoryProvider = Provider<CheckInRepository>((ref) {
   return CheckInRepository(ref.read(storageServiceProvider));
 });
 
+/// 签到成功事件（仅本地用户操作触发）
+final checkInSuccessEventProvider = StateProvider<int>((ref) => 0);
+
 /// 签到状态
 class CheckInState {
   final bool hasCheckedInToday;
@@ -252,6 +255,7 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
       }
     } catch (_) {}
 
+    ref.read(checkInSuccessEventProvider.notifier).state++;
     await refresh();
     await ref.read(notificationServiceProvider).cancelCheckInReminder();
   }
