@@ -4,7 +4,6 @@ import '../../models/user.dart';
 import '../repositories/i_auth_repository.dart';
 import 'auth_dependencies_provider.dart';
 import 'auth_session_coordinator.dart';
-import 'message_provider.dart';
 
 export 'auth_dependencies_provider.dart';
 export 'auth_events_provider.dart';
@@ -33,13 +32,10 @@ class AuthNotifier extends StreamNotifier<User?> {
     );
     
     // 注入强制登出回调：Token 过期且刷新失败时（被其他设备踢下线），
-    // 通过 messageProvider 发送跨页面消息，主页面监听后显示提示。
-    // 只对 CustomServerAuthRepository 生效（TestAuthRepository 无 Token 机制）
+    // 统一走会话失效收口逻辑，避免文案与状态清理分散在多处。
     final httpClient = ref.read(httpClientServiceProvider);
     httpClient.onForceLogout = () {
-      ref.read(messageProvider.notifier).showError('你的账号已在其他设备登录，请重新登录');
-      // 清除本地认证状态，触发页面跳转到登录页
-      Future.microtask(() => state = const AsyncValue.data(null));
+      Future.microtask(() => _sessionCoordinator.handleSessionInvalidation());
     };
     
     // 监听认证状态变化
@@ -60,6 +56,14 @@ class AuthNotifier extends StreamNotifier<User?> {
     }
 
     return await future;
+  }
+
+  void updateCurrentUser(User? user) {
+    state = AsyncValue.data(user);
+  }
+
+  Future<void> handleSessionInvalidation({bool showMessage = true}) async {
+    await _sessionCoordinator.handleSessionInvalidation(showMessage: showMessage);
   }
 
   Future<void> _runAuthAction(

@@ -149,6 +149,11 @@ class TestAuthRepository implements IAuthRepository {
   Future<User?> get currentUser async {
     return _currentUser;
   }
+
+  @override
+  Future<User?> validateSession() async {
+    return _currentUser;
+  }
   
   @override
   Stream<User?> get authStateChanges {

@@ -20,6 +20,16 @@ abstract class IAuthRepository {
   /// Fail Fast：
   /// - 如果认证服务未初始化，应抛出 StateError
   Future<User?> get currentUser;
+
+  /// 主动向远端校验当前会话是否仍然有效。
+  ///
+  /// 返回：
+  /// - 当前会话有效时返回最新用户对象
+  /// - 会话失效时返回 null，并由实现清理本地认证数据
+  ///
+  /// 调用者：
+  /// - AuthSessionMonitorService：前台恢复/定时验活
+  Future<User?> validateSession();
   
   /// 监听认证状态变化
   /// 

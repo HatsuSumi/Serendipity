@@ -54,6 +54,20 @@ class CustomServerAuthRepository implements IAuthRepository {
   }
   
   @override
+  Future<User?> validateSession() async {
+    try {
+      final response = await _remoteDataSource.fetchCurrentUser();
+      final data = response['data'] as Map<String, dynamic>;
+      final user = _userMapper.fromResponse(data);
+      _session.setCurrentUser(user);
+      return user;
+    } catch (_) {
+      await _session.clearSession();
+      return null;
+    }
+  }
+
+  @override
   Future<User> signInWithEmail(String email, String password) async {
     ValidationHelper.validateEmailForRepository(email);
     ValidationHelper.validatePasswordForRepository(password);

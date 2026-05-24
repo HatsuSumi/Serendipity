@@ -10,6 +10,7 @@ import 'core/services/notification_service.dart';
 import 'core/services/network_monitor_service.dart';
 import 'core/services/push_token_sync_service.dart';
 import 'core/repositories/check_in_repository.dart';
+import 'core/providers/auth_session_monitor_service.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/first_launch_provider.dart';
@@ -154,6 +155,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     // 启动网络监听（在下一帧执行，避免在构建期间访问 Provider）
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(networkMonitorServiceProvider).startMonitoring(ref);
+      ref.read(authSessionMonitorServiceProvider).start();
       unawaited(ref.read(pushTokenSyncServiceProvider).initialize());
       unawaited(ref.read(notificationServiceProvider).cancelCheckInReminder());
     });
@@ -164,6 +166,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     // 停止网络监听
     ref.read(networkMonitorServiceProvider).stopMonitoring();
+    ref.read(authSessionMonitorServiceProvider).stop();
     unawaited(ref.read(pushTokenSyncServiceProvider).dispose());
     super.dispose();
   }
@@ -172,6 +175,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(ref.read(notificationServiceProvider).cancelCheckInReminder());
+      unawaited(ref.read(authSessionMonitorServiceProvider).onAppResumed());
     }
   }
 

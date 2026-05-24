@@ -8,6 +8,7 @@ import 'auth_dependencies_provider.dart';
 import 'auth_events_provider.dart';
 import 'check_in_provider.dart';
 import 'community_provider.dart';
+import 'message_provider.dart';
 import 'records_provider.dart';
 import 'story_lines_provider.dart';
 
@@ -80,6 +81,17 @@ class AuthSessionCoordinator {
     }
   }
 
+  Future<void> handleSessionInvalidation({bool showMessage = true}) async {
+    final storageService = ref.read(storageServiceProvider);
+    await storageService.clearAuthData();
+    repository.invalidateUserCache();
+    if (showMessage) {
+      ref.read(messageProvider.notifier).showError('你的账号已在其他设备登录，请重新登录');
+    }
+    setState(const AsyncValue.data(null));
+    invalidateDataProviders();
+  }
+
   Future<void> deleteAccount(String password) async {
     if (password.isEmpty) {
       throw ArgumentError('密码不能为空');
@@ -106,4 +118,3 @@ class AuthSessionCoordinator {
     invalidateDataProviders();
   }
 }
-
