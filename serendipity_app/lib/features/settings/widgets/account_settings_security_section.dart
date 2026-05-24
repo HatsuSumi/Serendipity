@@ -43,16 +43,14 @@ class AccountSettingsSecuritySection extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: onUpdatePhone,
           ),
-        if (user.email != null)
-          ListTile(
-            leading: const Icon(Icons.vpn_key_outlined),
-            title: const Text('恢复密钥'),
-            subtitle: const Text('用于找回密码'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: onShowRecoveryKey,
-          ),
+        ListTile(
+          leading: const Icon(Icons.vpn_key_outlined),
+          title: const Text('恢复密钥'),
+          subtitle: const Text('用于找回密码'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: onShowRecoveryKey,
+        ),
       ],
     );
   }
 }
-
