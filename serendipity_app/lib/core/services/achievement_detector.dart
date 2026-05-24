@@ -1,4 +1,4 @@
-import '../../models/encounter_record.dart';
+import '../../../models/encounter_record.dart';
 import '../repositories/achievement_repository.dart';
 import '../repositories/record_repository.dart';
 import '../repositories/story_line_repository.dart';
@@ -10,20 +10,14 @@ import 'checkers/story_line_achievement_checker.dart';
 import 'checkers/community_achievement_checker.dart';
 
 /// 成就检测服务（协调器）
-/// 
-/// 负责协调各个成就检测器，统一对外提供成就检测接口
-/// 
-/// 调用者：
-/// - RecordsProvider：记录操作后检测成就
-/// - StoryLinesProvider：故事线操作后检测成就
-/// - CheckInProvider：签到后检测成就
-/// - CommunityProvider：发布到社区后检测成就
-/// 
-/// 设计原则：
-/// - 单一职责：只负责协调各个检测器，不包含具体检测逻辑
-/// - 依赖注入：通过构造函数注入依赖
-/// - 开闭原则：新增成就类型时，只需添加新的检测器，不修改协调器
+///
+/// 负责协调各个成就检测器，统一对外提供成就检测接口。
+///
+/// 设计说明：
+/// - 成就定义初始化属于成就域前置条件，应由成就域自身保证
+/// - 调用方只负责表达“此刻需要检测哪类成就”，不需要关心初始化细节
 class AchievementDetector {
+  final AchievementRepository _achievementRepository;
   final RecordAchievementChecker _recordChecker;
   final CheckInAchievementChecker _checkInChecker;
   final StoryLineAchievementChecker _storyLineChecker;
@@ -35,7 +29,8 @@ class AchievementDetector {
     StoryLineRepository storyLineRepository,
     CheckInRepository checkInRepository,
     CommunityRepository communityRepository,
-  )   : _recordChecker = RecordAchievementChecker(
+  )   : _achievementRepository = achievementRepository,
+        _recordChecker = RecordAchievementChecker(
           achievementRepository,
           recordRepository,
         ),
@@ -52,61 +47,35 @@ class AchievementDetector {
           communityRepository,
         );
 
-  /// 检测记录相关成就
-  /// 
-  /// 在创建或更新记录后调用
-  /// 返回新解锁的成就ID列表
-  /// 
-  /// 参数：
-  /// - record: 当前创建或更新的记录
-  /// - userId: 当前用户ID（用于数据隔离）
-  /// 
-  /// Fail Fast：
-  /// - userId 为空：由 RecordAchievementChecker 抛出异常
-  Future<List<String>> checkRecordAchievements(EncounterRecord record, String userId) async {
+  Future<void> _ensureInitialized() async {
+    await _achievementRepository.initialize();
+  }
+
+  Future<List<String>> checkRecordAchievements(
+    EncounterRecord record,
+    String userId,
+  ) async {
+    await _ensureInitialized();
     return await _recordChecker.check(record, userId);
   }
 
-  /// 检测签到相关成就
-  /// 
-  /// 在签到后调用
-  /// 返回新解锁的成就ID列表
-  /// 
-  /// 参数：
-  /// - userId: 当前用户ID（用于数据隔离）
-  /// 
-  /// Fail Fast：
-  /// - userId 为空：由 CheckInAchievementChecker 抛出异常
+  Future<List<String>> checkRecordAchievementsForUser(String userId) async {
+    await _ensureInitialized();
+    return await _recordChecker.checkAll(userId);
+  }
+
   Future<List<String>> checkCheckInAchievements(String userId) async {
+    await _ensureInitialized();
     return await _checkInChecker.check(userId);
   }
 
-  /// 检测故事线相关成就
-  /// 
-  /// 在创建或更新故事线后调用
-  /// 返回新解锁的成就ID列表
-  /// 
-  /// 参数：
-  /// - userId: 当前用户ID（用于数据隔离）
-  /// 
-  /// Fail Fast：
-  /// - userId 为空：由 StoryLineAchievementChecker 抛出异常
   Future<List<String>> checkStoryLineAchievements(String userId) async {
+    await _ensureInitialized();
     return await _storyLineChecker.check(userId);
   }
 
-  /// 检测社区相关成就
-  /// 
-  /// 在发布到社区后调用
-  /// 
-  /// 参数：
-  /// - userId: 当前用户ID
-  /// 
-  /// 返回：新解锁的成就ID列表
-  /// 
-  /// Fail Fast：
-  /// - 如果 userId 为空，由 CommunityAchievementChecker 抛出异常
   Future<List<String>> checkCommunityAchievements(String userId) async {
+    await _ensureInitialized();
     return await _communityChecker.check(userId);
   }
 }

@@ -31,18 +31,39 @@ class CheckInCard extends ConsumerStatefulWidget {
 }
 
 class _CheckInCardState extends ConsumerState<CheckInCard> {
-  late final ProviderSubscription<int> _checkInSuccessSubscription;
+  late final ProviderSubscription<AsyncValue<CheckInState>>
+      _checkInSubscription;
+  bool _hasTriggeredCheckInFeedback = false;
 
   @override
   void initState() {
     super.initState();
-    _checkInSuccessSubscription = ref.listenManual<int>(
-      checkInSuccessEventProvider,
+    _checkInSubscription = ref.listenManual<AsyncValue<CheckInState>>(
+      checkInProvider,
       (previous, next) {
-        if (previous == null || next == previous) {
+        final previousState = previous?.valueOrNull;
+        final nextState = next.valueOrNull;
+
+        if (nextState == null) {
           return;
         }
 
+        if (!nextState.hasCheckedInToday) {
+          _hasTriggeredCheckInFeedback = false;
+        }
+
+        if (previousState == null) {
+          return;
+        }
+
+        final becameCheckedIn =
+            !previousState.hasCheckedInToday && nextState.hasCheckedInToday;
+
+        if (!becameCheckedIn || _hasTriggeredCheckInFeedback) {
+          return;
+        }
+
+        _hasTriggeredCheckInFeedback = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -55,7 +76,7 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
 
   @override
   void dispose() {
-    _checkInSuccessSubscription.close();
+    _checkInSubscription.close();
     super.dispose();
   }
 
@@ -243,57 +264,45 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
   }
 
   Widget _buildStreakIndicator(CheckInState state, ColorScheme colorScheme) {
+    final days = state.consecutiveDays;
+    final maxDots = 7;
+    final filledDots = days.clamp(0, maxDots);
+
     return Row(
-      children: [
-        Text(
-          '${state.totalDays}',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: state.hasCheckedInToday
-                ? colorScheme.onSurface
-                : colorScheme.onPrimaryContainer,
+      children: List.generate(maxDots, (index) {
+        final isFilled = index < filledDots;
+        return Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isFilled
+                  ? Colors.green
+                  : (state.hasCheckedInToday
+                      ? colorScheme.onSurface.withValues(alpha: 0.1)
+                      : colorScheme.onPrimaryContainer.withValues(alpha: 0.2)),
+            ),
+            child: isFilled
+                ? const Icon(
+                    Icons.check,
+                    size: 12,
+                    color: Colors.white,
+                  )
+                : null,
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '累计签到天数',
-          style: TextStyle(
-            fontSize: 14,
-            color: state.hasCheckedInToday
-                ? colorScheme.onSurface.withValues(alpha: 0.7)
-                : colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBadgeWidget(int consecutiveDays, ColorScheme colorScheme) {
-    final badge = CheckInBadgeHelper.getBadge(consecutiveDays);
-
-    return GestureDetector(
-      onTap: () => _showBadgeDialog(badge, colorScheme),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: colorScheme.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          badge.icon,
-          style: const TextStyle(fontSize: 14),
-        ),
-      ),
+        );
+      }),
     );
   }
 
   Widget _buildCheckInButton(CheckInState state, ColorScheme colorScheme) {
     if (state.hasCheckedInToday) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: 0.7),
+          color: colorScheme.surface.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -301,13 +310,14 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
           style: TextStyle(
             fontSize: 14,
             color: colorScheme.onSurface.withValues(alpha: 0.6),
-            fontWeight: FontWeight.w600,
           ),
         ),
       );
     }
 
-    return CheckInButton(colorScheme: colorScheme);
+    return CheckInButton(
+      colorScheme: colorScheme,
+    );
   }
 
   Future<void> _playCheckInSuccessFeedback() async {
@@ -320,27 +330,73 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
       widget.confettiController!.play();
     }
 
-    if (mounted && context.mounted) {
-      MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+    if (!mounted || !context.mounted) {
+      return;
     }
-  }
 
-  Future<void> _showBadgeDialog(CheckInBadgeLevel badge, ColorScheme colorScheme) {
-    return DialogHelper.show(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Text(badge.icon, style: const TextStyle(fontSize: 28)),
-            const SizedBox(width: 8),
-            Expanded(child: Text(badge.name)),
+    final checkInState = ref.read(checkInProvider).value;
+    final consecutiveDays = checkInState?.consecutiveDays ?? 0;
+    final totalDays = checkInState?.totalDays ?? 0;
+
+    if (consecutiveDays == 1 && totalDays > 1) {
+      final recentCheckIns = checkInState?.recentCheckIns ?? [];
+      int gapDays = 0;
+      if (recentCheckIns.length >= 2) {
+        final today = DateTime.now();
+        final todayDate = DateTime(today.year, today.month, today.day);
+        final lastDate = recentCheckIns[1].date;
+        gapDays = todayDate.difference(lastDate).inDays - 1;
+      }
+      final gapText = gapDays > 0 ? '你消失了 $gapDays 天。\n\n' : '';
+      DialogHelper.show<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          content: Text(
+            '$gapText那段时间，\n是发生了什么，\n还是什么都没发生？',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.8,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('没什么'),
+            ),
           ],
         ),
-        content: Text('连续签到 ${badge.minDays} 天以上可获得该徽章。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('知道了'),
+      );
+      return;
+    }
+
+    MessageHelper.showSuccess(context, '签到成功！今天也要加油哦 ✨');
+  }
+
+  Widget _buildBadgeWidget(int consecutiveDays, ColorScheme colorScheme) {
+    final badge = CheckInBadgeHelper.getBadge(consecutiveDays);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            badge.icon,
+            style: const TextStyle(fontSize: 10),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            badge.name,
+            style: TextStyle(
+              fontSize: 10,
+              color: colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

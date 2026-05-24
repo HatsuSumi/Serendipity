@@ -17,6 +17,8 @@ import '../providers/achievement_provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/auth_error_helper.dart';
 import 'achievement_sync_service.dart';
+import 'achievement_recalculation_service.dart';
+import 'achievement_detector.dart';
 import 'check_in_sync_service.dart';
 import 'i_storage_service.dart';
 import 'membership_sync_service.dart';
@@ -58,6 +60,7 @@ class SyncService {
   final UserSettingsSyncService _userSettingsSyncService;
   final MembershipSyncService _membershipSyncService;
   final AchievementSyncService _achievementSyncService;
+  final AchievementRecalculationService _achievementRecalculationService;
   final CheckInSyncService _checkInSyncService;
   final RecordSyncService _recordSyncService;
   final StoryLineSyncService _storyLineSyncService;
@@ -69,6 +72,7 @@ class SyncService {
     required IRemoteDataRepository remoteRepository,
     required IStorageService storageService,
     required AchievementRepository achievementRepository,
+    required AchievementDetector achievementDetector,
   })  : _userSettingsSyncService = UserSettingsSyncService(
           remoteRepository: remoteRepository,
           storageService: storageService,
@@ -80,6 +84,9 @@ class SyncService {
         _achievementSyncService = AchievementSyncService(
           remoteRepository: remoteRepository,
           achievementRepository: achievementRepository,
+        ),
+        _achievementRecalculationService = AchievementRecalculationService(
+          achievementDetector: achievementDetector,
         ),
         _checkInSyncService = CheckInSyncService(
           remoteRepository: remoteRepository,
@@ -339,8 +346,12 @@ class SyncService {
       // 5. 同步成就解锁状态（静默，不触发通知）
       onProgress?.call('正在同步成就...');
       final syncedAchievements = await _syncAchievementUnlocks(user);
+
+      // 6. 基于最新本地数据重算成就进度，并补传重算中新解锁的成就
+      final recalculatedAchievements = await _recalculateAchievements(user);
+      await _uploadRecalculatedAchievementUnlocks(user, recalculatedAchievements);
       
-      // 6. 构建同步结果统计
+      // 7. 构建同步结果统计
       final result = SyncResult(
         uploadedRecords: uploadStats.records,
         uploadedStoryLines: uploadStats.storyLines,
@@ -483,7 +494,31 @@ class SyncService {
   Future<int> _syncAchievementUnlocks(User user) async {
     return await _achievementSyncService.syncAchievementUnlocks(user);
   }
-  
+
+  Future<List<String>> _recalculateAchievements(User user) async {
+    return await _achievementRecalculationService.recalculateForUser(user);
+  }
+
+  Future<void> _uploadRecalculatedAchievementUnlocks(
+    User user,
+    List<String> achievementIds,
+  ) async {
+    if (achievementIds.isEmpty) {
+      return;
+    }
+
+    final now = DateTime.now();
+    for (final achievementId in achievementIds) {
+      await _achievementSyncService.uploadAchievementUnlock(
+        AchievementUnlock(
+          userId: user.id,
+          achievementId: achievementId,
+          unlockedAt: now,
+        ),
+      );
+    }
+  }
+
   /// 同步会员信息
   ///
   /// 会员数据以服务端为真源：
@@ -532,6 +567,7 @@ final syncServiceProvider = Provider<SyncService>((ref) {
     remoteRepository: ref.read(remoteDataRepositoryProvider),
     storageService: ref.read(storageServiceProvider),
     achievementRepository: ref.read(achievementRepositoryProvider),
+    achievementDetector: ref.read(achievementDetectorProvider),
   );
 });
 

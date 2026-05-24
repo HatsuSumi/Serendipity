@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user.dart';
 import '../../models/sync_history.dart';
+import '../providers/achievement_provider.dart';
 import '../providers/records_provider.dart';
 import 'sync_result.dart';
 import 'sync_service.dart';
@@ -97,6 +98,8 @@ class SyncOrchestrator {
             source: source,
             onProgress: onProgress,
           );
+
+          ref.invalidate(achievementsProvider);
           
           // 同步成功，通知所有监听者
           _notifySyncCompleted(ref);
@@ -164,4 +167,3 @@ class SyncOrchestrator {
 final syncOrchestratorProvider = Provider<SyncOrchestrator>((ref) {
   return SyncOrchestrator();
 });
-

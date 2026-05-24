@@ -58,9 +58,6 @@ class RecordsCommandNotifier extends AsyncNotifier<void> {
         return;
       }
 
-      final achievementRepo = ref.read(achievementRepositoryProvider);
-      await achievementRepo.initialize();
-
       final detector = ref.read(achievementDetectorProvider);
       final unlockedAchievements = await detector.checkRecordAchievements(record, currentUser.id);
 

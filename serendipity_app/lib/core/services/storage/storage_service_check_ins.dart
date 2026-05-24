@@ -4,7 +4,10 @@ mixin _StorageServiceCheckIns on _StorageServiceCore {
   @override
   Future<void> saveCheckIn(CheckInRecord checkIn) async {
     assert(checkIn.id.isNotEmpty, 'CheckIn ID cannot be empty');
-    await checkInsBoxOrThrow.put(checkIn.id, checkIn);
+    final normalizedCheckIn = checkIn.copyWith(
+      date: DateTime(checkIn.date.year, checkIn.date.month, checkIn.date.day),
+    );
+    await checkInsBoxOrThrow.put(normalizedCheckIn.id, normalizedCheckIn);
   }
 
   @override

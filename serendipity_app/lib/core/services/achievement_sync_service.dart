@@ -26,6 +26,7 @@ class AchievementSyncService {
 
   Future<int> syncAchievementUnlocks(User user) async {
     try {
+      await _achievementRepository.initialize();
       final remoteUnlocks = await _remoteRepository.downloadAchievementUnlocks(user.id);
       final newlyUnlocked = await _achievementRepository.syncAchievementUnlocks(remoteUnlocks);
       return newlyUnlocked;

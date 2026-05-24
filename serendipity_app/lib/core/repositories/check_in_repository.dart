@@ -75,57 +75,36 @@ class CheckInRepository {
   /// 
   /// 调用者：CheckInProvider.checkIn()
   Future<CheckInRecord> checkIn({String? userId}) async {
-    // 按用户+日期去重，避免不同用户互相覆盖
     if (hasCheckedInToday(userId: userId)) {
       throw StateError('Already checked in today');
     }
-    
-    // 创建签到记录（传入 userId）
+
     final checkIn = CheckInRecord.create(userId: userId);
     await _storageService.saveCheckIn(checkIn);
-    
+
     return checkIn;
   }
 
   /// 检查今天是否已签到
-  /// 
-  /// 参数：
-  /// - userId: 用户ID（可选，未登录时为 null）
-  /// 
-  /// 修复：按用户过滤，避免用户 A 签到后用户 B 误判为已签到
   bool hasCheckedInToday({String? userId}) {
     final today = _getTodayDate();
     final userCheckIns = _storageService.getCheckInsByUser(userId);
-    return userCheckIns.any((c) => c.date == today);
+    return userCheckIns.any((c) => _normalizeDate(c.date) == today);
   }
 
   /// 获取签到记录列表（按日期倒序）
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示获取离线数据（未绑定账号）
   List<CheckInRecord> getCheckInsSortedByDate({String? userId}) {
     return _storageService.getCheckInsByUser(userId);
   }
 
   /// 计算连续签到天数
-  /// 
-  /// 从今天往前推，连续有签到的天数
-  /// 如果今天没有签到，返回0
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示离线数据
-  /// 
-  /// 时间复杂度：O(n)，其中 n 是签到记录总数
   int calculateConsecutiveDays({String? userId}) {
     final checkIns = _storageService.getCheckInsByUser(userId);
     if (checkIns.isEmpty) return 0;
 
-    // 使用 Set 提高查找效率（O(1) vs O(n)）
-    final checkInDatesSet = checkIns.map((c) => c.date).toSet();
-
+    final checkInDatesSet = checkIns.map((c) => _normalizeDate(c.date)).toSet();
     final today = _getTodayDate();
 
-    // 如果今天没有签到，返回0
     if (!checkInDatesSet.contains(today)) {
       return 0;
     }
@@ -133,7 +112,6 @@ class CheckInRepository {
     int consecutiveDays = 1;
     DateTime currentDate = today;
 
-    // 从今天往前推，检查每一天是否签到
     while (true) {
       final previousDate = currentDate.subtract(const Duration(days: 1));
       if (checkInDatesSet.contains(previousDate)) {
@@ -148,19 +126,11 @@ class CheckInRepository {
   }
 
   /// 计算用于提醒文案的连续签到天数
-  /// 
-  /// 与 calculateConsecutiveDays() 的区别：
-  /// - 若今天已签到：返回包含今天在内的连续天数
-  /// - 若今天未签到但昨天已签到：返回截至昨天的连续天数
-  /// - 若今天和昨天都未签到：返回 0
-  /// 
-  /// 该方法用于“提醒去签到”的场景，避免用户今天尚未签到时
-  /// 被误判为“重新开始签到”。
   int calculateReminderStreakDays({String? userId}) {
     final checkIns = _storageService.getCheckInsByUser(userId);
     if (checkIns.isEmpty) return 0;
 
-    final checkInDatesSet = checkIns.map((c) => c.date).toSet();
+    final checkInDatesSet = checkIns.map((c) => _normalizeDate(c.date)).toSet();
     final today = _getTodayDate();
     final yesterday = today.subtract(const Duration(days: 1));
 
@@ -197,43 +167,32 @@ class CheckInRepository {
   }
 
   /// 获取累计签到天数
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示离线数据
   int getTotalCheckInDays({String? userId}) {
     return _storageService.getCheckInsByUser(userId).length;
   }
 
   /// 获取本月签到天数
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示离线数据
   int getCurrentMonthCheckInDays({String? userId}) {
     final now = DateTime.now();
     final checkIns = _storageService.getCheckInsByUser(userId);
-    
+
     return checkIns.where((c) {
-      return c.date.year == now.year && c.date.month == now.month;
+      final normalizedDate = _normalizeDate(c.date);
+      return normalizedDate.year == now.year && normalizedDate.month == now.month;
     }).length;
   }
 
   /// 获取指定月份的签到日期列表
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示离线数据
   List<DateTime> getCheckInDatesInMonth(int year, int month, {String? userId}) {
     final checkIns = _storageService.getCheckInsByUser(userId);
 
     return checkIns
-        .where((c) => c.date.year == year && c.date.month == month)
-        .map((c) => c.date)
+        .map((c) => _normalizeDate(c.date))
+        .where((date) => date.year == year && date.month == month)
         .toList();
   }
 
   /// 获取累计签到日期范围
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示离线数据
   CheckInDateRange getCheckInDateRange({String? userId}) {
     final checkIns = _storageService.getCheckInsByUser(userId);
     if (checkIns.isEmpty) {
@@ -241,7 +200,7 @@ class CheckInRepository {
     }
 
     final sortedDates = checkIns
-        .map((record) => record.date)
+        .map((record) => _normalizeDate(record.date))
         .toSet()
         .toList()
       ..sort();
@@ -253,9 +212,6 @@ class CheckInRepository {
   }
 
   /// 计算最长连续签到摘要
-  /// 
-  /// 参数：
-  /// - userId: 用户ID，null 表示离线数据
   CheckInStreakSummary calculateLongestConsecutiveStreak({String? userId}) {
     final checkIns = _storageService.getCheckInsByUser(userId);
     if (checkIns.isEmpty) {
@@ -267,7 +223,7 @@ class CheckInRepository {
     }
 
     final sortedDates = checkIns
-        .map((record) => record.date)
+        .map((record) => _normalizeDate(record.date))
         .toSet()
         .toList()
       ..sort();
@@ -283,8 +239,7 @@ class CheckInRepository {
     for (var i = 1; i < sortedDates.length; i++) {
       final date = sortedDates[i];
       final previousDate = sortedDates[i - 1];
-      final isConsecutive =
-          date.difference(previousDate).inDays == 1;
+      final isConsecutive = date.difference(previousDate).inDays == 1;
 
       if (isConsecutive) {
         currentEnd = date;
@@ -314,10 +269,13 @@ class CheckInRepository {
     );
   }
 
-  /// 获取今天的日期（只保留年月日）
   DateTime _getTodayDate() {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
+  }
+
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
   }
 
   String _remoteStatusCacheKey(String userId, DateTime month) {
