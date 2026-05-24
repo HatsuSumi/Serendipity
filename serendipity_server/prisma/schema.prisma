@@ -17,6 +17,7 @@ model User {
   avatarUrl            String?                     @map("avatar_url")
   createdAt            DateTime                    @default(now()) @map("created_at")
   updatedAt            DateTime                    @updatedAt @map("updated_at")
+  tokenVersion         Int                         @default(0) @map("token_version")
   lastLoginAt          DateTime?                   @map("last_login_at")
   achievementUnlocks   AchievementUnlock[]
   anniversaryReminderDispatches AnniversaryReminderDispatch[]

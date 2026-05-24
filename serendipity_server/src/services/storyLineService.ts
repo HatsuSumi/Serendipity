@@ -22,7 +22,7 @@ export interface IStoryLineService {
   createStoryLine(
     userId: string,
     data: CreateStoryLineDto
-  ): Promise<StoryLineResponseDto>;
+): Promise<StoryLineResponseDto>;
 
   batchCreateStoryLines(
     userId: string,

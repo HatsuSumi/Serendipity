@@ -165,6 +165,19 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   /// 将记录关联到故事线
   Future<void> linkRecord(String recordId, String storyLineId) async {
     await _repository.linkRecord(recordId, storyLineId);
+
+    // 同步到云端（记录关联需要跨设备一致）
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      final storyLine = _repository.getStoryLine(storyLineId);
+      if (storyLine != null) {
+        try {
+          await _syncService.updateStoryLine(currentUser, storyLine);
+        } catch (_) {
+          // 云端同步失败不影响本地关联，用户后续可通过手动同步补齐
+        }
+      }
+    }
     
     // 检测成就
     try {
@@ -196,10 +209,23 @@ class StoryLinesNotifier extends AsyncNotifier<List<StoryLine>> {
   /// 从故事线移除记录
   Future<void> unlinkRecord(String recordId, String storyLineId) async {
     await _repository.unlinkRecord(recordId, storyLineId);
-    
+
+    // 同步到云端（记录移除需要跨设备一致）
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      final storyLine = _repository.getStoryLine(storyLineId);
+      if (storyLine != null) {
+        try {
+          await _syncService.updateStoryLine(currentUser, storyLine);
+        } catch (_) {
+          // 云端同步失败不影响本地移除，用户后续可通过手动同步补齐
+        }
+      }
+    }
+
     // 刷新故事线列表
     await refresh();
-    
+
     // 刷新记录列表（重要！确保记录的 storyLineId 更新）
     ref.invalidate(recordsProvider);
   }

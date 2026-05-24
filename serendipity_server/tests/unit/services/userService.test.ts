@@ -40,6 +40,7 @@ describe('UserService', () => {
       updateUser: jest.fn(),
       updateDisplayName: jest.fn(),
       updateAvatarUrl: jest.fn(),
+      incrementTokenVersion: jest.fn(),
       bindEmail: jest.fn(),
       bindPhone: jest.fn(),
       updatePassword: jest.fn(),

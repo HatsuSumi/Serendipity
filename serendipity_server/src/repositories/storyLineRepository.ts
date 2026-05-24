@@ -112,7 +112,7 @@ export class StoryLineRepository implements IStoryLineRepository {
     const [storylines, total] = await Promise.all([
       this.prisma.storyLine.findMany({
         where,
-        select: storyLineSyncSelect,  
+        select: storyLineSyncSelect,
         orderBy: { updatedAt: 'desc' },
         take: limit,
         skip: offset,

@@ -4,6 +4,7 @@ import { config } from '../config';
 export interface JwtPayload {
   userId: string;
   deviceId: string;
+  tokenVersion: number;
   email?: string;
   phone?: string;
 }
@@ -40,6 +41,4 @@ export class JwtService {
   }
 }
 
-// 导出单例实例
 export const jwtService = new JwtService();
-

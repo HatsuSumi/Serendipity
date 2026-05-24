@@ -1,5 +1,6 @@
 import { User } from '@prisma/client';
 import { IRefreshTokenRepository } from '../repositories/refreshTokenRepository';
+import { IUserRepository } from '../repositories/userRepository';
 import { JwtService, JwtPayload } from './jwtService';
 import { AuthResponseDto } from '../types/auth.dto';
 import { AppError } from '../middlewares/errorHandler';
@@ -9,9 +10,13 @@ import { toAuthUserDto } from '../types/user.mapper';
 
 export class AuthSessionService {
   constructor(
+    private readonly userRepository: IUserRepository,
     private readonly refreshTokenRepository: IRefreshTokenRepository,
     private readonly jwtService: JwtService,
   ) {
+    if (!userRepository) {
+      throw new Error('UserRepository is required');
+    }
     if (!refreshTokenRepository) {
       throw new Error('RefreshTokenRepository is required');
     }
@@ -29,7 +34,10 @@ export class AuthSessionService {
     }
 
     await this.refreshTokenRepository.deleteByToken(refreshToken);
-    return this.generateAuthResponse(user, deviceId);
+    return this.buildAuthResponse(user, deviceId, {
+      deleteOldTokens: false,
+      bumpSessionVersion: false,
+    });
   }
 
   async logout(userId: string): Promise<void> {
@@ -43,6 +51,7 @@ export class AuthSessionService {
   generateAuthResponse(user: User, deviceId: string): Promise<AuthResponseDto> {
     return this.buildAuthResponse(user, deviceId, {
       deleteOldTokens: true,
+      bumpSessionVersion: true,
     });
   }
 
@@ -53,6 +62,7 @@ export class AuthSessionService {
   ): Promise<AuthResponseDto> {
     return this.buildAuthResponse(user, deviceId, {
       deleteOldTokens: false,
+      bumpSessionVersion: true,
       recoveryKey,
     });
   }
@@ -60,13 +70,18 @@ export class AuthSessionService {
   private async buildAuthResponse(
     user: User,
     deviceId: string,
-    options: { deleteOldTokens: boolean; recoveryKey?: string },
+    options: { deleteOldTokens: boolean; bumpSessionVersion: boolean; recoveryKey?: string },
   ): Promise<AuthResponseDto> {
+    const activeUser = options.bumpSessionVersion
+      ? await this.userRepository.incrementTokenVersion(user.id)
+      : user;
+
     const payload: JwtPayload = {
-      userId: user.id,
+      userId: activeUser.id,
       deviceId,
-      email: user.email || undefined,
-      phone: user.phoneNumber || undefined,
+      tokenVersion: activeUser.tokenVersion,
+      email: activeUser.email || undefined,
+      phone: activeUser.phoneNumber || undefined,
     };
 
     const accessToken = this.jwtService.generateToken(payload);
@@ -75,14 +90,14 @@ export class AuthSessionService {
       Date.now() + AUTH_CONFIG.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
     );
 
-    await this.refreshTokenRepository.createOrReplace(user.id, refreshToken, expiresAt, deviceId);
+    await this.refreshTokenRepository.createOrReplace(activeUser.id, refreshToken, expiresAt, deviceId);
 
     if (options.deleteOldTokens) {
-      await this.refreshTokenRepository.deleteAllExceptNewest(user.id);
+      await this.refreshTokenRepository.deleteAllExceptNewest(activeUser.id);
     }
 
     return {
-      user: toAuthUserDto(user),
+      user: toAuthUserDto(activeUser),
       tokens: {
         accessToken,
         refreshToken,
@@ -93,4 +108,3 @@ export class AuthSessionService {
     };
   }
 }
-

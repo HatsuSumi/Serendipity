@@ -38,6 +38,7 @@ export interface IUserRepository {
   updateUser(id: string, data: UpdateUserData): Promise<User>;
   updateDisplayName(id: string, displayName: string): Promise<User>;
   updateAvatarUrl(id: string, avatarUrl: string): Promise<User>;
+  incrementTokenVersion(id: string): Promise<User>;
   
   // 认证相关方法
   bindEmail(id: string, email: string): Promise<User>;
@@ -162,6 +163,20 @@ export class UserRepository implements IUserRepository {
   }
 
   /**
+   * 增加会话版本号，用于让旧 Access Token 失效
+   */
+  async incrementTokenVersion(id: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        tokenVersion: {
+          increment: 1,
+        },
+      },
+    });
+  }
+
+  /**
    * 绑定邮箱
    * @param id - 用户 ID
    * @param email - 邮箱地址
@@ -238,4 +253,3 @@ export class UserRepository implements IUserRepository {
     });
   }
 }
-

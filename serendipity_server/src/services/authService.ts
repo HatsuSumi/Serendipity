@@ -69,7 +69,7 @@ export class AuthService implements IAuthService {
     private passwordHasher: IPasswordHasher
   ) {
     this.authServiceSupport = new AuthServiceSupport(this.userRepository, this.passwordHasher);
-    this.authSessionService = new AuthSessionService(this.refreshTokenRepository, this.jwtService);
+    this.authSessionService = new AuthSessionService(this.userRepository, this.refreshTokenRepository, this.jwtService);
     this.authAccessService = new AuthAccessService(
       this.userRepository,
       this.passwordHasher,

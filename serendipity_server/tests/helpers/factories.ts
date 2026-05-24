@@ -12,6 +12,7 @@ export const createMockUser = (overrides?: Partial<User>): User => ({
   avatarUrl: null,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
+  tokenVersion: 0,
   lastLoginAt: null,
   ...overrides,
 });
