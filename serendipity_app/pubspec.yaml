@@ -85,6 +85,9 @@ dependencies:
   # 图片裁剪（头像裁剪）
   image_cropper: ^12.2.0
 
+  # 更可靠的跨设备振动反馈
+  vibration: ^3.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
