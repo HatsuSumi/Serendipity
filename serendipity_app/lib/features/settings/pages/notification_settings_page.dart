@@ -20,7 +20,8 @@ class NotificationSettingsPage extends ConsumerWidget {
     final membershipAsync = ref.watch(membershipProvider);
     final isLoggedIn = authState.valueOrNull != null;
     final canUseCheckInReminder = isLoggedIn;
-    final canConfigureCheckInReminder = isLoggedIn && settings.checkInReminderEnabled;
+    final canConfigureCheckInReminder =
+        isLoggedIn && settings.checkInReminderEnabled;
 
     final canUseAnniversaryReminder = membershipAsync.when(
       data: (info) => isLoggedIn && info.canUseAnniversaryReminder,
@@ -32,7 +33,6 @@ class NotificationSettingsPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('提醒设置')),
       body: ListView(
         children: [
-          // ── 签到提醒 ──────────────────────────────────────────
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
@@ -40,7 +40,6 @@ class NotificationSettingsPage extends ConsumerWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-
           SwitchListTile(
             title: Row(
               children: [
@@ -55,9 +54,7 @@ class NotificationSettingsPage extends ConsumerWidget {
               ],
             ),
             subtitle: Text(
-              canUseCheckInReminder
-                  ? '每天提醒你签到'
-                  : '登录后可开启签到提醒',
+              canUseCheckInReminder ? '每天提醒你签到' : '登录后可开启签到提醒',
             ),
             value: canUseCheckInReminder && settings.checkInReminderEnabled,
             onChanged: (value) async {
@@ -76,7 +73,6 @@ class NotificationSettingsPage extends ConsumerWidget {
               }
             },
           ),
-
           ListTile(
             title: const Text('提醒时间'),
             subtitle: Text(
@@ -92,7 +88,17 @@ class NotificationSettingsPage extends ConsumerWidget {
                     )
                 : null,
           ),
-
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              '提醒时间可能不会生效，别太依赖此功能。',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.outline,
+                height: 1.4,
+              ),
+            ),
+          ),
           SwitchListTile(
             title: const Text('签到震动'),
             subtitle: Text(
@@ -109,7 +115,17 @@ class NotificationSettingsPage extends ConsumerWidget {
                     MessageHelper.showWarning(context, '请先登录后再配置签到提醒');
                   },
           ),
-
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              '在部分机型上可能不会生效。当前测试中小米可以，OPPO 和荣耀暂未生效。',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.outline,
+                height: 1.4,
+              ),
+            ),
+          ),
           SwitchListTile(
             title: const Text('签到粒子特效'),
             subtitle: Text(
@@ -126,10 +142,7 @@ class NotificationSettingsPage extends ConsumerWidget {
                     MessageHelper.showWarning(context, '请先登录后再配置签到提醒');
                   },
           ),
-
           const Divider(),
-
-          // ── 纪念日提醒 ────────────────────────────────────────
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
@@ -137,7 +150,6 @@ class NotificationSettingsPage extends ConsumerWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-
           SwitchListTile(
             title: Row(
               children: [
@@ -155,8 +167,8 @@ class NotificationSettingsPage extends ConsumerWidget {
               canUseAnniversaryReminder
                   ? '每次"邂逅"记录的周年纪念日当天提醒'
                   : isLoggedIn
-                  ? '会员专属功能，升级后可使用'
-                  : '登录后可开启纪念日提醒',
+                      ? '会员专属功能，升级后可使用'
+                      : '登录后可开启纪念日提醒',
             ),
             value: canUseAnniversaryReminder && settings.anniversaryReminder,
             onChanged: (value) async {
@@ -179,7 +191,6 @@ class NotificationSettingsPage extends ConsumerWidget {
               }
             },
           ),
-
           const SizedBox(height: 32),
         ],
       ),
@@ -215,4 +226,3 @@ class NotificationSettingsPage extends ConsumerWidget {
     });
   }
 }
-
