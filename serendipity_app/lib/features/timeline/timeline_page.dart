@@ -9,6 +9,9 @@ import '../../core/providers/records_filter_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
 import '../../core/providers/community_provider.dart';
 import '../../core/providers/favorites_provider.dart';
+import '../../core/providers/auth_provider.dart';
+import '../../core/services/sync_orchestrator.dart';
+import '../../core/services/sync_service.dart';
 import '../../core/utils/message_helper.dart';
 import '../../core/utils/dialog_helper.dart';
 import '../../core/utils/navigation_helper.dart';
@@ -23,6 +26,7 @@ import '../../core/widgets/empty_state_widget.dart';
 import '../../core/widgets/common_filter_widgets.dart';
 import '../../models/encounter_record.dart';
 import '../../models/enums.dart';
+import '../../models/sync_history.dart';
 import '../record/record_detail_page.dart';
 import '../record/create_record_page.dart';
 import '../record/widgets/record_export_card.dart';
@@ -103,6 +107,23 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         notifier.loadMore();
       }
     }
+  }
+
+  Future<void> _refreshTimeline() async {
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      final syncService = ref.read(syncServiceProvider);
+      final lastSyncTime = await syncService.getLastSyncTime(currentUser.id);
+      await ref.read(syncOrchestratorProvider).sync(
+        ref,
+        currentUser,
+        source: SyncSource.manual,
+        lastSyncTime: lastSyncTime,
+      );
+      return;
+    }
+
+    await ref.read(recordsProvider.notifier).refresh();
   }
 
   void _selectSortType(RecordSortType type) {

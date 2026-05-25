@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/membership_provider.dart';
 import '../../core/providers/story_lines_provider.dart';
+import '../../core/services/sync_orchestrator.dart';
+import '../../core/services/sync_service.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../features/membership/membership_page.dart';
+import '../../models/sync_history.dart';
 import 'story_line_detail_page.dart';
 import 'story_line_page_actions.dart';
 import 'story_line_sort.dart';
@@ -21,6 +25,23 @@ class StoryLinesPage extends ConsumerStatefulWidget {
 
 class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
   StoryLineSortType _currentSort = StoryLineSortType.updatedDesc;
+
+  Future<void> _refreshStoryLines() async {
+    final currentUser = await ref.read(authProvider.notifier).currentUser;
+    if (currentUser != null) {
+      final syncService = ref.read(syncServiceProvider);
+      final lastSyncTime = await syncService.getLastSyncTime(currentUser.id);
+      await ref.read(syncOrchestratorProvider).sync(
+        ref,
+        currentUser,
+        source: SyncSource.manual,
+        lastSyncTime: lastSyncTime,
+      );
+      return;
+    }
+
+    await ref.read(storyLinesProvider.notifier).refresh();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,10 +98,6 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
       ),
       body: storyLinesAsync.when(
         data: (storyLines) {
-          if (storyLines.isEmpty) {
-            return const StoryLineEmptyState();
-          }
-
           final sortedStoryLines = sortStoryLines(storyLines, _currentSort);
 
           return Column(
@@ -92,36 +109,44 @@ class _StoryLinesPageState extends ConsumerState<StoryLinesPage> {
                 ),
               Expanded(
                 child: RefreshIndicator(
-                  onRefresh: () async {
-                    await ref.read(storyLinesProvider.notifier).refresh();
-                  },
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: sortedStoryLines.length,
-                    itemBuilder: (context, index) {
-                      final storyLine = sortedStoryLines[index];
-                      return StoryLineCard(
-                        storyLine: storyLine,
-                        onTap: () {
-                          NavigationHelper.pushWithTransition(
-                            context,
-                            ref,
-                            StoryLineDetailPage(storyLineId: storyLine.id),
-                          ).then((_) {
-                            ref.read(storyLinesProvider.notifier).refresh();
-                          });
-                        },
-                        onMenuSelected: (value) {
-                          StoryLinePageActions.handleMenuAction(
-                            context,
-                            ref,
-                            storyLine,
-                            value,
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  onRefresh: _refreshStoryLines,
+                  child: storyLines.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          children: const [
+                            SizedBox(height: 48),
+                            StoryLineEmptyState(),
+                          ],
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: sortedStoryLines.length,
+                          itemBuilder: (context, index) {
+                            final storyLine = sortedStoryLines[index];
+                            return StoryLineCard(
+                              storyLine: storyLine,
+                              onTap: () {
+                                NavigationHelper.pushWithTransition(
+                                  context,
+                                  ref,
+                                  StoryLineDetailPage(storyLineId: storyLine.id),
+                                ).then((_) {
+                                  _refreshStoryLines();
+                                });
+                              },
+                              onMenuSelected: (value) {
+                                StoryLinePageActions.handleMenuAction(
+                                  context,
+                                  ref,
+                                  storyLine,
+                                  value,
+                                );
+                              },
+                            );
+                          },
+                        ),
                 ),
               ),
             ],

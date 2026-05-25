@@ -32,11 +32,10 @@ extension _TimelinePageListSection on _TimelinePageState {
     final itemCount = records.isEmpty ? 2 : records.length + 1 + (showLoadMore ? 1 : 0);
 
     return RefreshIndicator(
-      onRefresh: () async {
-        await ref.read(recordsProvider.notifier).refresh();
-      },
+      onRefresh: _refreshTimeline,
       child: ListView.builder(
         controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 16),
         itemCount: itemCount,
         itemBuilder: (context, index) {
@@ -112,4 +111,3 @@ extension _TimelinePageListSection on _TimelinePageState {
     );
   }
 }
-
