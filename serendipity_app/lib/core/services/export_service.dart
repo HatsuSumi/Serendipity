@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class _DebugPaintSnapshot {
@@ -58,8 +61,12 @@ class _DebugPaintSnapshot {
 /// 设计原则：
 /// - 单一职责：只负责保存，不负责渲染
 /// - Fail Fast：Web 平台立即返回失败，不走后续逻辑
+/// - Android 导出统一写入公共图片目录，降低 OEM 相册收录差异
 class ExportService {
   ExportService._();
+
+  static const String _androidRelativePath = 'Pictures/Serendipity';
+  static const String _tempExportFolderName = 'serendipity_exports';
 
   static Future<void> _flushDebugPaintState() async {
     final renderView = RendererBinding.instance.renderViews.firstOrNull;
@@ -132,12 +139,76 @@ class ExportService {
     if (!permissionState.isAuth) return false;
 
     final filename = '${name}_${DateTime.now().millisecondsSinceEpoch}.png';
-    final asset = await PhotoManager.editor.saveImage(
+    final asset = await _saveImageAsset(bytes, filename: filename);
+    return await _verifySavedAsset(asset, expectedFilename: filename);
+  }
+
+  static Future<AssetEntity> _saveImageAsset(
+    Uint8List bytes, {
+    required String filename,
+  }) async {
+    final now = DateTime.now();
+
+    if (Platform.isAndroid) {
+      final tempFile = await _writeTempImageFile(bytes, filename: filename);
+      return PhotoManager.editor.saveImageWithPath(
+        tempFile.path,
+        title: filename,
+        relativePath: _androidRelativePath,
+        creationDate: now,
+      );
+    }
+
+    return PhotoManager.editor.saveImage(
       bytes,
       filename: filename,
       title: filename,
+      creationDate: now,
     );
-    return asset.id.isNotEmpty;
+  }
+
+  static Future<File> _writeTempImageFile(
+    Uint8List bytes, {
+    required String filename,
+  }) async {
+    final tempDirectory = await getTemporaryDirectory();
+    final exportDirectory = Directory(
+      '${tempDirectory.path}${Platform.pathSeparator}$_tempExportFolderName',
+    );
+
+    if (!exportDirectory.existsSync()) {
+      await exportDirectory.create(recursive: true);
+    }
+
+    final file = File(
+      '${exportDirectory.path}${Platform.pathSeparator}$filename',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
+
+  static Future<bool> _verifySavedAsset(
+    AssetEntity asset, {
+    required String expectedFilename,
+  }) async {
+    if (asset.id.isEmpty) {
+      return false;
+    }
+
+    final refreshedAsset = await asset.obtainForNewProperties() ?? asset;
+    final resolvedTitle = refreshedAsset.title ?? await refreshedAsset.titleAsync;
+    if (resolvedTitle != expectedFilename) {
+      return false;
+    }
+
+    if (Platform.isAndroid) {
+      final relativePath = refreshedAsset.relativePath;
+      if (relativePath == null || !relativePath.startsWith(_androidRelativePath)) {
+        return false;
+      }
+    }
+
+    final resolvedFile = await refreshedAsset.file;
+    return resolvedFile != null && await resolvedFile.exists();
   }
 }
-
