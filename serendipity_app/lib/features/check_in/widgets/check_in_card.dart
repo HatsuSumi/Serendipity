@@ -9,6 +9,7 @@ import '../../../core/utils/check_in_badge_helper.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/message_helper.dart';
 import '../../../core/utils/navigation_helper.dart';
+import '../../../models/check_in_record.dart';
 import '../check_in_page.dart';
 import 'check_in_button.dart';
 
@@ -264,13 +265,15 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
   }
 
   Widget _buildStreakIndicator(CheckInState state, ColorScheme colorScheme) {
-    final days = state.consecutiveDays;
-    final maxDots = 7;
-    final filledDots = days.clamp(0, maxDots);
+    final weekDates = _buildCurrentWeekDates();
+    final checkedInDates = _normalizeCheckInDates(state.recentCheckIns);
 
     return Row(
-      children: List.generate(maxDots, (index) {
-        final isFilled = index < filledDots;
+      children: List.generate(weekDates.length, (index) {
+        final date = weekDates[index];
+        final isFilled = checkedInDates.contains(date);
+        final isToday = _isSameDate(date, DateTime.now());
+
         return Padding(
           padding: const EdgeInsets.only(right: 4),
           child: Container(
@@ -281,8 +284,15 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
               color: isFilled
                   ? Colors.green
                   : (state.hasCheckedInToday
-                      ? colorScheme.onSurface.withValues(alpha: 0.1)
-                      : colorScheme.onPrimaryContainer.withValues(alpha: 0.2)),
+                      ? colorScheme.onSurface.withValues(alpha: isToday ? 0.18 : 0.1)
+                      : colorScheme.onPrimaryContainer.withValues(alpha: isToday ? 0.28 : 0.2)),
+              border: isToday
+                  ? Border.all(
+                      color: state.hasCheckedInToday
+                          ? colorScheme.onSurface.withValues(alpha: 0.35)
+                          : colorScheme.onPrimaryContainer.withValues(alpha: 0.45),
+                    )
+                  : null,
             ),
             child: isFilled
                 ? const Icon(
@@ -295,6 +305,29 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
         );
       }),
     );
+  }
+
+  List<DateTime> _buildCurrentWeekDates() {
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    final weekStart = normalizedToday.subtract(Duration(days: normalizedToday.weekday - 1));
+
+    return List.generate(
+      DateTime.daysPerWeek,
+      (index) => weekStart.add(Duration(days: index)),
+    );
+  }
+
+  Set<DateTime> _normalizeCheckInDates(List<CheckInRecord> checkIns) {
+    return checkIns
+        .map((record) => DateTime(record.date.year, record.date.month, record.date.day))
+        .toSet();
+  }
+
+  bool _isSameDate(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
   }
 
   Widget _buildCheckInButton(CheckInState state, ColorScheme colorScheme) {
