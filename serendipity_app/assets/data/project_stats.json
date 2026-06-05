@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-25",
+  "generated_at": "2026-06-05",
   "root": "D:\\Serendipity",
   "totals": {
     "all_files": 775,
     "code_files": 591,
-    "code_lines": 100640,
-    "code_chars": 3360610,
+    "code_lines": 100709,
+    "code_chars": 3363779,
     "asset_files": 0,
     "asset_bytes": 0
   },
@@ -150,14 +150,14 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 48001,
+      "count": 48070,
       "percentage": 47.7
     },
     {
       "key": "JSON",
       "label": "JSON",
       "count": 32970,
-      "percentage": 32.8
+      "percentage": 32.7
     },
     {
       "key": "TypeScript",
@@ -247,7 +247,7 @@
       "key": "INI",
       "label": "INI",
       "count": 46,
-      "percentage": 0.0
+      "percentage": 0.1
     },
     {
       "key": "HTML",
@@ -272,7 +272,7 @@
     {
       "key": "Dart",
       "label": "Dart",
-      "count": 1578774,
+      "count": 1581943,
       "percentage": 47.0
     },
     {
