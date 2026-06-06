@@ -175,19 +175,11 @@ Serendipity/
 - 功能模块清单
 - 待办事项
 
-### [Amap_Integration_Guide.md](docs/Amap_Integration_Guide.md)
-高德地图 API 集成指南，包含：
-- API Key 申请流程
-- 配置步骤
-- 常见问题排查
-
 ### [Custom_Server_API_Design.md](docs/Custom_Server_API_Design.md)
 服务端 API 设计文档，包含：
 - RESTful API 接口规范
 - 认证与鉴权机制
 - 数据模型与响应格式
-### [About_Page_Content.md](docs/About_Page_Content.md)
-关于页面的完整文案内容
 
 ## 🔧 技术栈
 
