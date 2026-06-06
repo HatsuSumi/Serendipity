@@ -177,6 +177,11 @@ class TestRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
+  Future<void> importCheckIns(String userId, List<CheckInRecord> checkIns) async {
+    // 测试模式：不执行任何操作
+  }
+
+  @override
   Future<Map<String, dynamic>> getCheckInStatus(
     String userId,
     int year,

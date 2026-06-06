@@ -86,6 +86,7 @@ class ServerConfig {
   // 签到相关
   static const String checkIns = '/check-ins';
   static const String checkInStatus = '/check-ins/status';
+  static const String checkInsImport = '/check-ins/import';
   static String checkInById(String id) => '/check-ins/$id';
 
   // 推送相关

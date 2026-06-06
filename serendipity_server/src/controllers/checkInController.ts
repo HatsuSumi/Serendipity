@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { CheckIn } from '@prisma/client';
 import { ICheckInService } from '../services/checkInService';
-import { CheckInResponseDto, CheckInStatusResponseDto } from '../types/checkIn.dto';
+import { CheckInResponseDto, CheckInStatusResponseDto, ImportCheckInRequestDto } from '../types/checkIn.dto';
 import { sendSuccess } from '../utils/response';
 
 /**
@@ -34,6 +34,29 @@ export class CheckInController {
       const checkIn = await this.checkInService.createTodayCheckIn(userId);
 
       sendSuccess(res, this.toResponseDto(checkIn), 'Check-in created successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * 导入历史签到记录
+   *
+   * POST /api/check-ins/import
+   */
+  importCheckIns = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user || !req.user.userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const rawCheckIns = (req.body as { checkIns?: ImportCheckInRequestDto[] } | undefined)?.checkIns;
+      const checkIns = Array.isArray(rawCheckIns) ? rawCheckIns : [];
+      const imported = await this.checkInService.importCheckIns(req.user.userId, checkIns);
+
+      sendSuccess(res, {
+        checkIns: imported.map((checkIn) => this.toResponseDto(checkIn)),
+      }, 'Check-ins imported successfully', 201);
     } catch (error) {
       next(error);
     }

@@ -22,6 +22,14 @@ export interface CheckInResponseDto {
   deletedAt?: string; // ISO 8601 格式
 }
 
+export interface ImportCheckInRequestDto {
+  id: string;
+  date: string;
+  checkedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 /**
  * 登录用户签到状态 DTO
  *

@@ -14,6 +14,26 @@ class CheckInSyncService {
   }) : _remoteRepository = remoteRepository,
        _storageService = storageService;
 
+  List<CheckInRecord> getLocalCheckInsForUser(String userId) {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+
+    return _storageService.getCheckInsByUser(userId)
+      ..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  Future<void> importCheckIns(User user, List<CheckInRecord> checkIns) async {
+    if (user.id.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (checkIns.isEmpty) {
+      return;
+    }
+
+    await _remoteRepository.importCheckIns(user.id, checkIns);
+  }
+
   Future<CheckInRecord> createTodayCheckIn(User user) async {
     if (user.id.isEmpty) {
       throw ArgumentError('用户 ID 不能为空');

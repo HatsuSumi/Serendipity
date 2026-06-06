@@ -17,6 +17,10 @@ export function createCheckInRoutes(checkInController: CheckInController): Route
   // POST /api/check-ins
   router.post('/', authMiddleware, checkInController.createTodayCheckIn);
 
+  // 导入历史签到记录
+  // POST /api/check-ins/import
+  router.post('/import', authMiddleware, checkInController.importCheckIns);
+
   // 获取登录用户签到状态
   // GET /api/check-ins/status?year=2026&month=3
   router.get('/status', authMiddleware, checkInController.getCheckInStatus);

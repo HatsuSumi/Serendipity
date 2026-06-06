@@ -22,6 +22,26 @@ class CustomServerRemoteCheckInRepository {
     }
   }
 
+  Future<void> importCheckIns(String userId, List<CheckInRecord> checkIns) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('用户 ID 不能为空');
+    }
+    if (checkIns.isEmpty) {
+      return;
+    }
+
+    try {
+      await _httpClient.post(
+        ServerConfig.checkInsImport,
+        body: {
+          'checkIns': checkIns.map((checkIn) => checkIn.toJson()).toList(),
+        },
+      );
+    } on HttpException catch (e) {
+      throw Exception('导入历史签到失败：${e.message}');
+    }
+  }
+
   Future<Map<String, dynamic>> getCheckInStatus(
     String userId,
     int year,

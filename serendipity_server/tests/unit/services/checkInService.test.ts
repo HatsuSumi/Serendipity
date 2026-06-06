@@ -15,6 +15,7 @@ describe('CheckInService', () => {
       findActiveById: jest.fn(),
       findByUserId: jest.fn(),
       findByUserAndDate: jest.fn(),
+      createIfAbsentByDate: jest.fn(),
       deleteById: jest.fn(),
     };
 

@@ -231,6 +231,11 @@ class CustomServerRemoteDataRepository implements IRemoteDataRepository {
   }
 
   @override
+  Future<void> importCheckIns(String userId, List<CheckInRecord> checkIns) {
+    return _checkInRepository.importCheckIns(userId, checkIns);
+  }
+
+  @override
   Future<Map<String, dynamic>> getCheckInStatus(
     String userId,
     int year,

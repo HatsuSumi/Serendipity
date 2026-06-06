@@ -392,6 +392,9 @@ abstract class IRemoteDataRepository {
   /// 创建今天的签到记录
   Future<CheckInRecord> createTodayCheckIn(String userId);
 
+  /// 导入历史签到记录（用于离线签到绑定账号后的首次同步）
+  Future<void> importCheckIns(String userId, List<CheckInRecord> checkIns);
+
   /// 获取登录用户指定月份的签到状态
   Future<Map<String, dynamic>> getCheckInStatus(String userId, int year, int month);
 

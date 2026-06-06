@@ -7,6 +7,8 @@ export interface CreateCheckInData {
   id: string;
   date: Date;
   checkedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 /**
@@ -54,6 +56,11 @@ export interface ICheckInRepository {
   findByUserAndDate(userId: string, date: Date): Promise<CheckIn | null>;
 
   /**
+   * 幂等导入历史签到记录（若同日期已存在则返回已有记录）
+   */
+  createIfAbsentByDate(userId: string, data: CreateCheckInData): Promise<CheckIn>;
+
+  /**
    * 删除签到记录（墓碑化）
    *
    * 调用者：CheckInService.deleteCheckIn()
@@ -96,6 +103,8 @@ export class CheckInRepository implements ICheckInRepository {
         userId,
         date: data.date,
         checkedAt: data.checkedAt,
+        ...(data.createdAt ? { createdAt: data.createdAt } : {}),
+        ...(data.updatedAt ? { updatedAt: data.updatedAt } : {}),
       },
     });
   }
@@ -149,6 +158,22 @@ export class CheckInRepository implements ICheckInRepository {
         deletedAt: null,
       },
     });
+  }
+
+  async createIfAbsentByDate(userId: string, data: CreateCheckInData): Promise<CheckIn> {
+    if (!userId || userId.trim() === '') {
+      throw new Error('userId is required');
+    }
+    if (!(data.date instanceof Date) || Number.isNaN(data.date.getTime())) {
+      throw new Error('Invalid check-in date');
+    }
+
+    const existing = await this.findByUserAndDate(userId, data.date);
+    if (existing) {
+      return existing;
+    }
+
+    return this.create(userId, data);
   }
 
   async deleteById(id: string, deletedAt: Date): Promise<void> {

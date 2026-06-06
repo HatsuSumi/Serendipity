@@ -419,15 +419,33 @@ class SyncService {
       user,
       lastSyncTime: lastSyncTime,
     );
-    const uploadedCheckIns = 0;
+    final uploadedCheckIns = await _uploadBoundOfflineCheckIns(
+      user,
+      lastSyncTime: lastSyncTime,
+    );
 
-    // 上传签到记录不再参与同步：登录用户签到以服务端主写为准
-    
     return UploadSyncStats(
       records: uploadedRecords,
       storyLines: uploadedStoryLines,
       checkIns: uploadedCheckIns,
     );
+  }
+
+  Future<int> _uploadBoundOfflineCheckIns(
+    User user, {
+    required DateTime? lastSyncTime,
+  }) async {
+    if (lastSyncTime != null) {
+      return 0;
+    }
+
+    final localCheckIns = _checkInSyncService.getLocalCheckInsForUser(user.id);
+    if (localCheckIns.isEmpty) {
+      return 0;
+    }
+
+    await _checkInSyncService.importCheckIns(user, localCheckIns);
+    return localCheckIns.length;
   }
   
   /// 下载云端数据到本地（全量对齐或增量消费）

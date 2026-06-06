@@ -4,6 +4,7 @@ import { ICheckInRepository } from '../repositories/checkInRepository';
 import { AppError } from '../middlewares/errorHandler';
 import { ErrorCode } from '../types/errors';
 import { IUserTimezoneResolver } from './userTimezoneResolver';
+import { ImportCheckInRequestDto } from '../types/checkIn.dto';
 
 export interface CheckInStatus {
   hasCheckedInToday: boolean;
@@ -25,6 +26,7 @@ export interface CheckInStatus {
  */
 export interface ICheckInService {
   createTodayCheckIn(userId: string): Promise<CheckIn>;
+  importCheckIns(userId: string, checkIns: ImportCheckInRequestDto[]): Promise<CheckIn[]>;
   getCheckInStatus(userId: string, year: number, month: number): Promise<CheckInStatus>;
   getCheckIns(userId: string, lastSyncTime?: string): Promise<CheckIn[]>;
   deleteCheckIn(checkInId: string, userId: string): Promise<void>;
@@ -65,6 +67,41 @@ export class CheckInService implements ICheckInService {
       date: today,
       checkedAt: now,
     });
+  }
+
+  async importCheckIns(userId: string, checkIns: ImportCheckInRequestDto[]): Promise<CheckIn[]> {
+    if (!userId || userId.trim() === '') {
+      throw new Error('userId is required');
+    }
+    if (!Array.isArray(checkIns)) {
+      throw new Error('checkIns must be an array');
+    }
+    if (checkIns.length === 0) {
+      return [];
+    }
+
+    const imported: CheckIn[] = [];
+    for (const item of checkIns) {
+      const date = this.normalizeStoredDate(new Date(item.date));
+      const checkedAt = new Date(item.checkedAt);
+      const createdAt = item.createdAt ? new Date(item.createdAt) : checkedAt;
+      const updatedAt = item.updatedAt ? new Date(item.updatedAt) : checkedAt;
+
+      if (Number.isNaN(date.getTime()) || Number.isNaN(checkedAt.getTime())) {
+        throw new Error('Invalid check-in payload');
+      }
+
+      const saved = await this.checkInRepository.createIfAbsentByDate(userId, {
+        id: item.id && item.id.trim() !== '' ? item.id : randomUUID(),
+        date,
+        checkedAt,
+        createdAt,
+        updatedAt,
+      });
+      imported.push(saved);
+    }
+
+    return imported;
   }
 
   async getCheckInStatus(userId: string, year: number, month: number): Promise<CheckInStatus> {
