@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -13,6 +14,7 @@ import '../repositories/i_remote_data_repository.dart'
     show IRemoteDataRepository, RepositoryServerTestPushSummary;
 import '../utils/check_in_reminder_helper.dart';
 import 'i_storage_service.dart';
+import 'notification_cache_recovery_service.dart';
 import 'push_models.dart';
 
 /// 测试通知调度结果
@@ -44,6 +46,7 @@ class NotificationService {
   final CheckInRepository _checkInRepository;
   final IRemoteDataRepository? _remoteDataRepository;
   final IStorageService? _storageService;
+  final NotificationCacheRecoveryService _notificationCacheRecoveryService;
   bool _isInitialized = false;
   final DateTime Function() _nowProvider;
   Future<bool>? _activePermissionRequest;
@@ -69,10 +72,13 @@ class NotificationService {
     IRemoteDataRepository? remoteDataRepository,
     IStorageService? storageService,
     FlutterLocalNotificationsPlugin? plugin,
+    NotificationCacheRecoveryService? notificationCacheRecoveryService,
     DateTime Function()? nowProvider,
   })  : _remoteDataRepository = remoteDataRepository,
         _storageService = storageService,
         _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
+        _notificationCacheRecoveryService =
+            notificationCacheRecoveryService ?? const NotificationCacheRecoveryService(),
         _nowProvider = nowProvider ?? DateTime.now;
 
   /// 初始化通知服务
@@ -347,7 +353,30 @@ class NotificationService {
 
   Future<void> cancelCheckInReminder() async {
     _ensureInitialized();
-    await _plugin.cancel(_checkInReminderId);
+
+    try {
+      await _plugin.cancel(_checkInReminderId);
+    } on PlatformException catch (error) {
+      if (!_looksLikeScheduledNotificationCacheError(error)) {
+        rethrow;
+      }
+
+      await _notificationCacheRecoveryService.recoverScheduledNotificationCache(
+        notificationId: _checkInReminderId,
+      );
+      await _plugin.cancel(_checkInReminderId);
+    }
+  }
+
+  bool _looksLikeScheduledNotificationCacheError(PlatformException error) {
+    final message = [error.message, error.details]
+        .whereType<Object>()
+        .map((item) => item.toString())
+        .join(' ')
+        .toLowerCase();
+    return message.contains('missing type parameter') ||
+        message.contains('loadschedulednotifications') ||
+        message.contains('removenotificationfromcache');
   }
 
   Future<ServerPushTestResult> sendServerTestCheckInNotification() async {

@@ -29,9 +29,10 @@ class PushTokenRemoteService {
   PushTokenRemoteService(this._remoteRepository);
 
   final IRemoteDataRepository _remoteRepository;
+  static const Duration _getTokenTimeout = Duration(seconds: 5);
 
   Future<void> unregisterCurrentToken(String? fallbackToken) async {
-    final token = fallbackToken ?? await FirebaseMessaging.instance.getToken();
+    final token = fallbackToken ?? await _getTokenSafely();
     if (token == null || token.isEmpty) {
       return;
     }
@@ -39,6 +40,17 @@ class PushTokenRemoteService {
     try {
       await _remoteRepository.unregisterPushToken(token);
     } catch (_) {}
+  }
+
+  Future<String?> _getTokenSafely() async {
+    try {
+      return await FirebaseMessaging.instance.getToken().timeout(
+        _getTokenTimeout,
+        onTimeout: () => null,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> registerToken(PushTokenRegistration registration) async {

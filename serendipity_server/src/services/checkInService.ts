@@ -82,12 +82,17 @@ export class CheckInService implements ICheckInService {
 
     const imported: CheckIn[] = [];
     for (const item of checkIns) {
-      const date = this.normalizeStoredDate(new Date(item.date));
+      const date = this.parseDateOnly(item.date);
       const checkedAt = new Date(item.checkedAt);
       const createdAt = item.createdAt ? new Date(item.createdAt) : checkedAt;
       const updatedAt = item.updatedAt ? new Date(item.updatedAt) : checkedAt;
 
-      if (Number.isNaN(date.getTime()) || Number.isNaN(checkedAt.getTime())) {
+      if (
+        Number.isNaN(date.getTime()) ||
+        Number.isNaN(checkedAt.getTime()) ||
+        Number.isNaN(createdAt.getTime()) ||
+        Number.isNaN(updatedAt.getTime())
+      ) {
         throw new Error('Invalid check-in payload');
       }
 
@@ -255,6 +260,15 @@ export class CheckInService implements ICheckInService {
     }
 
     return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  private parseDateOnly(value: string): Date {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (match) {
+      return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+    }
+
+    return this.normalizeStoredDate(new Date(value));
   }
 
   private isSameDateOnly(left: Date, right: Date): boolean {

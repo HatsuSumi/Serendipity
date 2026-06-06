@@ -66,7 +66,10 @@ class AuthSessionCoordinator {
 
     try {
       final pushTokenRemoteService = ref.read(pushTokenRemoteServiceProvider);
-      await pushTokenRemoteService.unregisterCurrentToken(null);
+      try {
+        await pushTokenRemoteService.unregisterCurrentToken(null);
+      } catch (_) {}
+
       await repository.signOut();
 
       final storageService = ref.read(storageServiceProvider);
@@ -75,9 +78,10 @@ class AuthSessionCoordinator {
       setState(const AsyncValue.data(null));
       invalidateDataProviders();
     } catch (error, stackTrace) {
-      ref.read(pushTokenSignOutInProgressProvider.notifier).state = false;
       setState(AsyncValue.error(error, stackTrace));
       rethrow;
+    } finally {
+      ref.read(pushTokenSignOutInProgressProvider.notifier).state = false;
     }
   }
 
@@ -102,19 +106,21 @@ class AuthSessionCoordinator {
 
     try {
       final pushTokenRemoteService = ref.read(pushTokenRemoteServiceProvider);
-      await pushTokenRemoteService.unregisterCurrentToken(null);
+      try {
+        await pushTokenRemoteService.unregisterCurrentToken(null);
+      } catch (_) {}
+
       await repository.deleteAccount(password);
-    } catch (_) {
+
+      if (currentUser != null) {
+        final storageService = ref.read(storageServiceProvider);
+        await storageService.deleteUserData(currentUser.id);
+      }
+
+      setState(const AsyncValue.data(null));
+      invalidateDataProviders();
+    } finally {
       ref.read(pushTokenSignOutInProgressProvider.notifier).state = false;
-      rethrow;
     }
-
-    if (currentUser != null) {
-      final storageService = ref.read(storageServiceProvider);
-      await storageService.deleteUserData(currentUser.id);
-    }
-
-    setState(const AsyncValue.data(null));
-    invalidateDataProviders();
   }
 }

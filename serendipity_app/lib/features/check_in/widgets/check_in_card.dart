@@ -32,39 +32,18 @@ class CheckInCard extends ConsumerStatefulWidget {
 }
 
 class _CheckInCardState extends ConsumerState<CheckInCard> {
-  late final ProviderSubscription<AsyncValue<CheckInState>>
-      _checkInSubscription;
-  bool _hasTriggeredCheckInFeedback = false;
+  late final ProviderSubscription<int> _checkInSuccessSubscription;
 
   @override
   void initState() {
     super.initState();
-    _checkInSubscription = ref.listenManual<AsyncValue<CheckInState>>(
-      checkInProvider,
+    _checkInSuccessSubscription = ref.listenManual<int>(
+      checkInSuccessEventProvider,
       (previous, next) {
-        final previousState = previous?.valueOrNull;
-        final nextState = next.valueOrNull;
-
-        if (nextState == null) {
+        if (previous == null || next == previous) {
           return;
         }
 
-        if (!nextState.hasCheckedInToday) {
-          _hasTriggeredCheckInFeedback = false;
-        }
-
-        if (previousState == null) {
-          return;
-        }
-
-        final becameCheckedIn =
-            !previousState.hasCheckedInToday && nextState.hasCheckedInToday;
-
-        if (!becameCheckedIn || _hasTriggeredCheckInFeedback) {
-          return;
-        }
-
-        _hasTriggeredCheckInFeedback = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) {
             return;
@@ -77,7 +56,7 @@ class _CheckInCardState extends ConsumerState<CheckInCard> {
 
   @override
   void dispose() {
-    _checkInSubscription.close();
+    _checkInSuccessSubscription.close();
     super.dispose();
   }
 

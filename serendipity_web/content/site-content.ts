@@ -124,9 +124,9 @@ export const experiencePillars = [
 
 export const builderStory = {
   eyebrow: '开发者自述',
-  title: '这是一个由一人耗时 78 天完成的开源免费项目。',
+  title: '这是一个由一人耗时 80 天完成的开源免费项目。',
   highlights: [
-    { value: '78 天', label: '持续开发周期' },
+    { value: '80 天', label: '持续开发周期' },
     { value: '一人完成', label: '覆盖设计到运维' },
     { value: '开源免费', label: '长期公开维护' },
   ],

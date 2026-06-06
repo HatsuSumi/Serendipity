@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/achievement_unlock.dart';
@@ -257,7 +258,15 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
 
     ref.read(checkInSuccessEventProvider.notifier).state++;
     await refresh();
-    await ref.read(notificationServiceProvider).cancelCheckInReminder();
+
+    try {
+      await ref.read(notificationServiceProvider).cancelCheckInReminder();
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        print('签到成功，但取消本地提醒失败: $error');
+        print(stackTrace);
+      }
+    }
   }
 
   /// 获取指定月份的签到日期

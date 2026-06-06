@@ -81,7 +81,7 @@ class CheckInRecord {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'date': date.toIso8601String(),
+      'date': _formatDateOnly(date),
       'checkedAt': checkedAt.toIso8601String(),
       'userId': userId,
       'createdAt': createdAt.toIso8601String(),
@@ -101,7 +101,7 @@ class CheckInRecord {
   factory CheckInRecord.fromJson(Map<String, dynamic> json) {
     return CheckInRecord(
       id: json['id'] as String,
-      date: DateTime.parse(json['date'] as String),
+      date: _parseDateOnly(json['date'] as String),
       checkedAt: DateTime.parse(json['checkedAt'] as String),
       userId: json['userId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
@@ -136,6 +136,27 @@ class CheckInRecord {
     );
   }
 
+  static String _formatDateOnly(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    final month = normalized.month.toString().padLeft(2, '0');
+    final day = normalized.day.toString().padLeft(2, '0');
+    return '${normalized.year}-$month-$day';
+  }
+
+  static DateTime _parseDateOnly(String value) {
+    final dateOnlyMatch = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
+    if (dateOnlyMatch != null) {
+      return DateTime(
+        int.parse(dateOnlyMatch.group(1)!),
+        int.parse(dateOnlyMatch.group(2)!),
+        int.parse(dateOnlyMatch.group(3)!),
+      );
+    }
+
+    final parsed = DateTime.parse(value);
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -145,4 +166,3 @@ class CheckInRecord {
   @override
   int get hashCode => id.hashCode;
 }
-
