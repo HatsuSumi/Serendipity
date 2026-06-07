@@ -7,7 +7,7 @@
 ### 项目信息
 - **项目名称（中文）**：错过了么
 - **项目名称（英文）**：Serendipity
-- **项目类型**：移动应用（Android + iOS）
+- **项目类型**：移动应用（Android）
 - **技术栈**：
   - **前端（Flutter App）**
     - 框架：Flutter 3.x + Dart 3.x（SDK `^3.10.8`）
